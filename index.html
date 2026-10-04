@@ -1,14 +1,1347 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sparkle — Bill Payments</title><style>
-:root{--blue:#0b5cff;--deep:#071b4d;--ink:#14213d;--muted:#64748b;--bg:#f7faff;--white:#fff;--line:#e7edf7;--green:#10b981}*{box-sizing:border-box}body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,sans-serif;color:var(--ink);background:var(--white)}a{text-decoration:none;color:inherit}.wrap{max-width:1180px;margin:auto;padding:0 24px}.nav{height:76px;display:flex;align-items:center;justify-content:space-between;background:#fff}.brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:24px;color:var(--blue)}.logo{width:38px;height:38px;border-radius:12px;background:var(--blue);display:grid;place-items:center;color:#fff;font-weight:900;box-shadow:0 8px 20px #0b5cff33}.links{display:flex;gap:28px;color:#475569;font-weight:600;font-size:14px}.actions{display:flex;gap:10px}.btn{padding:12px 18px;border-radius:9px;font-weight:800;border:1px solid var(--line);font-size:14px}.primary{background:var(--blue);color:#fff;border-color:var(--blue)}.hero{background:linear-gradient(135deg,#f4f8ff,#fff);padding:76px 0 92px;overflow:hidden}.hero-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:55px;align-items:center}.eyebrow{display:inline-flex;gap:8px;align-items:center;color:var(--blue);font-weight:800;font-size:13px;background:#eaf1ff;padding:9px 13px;border-radius:99px}.hero h1{font-size:54px;line-height:1.05;letter-spacing:-2px;margin:20px 0 18px}.hero p{font-size:18px;line-height:1.7;color:var(--muted);max-width:600px}.hero-buttons{display:flex;gap:12px;margin-top:28px}.mock{background:#fff;border:1px solid #e4ebf6;border-radius:26px;padding:18px;box-shadow:0 30px 70px #183b7d1c;transform:rotate(2deg)}.mocktop{background:var(--blue);color:#fff;border-radius:19px;padding:25px}.balance{font-size:30px;font-weight:900;margin:8px 0 24px}.quick{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.q{background:#fff;color:var(--ink);border-radius:13px;padding:12px;text-align:center;font-size:11px;font-weight:800}.q i{display:block;font-style:normal;font-size:20px;margin-bottom:6px}.section{padding:90px 0}.center{text-align:center}.center h2{font-size:38px;margin:10px 0}.center p{color:var(--muted);max-width:680px;margin:auto;line-height:1.7}.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:45px}.card{border:1px solid var(--line);border-radius:18px;padding:27px;background:#fff;transition:.2s}.card:hover{transform:translateY(-3px);box-shadow:0 15px 35px #0b255b10}.icon{width:54px;height:54px;border-radius:15px;background:#edf3ff;color:var(--blue);display:grid;place-items:center;font-size:25px;margin-bottom:18px}.card h3{margin:0 0 9px;font-size:19px}.card p{margin:0;color:var(--muted);line-height:1.6;font-size:14px}.api{background:var(--deep);color:#fff;border-radius:28px;padding:60px;display:grid;grid-template-columns:1fr 1fr;gap:50px;align-items:center}.api p{color:#c8d4ee;line-height:1.7}.code{background:#0c285f;border:1px solid #27447c;border-radius:17px;padding:24px;color:#b9d2ff;font-family:ui-monospace,monospace;font-size:13px;line-height:1.8}.strip{background:#f6f9ff;padding:20px 0}.brands{display:flex;justify-content:space-around;flex-wrap:wrap;gap:20px;color:#71809b;font-weight:900}.download{background:linear-gradient(135deg,#edf4ff,#fff);border-radius:28px;padding:55px;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:35px}.download h2{font-size:38px}.store{display:inline-block;margin:8px 8px 0 0;padding:13px 18px;background:#111;color:#fff;border-radius:10px;font-weight:800}.faq{max-width:850px;margin:40px auto}.faq details{border-bottom:1px solid var(--line);padding:20px 0}.faq summary{font-weight:800;cursor:pointer}.footer{background:#06183f;color:#d6e0f4;padding:65px 0 25px}.footgrid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1fr;gap:40px}.footer h4{color:#fff}.footer a,.footer p{color:#9eb0cf;font-size:14px;line-height:1.8;display:block}.copy{border-top:1px solid #17315d;margin-top:35px;padding-top:20px;color:#8194b5;font-size:13px}@media(max-width:800px){.links{display:none}.hero{padding:50px 0}.hero-grid,.api,.download{grid-template-columns:1fr}.hero h1{font-size:42px}.cards{grid-template-columns:1fr}.api,.download{padding:30px}.footgrid{grid-template-columns:1fr 1fr}.actions .btn:first-child{display:none}}@media(max-width:480px){.wrap{padding:0 16px}.hero h1{font-size:36px}.hero p{font-size:16px}.hero-buttons{flex-direction:column}.cards{margin-top:30px}.section{padding:60px 0}.center h2,.download h2{font-size:30px}.quick{grid-template-columns:repeat(2,1fr)}.footgrid{grid-template-columns:1fr}}
-</style></head><body>
-<header class="nav wrap"><a class="brand" href="#"><span class="logo">S</span> Sparkle</a><nav class="links"><a href="#services">Services</a><a href="#api">API</a><a href="#faq">FAQ</a><a href="#download">App</a></nav><div class="actions"><a class="btn" href="#login">Log In</a><a class="btn primary" href="#signup">Sign Up</a></div></header>
-<section class="hero"><div class="wrap hero-grid"><div><span class="eyebrow">✦ Simple. Fast. Reliable.</span><h1>Pay your bills faster, easier and smarter.</h1><p>Buy affordable data, airtime and pay utility bills instantly. Sparkle brings everyday Nigerian bill payments together in one simple platform.</p><div class="hero-buttons"><a class="btn primary" href="#signup">Get Started</a><a class="btn" href="#services">Explore Services</a></div></div><div class="mock"><div class="mocktop"><small>SPARKLE WALLET</small><div class="balance">₦25,450.00</div><div class="quick"><div class="q"><i>📱</i>Airtime</div><div class="q"><i>🌐</i>Data</div><div class="q"><i>📺</i>Cable</div><div class="q"><i>⚡</i>Electricity</div></div></div></div></div></section>
-<div class="strip"><div class="wrap brands"><span>MTN</span><span>AIRTEL</span><span>GLO</span><span>9MOBILE</span><span>DSTV</span><span>GOTV</span><span>STARTIMES</span></div></div>
-<section class="section" id="services"><div class="wrap"><div class="center"><h2>Comprehensive Services Tailored for You</h2><p>Everything you need for instant recharge, subscriptions and everyday utility payments in one place.</p></div><div class="cards">
-<div class="card"><div class="icon">🌐</div><h3>Mobile Data</h3><p>Access affordable data plans across all major networks in Nigeria.</p></div><div class="card"><div class="icon">🎟️</div><h3>Exam Pin Generation</h3><p>Buy WAEC and NECO examination pins and scratch cards.</p></div><div class="card"><div class="icon">📺</div><h3>Cable TV Subscription</h3><p>Activate DSTV, GOtv and Startimes subscriptions with ease.</p></div><div class="card"><div class="icon">📱</div><h3>Airtime Top Up</h3><p>Recharge any Nigerian network instantly from your wallet.</p></div><div class="card"><div class="icon">💳</div><h3>Virtual Cards</h3><p>Access convenient virtual USD and NGN cards for online payments.</p></div><div class="card"><div class="icon">⚡</div><h3>Utility Bills</h3><p>Pay electricity and other utility bills across supported providers.</p></div><div class="card"><div class="icon">💰</div><h3>Airtime to Cash</h3><p>Convert supported airtime balances to cash through Sparkle.</p></div><div class="card"><div class="icon">🔔</div><h3>Notifications</h3><p>Get instant updates for payments, wallet funding and transactions.</p></div><div class="card"><div class="icon">👥</div><h3>Referral & Reseller</h3><p>Earn through referrals and manage your reseller activity.</p></div>
-</div></div></section>
-<section class="section" id="api"><div class="wrap"><div class="api"><div><h2>Integrate Our API</h2><p>Build powerful bill-payment products with Sparkle's developer-ready API. Connect airtime, data, cable and utility services to your own applications.</p><a class="btn primary" href="#">View Documentation</a></div><div class="code">POST /api/v1/airtime<br>{<br>&nbsp;&nbsp;"network": "MTN",<br>&nbsp;&nbsp;"phone": "080********",<br>&nbsp;&nbsp;"amount": 500<br>}<br><br>→ transaction queued</div></div></div></section>
-<section class="section"><div class="wrap center"><h2>Your Success Is Our Priority</h2><p>Whether you need convenience, reliability or a platform to grow your bill-payment business, Sparkle is built to make everyday payments simpler.</p><div class="cards"><div class="card"><div class="icon">✓</div><h3>Reliable</h3><p>Secure transaction processing with clear status updates.</p></div><div class="card"><div class="icon">⚡</div><h3>Fast</h3><p>Designed for quick purchases and instant confirmations.</p></div><div class="card"><div class="icon">🔒</div><h3>Secure</h3><p>Your wallet and payment credentials stay protected.</p></div></div></div></section>
-<section class="section" id="faq"><div class="wrap"><div class="center"><h2>Frequently Asked Questions</h2><p>Quick answers about using Sparkle.</p></div><div class="faq"><details open><summary>What can I pay for on Sparkle?</summary><p>You can buy airtime and data, pay cable TV and electricity bills, purchase exam pins and use other supported services.</p></details><details><summary>How do I fund my wallet?</summary><p>Wallet funding will be connected to a verified payment provider such as Monnify.</p></details><details><summary>Can I become a reseller?</summary><p>Yes. Sparkle is designed to support reseller pricing, referrals and API access.</p></details><details><summary>Are my transactions secure?</summary><p>Sparkle is designed so wallet balances are controlled by the secure backend rather than by the browser.</p></details></div></div></section>
-<section class="section" id="download"><div class="wrap"><div class="download"><div><h2>Download the Sparkle App</h2><p>Pay for airtime, data, cable TV, electricity and more from your phone, wherever you are.</p><a class="store" href="#">Android</a><a class="store" href="#">iOS</a></div><div class="mock"><div class="mocktop"><small>SPARKLE</small><div class="balance">Everything in one place.</div><div class="quick"><div class="q"><i>📱</i>Airtime</div><div class="q"><i>🌐</i>Data</div><div class="q"><i>📺</i>Cable</div><div class="q"><i>⚡</i>Power</div></div></div></div></div></div></section>
-<footer class="footer"><div class="wrap"><div class="footgrid"><div><div class="brand"><span class="logo">S</span> Sparkle</div><p>Instant recharge, data bundles, cable TV, electricity and more—simple, secure and convenient.</p></div><div><h4>Quick Links</h4><a href="#">Home</a><a href="#services">Services</a><a href="#api">API</a><a href="#faq">FAQ</a></div><div><h4>Services</h4><a href="#services">Buy Data</a><a href="#services">Buy Airtime</a><a href="#services">Cable Subscription</a><a href="#services">Utility Bills</a></div><div><h4>Get in Touch</h4><a href="mailto:support@sparkle.com">support@sparkle.com</a><a href="#">Customer Support</a><a href="#">Terms & Conditions</a><a href="#">Privacy Policy</a></div></div><div class="copy">© 2026 Sparkle. All Rights Reserved.</div></div></footer></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sparkle — Bill Payments</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+:root{
+  --blue:#0b5cff;
+  --deep:#071b4d;
+  --ink:#14213d;
+  --muted:#64748b;
+  --bg:#f7faff;
+  --white:#fff;
+  --line:#e7edf7;
+  --green:#10b981;
+  --red:#ef4444;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--ink);
+  background:#fff
+}
+button,input{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+.wrap{max-width:1180px;margin:auto;padding:0 24px}
+
+.nav{
+  height:76px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#fff
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:900;
+  font-size:24px;
+  color:var(--blue)
+}
+.logo{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  background:var(--blue);
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-weight:900
+}
+.links{
+  display:flex;
+  gap:28px;
+  color:#475569;
+  font-weight:600;
+  font-size:14px
+}
+.actions{display:flex;gap:10px}
+.btn{
+  padding:12px 18px;
+  border-radius:9px;
+  font-weight:800;
+  border:1px solid var(--line);
+  font-size:14px;
+  background:#fff
+}
+.primary{
+  background:var(--blue);
+  color:#fff;
+  border-color:var(--blue)
+}
+
+.hero{
+  background:linear-gradient(135deg,#f4f8ff,#fff);
+  padding:76px 0 92px
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:55px;
+  align-items:center
+}
+.eyebrow{
+  display:inline-flex;
+  color:var(--blue);
+  font-weight:800;
+  font-size:13px;
+  background:#eaf1ff;
+  padding:9px 13px;
+  border-radius:99px
+}
+.hero h1{
+  font-size:54px;
+  line-height:1.05;
+  letter-spacing:-2px;
+  margin:20px 0 18px
+}
+.hero p{
+  font-size:18px;
+  line-height:1.7;
+  color:var(--muted);
+  max-width:600px
+}
+.hero-buttons{display:flex;gap:12px;margin-top:28px}
+
+.mock{
+  background:#fff;
+  border:1px solid #e4ebf6;
+  border-radius:26px;
+  padding:18px;
+  box-shadow:0 30px 70px #183b7d1c
+}
+.mocktop{
+  background:var(--blue);
+  color:#fff;
+  border-radius:19px;
+  padding:25px
+}
+.balance{
+  font-size:30px;
+  font-weight:900;
+  margin:8px 0 24px
+}
+.quick{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px
+}
+.q{
+  background:#fff;
+  color:var(--ink);
+  border-radius:13px;
+  padding:12px;
+  text-align:center;
+  font-size:11px;
+  font-weight:800
+}
+.q i{
+  display:block;
+  font-style:normal;
+  font-size:20px;
+  margin-bottom:6px
+}
+
+.strip{background:#f6f9ff;padding:20px 0}
+.brands{
+  display:flex;
+  justify-content:space-around;
+  flex-wrap:wrap;
+  gap:20px;
+  color:#71809b;
+  font-weight:900
+}
+
+.section{padding:90px 0}
+.center{text-align:center}
+.center h2{font-size:38px;margin:10px 0}
+.center p{
+  color:var(--muted);
+  max-width:680px;
+  margin:auto;
+  line-height:1.7
+}
+.cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+  margin-top:45px
+}
+.card{
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:27px;
+  background:#fff
+}
+.icon{
+  width:54px;
+  height:54px;
+  border-radius:15px;
+  background:#edf3ff;
+  color:var(--blue);
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  margin-bottom:18px
+}
+.card h3{margin:0 0 9px;font-size:19px}
+.card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.6;
+  font-size:14px
+}
+
+.dashboard{
+  display:none;
+  min-height:100vh;
+  background:var(--bg)
+}
+.dashboard.active{display:block}
+.homepage.hidden{display:none}
+
+.dashnav{
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  padding:15px 0
+}
+.dashnav-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between
+}
+.userbox{
+  display:flex;
+  align-items:center;
+  gap:12px
+}
+.avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#eaf1ff;
+  color:var(--blue);
+  display:grid;
+  place-items:center;
+  font-weight:900
+}
+.dashbody{padding:30px 0}
+.wallet-card{
+  background:linear-gradient(135deg,#0b5cff,#071b4d);
+  color:#fff;
+  border-radius:22px;
+  padding:28px;
+  margin-bottom:25px
+}
+.wallet-card small{opacity:.8}
+.wallet-balance{
+  font-size:38px;
+  font-weight:900;
+  margin:8px 0 20px
+}
+.service-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:15px
+}
+.service{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:17px;
+  padding:20px;
+  text-align:center;
+  font-weight:800
+}
+.service span{
+  display:block;
+  font-size:28px;
+  margin-bottom:8px
+}
+.txbox{
+  margin-top:25px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:22px
+}
+.tx{
+  display:flex;
+  justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+  font-size:14px
+}
+.tx:last-child{border:0}
+.credit{color:var(--green)}
+.debit{color:var(--red)}
+
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#071b4db5;
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  padding:20px
+}
+.modal.show{display:flex}
+.modal-box{
+  width:100%;
+  max-width:430px;
+  background:#fff;
+  border-radius:22px;
+  padding:30px
+}
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px
+}
+.modal-head h2{margin:0}
+.close{
+  border:0;
+  background:#f1f5f9;
+  width:36px;
+  height:36px;
+  border-radius:50%
+}
+.field{margin-bottom:15px}
+.field label{
+  display:block;
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:7px
+}
+.field input{
+  width:100%;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  outline:none
+}
+.field input:focus{border-color:var(--blue)}
+.full{width:100%}
+.message{
+  display:none;
+  padding:11px;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:13px
+}
+.message.show{display:block}
+.message.error{background:#fee2e2;color:#991b1b}
+.message.success{background:#dcfce7;color:#166534}
+
+.api{
+  background:var(--deep);
+  color:#fff;
+  border-radius:28px;
+  padding:60px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:50px;
+  align-items:center
+}
+.api p{color:#c8d4ee;line-height:1.7}
+.code{
+  background:#0c285f;
+  border:1px solid #27447c;
+  border-radius:17px;
+  padding:24px;
+  color:#b9d2ff;
+  font-family:ui-monospace,monospace;
+  font-size:13px;
+  line-height:1.8
+}
+
+.faq{max-width:850px;margin:40px auto}
+.faq details{
+  border-bottom:1px solid var(--line);
+  padding:20px 0
+}
+.faq summary{font-weight:800;cursor:pointer}
+
+.download{
+  background:linear-gradient(135deg,#edf4ff,#fff);
+  border-radius:28px;
+  padding:55px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  gap:35px
+}
+.download h2{font-size:38px}
+.store{
+  display:inline-block;
+  margin:8px 8px 0 0;
+  padding:13px 18px;
+  background:#111;
+  color:#fff;
+  border-radius:10px;
+  font-weight:800
+}
+
+.footer{
+  background:#06183f;
+  color:#d6e0f4;
+  padding:65px 0 25px
+}
+.footgrid{
+  display:grid;
+  grid-template-columns:1.5fr 1fr 1fr 1fr;
+  gap:40px
+}
+.footer h4{color:#fff}
+.footer a,.footer p{
+  color:#9eb0cf;
+  font-size:14px;
+  line-height:1.8;
+  display:block
+}
+.copy{
+  border-top:1px solid #17315d;
+  margin-top:35px;
+  padding-top:20px;
+  color:#8194b5;
+  font-size:13px
+}
+
+@media(max-width:800px){
+  .links{display:none}
+  .hero{padding:50px 0}
+  .hero-grid,.api,.download{grid-template-columns:1fr}
+  .hero h1{font-size:42px}
+  .cards{grid-template-columns:1fr}
+  .api,.download{padding:30px}
+  .footgrid{grid-template-columns:1fr 1fr}
+  .service-grid{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:480px){
+  .wrap{padding:0 16px}
+  .hero h1{font-size:36px}
+  .hero p{font-size:16px}
+  .hero-buttons{flex-direction:column}
+  .section{padding:60px 0}
+  .center h2,.download h2{font-size:30px}
+  .quick{grid-template-columns:repeat(2,1fr)}
+  .footgrid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= LANDING PAGE ================= -->
+<div class="homepage" id="homepage">
+
+<header class="nav wrap">
+  <a class="brand" href="#">
+    <span class="logo">S</span> Sparkle
+  </a>
+
+  <nav class="links">
+    <a href="#services">Services</a>
+    <a href="#api">API</a>
+    <a href="#faq">FAQ</a>
+    <a href="#download">App</a>
+  </nav>
+
+  <div class="actions">
+    <button class="btn" onclick="openAuth('login')">Log In</button>
+    <button class="btn primary" onclick="openAuth('signup')">Sign Up</button>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">✦ Simple. Fast. Reliable.</span>
+      <h1>Pay your bills faster, easier and smarter.</h1>
+      <p>
+        Buy affordable data, airtime and pay utility bills instantly.
+        Sparkle brings everyday Nigerian bill payments together in one simple platform.
+      </p>
+
+      <div class="hero-buttons">
+        <button class="btn primary" onclick="openAuth('signup')">Get Started</button>
+        <a class="btn" href="#services">Explore Services</a>
+      </div>
+    </div>
+
+    <div class="mock">
+      <div class="mocktop">
+        <small>SPARKLE WALLET</small>
+        <div class="balance">₦0.00</div>
+
+        <div class="quick">
+          <div class="q"><i>📱</i>Airtime</div>
+          <div class="q"><i>🌐</i>Data</div>
+          <div class="q"><i>📺</i>Cable</div>
+          <div class="q"><i>⚡</i>Electricity</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="strip">
+  <div class="wrap brands">
+    <span>MTN</span>
+    <span>AIRTEL</span>
+    <span>GLO</span>
+    <span>9MOBILE</span>
+    <span>DSTV</span>
+    <span>GOTV</span>
+    <span>STARTIMES</span>
+  </div>
+</div>
+
+<section class="section" id="services">
+<div class="wrap">
+
+<div class="center">
+<h2>Comprehensive Services Tailored for You</h2>
+<p>Everything you need for instant recharge, subscriptions and everyday utility payments in one place.</p>
+</div>
+
+<div class="cards">
+
+<div class="card">
+<div class="icon">🌐</div>
+<h3>Mobile Data</h3>
+<p>Access affordable data plans across all major networks in Nigeria.</p>
+</div>
+
+<div class="card">
+<div class="icon">🎟️</div>
+<h3>Exam Pins</h3>
+<p>Buy WAEC and NECO examination pins and scratch cards.</p>
+</div>
+
+<div class="card">
+<div class="icon">📺</div>
+<h3>Cable TV</h3>
+<p>Activate DSTV, GOtv and Startimes subscriptions with ease.</p>
+</div>
+
+<div class="card">
+<div class="icon">📱</div>
+<h3>Airtime</h3>
+<p>Recharge any Nigerian network instantly from your wallet.</p>
+</div>
+
+<div class="card">
+<div class="icon">💳</div>
+<h3>Virtual Cards</h3>
+<p>Access convenient virtual cards for online payments.</p>
+</div>
+
+<div class="card">
+<div class="icon">⚡</div>
+<h3>Utility Bills</h3>
+<p>Pay electricity and other supported utility bills.</p>
+</div>
+
+<div class="card">
+<div class="icon">💰</div>
+<h3>Airtime to Cash</h3>
+<p>Convert supported airtime balances to cash.</p>
+</div>
+
+<div class="card">
+<div class="icon">👥</div>
+<h3>Referral & Reseller</h3>
+<p>Earn through referrals and reseller activity.</p>
+</div>
+
+<div class="card">
+<div class="icon">🔔</div>
+<h3>Notifications</h3>
+<p>Receive updates for wallet funding and transactions.</p>
+</div>
+
+</div>
+</div>
+</section>
+
+<section class="section" id="api">
+<div class="wrap">
+<div class="api">
+<div>
+<h2>Integrate Our API</h2>
+<p>
+Build powerful bill-payment products with Sparkle's developer-ready API.
+</p>
+<button class="btn primary">View Documentation</button>
+</div>
+
+<div class="code">
+POST /api/v1/airtime<br><br>
+{<br>
+&nbsp;&nbsp;"network": "MTN",<br>
+&nbsp;&nbsp;"phone": "080********",<br>
+&nbsp;&nbsp;"amount": 500<br>
+}
+</div>
+</div>
+</div>
+</section>
+
+<section class="section" id="faq">
+<div class="wrap">
+
+<div class="center">
+<h2>Frequently Asked Questions</h2>
+<p>Quick answers about using Sparkle.</p>
+</div>
+
+<div class="faq">
+
+<details open>
+<summary>What can I pay for on Sparkle?</summary>
+<p>Airtime, data, cable TV, electricity, exam pins and other supported services.</p>
+</details>
+
+<details>
+<summary>How do I fund my wallet?</summary>
+<p>Wallet funding will be connected to our verified payment provider.</p>
+</details>
+
+<details>
+<summary>Can I become a reseller?</summary>
+<p>Yes. Sparkle is designed to support referrals, resellers and API access.</p>
+</details>
+
+<details>
+<summary>Are my transactions secure?</summary>
+<p>Wallet balances are controlled by the secure backend rather than the browser.</p>
+</details>
+
+</div>
+</div>
+</section>
+
+<section class="section" id="download">
+<div class="wrap">
+<div class="download">
+
+<div>
+<h2>Download the Sparkle App</h2>
+<p>Manage your everyday payments from your phone.</p>
+<a class="store" href="#">Android</a>
+<a class="store" href="#">iOS</a>
+</div>
+
+<div class="mock">
+<div class="mocktop">
+<small>SPARKLE</small>
+<div class="balance">Everything in one place.</div>
+<div class="quick">
+<div class="q"><i>📱</i>Airtime</div>
+<div class="q"><i>🌐</i>Data</div>
+<div class="q"><i>📺</i>Cable</div>
+<div class="q"><i>⚡</i>Power</div>
+</div>
+</div>
+</div>
+
+</div>
+</div>
+</section>
+
+<footer class="footer">
+<div class="wrap">
+
+<div class="footgrid">
+
+<div>
+<div class="brand">
+<span class="logo">S</span> Sparkle
+</div>
+<p>Simple, secure and convenient bill payments.</p>
+</div>
+
+<div>
+<h4>Quick Links</h4>
+<a href="#services">Services</a>
+<a href="#api">API</a>
+<a href="#faq">FAQ</a>
+</div>
+
+<div>
+<h4>Services</h4>
+<a href="#services">Buy Data</a>
+<a href="#services">Buy Airtime</a>
+<a href="#services">Cable TV</a>
+<a href="#services">Electricity</a>
+</div>
+
+<div>
+<h4>Support</h4>
+<a href="mailto:support@sparkle.com">support@sparkle.com</a>
+<a href="#">Terms & Conditions</a>
+<a href="#">Privacy Policy</a>
+</div>
+
+</div>
+
+<div class="copy">© 2026 Sparkle. All Rights Reserved.</div>
+
+</div>
+</footer>
+
+</div>
+
+
+<!-- ================= REAL USER DASHBOARD ================= -->
+
+<div class="dashboard" id="dashboard">
+
+<header class="dashnav">
+<div class="wrap dashnav-inner">
+
+<div class="brand">
+<span class="logo">S</span> Sparkle
+</div>
+
+<div class="userbox">
+<div class="avatar" id="avatar">S</div>
+<div>
+<strong id="userName">User</strong>
+<br>
+<small id="userEmail"></small>
+</div>
+
+<button class="btn" onclick="logout()">Logout</button>
+</div>
+
+</div>
+</header>
+
+<main class="dashbody">
+<div class="wrap">
+
+<div class="wallet-card">
+
+<small>AVAILABLE WALLET BALANCE</small>
+
+<div class="wallet-balance" id="walletBalance">
+₦0.00
+</div>
+
+<button class="btn" onclick="alert('Wallet funding will be connected to Monnify next.')">
+Fund Wallet
+</button>
+
+</div>
+
+<h2>Quick Services</h2>
+
+<div class="service-grid">
+
+<div class="service">
+<span>📱</span>
+Airtime
+</div>
+
+<div class="service">
+<span>🌐</span>
+Data
+</div>
+
+<div class="service">
+<span>📺</span>
+DSTV
+</div>
+
+<div class="service">
+<span>⚡</span>
+Electricity
+</div>
+
+<div class="service">
+<span>📺</span>
+GOtv
+</div>
+
+<div class="service">
+<span>📺</span>
+Startimes
+</div>
+
+<div class="service">
+<span>🎟️</span>
+Exam Pins
+</div>
+
+<div class="service">
+<span>💰</span>
+Airtime Cash
+</div>
+
+</div>
+
+<div class="txbox">
+
+<h3>Recent Transactions</h3>
+
+<div id="transactions">
+<p style="color:#64748b">Loading transactions...</p>
+</div>
+
+</div>
+
+</div>
+</main>
+
+</div>
+
+
+<!-- ================= AUTH MODAL ================= -->
+
+<div class="modal" id="authModal">
+
+<div class="modal-box">
+
+<div class="modal-head">
+<h2 id="authTitle">Login</h2>
+<button class="close" onclick="closeAuth()">×</button>
+</div>
+
+<div class="message" id="authMessage"></div>
+
+<form id="authForm">
+
+<div class="field" id="nameField" style="display:none">
+<label>Full Name</label>
+<input type="text" id="fullName" placeholder="Your full name">
+</div>
+
+<div class="field">
+<label>Email</label>
+<input type="email" id="email" placeholder="you@example.com" required>
+</div>
+
+<div class="field">
+<label>Password</label>
+<input type="password" id="password" placeholder="Minimum 6 characters" required>
+</div>
+
+<button class="btn primary full" id="authButton">
+Login
+</button>
+
+</form>
+
+<p style="text-align:center;font-size:14px;color:#64748b;margin-top:18px">
+<span id="switchText">Don't have an account?</span>
+<button
+type="button"
+style="border:0;background:none;color:#0b5cff;font-weight:800"
+onclick="switchAuth()"
+id="switchButton">
+Sign Up
+</button>
+</p>
+
+</div>
+</div>
+
+
+<script>
+
+/* =========================================================
+   SPARKLE SUPABASE CONNECTION
+   ========================================================= */
+
+const SUPABASE_URL =
+"https://dcuvhtpqwyljsudzirxg.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_KB_zAb08gAt8b5jOfmZU1g_vTMF0AxL";
+
+const supabaseClient =
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+
+/* =========================================================
+   AUTH STATE
+   ========================================================= */
+
+let authMode = "login";
+
+
+function openAuth(mode){
+
+authMode = mode;
+
+document
+.getElementById("authModal")
+.classList.add("show");
+
+document.getElementById("authTitle").textContent =
+mode === "login" ? "Login to Sparkle" : "Create Sparkle Account";
+
+document.getElementById("authButton").textContent =
+mode === "login" ? "Login" : "Create Account";
+
+document.getElementById("nameField").style.display =
+mode === "signup" ? "block" : "none";
+
+document.getElementById("switchText").textContent =
+mode === "login"
+? "Don't have an account?"
+: "Already have an account?";
+
+document.getElementById("switchButton").textContent =
+mode === "login" ? "Sign Up" : "Login";
+
+clearMessage();
+}
+
+
+function closeAuth(){
+
+document
+.getElementById("authModal")
+.classList.remove("show");
+
+clearMessage();
+}
+
+
+function switchAuth(){
+
+openAuth(
+authMode === "login"
+? "signup"
+: "login"
+);
+
+}
+
+
+function showMessage(message,type){
+
+const box =
+document.getElementById("authMessage");
+
+box.textContent = message;
+box.className =
+"message show " + type;
+
+}
+
+
+function clearMessage(){
+
+const box =
+document.getElementById("authMessage");
+
+box.textContent = "";
+box.className = "message";
+
+}
+
+
+/* =========================================================
+   REGISTER / LOGIN
+   ========================================================= */
+
+document
+.getElementById("authForm")
+.addEventListener("submit", async function(e){
+
+e.preventDefault();
+
+clearMessage();
+
+const email =
+document.getElementById("email").value.trim();
+
+const password =
+document.getElementById("password").value;
+
+const fullName =
+document.getElementById("fullName").value.trim();
+
+const button =
+document.getElementById("authButton");
+
+button.disabled = true;
+button.textContent =
+authMode === "login"
+? "Logging in..."
+: "Creating account...";
+
+
+try{
+
+if(authMode === "signup"){
+
+if(!fullName){
+
+showMessage(
+"Please enter your full name.",
+"error"
+);
+
+button.disabled=false;
+button.textContent="Create Account";
+return;
+}
+
+
+const {data,error} =
+await supabaseClient.auth.signUp({
+
+email:email,
+password:password,
+
+options:{
+data:{
+full_name:fullName
+}
+}
+
+});
+
+
+if(error) throw error;
+
+
+if(data.session){
+
+showMessage(
+"Account created successfully.",
+"success"
+);
+
+setTimeout(()=>{
+closeAuth();
+loadUser();
+},700);
+
+}else{
+
+showMessage(
+"Account created. Check your email to verify your account.",
+"success"
+);
+
+}
+
+}else{
+
+const {data,error} =
+await supabaseClient.auth.signInWithPassword({
+
+email:email,
+password:password
+
+});
+
+if(error) throw error;
+
+showMessage(
+"Login successful.",
+"success"
+);
+
+setTimeout(()=>{
+closeAuth();
+loadUser();
+},500);
+
+}
+
+}catch(error){
+
+showMessage(
+error.message || "Something went wrong.",
+"error"
+);
+
+}finally{
+
+button.disabled=false;
+
+button.textContent =
+authMode === "login"
+? "Login"
+: "Create Account";
+
+}
+
+});
+
+
+/* =========================================================
+   LOAD CURRENT USER
+   ========================================================= */
+
+async function loadUser(){
+
+const {data,error} =
+await supabaseClient.auth.getUser();
+
+if(error || !data.user){
+
+showHomepage();
+
+return;
+}
+
+const user = data.user;
+
+showDashboard(user);
+
+}
+
+
+/* =========================================================
+   SHOW DASHBOARD
+   ========================================================= */
+
+async function showDashboard(user){
+
+document
+.getElementById("homepage")
+.classList.add("hidden");
+
+document
+.getElementById("dashboard")
+.classList.add("active");
+
+
+const name =
+user.user_metadata?.full_name ||
+user.email?.split("@")[0] ||
+"User";
+
+document.getElementById("userName").textContent = name;
+
+document.getElementById("userEmail").textContent =
+user.email || "";
+
+document.getElementById("avatar").textContent =
+name.charAt(0).toUpperCase();
+
+
+await loadWallet(user.id);
+await loadTransactions(user.id);
+
+}
+
+
+/* =========================================================
+   SHOW HOMEPAGE
+   ========================================================= */
+
+function showHomepage(){
+
+document
+.getElementById("dashboard")
+.classList.remove("active");
+
+document
+.getElementById("homepage")
+.classList.remove("hidden");
+
+}
+
+
+/* =========================================================
+   LOAD REAL WALLET
+   ========================================================= */
+
+async function loadWallet(userId){
+
+const {data,error} =
+await supabaseClient
+.from("wallets")
+.select("balance")
+.eq("user_id",userId)
+.single();
+
+if(error){
+
+console.error("Wallet error:",error);
+
+document
+.getElementById("walletBalance")
+.textContent="₦0.00";
+
+return;
+}
+
+const balance =
+Number(data?.balance || 0);
+
+document
+.getElementById("walletBalance")
+.textContent =
+"₦" +
+balance.toLocaleString(
+"en-NG",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+);
+
+}
+
+
+/* =========================================================
+   LOAD REAL TRANSACTIONS
+   ========================================================= */
+
+async function loadTransactions(userId){
+
+const box =
+document.getElementById("transactions");
+
+const {data,error} =
+await supabaseClient
+.from("wallet_transactions")
+.select(
+"id,type,amount,service,status,created_at"
+)
+.eq("user_id",userId)
+.order("created_at",{ascending:false})
+.limit(10);
+
+
+if(error){
+
+console.error(error);
+
+box.innerHTML =
+"<p style='color:#ef4444'>Unable to load transactions.</p>";
+
+return;
+}
+
+
+if(!data || data.length === 0){
+
+box.innerHTML =
+"<p style='color:#64748b'>No transactions yet.</p>";
+
+return;
+}
+
+
+box.innerHTML =
+data.map(tx=>{
+
+const amount =
+Number(tx.amount || 0);
+
+const sign =
+tx.type === "credit"
+? "+"
+: "-";
+
+const cls =
+tx.type === "credit"
+? "credit"
+: "debit";
+
+const date =
+new Date(tx.created_at)
+.toLocaleString("en-NG");
+
+return `
+
+<div class="tx">
+
+<div>
+<strong>
+${tx.service || "Wallet transaction"}
+</strong>
+
+<br>
+
+<small>
+${date} · ${tx.status || ""}
+</small>
+
+</div>
+
+<strong class="${cls}">
+${sign}₦${amount.toLocaleString(
+"en-NG",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+)}
+</strong>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* =========================================================
+   LOGOUT
+   ========================================================= */
+
+async function logout(){
+
+await supabaseClient.auth.signOut();
+
+showHomepage();
+
+}
+
+
+/* =========================================================
+   AUTH LISTENER
+   ========================================================= */
+
+supabaseClient.auth.onAuthStateChange(
+(event,session)=>{
+
+if(session){
+
+showDashboard(session.user);
+
+}else{
+
+showHomepage();
+
+}
+
+});
+
+
+/* =========================================================
+   INITIAL CHECK
+   ========================================================= */
+
+loadUser();
+
+</script>
+
+</body>
+</html>
