@@ -6,6 +6,8 @@
 <title>Sparkle — Bill Payments</title>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
 <style>
 :root{
@@ -773,6 +775,162 @@ a{text-decoration:none;color:inherit}
 }
 
 }
+
+/* =====================================================
+   SPARKLE DASHBOARD UPGRADE
+   ===================================================== */
+:root{
+  --panel:#ffffff;
+  --soft:#f1f5ff;
+  --shadow:0 12px 35px rgba(15,35,80,.08);
+}
+body.dark-mode{
+  --bg:#07111f;
+  --panel:#0e1b2d;
+  --white:#0e1b2d;
+  --ink:#eef4ff;
+  --muted:#9fb0c8;
+  --line:#213149;
+  background:#07111f;
+  color:#eef4ff;
+}
+body.dark-mode .dashnav,
+body.dark-mode .service,
+body.dark-mode .txbox,
+body.dark-mode .profile-section,
+body.dark-mode .setting-card,
+body.dark-mode .market-card,
+body.dark-mode .earn-card,
+body.dark-mode .dva-card,
+body.dark-mode .service-page,
+body.dark-mode .summary-card,
+body.dark-mode .receipt-card{
+  background:#0e1b2d;
+  border-color:#213149;
+  color:#eef4ff;
+}
+body.dark-mode .btn:not(.primary),
+body.dark-mode .icon-btn,
+body.dark-mode .nav-item{
+  background:#122238;
+  color:#eef4ff;
+  border-color:#243852;
+}
+body.dark-mode .field input,
+body.dark-mode .field select,
+body.dark-mode .bulk-row input,
+body.dark-mode .bulk-row select{
+  background:#0b1727;
+  color:#eef4ff;
+  border-color:#2a405d;
+}
+.dashboard-shell{display:flex;min-height:100vh}
+.dash-sidebar{
+  width:235px;position:fixed;left:0;top:0;bottom:0;background:#fff;
+  border-right:1px solid var(--line);padding:22px 14px;z-index:900;
+}
+.sidebar-brand{padding:0 10px 25px}
+.sidebar-nav{display:flex;flex-direction:column;gap:6px}
+.nav-item{
+  border:0;background:#fff;border-radius:12px;padding:12px 13px;text-align:left;
+  font-weight:800;color:#475569;display:flex;align-items:center;gap:11px
+}
+.nav-item:hover,.nav-item.active{background:#edf3ff;color:var(--blue)}
+.nav-item .nav-icon{width:22px;text-align:center;font-size:18px}
+.sidebar-bottom{position:absolute;left:14px;right:14px;bottom:18px}
+.dash-main{margin-left:235px;width:calc(100% - 235px)}
+.dashnav{position:sticky;top:0;z-index:800}
+.dash-actions{display:flex;align-items:center;gap:8px}
+.icon-btn{
+  width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:11px;
+  display:grid;place-items:center;font-size:18px;position:relative
+}
+.notification-dot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#ef4444}
+.page{display:none}
+.page.active{display:block}
+.dashboard-title{font-size:28px;margin:0 0 6px}
+.dashboard-subtitle{color:var(--muted);margin:0 0 22px}
+.service-grid .service{cursor:pointer;transition:.2s}
+.service-grid .service:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.service span{font-size:23px!important;margin-bottom:7px!important}
+.service small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+.dva-card{
+  margin:0 0 25px;background:#fff;border:1px solid var(--line);border-radius:20px;
+  padding:22px;box-shadow:var(--shadow)
+}
+.dva-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dva-title{margin:0 0 5px}.dva-sub{margin:0;color:var(--muted);font-size:13px}
+.dva-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.dva-item{background:#f7faff;border:1px solid var(--line);border-radius:12px;padding:13px}
+body.dark-mode .dva-item{background:#0b1727}
+.dva-item label{display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:6px}
+.dva-item strong{font-size:15px;word-break:break-word}
+.copy-account{margin-top:12px}
+.market-card,.earn-card{
+  background:#fff;border:1px solid var(--line);border-radius:22px;padding:40px;
+  box-shadow:var(--shadow);text-align:center
+}
+.market-icon{font-size:52px;margin-bottom:12px}
+.earn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:18px}
+.earn-stat{background:#f7faff;border:1px solid var(--line);border-radius:15px;padding:20px;text-align:left}
+body.dark-mode .earn-stat{background:#0b1727}
+.earn-stat small{display:block;color:var(--muted);font-weight:800;margin-bottom:7px}
+.earn-stat strong{font-size:26px}
+.referral-box{display:flex;gap:10px;margin-top:18px}
+.referral-box input{flex:1;padding:13px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+.service-page{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px}
+.service-tabs{display:flex;gap:8px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.service-tab{border:0;background:#f1f5f9;border-radius:9px;padding:10px 15px;font-weight:800}
+.service-tab.active{background:var(--blue);color:#fff}
+.service-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.form-select,.form-input{
+ width:100%;padding:13px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;outline:none
+}
+.form-field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}
+.form-field{margin-bottom:15px}
+.summary-card{display:none;margin-top:20px;border:1px solid var(--line);border-radius:17px;padding:20px;background:#fff}
+.summary-card.show{display:block}
+.summary-line{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid var(--line)}
+.summary-line:last-child{border-bottom:0;font-weight:900;font-size:18px}
+.bulk-list{display:flex;flex-direction:column;gap:10px}
+.bulk-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px}
+.bulk-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:9px;width:42px}
+.bulk-add{margin-top:10px}
+.bulk-total{margin-top:18px;font-weight:900}
+.pin-modal .modal-box{max-width:390px;text-align:center}
+.pin-boxes{display:flex;justify-content:center;gap:9px;margin:22px 0}
+.pin-box{width:48px;height:56px;border:1px solid var(--line);border-radius:12px;text-align:center;font-size:23px;font-weight:900}
+.processing-overlay{display:none;position:fixed;inset:0;background:rgba(5,16,35,.88);z-index:3000;align-items:center;justify-content:center;color:#fff;text-align:center}
+.processing-overlay.show{display:flex}
+.sparkle-spinner{
+ width:82px;height:82px;border-radius:50%;background:linear-gradient(135deg,#0b5cff,#6fa0ff);
+ display:grid;place-items:center;font-weight:900;font-size:34px;margin:0 auto 18px;
+ animation:sparkleRoll 1s linear infinite;box-shadow:0 0 0 8px rgba(11,92,255,.16)
+}
+@keyframes sparkleRoll{to{transform:rotate(360deg)}}
+.receipt-modal .modal-box{max-width:560px}
+.receipt-card{position:relative;overflow:hidden;background:#fff;border:1px solid #e5ebf4;border-radius:18px;padding:25px}
+.receipt-card:after{
+ content:"SPARKLE";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-25deg);
+ font-size:68px;font-weight:900;letter-spacing:8px;color:#0b5cff0d;pointer-events:none;white-space:nowrap
+}
+.receipt-content{position:relative;z-index:1}
+.receipt-brand{text-align:center;color:var(--blue);font-size:25px;font-weight:900}
+.receipt-status{text-align:center;margin:8px 0 20px;color:#10b981;font-weight:900}
+.receipt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed #dbe4f1;font-size:14px}
+.receipt-actions{display:flex;justify-content:space-between;margin-top:15px}
+.mobile-bottom-nav{display:none}
+@media(max-width:900px){
+ .dash-sidebar{display:none}.dash-main{margin-left:0;width:100%;padding-bottom:74px}
+ .mobile-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:66px;background:#fff;border-top:1px solid var(--line);z-index:1200;justify-content:space-around;padding:6px}
+ .mobile-bottom-nav button{border:0;background:none;font-size:10px;font-weight:800;color:#64748b}
+ .mobile-bottom-nav button span{display:block;font-size:19px;margin-bottom:2px}
+ .dva-grid,.earn-grid,.service-form-grid{grid-template-columns:1fr}
+ .bulk-row{grid-template-columns:1fr 1fr}
+ .bulk-remove{width:100%;height:42px}
+ .dva-head{flex-direction:column}
+}
+
 </style>
 </head>
 
@@ -1226,345 +1384,299 @@ Privacy Policy
 
 <div class="dashboard" id="dashboard">
 
-<header class="dashnav">
+  <aside class="dash-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand"><span class="logo">S</span> Sparkle</div>
+    </div>
 
-<div class="wrap dashnav-inner">
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showDashPage('home',this)"><span class="nav-icon">⌂</span>Home</button>
+      <button class="nav-item" onclick="showDashPage('transactionsPage',this)"><span class="nav-icon">↔</span>Transactions</button>
+      <button class="nav-item" onclick="showDashPage('marketPage',this)"><span class="nav-icon">🛍</span>Market</button>
+      <button class="nav-item" onclick="showDashPage('earnPage',this)"><span class="nav-icon">₦</span>Earn</button>
+      <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
+    </nav>
 
-<div class="brand">
-<span class="logo">S</span> Sparkle
+    <div class="sidebar-bottom">
+      <button class="nav-item" onclick="logout()" style="width:100%"><span class="nav-icon">↪</span>Logout</button>
+    </div>
+  </aside>
+
+  <div class="dash-main">
+
+    <header class="dashnav">
+      <div class="wrap dashnav-inner">
+        <div class="brand">
+          <span class="logo">S</span> Sparkle
+        </div>
+
+        <div class="dash-actions">
+          <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
+          <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
+
+          <div class="userbox">
+            <div class="avatar" id="avatar">S</div>
+            <div>
+              <strong id="userName">User</strong><br>
+              <small id="userEmail"></small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashbody">
+      <div class="wrap">
+
+        <!-- HOME -->
+        <section class="page active" id="home">
+          <h1 class="dashboard-title">Welcome to Sparkle 👋</h1>
+          <p class="dashboard-subtitle">Manage your bills, wallet and everyday payments in one place.</p>
+
+          <div class="wallet-card">
+            <small>AVAILABLE WALLET BALANCE</small>
+            <div class="wallet-balance" id="walletBalance">₦0.00</div>
+            <button class="btn" onclick="alert('Wallet funding will be connected to the verified payment flow.')">Fund Wallet</button>
+          </div>
+
+          <div class="dva-card">
+            <div class="dva-head">
+              <div>
+                <h3 class="dva-title">Your Sparkle Funding Account</h3>
+                <p class="dva-sub">Fund your wallet by transferring to this dedicated account.</p>
+              </div>
+              <span class="eyebrow" id="dvaStatus">Loading…</span>
+            </div>
+            <div class="dva-grid">
+              <div class="dva-item"><label>ACCOUNT NAME</label><strong id="dvaAccountName">Loading…</strong></div>
+              <div class="dva-item"><label>ACCOUNT NUMBER</label><strong id="dvaAccountNumber">Loading…</strong></div>
+              <div class="dva-item"><label>BANK</label><strong id="dvaBankName">Loading…</strong></div>
+            </div>
+            <button class="btn copy-account" onclick="copyDVA()">Copy Account Number</button>
+          </div>
+
+          <h2>Quick Services</h2>
+          <div class="service-grid">
+            <div class="service" onclick="openServicePage('airtime')"><span>📱</span>Airtime<small>Recharge</small></div>
+            <div class="service" onclick="openServicePage('data')"><span>🌐</span>Data<small>Bundles</small></div>
+            <div class="service" onclick="openServicePage('cable')"><span>📺</span>Cable TV<small>Subscriptions</small></div>
+            <div class="service"><span>⚡</span>Electricity<small>Coming soon</small></div>
+            <div class="service"><span>🎟️</span>Exam Pins<small>Coming soon</small></div>
+            <div class="service"><span>💰</span>Airtime Cash<small>Coming soon</small></div>
+          </div>
+
+          <div class="txbox">
+            <h3>Recent Transactions</h3>
+            <div id="transactions"><p style="color:#64748b">Loading transactions...</p></div>
+          </div>
+        </section>
+
+        <!-- TRANSACTIONS -->
+        <section class="page" id="transactionsPage">
+          <h1 class="dashboard-title">Transaction History</h1>
+          <p class="dashboard-subtitle">View your wallet funding and service transactions.</p>
+          <div class="txbox"><div id="allTransactions"><p style="color:#64748b">Loading transactions...</p></div></div>
+        </section>
+
+        <!-- MARKET -->
+        <section class="page" id="marketPage">
+          <h1 class="dashboard-title">Sparkle Market</h1>
+          <p class="dashboard-subtitle">A new way to shop is coming to Sparkle.</p>
+          <div class="market-card">
+            <div class="market-icon">🛍️</div>
+            <h2>Coming Soon</h2>
+            <p style="color:var(--muted);max-width:600px;margin:auto;line-height:1.7">
+              We are preparing Sparkle Market — a future marketplace where you can buy gadgets,
+              accessories and other useful products directly through Sparkle.
+            </p>
+            <p style="font-weight:800;margin-top:18px">Stay tuned. Something exciting is coming.</p>
+          </div>
+        </section>
+
+        <!-- EARN -->
+        <section class="page" id="earnPage">
+          <h1 class="dashboard-title">Earn with Sparkle</h1>
+          <p class="dashboard-subtitle">Invite people to Sparkle and track your referral rewards.</p>
+          <div class="earn-card">
+            <div class="earn-grid">
+              <div class="earn-stat"><small>TOTAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong></div>
+              <div class="earn-stat"><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong></div>
+            </div>
+            <h3>Your Referral Link</h3>
+            <p style="color:var(--muted)">Share your personal link and let people join Sparkle through you.</p>
+            <div class="referral-box">
+              <input id="referralLink" readonly value="Generating your referral link…">
+              <button class="btn primary" onclick="shareReferral()">Share</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="page" id="profilePage">
+          <h1 class="dashboard-title">Profile</h1>
+          <p class="dashboard-subtitle">Manage your Sparkle account and security settings.</p>
+
+          <section class="profile-section" id="profileSection">
+            <div class="profile-header">
+              <div class="profile-avatar" id="profileAvatar">S</div>
+              <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
+            </div>
+
+            <div class="profile-message" id="profileMessage"></div>
+
+            <div class="profile-grid">
+              <div class="profile-item"><label>FIRST NAME</label><strong id="profileFirstName">Loading...</strong></div>
+              <div class="profile-item"><label>LAST NAME</label><strong id="profileLastName">Loading...</strong></div>
+              <div class="profile-item"><label>USERNAME</label><strong id="profileUsername">Loading...</strong></div>
+              <div class="profile-item"><label>PHONE NUMBER</label><strong id="profilePhone">Not added</strong></div>
+              <div class="profile-item"><label>EMAIL ADDRESS</label><strong id="profileEmail">Loading...</strong></div>
+              <div class="profile-item"><label>REFERRAL CODE</label><strong id="profileReferral">Not added</strong></div>
+            </div>
+
+            <div class="profile-actions">
+              <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
+              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
+              <button class="btn" onclick="openPasswordModal()">Change Password</button>
+              <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
+              <button class="btn" onclick="openLegal('privacy')">Privacy Policy</button>
+            </div>
+          </section>
+
+          <div class="settings-grid">
+            <div class="setting-card"><div class="setting-icon">🔒</div><h3>Transaction PIN</h3><p>Protect purchases with your private transaction PIN.</p><button class="btn" onclick="openPinModal()">Manage PIN</button></div>
+            <div class="setting-card"><div class="setting-icon">🔔</div><h3>Notifications</h3><p>Receive important updates about your account and transactions.</p><button class="btn" onclick="toggleNotifications()">View</button></div>
+            <div class="setting-card"><div class="setting-icon">🛡️</div><h3>Security</h3><p>Keep your Sparkle account secure with a strong password.</p><button class="btn" onclick="openPasswordModal()">Change Password</button></div>
+          </div>
+        </section>
+
+        <!-- SERVICE PAGES -->
+        <section class="page" id="dataPage">
+          <div class="service-page">
+            <h1 class="dashboard-title">Data</h1><p class="dashboard-subtitle">Buy affordable data bundles.</p>
+            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('data','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('data','bulk',this)">Bulk Purchase</button></div>
+            <div id="dataSingle">
+              <div class="service-form-grid">
+                <div class="form-field"><label>NETWORK</label><select class="form-select" id="dataNetwork"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select></div>
+                <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="dataPhone" placeholder="08012345678"></div>
+                <div class="form-field"><label>DATA PLAN</label><select class="form-select" id="dataPlan"><option value="100MB">100MB</option><option value="500MB">500MB</option><option value="1GB">1GB</option><option value="2GB">2GB</option></select></div>
+                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="dataAmount" type="number" placeholder="Enter amount"></div>
+              </div>
+              <button class="btn primary" onclick="showPurchaseSummary('data')">Continue</button>
+              <div class="summary-card" id="dataSummary"></div>
+            </div>
+            <div id="dataBulk" style="display:none">
+              <div class="bulk-list" id="dataBulkList"></div>
+              <button class="btn bulk-add" onclick="addBulkRow('data')">+ Add another</button>
+              <div class="bulk-total" id="dataBulkTotal">Total: ₦0.00</div>
+              <button class="btn primary" onclick="showBulkSummary('data')">Continue to Payment</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="airtimePage">
+          <div class="service-page">
+            <h1 class="dashboard-title">Airtime</h1><p class="dashboard-subtitle">Recharge any supported Nigerian network.</p>
+            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('airtime','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Purchase</button></div>
+            <div id="airtimeSingle">
+              <div class="service-form-grid">
+                <div class="form-field"><label>NETWORK</label><select class="form-select" id="airtimeNetwork"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select></div>
+                <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="airtimePhone" placeholder="08012345678"></div>
+                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" placeholder="500"></div>
+              </div>
+              <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
+              <div class="summary-card" id="airtimeSummary"></div>
+            </div>
+            <div id="airtimeBulk" style="display:none">
+              <div class="bulk-list" id="airtimeBulkList"></div>
+              <button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
+              <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div>
+              <button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="page" id="cablePage">
+          <div class="service-page">
+            <h1 class="dashboard-title">Cable TV</h1><p class="dashboard-subtitle">Verify your decoder and choose a subscription package.</p>
+            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('cable','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('cable','bulk',this)">Bulk Purchase</button></div>
+            <div id="cableSingle">
+              <div class="service-form-grid">
+                <div class="form-field"><label>PROVIDER</label><select class="form-select" id="cableProvider"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select></div>
+                <div class="form-field"><label>SMARTCARD / IUC NUMBER</label><input class="form-input" id="cableNumber" placeholder="Enter decoder number"></div>
+                <div class="form-field"><label>PACKAGE</label><select class="form-select" id="cablePackage"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select></div>
+                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="cableAmount" type="number" placeholder="Enter amount"></div>
+              </div>
+              <button class="btn" onclick="verifyCable()">Verify Subscriber</button>
+              <button class="btn primary" onclick="showPurchaseSummary('cable')">Continue</button>
+              <div id="cableVerify" style="margin-top:12px;color:var(--muted)"></div>
+              <div class="summary-card" id="cableSummary"></div>
+            </div>
+            <div id="cableBulk" style="display:none">
+              <div class="bulk-list" id="cableBulkList"></div>
+              <button class="btn bulk-add" onclick="addBulkRow('cable')">+ Add another</button>
+              <div class="bulk-total" id="cableBulkTotal">Total: ₦0.00</div>
+              <button class="btn primary" onclick="showBulkSummary('cable')">Continue to Payment</button>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="mobile-bottom-nav">
+    <button onclick="showDashPage('home',this)"><span>⌂</span>Home</button>
+    <button onclick="showDashPage('transactionsPage',this)"><span>↔</span>Transactions</button>
+    <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
+    <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
+    <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
+  </div>
 </div>
 
-
-<div class="userbox">
-
-<div class="avatar" id="avatar">
-S
+<!-- SERVICE PIN -->
+<div class="modal pin-modal" id="pinModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
+    <p style="color:var(--muted)">Enter your PIN to authorize this transaction.</p>
+    <div class="pin-boxes">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+    </div>
+    <p id="pinMessage" style="color:#ef4444;font-size:13px"></p>
+    <button class="btn primary full" onclick="confirmTransactionPIN()">MAKE PAYMENT</button>
+  </div>
 </div>
 
-<div>
-
-<strong id="userName">
-User
-</strong>
-
-<br>
-
-<small id="userEmail"></small>
-
+<!-- PROCESSING -->
+<div class="processing-overlay" id="processingOverlay">
+  <div>
+    <div class="sparkle-spinner">S</div>
+    <h2>Processing payment</h2>
+    <p>Please don't close this page.</p>
+    <p id="processingProgress"></p>
+  </div>
 </div>
 
-<button class="btn"
-onclick="openProfile()">
-Profile
-</button>
-
-<button class="btn"
-onclick="logout()">
-Logout
-</button>
-
+<!-- RECEIPT -->
+<div class="modal receipt-modal" id="receiptModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Payment Receipt</h2><button class="close" onclick="closeReceipt()">×</button></div>
+    <div class="receipt-card" id="receiptCard">
+      <div class="receipt-content">
+        <div class="receipt-brand">✦ SPARKLE</div>
+        <div class="receipt-status">✓ TRANSACTION SUCCESSFUL</div>
+        <div id="receiptDetails"></div>
+        <p style="text-align:center;color:#64748b;font-size:11px;margin-top:20px">Thank you for using Sparkle.</p>
+      </div>
+    </div>
+    <div class="receipt-actions">
+      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
+      <button class="btn primary" onclick="downloadReceiptPDF()">⬇ PDF</button>
+    </div>
+  </div>
 </div>
-
-</div>
-
-</header>
-
-
-<main class="dashbody">
-
-<div class="wrap">
-
-
-<div class="wallet-card">
-
-<small>
-AVAILABLE WALLET BALANCE
-</small>
-
-<div class="wallet-balance"
-id="walletBalance">
-₦0.00
-</div>
-
-<button class="btn"
-onclick="alert('Wallet funding will be connected to Monnify next.')">
-Fund Wallet
-</button>
-
-</div>
-
-
-<h2>Quick Services</h2>
-
-
-<div class="service-grid">
-
-<div class="service">
-<span>📱</span>
-Airtime
-</div>
-
-<div class="service">
-<span>🌐</span>
-Data
-</div>
-
-<div class="service">
-<span>📺</span>
-DSTV
-</div>
-
-<div class="service">
-<span>⚡</span>
-Electricity
-</div>
-
-<div class="service">
-<span>📺</span>
-GOtv
-</div>
-
-<div class="service">
-<span>📺</span>
-Startimes
-</div>
-
-<div class="service">
-<span>🎟️</span>
-Exam Pins
-</div>
-
-<div class="service">
-<span>💰</span>
-Airtime Cash
-</div>
-
-</div>
-
-
-<!-- PROFILE -->
-
-<section class="profile-section"
-id="profileSection">
-
-<div class="profile-header">
-
-<div class="profile-avatar"
-id="profileAvatar">
-S
-</div>
-
-<div>
-
-<h2>My Profile</h2>
-
-<p>
-Manage your Sparkle account information.
-</p>
-
-</div>
-
-</div>
-
-
-<div class="profile-message"
-id="profileMessage">
-</div>
-
-
-<div class="profile-grid">
-
-
-<div class="profile-item">
-
-<label>FIRST NAME</label>
-
-<strong id="profileFirstName">
-Loading...
-</strong>
-
-</div>
-
-
-<div class="profile-item">
-
-<label>LAST NAME</label>
-
-<strong id="profileLastName">
-Loading...
-</strong>
-
-</div>
-
-
-<div class="profile-item">
-
-<label>USERNAME</label>
-
-<strong id="profileUsername">
-Loading...
-</strong>
-
-</div>
-
-
-<div class="profile-item">
-
-<label>PHONE NUMBER</label>
-
-<strong id="profilePhone">
-Not added
-</strong>
-
-</div>
-
-
-<div class="profile-item">
-
-<label>EMAIL ADDRESS</label>
-
-<strong id="profileEmail">
-Loading...
-</strong>
-
-</div>
-
-
-<div class="profile-item">
-
-<label>REFERRAL CODE</label>
-
-<strong id="profileReferral">
-Not added
-</strong>
-
-</div>
-
-
-</div>
-
-
-<div class="profile-actions">
-
-<button class="btn primary"
-onclick="openEditProfile()">
-Edit Profile
-</button>
-
-<button class="btn"
-onclick="openPasswordModal()">
-Change Password
-</button>
-
-<button class="btn"
-onclick="openLegal('terms')">
-Terms & Conditions
-</button>
-
-<button class="btn"
-onclick="openLegal('privacy')">
-Privacy Policy
-</button>
-
-</div>
-
-</section>
-
-
-<div class="settings-grid">
-
-
-<div class="setting-card">
-
-<div class="setting-icon">
-🔒
-</div>
-
-<h3>
-Transaction PIN
-</h3>
-
-<p>
-Your transaction PIN will be required for sensitive transactions.
-</p>
-
-<button class="btn"
-onclick="alert('Transaction PIN setup will be connected to the secure backend next.')">
-Set PIN
-</button>
-
-</div>
-
-
-<div class="setting-card">
-
-<div class="setting-icon">
-🔔
-</div>
-
-<h3>
-Notifications
-</h3>
-
-<p>
-Receive important updates about your account and transactions.
-</p>
-
-<button class="btn"
-onclick="alert('Notification preferences will be added next.')">
-Manage
-</button>
-
-</div>
-
-
-<div class="setting-card">
-
-<div class="setting-icon">
-🛡️
-</div>
-
-<h3>
-Security
-</h3>
-
-<p>
-Keep your Sparkle account secure with a strong password.
-</p>
-
-<button class="btn"
-onclick="openPasswordModal()">
-Change Password
-</button>
-
-</div>
-
-</div>
-
-
-<div class="txbox">
-
-<h3>
-Recent Transactions
-</h3>
-
-<div id="transactions">
-
-<p style="color:#64748b">
-Loading transactions...
-</p>
-
-</div>
-
-</div>
-
-
-</div>
-
-</main>
-
-</div>
-
 
 <!-- ================= AUTH MODAL ================= -->
 
@@ -2487,6 +2599,10 @@ await loadWallet(user.id);
 
 await loadTransactions(user.id);
 
+await createDedicatedAccount();
+
+await loadReferralStats();
+
 }
 
 
@@ -2976,6 +3092,367 @@ button.textContent="Update Password";
 }
 
 });
+
+
+
+/* =====================================================
+   DASHBOARD NAVIGATION / THEME / NOTIFICATIONS
+   ===================================================== */
+
+let currentService = null;
+let pendingPurchase = null;
+let bulkRows = {data:[], airtime:[], cable:[]};
+
+function showDashPage(pageId, button){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  const page = document.getElementById(pageId);
+  if(page) page.classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  if(button && button.classList.contains("nav-item")) button.classList.add("active");
+  if(pageId==="transactionsPage") loadAllTransactions();
+  if(pageId==="earnPage") loadReferralStats();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openServicePage(service){
+  const id = service + "Page";
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(!bulkRows[service].length) addBulkRow(service);
+}
+
+function switchServiceMode(service, mode, button){
+  document.querySelectorAll("#"+service+"Page .service-tab").forEach(b=>b.classList.remove("active"));
+  button.classList.add("active");
+  document.getElementById(service+"Single").style.display = mode==="single" ? "block" : "none";
+  document.getElementById(service+"Bulk").style.display = mode==="bulk" ? "block" : "none";
+  if(mode==="bulk" && !bulkRows[service].length) addBulkRow(service);
+}
+
+function toggleTheme(){
+  document.body.classList.toggle("dark-mode");
+  const dark = document.body.classList.contains("dark-mode");
+  localStorage.setItem("sparkle_theme", dark ? "dark" : "light");
+  document.getElementById("themeButton").textContent = dark ? "☀️" : "🌙";
+}
+(function(){
+  const dark = localStorage.getItem("sparkle_theme")==="dark";
+  if(dark){
+    document.body.classList.add("dark-mode");
+    setTimeout(()=>{const b=document.getElementById("themeButton"); if(b)b.textContent="☀️";},0);
+  }
+})();
+
+function toggleNotifications(){
+  const dot=document.getElementById("notificationDot");
+  if(dot) dot.style.display="none";
+  alert("Notifications are being prepared. Your important wallet and transaction updates will appear here.");
+}
+
+/* =====================================================
+   PAYSTACK DEDICATED VIRTUAL ACCOUNT
+   ===================================================== */
+
+async function createDedicatedAccount(){
+  try{
+    const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+    if(userError || !userData?.user) return;
+
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva");
+    if(error){
+      console.error("Virtual account error:",error);
+      document.getElementById("dvaStatus").textContent="Unavailable";
+      return;
+    }
+
+    if(data?.success && data.account){
+      document.getElementById("dvaAccountName").textContent=data.account.account_name || "—";
+      document.getElementById("dvaAccountNumber").textContent=data.account.account_number || "—";
+      document.getElementById("dvaBankName").textContent=data.account.bank_name || "—";
+      document.getElementById("dvaStatus").textContent="Ready";
+    }else{
+      document.getElementById("dvaStatus").textContent="Unavailable";
+      console.error("Virtual account creation failed:",data?.error || data);
+    }
+  }catch(error){
+    console.error("Virtual account function error:",error);
+    const status=document.getElementById("dvaStatus");
+    if(status) status.textContent="Unavailable";
+  }
+}
+
+function copyDVA(){
+  const value=document.getElementById("dvaAccountNumber").textContent.trim();
+  if(!value || value==="—" || value==="Loading…") return;
+  navigator.clipboard?.writeText(value).then(()=>alert("Account number copied."));
+}
+
+/* =====================================================
+   REFERRALS
+   ===================================================== */
+
+async function loadReferralStats(){
+  const {data:userData}=await supabaseClient.auth.getUser();
+  if(!userData?.user) return;
+  const user=userData.user;
+
+  const {data:profile}=await supabaseClient
+    .from("profiles")
+    .select("username,referral_code")
+    .eq("id",user.id)
+    .single();
+
+  const code=profile?.referral_code || profile?.username || user.id.slice(0,8);
+  const link=window.location.origin + "/?ref=" + encodeURIComponent(code);
+  document.getElementById("referralLink").value=link;
+
+  // These totals are intentionally read only from tables when they exist.
+  // No fake earnings are displayed if the referral tables have not yet been created.
+  let count=0, earnings=0;
+  try{
+    const r=await supabaseClient.from("referrals").select("id",{count:"exact",head:true}).eq("referrer_id",user.id);
+    if(!r.error) count=r.count || 0;
+  }catch(e){}
+  try{
+    const r=await supabaseClient.from("referral_earnings").select("amount").eq("user_id",user.id);
+    if(!r.error && r.data) earnings=r.data.reduce((s,x)=>s+Number(x.amount||0),0);
+  }catch(e){}
+  document.getElementById("referralCount").textContent=count.toLocaleString("en-NG");
+  document.getElementById("referralEarnings").textContent="₦"+earnings.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+async function shareReferral(){
+  const link=document.getElementById("referralLink").value;
+  if(navigator.share){
+    try{ await navigator.share({title:"Join Sparkle",text:"Join me on Sparkle for fast bill payments.",url:link}); }catch(e){}
+  }else{
+    await navigator.clipboard?.writeText(link);
+    alert("Your referral link has been copied.");
+  }
+}
+
+/* =====================================================
+   SERVICE PURCHASE UI
+   ===================================================== */
+
+function money(n){
+  return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function getSinglePurchase(service){
+  if(service==="airtime"){
+    return {
+      service:"Airtime",
+      network:document.getElementById("airtimeNetwork").value,
+      phone:document.getElementById("airtimePhone").value.trim(),
+      plan:"Airtime recharge",
+      amount:Number(document.getElementById("airtimeAmount").value||0)
+    };
+  }
+  if(service==="data"){
+    return {
+      service:"Data",
+      network:document.getElementById("dataNetwork").value,
+      phone:document.getElementById("dataPhone").value.trim(),
+      plan:document.getElementById("dataPlan").value,
+      amount:Number(document.getElementById("dataAmount").value||0)
+    };
+  }
+  return {
+    service:"Cable TV",
+    network:document.getElementById("cableProvider").value,
+    phone:document.getElementById("cableNumber").value.trim(),
+    plan:document.getElementById("cablePackage").value,
+    amount:Number(document.getElementById("cableAmount").value||0)
+  };
+}
+
+function showPurchaseSummary(service){
+  const p=getSinglePurchase(service);
+  if(!p.phone || !p.amount || p.amount<=0){
+    alert("Please enter the required details and a valid amount.");
+    return;
+  }
+  currentService=service;
+  pendingPurchase={type:"single",items:[p],total:p.amount};
+  const box=document.getElementById(service+"Summary");
+  box.innerHTML=`
+    <h3>Purchase Summary</h3>
+    <div class="summary-line"><span>Service</span><strong>${p.service}</strong></div>
+    <div class="summary-line"><span>Network/Provider</span><strong>${p.network}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"Smartcard/IUC":"Phone Number"}</span><strong>${p.phone}</strong></div>
+    <div class="summary-line"><span>Plan</span><strong>${p.plan}</strong></div>
+    <div class="summary-line"><span>Total</span><strong>${money(p.amount)}</strong></div>
+    <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">MAKE PAYMENT</button>`;
+  box.classList.add("show");
+}
+
+function verifyCable(){
+  const n=document.getElementById("cableNumber").value.trim();
+  const box=document.getElementById("cableVerify");
+  if(!n){box.textContent="Enter a smartcard/IUC number first.";return;}
+  box.textContent="Subscriber verification will be performed by the secure bill-payment backend before a real charge is submitted.";
+}
+
+function addBulkRow(service){
+  const index=bulkRows[service].length;
+  bulkRows[service].push({index});
+  renderBulkRows(service);
+}
+
+function removeBulkRow(service,index){
+  bulkRows[service]=bulkRows[service].filter(x=>x.index!==index);
+  renderBulkRows(service);
+}
+
+function renderBulkRows(service){
+  const box=document.getElementById(service+"BulkList");
+  box.innerHTML=bulkRows[service].map((r,i)=>{
+    if(service==="data") return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
+      <select class="form-select" data-field="plan"><option>100MB</option><option>500MB</option><option>1GB</option><option>2GB</option></select>
+      <input class="form-input" data-field="phone" placeholder="Phone number">
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+    if(service==="airtime") return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
+      <input class="form-input" data-field="phone" placeholder="Phone number">
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+    return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select>
+      <input class="form-input" data-field="phone" placeholder="Smartcard/IUC">
+      <select class="form-select" data-field="plan"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select>
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+  }).join("");
+  updateBulkTotal(service);
+}
+
+function collectBulk(service){
+  const rows=[...document.querySelectorAll("#"+service+"BulkList .bulk-row")];
+  return rows.map(row=>{
+    const get=f=>row.querySelector(`[data-field="${f}"]`)?.value.trim();
+    return {
+      service:service==="data"?"Data":service==="airtime"?"Airtime":"Cable TV",
+      network:get("network"),phone:get("phone"),plan:get("plan")||"Recharge",amount:Number(get("amount")||0)
+    };
+  }).filter(x=>x.phone || x.amount);
+}
+
+function updateBulkTotal(service){
+  const items=collectBulk(service);
+  const total=items.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById(service+"BulkTotal").textContent="Total: "+money(total)+" · "+items.length+" transaction(s)";
+}
+
+function showBulkSummary(service){
+  const items=collectBulk(service);
+  if(!items.length || items.some(x=>!x.phone || !x.amount || x.amount<=0)){
+    alert("Please complete every bulk row with a valid number and amount.");
+    return;
+  }
+  currentService=service;
+  pendingPurchase={type:"bulk",items,total:items.reduce((s,x)=>s+x.amount,0)};
+  alert(`${items.length} transaction(s) selected. Total: ${money(pendingPurchase.total)}. Your PIN will be requested next.`);
+  openPinForPurchase();
+}
+
+function openPinForPurchase(){
+  document.getElementById("pinModal").classList.add("show");
+  document.querySelectorAll(".pin-box").forEach(x=>x.value="");
+  document.getElementById("pinMessage").textContent="";
+  setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);
+}
+
+function openPinModal(){
+  alert("Transaction PIN setup requires a secure server-side PIN table/function. The purchase PIN screen is ready, but no PIN is stored in the browser.");
+}
+
+function closePinModal(){document.getElementById("pinModal").classList.remove("show");}
+
+document.addEventListener("input",e=>{
+  if(e.target.closest(".bulk-row")){ const page=e.target.closest(".page"); if(page){ const service=page.id.replace("Page",""); if(bulkRows[service]) updateBulkTotal(service); } }
+  if(e.target.classList.contains("pin-box")){
+    e.target.value=e.target.value.replace(/\D/g,"").slice(0,1);
+    if(e.target.value) e.target.nextElementSibling?.focus();
+  }
+});
+
+async function confirmTransactionPIN(){
+  const pin=[...document.querySelectorAll(".pin-box")].map(x=>x.value).join("");
+  if(pin.length!==4){
+    document.getElementById("pinMessage").textContent="Enter your 4-digit transaction PIN.";
+    return;
+  }
+  closePinModal();
+  await processPendingPurchase();
+}
+
+async function processPendingPurchase(){
+  if(!pendingPurchase) return;
+  const overlay=document.getElementById("processingOverlay");
+  overlay.classList.add("show");
+  document.getElementById("processingProgress").textContent=
+    pendingPurchase.type==="bulk" ? `Preparing ${pendingPurchase.items.length} transaction(s)…` : "Securing your transaction…";
+
+  // Do not fake a provider success. The real BillsJet/server payment endpoint
+  // must be connected before money is deducted or a successful receipt is issued.
+  await new Promise(r=>setTimeout(r,900));
+  overlay.classList.remove("show");
+  alert("The Sparkle payment interface is ready. The final BillsJet payment endpoint must be connected before live transactions are processed.");
+}
+
+/* =====================================================
+   RECEIPTS
+   ===================================================== */
+
+function showReceipt(result){
+  const d=result||{};
+  document.getElementById("receiptDetails").innerHTML=`
+    <div class="receipt-row"><span>Service</span><strong>${d.service||"Sparkle Payment"}</strong></div>
+    <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
+    <div class="receipt-row"><span>Customer</span><strong>${d.customer||"—"}</strong></div>
+    <div class="receipt-row"><span>Amount</span><strong>${money(d.amount||0)}</strong></div>
+    <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
+    <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
+  document.getElementById("receiptModal").classList.add("show");
+}
+function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
+async function downloadReceiptImage(){
+  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
+  const a=document.createElement("a");a.download="sparkle-receipt.png";a.href=canvas.toDataURL("image/png");a.click();
+}
+async function downloadReceiptPDF(){
+  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const img=canvas.toDataURL("image/png");
+  const width=180, height=canvas.height*width/canvas.width;
+  pdf.addImage(img,"PNG",15,15,width,height);
+  pdf.save("sparkle-receipt.pdf");
+}
+
+async function loadAllTransactions(){
+  const box=document.getElementById("allTransactions");
+  if(!box) return;
+  const {data,error}=await supabaseClient.from("wallet_transactions")
+    .select("id,type,amount,service,status,created_at")
+    .eq("user_id",(await supabaseClient.auth.getUser()).data.user.id)
+    .order("created_at",{ascending:false}).limit(100);
+  if(error){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
+  if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
+  box.innerHTML=data.map(tx=>{
+    const amount=Number(tx.amount||0);
+    const cls=tx.type==="credit"?"credit":"debit";
+    const sign=tx.type==="credit"?"+":"-";
+    return `<div class="tx"><div><strong>${tx.service||"Wallet transaction"}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${tx.status||""}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
+  }).join("");
+}
 
 
 /* =====================================================
