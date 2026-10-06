@@ -931,6 +931,57 @@ body.dark-mode .earn-stat{background:#0b1727}
  .dva-head{flex-direction:column}
 }
 
+
+/* =====================================================
+   GSUBZ / BILLSJET-STYLE DATA UI
+   ===================================================== */
+.data-page-shell{background:#f6f6f8;border-radius:22px;padding:0;overflow:hidden}
+.data-topbar{display:flex;align-items:center;gap:14px;padding:18px 4px 20px}
+.data-back{width:42px;height:42px;border:0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:25px}
+.data-topbar h1{font-size:25px;margin:0;font-weight:900}
+.data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f0f0f2;border-radius:28px;padding:4px;margin-bottom:22px}
+.data-purchase-tab{border:0;background:transparent;border-radius:25px;padding:15px 10px;font-weight:900;font-size:15px;color:#4d4b55}
+.data-purchase-tab.active{background:#fff;border:2px solid #ff0b78;color:#ff0b78}
+.data-beneficiary-card{background:#fff;border-radius:20px;padding:18px 16px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,.03)}
+.data-phone-row{display:grid;grid-template-columns:116px 1fr 34px;align-items:center;gap:12px}
+.data-network-select-wrap{display:flex;align-items:center;gap:9px;border-right:1px solid #bbb;padding-right:12px}
+.network-badge{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:19px;text-transform:lowercase}
+.network-badge.glo{background:#19a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}
+.data-network-select{border:0;background:transparent;font-weight:800;outline:0;width:62px}
+.data-phone-input{border:0;outline:0;font-size:18px;font-weight:800;min-width:0;width:100%;background:transparent}
+.contact-btn{border:0;background:transparent;font-size:25px;color:#777}
+.data-divider{height:1px;background:#ddd;margin-top:18px}
+.beneficiary-actions{display:flex;align-items:center;justify-content:space-between;padding-top:17px}
+.save-beneficiary{display:flex;align-items:center;gap:12px;font-weight:800;color:#5a5961}
+.save-toggle{width:58px;height:34px;border:0;border-radius:20px;background:#e5e5e7;padding:3px;position:relative}
+.save-toggle span{display:block;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
+.save-toggle.on{background:#ff0b78}.save-toggle.on span{transform:translateX(24px)}
+.beneficiary-link{border:0;background:transparent;color:#4e1699;font-weight:900;font-size:15px}
+.data-categories{display:flex;gap:10px;overflow:auto;padding:3px 0 12px;margin-bottom:6px}
+.data-category{border:1px solid #d9d0e8;background:#fff;border-radius:25px;padding:11px 20px;white-space:nowrap;font-weight:800}
+.data-category.active{background:#4e1598;color:#fff;border-color:#4e1598}
+.data-plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.data-plan-card{border:2px solid #ddd1ef;background:#fbf8ff;border-radius:17px;padding:24px 12px;text-align:center;min-height:205px;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.data-plan-card.selected{border-color:#4e1598;box-shadow:0 0 0 1px #4e1598}
+.data-plan-name{font-size:20px;font-weight:900;color:#4e1598}
+.data-plan-price{font-size:20px;font-weight:900;margin-top:12px}
+.data-plan-duration{font-size:13px;color:#777;margin-top:12px}
+.data-loading{padding:28px;text-align:center;color:#777;background:#fff;border-radius:16px}
+.data-empty{padding:25px;text-align:center;color:#777;background:#fff;border-radius:16px}
+.data-bottom-action{position:sticky;bottom:0;background:#f6f6f8;padding:12px 0 2px;margin-top:12px}
+.data-bottom-action .btn{border-radius:13px}
+.gsubz-error{background:#fff0f0;color:#a40000;border:1px solid #ffd1d1;padding:12px;border-radius:12px;margin:12px 0;font-size:13px}
+.gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:12px;padding:12px;margin:12px 0;font-size:13px}
+@media(max-width:700px){
+ .data-page-shell{margin:0 -2px;border-radius:18px}
+ .data-phone-row{grid-template-columns:105px 1fr 30px}
+ .data-network-select-wrap{gap:5px;padding-right:8px}
+ .network-badge{width:48px;height:48px}
+ .data-network-select{width:54px;font-size:12px}
+ .data-plan-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+ .data-plan-card{min-height:190px;padding:18px 8px}
+}
+
 </style>
 </head>
 
@@ -1551,74 +1602,137 @@ Privacy Policy
 
         <!-- SERVICE PAGES -->
         <section class="page" id="dataPage">
-          <div class="service-page">
-            <h1 class="dashboard-title">Data</h1><p class="dashboard-subtitle">Buy affordable data bundles.</p>
-            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('data','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('data','bulk',this)">Bulk Purchase</button></div>
-            <div id="dataSingle">
-              <div class="service-form-grid">
-                <div class="form-field"><label>NETWORK</label><select class="form-select" id="dataNetwork"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select></div>
-                <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="dataPhone" placeholder="08012345678"></div>
-                <div class="form-field"><label>DATA PLAN</label><select class="form-select" id="dataPlan"><option value="100MB">100MB</option><option value="500MB">500MB</option><option value="1GB">1GB</option><option value="2GB">2GB</option></select></div>
-                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="dataAmount" type="number" placeholder="Enter amount"></div>
-              </div>
-              <button class="btn primary" onclick="showPurchaseSummary('data')">Continue</button>
-              <div class="summary-card" id="dataSummary"></div>
-            </div>
-            <div id="dataBulk" style="display:none">
-              <div class="bulk-list" id="dataBulkList"></div>
-              <button class="btn bulk-add" onclick="addBulkRow('data')">+ Add another</button>
-              <div class="bulk-total" id="dataBulkTotal">Total: ₦0.00</div>
-              <button class="btn primary" onclick="showBulkSummary('data')">Continue to Payment</button>
-            </div>
-          </div>
-        </section>
+  <div class="data-page-shell">
+    <div class="data-topbar">
+      <button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button>
+      <h1>Data</h1>
+    </div>
 
-        <section class="page" id="airtimePage">
-          <div class="service-page">
-            <h1 class="dashboard-title">Airtime</h1><p class="dashboard-subtitle">Recharge any supported Nigerian network.</p>
-            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('airtime','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Purchase</button></div>
-            <div id="airtimeSingle">
-              <div class="service-form-grid">
-                <div class="form-field"><label>NETWORK</label><select class="form-select" id="airtimeNetwork"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select></div>
-                <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="airtimePhone" placeholder="08012345678"></div>
-                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" placeholder="500"></div>
-              </div>
-              <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
-              <div class="summary-card" id="airtimeSummary"></div>
-            </div>
-            <div id="airtimeBulk" style="display:none">
-              <div class="bulk-list" id="airtimeBulkList"></div>
-              <button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
-              <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div>
-              <button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
-            </div>
-          </div>
-        </section>
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" id="dataSingleTab" onclick="switchServiceMode('data','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" id="dataBulkTab" onclick="switchServiceMode('data','bulk',this)">Bulk Recharge</button>
+    </div>
 
-        <section class="page" id="cablePage">
-          <div class="service-page">
-            <h1 class="dashboard-title">Cable TV</h1><p class="dashboard-subtitle">Verify your decoder and choose a subscription package.</p>
-            <div class="service-tabs"><button class="service-tab active" onclick="switchServiceMode('cable','single',this)">Single Purchase</button><button class="service-tab" onclick="switchServiceMode('cable','bulk',this)">Bulk Purchase</button></div>
-            <div id="cableSingle">
-              <div class="service-form-grid">
-                <div class="form-field"><label>PROVIDER</label><select class="form-select" id="cableProvider"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select></div>
-                <div class="form-field"><label>SMARTCARD / IUC NUMBER</label><input class="form-input" id="cableNumber" placeholder="Enter decoder number"></div>
-                <div class="form-field"><label>PACKAGE</label><select class="form-select" id="cablePackage"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select></div>
-                <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="cableAmount" type="number" placeholder="Enter amount"></div>
-              </div>
-              <button class="btn" onclick="verifyCable()">Verify Subscriber</button>
-              <button class="btn primary" onclick="showPurchaseSummary('cable')">Continue</button>
-              <div id="cableVerify" style="margin-top:12px;color:var(--muted)"></div>
-              <div class="summary-card" id="cableSummary"></div>
-            </div>
-            <div id="cableBulk" style="display:none">
-              <div class="bulk-list" id="cableBulkList"></div>
-              <button class="btn bulk-add" onclick="addBulkRow('cable')">+ Add another</button>
-              <div class="bulk-total" id="cableBulkTotal">Total: ₦0.00</div>
-              <button class="btn primary" onclick="showBulkSummary('cable')">Continue to Payment</button>
-            </div>
+    <div id="dataSingle">
+      <div class="data-beneficiary-card">
+        <div class="data-phone-row">
+          <div class="data-network-select-wrap">
+            <span class="network-badge glo" id="dataNetworkBadge">glo</span>
+            <select class="data-network-select" id="dataNetwork" onchange="onDataNetworkChange()">
+              <option value="MTN">MTN</option>
+              <option value="Airtel">Airtel</option>
+              <option value="Glo" selected>Glo</option>
+              <option value="9mobile">9mobile</option>
+            </select>
           </div>
-        </section>
+          <input class="data-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
+          <button class="contact-btn" onclick="chooseDataBeneficiary()" title="Choose beneficiary">♙</button>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <div class="save-beneficiary">
+            <button class="save-toggle" id="saveBeneficiaryToggle" onclick="toggleSaveBeneficiary()" aria-label="Save beneficiary"><span></span></button>
+            <span>Save Beneficiary</span>
+          </div>
+          <button class="beneficiary-link" onclick="chooseDataBeneficiary()">Choose Beneficiary</button>
+        </div>
+      </div>
+
+      <div class="data-categories">
+        <button class="data-category active" onclick="selectDataCategory('Hot',this)">Hot</button>
+        <button class="data-category" onclick="selectDataCategory('Weekly',this)">Weekly</button>
+        <button class="data-category" onclick="selectDataCategory('Monthly',this)">Monthly</button>
+        <button class="data-category" onclick="selectDataCategory('Daily',this)">Daily</button>
+      </div>
+
+      <div id="dataPlanError"></div>
+      <div id="dataPlans" class="data-plan-grid">
+        <div class="data-loading">Loading Glo data plans…</div>
+      </div>
+
+      <div class="data-bottom-action">
+        <button class="btn primary full" onclick="showPurchaseSummary('data')">Continue</button>
+      </div>
+      <div class="summary-card" id="dataSummary"></div>
+    </div>
+
+    <div id="dataBulk" style="display:none">
+      <div class="bulk-list" id="dataBulkList"></div>
+      <button class="btn bulk-add" onclick="addBulkRow('data')">+ Add another</button>
+      <div class="bulk-total" id="dataBulkTotal">Total: ₦0.00</div>
+      <button class="btn primary" onclick="showBulkSummary('data')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="airtimePage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Airtime</h1></div>
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" onclick="switchServiceMode('airtime','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Recharge</button>
+    </div>
+    <div id="airtimeSingle">
+      <div class="data-beneficiary-card">
+        <div class="data-phone-row">
+          <div class="data-network-select-wrap">
+            <span class="network-badge mtn" id="airtimeNetworkBadge">mtn</span>
+            <select class="data-network-select" id="airtimeNetwork" onchange="updateNetworkBadge('airtime')">
+              <option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
+            </select>
+          </div>
+          <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
+          <button class="contact-btn" onclick="chooseGenericBeneficiary('airtime')">♙</button>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <div class="save-beneficiary"><button class="save-toggle" id="airtimeSaveToggle" onclick="toggleGenericSave('airtime')"><span></span></button><span>Save Beneficiary</span></div>
+          <button class="beneficiary-link" onclick="chooseGenericBeneficiary('airtime')">Choose Beneficiary</button>
+        </div>
+      </div>
+      <div class="service-form-grid">
+        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" min="100" placeholder="500"></div>
+      </div>
+      <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
+      <div class="summary-card" id="airtimeSummary"></div>
+    </div>
+    <div id="airtimeBulk" style="display:none">
+      <div class="bulk-list" id="airtimeBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
+      <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="cablePage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Cable TV</h1></div>
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" onclick="switchServiceMode('cable','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" onclick="switchServiceMode('cable','bulk',this)">Bulk Recharge</button>
+    </div>
+    <div id="cableSingle">
+      <div class="data-beneficiary-card">
+        <div class="service-form-grid">
+          <div class="form-field"><label>PROVIDER</label><select class="form-select" id="cableProvider" onchange="loadCablePlans()"><option value="DSTV">DSTV</option><option value="GOtv">GOtv</option><option value="Startimes">Startimes</option></select></div>
+          <div class="form-field"><label>SMARTCARD / IUC NUMBER</label><input class="form-input" id="cableNumber" inputmode="numeric" placeholder="Enter decoder number"></div>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <button class="btn" onclick="verifyCable()">Verify Subscriber</button>
+          <button class="beneficiary-link" onclick="chooseGenericBeneficiary('cable')">Choose Beneficiary</button>
+        </div>
+        <div id="cableVerify" style="margin-top:12px"></div>
+      </div>
+      <div id="cablePlans" class="data-plan-grid"><div class="data-loading">Loading cable plans…</div></div>
+      <div class="summary-card" id="cableSummary"></div>
+      <div class="data-bottom-action"><button class="btn primary full" onclick="showPurchaseSummary('cable')">Continue</button></div>
+    </div>
+    <div id="cableBulk" style="display:none">
+      <div class="bulk-list" id="cableBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('cable')">+ Add another</button>
+      <div class="bulk-total" id="cableBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('cable')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
 
       </div>
     </main>
@@ -3232,6 +3346,196 @@ async function shareReferral(){
   }
 }
 
+
+/* =====================================================
+   GSUBZ LIVE INTEGRATION
+   ===================================================== */
+const GSUBZ_FUNCTION_NAME = "gsubz"; // existing Supabase Edge Function
+const gsubzServiceMap = {
+  MTN: "mtn_sme",
+  Airtel: "airtel_gifting",
+  Glo: "glo_data",
+  "9mobile": "etisalat_data"
+};
+let selectedDataPlan = null;
+let selectedDataCategory = "Hot";
+let dataPlansCache = {};
+let selectedCablePlan = null;
+
+async function gsubzRequest(path, method="GET", data=null){
+  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{
+    body:{path,method,data}
+  });
+  if(error) throw new Error(error.message || "Unable to reach Gsubz.");
+  if(result && result.error) throw new Error(result.error);
+  return result;
+}
+
+function networkBadgeClass(network){
+  if(network==="MTN") return "mtn";
+  if(network==="Airtel") return "airtel";
+  if(network==="Glo") return "glo";
+  return "nine";
+}
+function updateNetworkBadge(service){
+  const el=document.getElementById(service+"Network");
+  const badge=document.getElementById(service+"NetworkBadge");
+  if(el&&badge){ badge.className="network-badge "+networkBadgeClass(el.value); badge.textContent=el.value==="9mobile"?"9m":el.value.toLowerCase(); }
+}
+function onDataNetworkChange(){
+  updateNetworkBadge("data");
+  selectedDataPlan=null;
+  loadDataPlans();
+}
+
+function planDuration(name){
+  const s=String(name||"").toLowerCase();
+  if(/30\s*day|monthly/.test(s)) return "30 days";
+  if(/14\s*day|2\s*week/.test(s)) return "14 days";
+  if(/7\s*day|weekly/.test(s)) return "7 days";
+  if(/3\s*day/.test(s)) return "3 days";
+  if(/2\s*day/.test(s)) return "2 days";
+  if(/1\s*day|daily/.test(s)) return "1 day";
+  const m=s.match(/(\d+)\s*days?/); return m ? m[1]+" days" : "";
+}
+function planCategory(name){
+  const s=String(name||"").toLowerCase();
+  if(/30\s*day|monthly/.test(s)) return "Monthly";
+  if(/7\s*day|weekly/.test(s)) return "Weekly";
+  if(/1\s*day|daily/.test(s)) return "Daily";
+  return "Hot";
+}
+function normalizePlans(result){
+  const plans=Array.isArray(result?.plans)?result.plans:[];
+  return plans.map((p,i)=>({
+    ...p,
+    _name:p.displayName || p.name || ("Plan "+(i+1)),
+    _value:p.value || p.plan || p.variation_code,
+    _price:Number(p.api_price ?? p.price ?? 0),
+    _category:planCategory(p.displayName || p.name),
+    _duration:planDuration(p.displayName || p.name)
+  })).filter(p=>p._value && p._price>=0);
+}
+async function loadDataPlans(){
+  const network=document.getElementById("dataNetwork")?.value || "Glo";
+  const service=gsubzServiceMap[network];
+  const box=document.getElementById("dataPlans");
+  if(!box) return;
+  box.innerHTML='<div class="data-loading">Loading '+network+' data plans…</div>';
+  document.getElementById("dataPlanError").innerHTML="";
+  try{
+    if(!dataPlansCache[service]){
+      dataPlansCache[service]=normalizePlans(await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET"));
+    }
+    renderDataPlans(dataPlansCache[service]);
+  }catch(e){
+    console.error("Gsubz plans:",e);
+    box.innerHTML="";
+    document.getElementById("dataPlanError").innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load Gsubz data plans.")+'</div>';
+  }
+}
+function renderDataPlans(plans){
+  const box=document.getElementById("dataPlans");
+  const filtered=plans.filter(p=>p._category===selectedDataCategory);
+  const shown=filtered.length?filtered:plans;
+  if(!shown.length){box.innerHTML='<div class="data-empty">No plans available for this network.</div>';return;}
+  box.innerHTML=shown.map((p,i)=>`
+    <button class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
+      <div class="data-plan-name">${escapeHtml(p._name)}</div>
+      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
+      <div class="data-plan-duration">${escapeHtml(p._duration || "")}</div>
+    </button>`).join("");
+  box._shownPlans=shown;
+}
+function selectDataPlan(index,value,price,name,duration){
+  const box=document.getElementById("dataPlans");
+  const plans=box._shownPlans||[];
+  selectedDataPlan=plans.find(p=>String(p._value)===String(value)) || {_value:value,_price:price,_name:name,_duration:duration};
+  renderDataPlans(dataPlansCache[gsubzServiceMap[document.getElementById("dataNetwork").value]]||[]);
+}
+function selectDataCategory(category,button){
+  selectedDataCategory=category;
+  document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
+  button.classList.add("active");
+  const service=gsubzServiceMap[document.getElementById("dataNetwork").value||"Glo"];
+  renderDataPlans(dataPlansCache[service]||[]);
+}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+
+function beneficiaryKey(type){
+  const userId=window.currentSparkleUser?.id || "guest";
+  return "sparkle_beneficiaries_"+userId+"_"+type;
+}
+function getBeneficiaries(type){
+  try{return JSON.parse(localStorage.getItem(beneficiaryKey(type))||"[]");}catch(e){return [];}
+}
+function saveBeneficiary(type,number,label){
+  const list=getBeneficiaries(type).filter(x=>x.number!==number);
+  list.unshift({number,label:label||number});
+  localStorage.setItem(beneficiaryKey(type),JSON.stringify(list.slice(0,30)));
+}
+function toggleSaveBeneficiary(){
+  const b=document.getElementById("saveBeneficiaryToggle");
+  b.classList.toggle("on");
+}
+function toggleGenericSave(type){
+  document.getElementById(type+"SaveToggle")?.classList.toggle("on");
+}
+function chooseDataBeneficiary(){ chooseGenericBeneficiary("data"); }
+function chooseGenericBeneficiary(type){
+  const list=getBeneficiaries(type);
+  if(!list.length){alert("No saved beneficiaries yet.");return;}
+  const lines=list.map((x,i)=>`${i+1}. ${x.label||x.number}`).join("\n");
+  const answer=prompt("Choose beneficiary by number:\n\n"+lines);
+  const i=Number(answer)-1;
+  if(!Number.isInteger(i)||!list[i]) return;
+  const number=list[i].number;
+  if(type==="data") document.getElementById("dataPhone").value=number;
+  if(type==="airtime") document.getElementById("airtimePhone").value=number;
+  if(type==="cable") document.getElementById("cableNumber").value=number;
+}
+
+async function loadCablePlans(){
+  const provider=document.getElementById("cableProvider")?.value||"DSTV";
+  const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
+  const box=document.getElementById("cablePlans");
+  if(!box)return;
+  box.innerHTML='<div class="data-loading">Loading '+provider+' plans…</div>';
+  try{
+    const result=await gsubzRequest("/api/plans/?service="+service,"GET");
+    const plans=normalizePlans(result);
+    if(!plans.length){box.innerHTML='<div class="data-empty">No '+provider+' plans available.</div>';return;}
+    box.innerHTML=plans.map((p,i)=>`
+      <button class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" onclick="selectCablePlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)})">
+        <div class="data-plan-name">${escapeHtml(p._name)}</div>
+        <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
+        <div class="data-plan-duration">${escapeHtml(p._duration||"")}</div>
+      </button>`).join("");
+    box._plans=plans;
+  }catch(e){
+    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
+  }
+}
+function selectCablePlan(index,value,price,name){
+  const box=document.getElementById("cablePlans");
+  const p=(box._plans||[]).find(x=>String(x._value)===String(value));
+  selectedCablePlan=p||{_value:value,_price:price,_name:name};
+  (box._plans||[]); loadCablePlans();
+}
+async function verifyCable(){
+  const provider={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[document.getElementById("cableProvider").value];
+  const number=document.getElementById("cableNumber").value.trim();
+  const box=document.getElementById("cableVerify");
+  if(!number){box.innerHTML='<div class="gsubz-error">Enter your smartcard/IUC number first.</div>';return;}
+  box.textContent="Verifying subscriber…";
+  try{
+    const result=await gsubzRequest("/api/verify-customer/","POST",{serviceID:provider,billersCode:number});
+    if(result?.status==="successful"){
+      box.innerHTML='<div class="gsubz-customer">✓ '+escapeHtml(result.content?.customerName||"Subscriber verified")+'</div>';
+    }else throw new Error(result?.api_response||result?.description||"Subscriber verification failed.");
+  }catch(e){box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to verify subscriber.")+'</div>';}
+}
+
 /* =====================================================
    SERVICE PURCHASE UI
    ===================================================== */
@@ -3251,38 +3555,47 @@ function getSinglePurchase(service){
     };
   }
   if(service==="data"){
+    if(!selectedDataPlan) loadDataPlans();
     return {
       service:"Data",
       network:document.getElementById("dataNetwork").value,
       phone:document.getElementById("dataPhone").value.trim(),
-      plan:document.getElementById("dataPlan").value,
-      amount:Number(document.getElementById("dataAmount").value||0)
+      plan:selectedDataPlan?._name || "",
+      planValue:selectedDataPlan?._value || "",
+      amount:Number(selectedDataPlan?._price || 0)
     };
   }
   return {
     service:"Cable TV",
     network:document.getElementById("cableProvider").value,
     phone:document.getElementById("cableNumber").value.trim(),
-    plan:document.getElementById("cablePackage").value,
-    amount:Number(document.getElementById("cableAmount").value||0)
+    plan:selectedCablePlan?._name || "",
+    planValue:selectedCablePlan?._value || "",
+    amount:Number(selectedCablePlan?._price || 0)
   };
 }
 
 function showPurchaseSummary(service){
   const p=getSinglePurchase(service);
-  if(!p.phone || !p.amount || p.amount<=0){
-    alert("Please enter the required details and a valid amount.");
+  if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue)){
+    alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : "Enter a phone number and valid amount.");
     return;
+  }
+  if(service==="data" && document.getElementById("saveBeneficiaryToggle")?.classList.contains("on")){
+    saveBeneficiary("data",p.phone,p.phone);
+  }
+  if(service==="airtime" && document.getElementById("airtimeSaveToggle")?.classList.contains("on")){
+    saveBeneficiary("airtime",p.phone,p.phone);
   }
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
   const box=document.getElementById(service+"Summary");
   box.innerHTML=`
     <h3>Purchase Summary</h3>
-    <div class="summary-line"><span>Service</span><strong>${p.service}</strong></div>
-    <div class="summary-line"><span>Network/Provider</span><strong>${p.network}</strong></div>
-    <div class="summary-line"><span>${service==="cable"?"Smartcard/IUC":"Phone Number"}</span><strong>${p.phone}</strong></div>
-    <div class="summary-line"><span>Plan</span><strong>${p.plan}</strong></div>
+    <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
+    <div class="summary-line"><span>Network/Provider</span><strong>${escapeHtml(p.network)}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"Smartcard/IUC":"Phone Number"}</span><strong>${escapeHtml(p.phone)}</strong></div>
+    <div class="summary-line"><span>Plan</span><strong>${escapeHtml(p.plan)}</strong></div>
     <div class="summary-line"><span>Total</span><strong>${money(p.amount)}</strong></div>
     <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">MAKE PAYMENT</button>`;
   box.classList.add("show");
@@ -3397,14 +3710,53 @@ async function processPendingPurchase(){
   if(!pendingPurchase) return;
   const overlay=document.getElementById("processingOverlay");
   overlay.classList.add("show");
-  document.getElementById("processingProgress").textContent=
-    pendingPurchase.type==="bulk" ? `Preparing ${pendingPurchase.items.length} transaction(s)…` : "Securing your transaction…";
+  document.getElementById("processingProgress").textContent =
+    pendingPurchase.type==="bulk" ? `Processing ${pendingPurchase.items.length} transaction(s)…` : "Connecting to Gsubz…";
 
-  // Do not fake a provider success. The real BillsJet/server payment endpoint
-  // must be connected before money is deducted or a successful receipt is issued.
-  await new Promise(r=>setTimeout(r,900));
-  overlay.classList.remove("show");
-  alert("The Sparkle payment interface is ready. The final BillsJet payment endpoint must be connected before live transactions are processed.");
+  try{
+    for(let i=0;i<pendingPurchase.items.length;i++){
+      const p=pendingPurchase.items[i];
+      document.getElementById("processingProgress").textContent =
+        pendingPurchase.type==="bulk" ? `Processing ${i+1}/${pendingPurchase.items.length}…` : "Processing your purchase…";
+      const requestID="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
+
+      let data;
+      if(p.service==="Airtime"){
+        const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
+        data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
+      }else if(p.service==="Data"){
+        const serviceID=gsubzServiceMap[p.network];
+        data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
+      }else if(p.service==="Cable TV"){
+        const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
+        data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:"",customerID:p.phone,requestID};
+      }else{
+        throw new Error("Unsupported service.");
+      }
+
+      const result=await gsubzRequest("/api/pay/","POST",data);
+      if(result?.status!=="successful"){
+        throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
+      }
+
+      if(i===pendingPurchase.items.length-1){
+        showReceipt({
+          service:p.service,
+          reference:result.transactionID || requestID,
+          customer:p.phone,
+          amount:Number(result.amountPaid ?? result.amount ?? p.amount)
+        });
+      }
+    }
+    overlay.classList.remove("show");
+    pendingPurchase=null;
+    await loadWallet((await supabaseClient.auth.getUser()).data.user?.id);
+    await loadTransactions((await supabaseClient.auth.getUser()).data.user?.id);
+  }catch(error){
+    console.error("Gsubz purchase:",error);
+    overlay.classList.remove("show");
+    alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
+  }
 }
 
 /* =====================================================
@@ -3839,6 +4191,14 @@ showHomepage();
 
 loadUser();
 
+
+/* Initialize live Gsubz plan screens */
+document.addEventListener("DOMContentLoaded",()=>{
+  setTimeout(()=>{
+    loadDataPlans();
+    loadCablePlans();
+  },300);
+});
 </script>
 
 </body>
