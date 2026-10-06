@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const GSUBZ_BASE = "https://api.gsubz.com";
 
-const SERVICES = [
+const DATA_SERVICES = [
   "airtel_gifting",
   "airtel_sme",
   "etisalat_data",
@@ -13,121 +13,127 @@ const SERVICES = [
   "mtn_sme",
 ];
 
+const AIRTIME_SERVICES = [
+  "mtn",
+  "airtel",
+  "glo",
+  "etisalat",
+];
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods":
+    "GET, POST, OPTIONS",
   "Content-Type": "application/json",
 };
 
-function response(data: unknown, status = 200) {
+function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: corsHeaders,
   });
 }
 
+function normalizeNetwork(value: unknown): string {
+  const network = String(value || "")
+    .trim()
+    .toLowerCase();
+
+  const networks: Record<string, string> = {
+    mtn: "mtn",
+    airtel: "airtel",
+    glo: "glo",
+    "9mobile": "etisalat",
+    etisalat: "etisalat",
+    t2: "etisalat",
+  };
+
+  return networks[network] || network;
+}
+
 serve(async (req) => {
   try {
     if (req.method === "OPTIONS") {
-      return new Response("ok", { headers: corsHeaders });
+      return new Response("ok", {
+        headers: corsHeaders,
+      });
     }
 
     const url = new URL(req.url);
 
     /*
-     * Accept:
+     * GET PLANS
+     *
+     * Supports:
      * ?service=mtn_sme
      * ?action=plans&service=mtn_sme
      */
-    const service =
-      url.searchParams.get("service") ||
-      url.searchParams.get("serviceID") ||
-      "";
-
-    const action = url.searchParams.get("action") || "";
-
-    /*
-     * Return supported services
-     */
-    if (action === "services") {
-      return response({
-        success: true,
-        services: [
-          {
-            serviceID: "airtel_gifting",
-            network: "Airtel",
-            type: "Gifting",
-          },
-          {
-            serviceID: "airtel_sme",
-            network: "Airtel",
-            type: "SME",
-          },
-          {
-            serviceID: "etisalat_data",
-            network: "9mobile",
-            type: "Data",
-          },
-          {
-            serviceID: "glo_data",
-            network: "Glo",
-            type: "Corporate Gifting",
-          },
-          {
-            serviceID: "glo_sme",
-            network: "Glo",
-            type: "SME",
-          },
-          {
-            serviceID: "mtn_fibrex",
-            network: "MTN",
-            type: "Fibre X",
-          },
-          {
-            serviceID: "mtn_gifting",
-            network: "MTN",
-            type: "Gifting",
-          },
-          {
-            serviceID: "mtn_sme",
-            network: "MTN",
-            type: "SME",
-          },
-        ],
-      });
-    }
-
-    /*
-     * GET DATA PLANS
-     *
-     * Works with both:
-     * /gsubz?service=mtn_sme
-     *
-     * and:
-     * /gsubz?action=plans&service=mtn_sme
-     */
     if (req.method === "GET") {
+      const action =
+        url.searchParams.get("action") || "plans";
+
+      if (action === "services") {
+        return json({
+          success: true,
+          services: [
+            {
+              serviceID: "mtn_gifting",
+              network: "MTN",
+              type: "Gifting",
+            },
+            {
+              serviceID: "mtn_sme",
+              network: "MTN",
+              type: "SME",
+            },
+            {
+              serviceID: "mtn_fibrex",
+              network: "MTN",
+              type: "Fibre X",
+            },
+            {
+              serviceID: "airtel_gifting",
+              network: "Airtel",
+              type: "Gifting",
+            },
+            {
+              serviceID: "airtel_sme",
+              network: "Airtel",
+              type: "SME",
+            },
+            {
+              serviceID: "glo_data",
+              network: "Glo",
+              type: "Corporate Gifting",
+            },
+            {
+              serviceID: "glo_sme",
+              network: "Glo",
+              type: "SME",
+            },
+            {
+              serviceID: "etisalat_data",
+              network: "9mobile",
+              type: "Data",
+            },
+          ],
+        });
+      }
+
+      const service =
+        url.searchParams.get("service") ||
+        url.searchParams.get("serviceID") ||
+        "";
+
       if (!service) {
-        return response(
+        return json(
           {
             success: false,
             error: "Missing service",
-            message: "A data service is required.",
           },
-          400
-        );
-      }
-
-      if (!SERVICES.includes(service)) {
-        return response(
-          {
-            success: false,
-            error: "Invalid service",
-            service,
-          },
-          400
+          400,
         );
       }
 
@@ -138,155 +144,343 @@ serve(async (req) => {
           headers: {
             Accept: "application/json",
           },
-        }
+        },
       );
 
       const data = await providerResponse.json();
 
-      return response(
+      return json(
         {
           success: providerResponse.ok,
           service,
           data,
         },
-        providerResponse.status
+        providerResponse.status,
       );
     }
 
     /*
-     * BALANCE
-     */
-    if (req.method === "POST" && action === "balance") {
-      const apiKey = Deno.env.get("GSUBZ_API_KEY");
-
-      if (!apiKey) {
-        return response(
-          {
-            success: false,
-            error: "GSUBZ_API_KEY is missing",
-          },
-          500
-        );
-      }
-
-      const formData = new FormData();
-      formData.append("api", apiKey);
-
-      const providerResponse = await fetch(
-        `${GSUBZ_BASE}/api/balance/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: formData,
-        }
-      );
-
-      const data = await providerResponse.json();
-
-      return response(
-        {
-          success: providerResponse.ok,
-          data,
-        },
-        providerResponse.status
-      );
-    }
-
-    /*
-     * DATA PURCHASE
+     * POST REQUESTS
      */
     if (req.method === "POST") {
-      const apiKey = Deno.env.get("GSUBZ_API_KEY");
+      const apiKey =
+        Deno.env.get("GSUBZ_API_KEY");
 
       if (!apiKey) {
-        return response(
+        return json(
           {
             success: false,
             error: "GSUBZ_API_KEY is missing",
           },
-          500
+          500,
         );
       }
 
-      const body = await req.json();
+      let body: Record<string, unknown>;
 
-      const serviceID = String(
-        body.serviceID || body.service || ""
-      ).trim();
-
-      const plan = String(body.plan || "").trim();
-      const phone = String(
-        body.phone || body.phoneNumber || ""
-      ).trim();
-
-      if (!serviceID || !plan || !phone) {
-        return response(
+      try {
+        body = await req.json();
+      } catch {
+        return json(
           {
             success: false,
-            error: "Missing required fields",
-            required: ["serviceID", "plan", "phone"],
+            error: "Invalid JSON request body",
           },
-          400
+          400,
         );
       }
 
-      if (!SERVICES.includes(serviceID)) {
-        return response(
+      /*
+       * BALANCE
+       */
+      const action = String(
+        body.action || "",
+      ).toLowerCase();
+
+      if (action === "balance") {
+        const form = new FormData();
+        form.append("api", apiKey);
+
+        const providerResponse = await fetch(
+          `${GSUBZ_BASE}/api/balance/`,
           {
-            success: false,
-            error: "Invalid service",
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
+            },
+            body: form,
           },
-          400
+        );
+
+        const data =
+          await providerResponse.json();
+
+        return json(
+          {
+            success: providerResponse.ok,
+            data,
+          },
+          providerResponse.status,
         );
       }
 
-      const formData = new FormData();
+      /*
+       * ACCEPT DIFFERENT FIELD NAMES
+       * FROM THE EXISTING SPARKLE FRONTEND.
+       */
+      let serviceID = String(
+        body.serviceID ||
+        body.service ||
+        "",
+      ).trim();
 
-      formData.append("serviceID", serviceID);
-      formData.append("plan", plan);
-      formData.append("phone", phone);
-      formData.append("api", apiKey);
-
-      if (body.requestID) {
-        formData.append(
-          "requestID",
-          String(body.requestID)
-        );
-      }
-
-      const providerResponse = await fetch(
-        `${GSUBZ_BASE}/api/pay/`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: formData,
-        }
+      const network = normalizeNetwork(
+        body.network ||
+        body.provider ||
+        body.operator ||
+        serviceID,
       );
 
-      const data = await providerResponse.json();
+      /*
+       * If Sparkle sends:
+       * network = MTN
+       * instead of serviceID = mtn
+       */
+      if (
+        !serviceID ||
+        !AIRTIME_SERVICES.includes(serviceID)
+      ) {
+        if (AIRTIME_SERVICES.includes(network)) {
+          serviceID = network;
+        }
+      }
 
-      return response(
+      const phone = String(
+        body.phone ||
+        body.phoneNumber ||
+        body.mobile ||
+        "",
+      ).trim();
+
+      const amount = String(
+        body.amount ||
+        body.price ||
+        "",
+      ).trim();
+
+      const plan = String(
+        body.plan ||
+        body.planValue ||
+        body.value ||
+        body.variation_code ||
+        "",
+      ).trim();
+
+      const requestID = String(
+        body.requestID ||
+        body.requestId ||
+        body.reference ||
+        "",
+      ).trim();
+
+      /*
+       * AIRTIME
+       */
+      if (AIRTIME_SERVICES.includes(serviceID)) {
+        if (!phone || !amount) {
+          return json(
+            {
+              success: false,
+              error: "Missing airtime fields",
+              message:
+                "Airtime requires phone and amount.",
+            },
+            400,
+          );
+        }
+
+        const numericAmount =
+          Number(amount);
+
+        if (
+          !Number.isFinite(numericAmount) ||
+          numericAmount < 100
+        ) {
+          return json(
+            {
+              success: false,
+              error: "Invalid airtime amount",
+              message:
+                "Airtime amount must be at least ₦100.",
+            },
+            400,
+          );
+        }
+
+        const form = new FormData();
+
+        form.append(
+          "serviceID",
+          serviceID,
+        );
+
+        form.append(
+          "api",
+          apiKey,
+        );
+
+        form.append(
+          "amount",
+          amount,
+        );
+
+        form.append(
+          "phone",
+          phone,
+        );
+
+        if (requestID) {
+          form.append(
+            "requestID",
+            requestID,
+          );
+        }
+
+        const providerResponse =
+          await fetch(
+            `${GSUBZ_BASE}/api/pay/`,
+            {
+              method: "POST",
+              headers: {
+                Authorization:
+                  `Bearer ${apiKey}`,
+              },
+              body: form,
+            },
+          );
+
+        const data =
+          await providerResponse.json();
+
+        return json(
+          {
+            success: providerResponse.ok,
+            type: "airtime",
+            serviceID,
+            data,
+          },
+          providerResponse.status,
+        );
+      }
+
+      /*
+       * DATA
+       */
+      if (DATA_SERVICES.includes(serviceID)) {
+        if (!phone || !plan) {
+          return json(
+            {
+              success: false,
+              error: "Missing data fields",
+              message:
+                "Data requires phone and plan.",
+            },
+            400,
+          );
+        }
+
+        const form = new FormData();
+
+        form.append(
+          "serviceID",
+          serviceID,
+        );
+
+        form.append(
+          "plan",
+          plan,
+        );
+
+        form.append(
+          "api",
+          apiKey,
+        );
+
+        /*
+         * GSUBZ requires amount to be
+         * an empty string for data.
+         */
+        form.append(
+          "amount",
+          "",
+        );
+
+        form.append(
+          "phone",
+          phone,
+        );
+
+        if (requestID) {
+          form.append(
+            "requestID",
+            requestID,
+          );
+        }
+
+        const providerResponse =
+          await fetch(
+            `${GSUBZ_BASE}/api/pay/`,
+            {
+              method: "POST",
+              headers: {
+                Authorization:
+                  `Bearer ${apiKey}`,
+              },
+              body: form,
+            },
+          );
+
+        const data =
+          await providerResponse.json();
+
+        return json(
+          {
+            success: providerResponse.ok,
+            type: "data",
+            serviceID,
+            data,
+          },
+          providerResponse.status,
+        );
+      }
+
+      /*
+       * UNKNOWN SERVICE
+       */
+      return json(
         {
-          success: providerResponse.ok,
-          data,
+          success: false,
+          error: "Unsupported service",
+          serviceID,
+          network,
+          supportedAirtime:
+            AIRTIME_SERVICES,
+          supportedData:
+            DATA_SERVICES,
         },
-        providerResponse.status
+        400,
       );
     }
 
-    return response(
+    return json(
       {
         success: false,
-        error: "Unsupported request",
+        error: "Method not allowed",
       },
-      400
+      405,
     );
   } catch (error) {
-    return response(
+    return json(
       {
         success: false,
         error: "Internal server error",
@@ -295,7 +489,7 @@ serve(async (req) => {
             ? error.message
             : "Unknown error",
       },
-      500
+      500,
     );
   }
 });
