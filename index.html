@@ -937,48 +937,39 @@ body.dark-mode .earn-stat{background:#0b1727}
    Compact, mobile-first and GSUBZ driven.
    ===================================================== */
 .data-page-shell,.service-page{background:#f7f8fb;border-radius:20px;padding:0;overflow:hidden}
+.network-picker-title{font-size:25px;line-height:1.2;font-weight:950;color:#111827;margin:4px 0 12px}
+.network-picker-subtitle{font-size:13px;color:#667085;margin:0 0 14px;font-weight:650}
+.network-picker{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:18px}
+.network-card{position:relative;border:2px solid #e1e6ee;background:#fff;border-radius:20px;min-height:112px;padding:13px 8px 12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;color:#374151;font-weight:900;transition:.18s;box-shadow:0 2px 8px rgba(15,23,42,.025)}
+.network-card:hover{transform:translateY(-1px);border-color:#cbd5e1}
+.network-card.active{border-color:#0b5cff;box-shadow:0 0 0 3px rgba(11,92,255,.10)}
+.network-card-logo{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;font-size:17px;font-weight:950;text-transform:lowercase;color:#fff}
+.network-card-logo.mtn{background:#ffd400;color:#111827}
+.network-card-logo.airtel{background:#e60012}
+.network-card-logo.glo{background:#18a900}
+.network-card-logo.nine{background:#00a651}
+.network-card-check{position:absolute;right:9px;top:9px;width:21px;height:21px;border-radius:50%;background:#0b5cff;color:#fff;display:none;place-items:center;font-size:12px;font-weight:950}
+.network-card.active .network-card-check{display:grid}
+.data-network-hidden{display:none}
+.data-phone-section{margin-top:4px}
+@media(max-width:700px){
+  .network-picker{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .network-card{min-height:105px}
+  .network-card-logo{width:48px;height:48px}
+  .network-picker-title{font-size:24px}
+}
 .data-topbar{display:flex;align-items:center;gap:12px;padding:12px 2px 14px}
 .data-back{width:38px;height:38px;border:1px solid #e7eaf0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:23px;color:#111827}
 .data-topbar h1{font-size:22px;margin:0;font-weight:900;color:#111827}
 .data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#eef0f4;border-radius:16px;padding:3px;margin-bottom:14px}
 .data-purchase-tab{border:0;background:transparent;border-radius:13px;padding:10px 8px;font-weight:800;font-size:13px;color:#5b6472}
 .data-purchase-tab.active{background:#fff;color:#0b5cff;box-shadow:0 1px 5px rgba(15,23,42,.08)}
-/* Network chips (Data + Airtime) */
-.data-network-section{margin-bottom:14px}
-.data-step-label{font-size:13px;font-weight:900;color:#374151;margin:0 0 10px}
-.data-network-chips{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.data-network-chip{
-  border:2px solid #e0e5ec;background:#fff;border-radius:14px;padding:12px 4px 10px;
-  display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;
-  font-weight:900;font-size:12px;color:#374151;transition:.15s
-}
-.data-network-chip:hover{border-color:#b8c4d8}
-.data-network-chip.active{border-color:#0b5cff;box-shadow:0 0 0 3px rgba(11,92,255,.15);background:#f0f5ff;color:#0b5cff}
-.data-network-chip .chip-badge{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:12px;text-transform:lowercase}
-.data-network-chip .chip-badge.mtn{background:#ffd400;color:#111}
-.data-network-chip .chip-badge.airtel{background:#e60012}
-.data-network-chip .chip-badge.glo{background:#18a900}
-.data-network-chip .chip-badge.nine{background:#00a651}
-/* Plan type chips (Gifting / SME) – large & easy to tap */
-.data-plan-type-section{margin-bottom:14px}
-.data-plan-type-chips{display:flex;flex-direction:column;gap:8px}
-.data-plan-type-chip{
-  border:2px solid #e0e5ec;background:#fff;border-radius:14px;padding:16px 18px;
-  text-align:left;cursor:pointer;font-weight:900;font-size:16px;color:#111827;
-  transition:.15s;width:100%
-}
-.data-plan-type-chip:hover{border-color:#b8c4d8}
-.data-plan-type-chip.active{border-color:#0b5cff;background:#f0f5ff;color:#0b5cff;box-shadow:0 0 0 3px rgba(11,92,255,.15)}
-.data-plan-type-chip:disabled,.data-plan-type-chip.disabled{opacity:.45;cursor:not-allowed;pointer-events:none}
-.data-plan-type-hint{font-size:12px;color:#667085;margin:0 0 8px;font-weight:600}
-body.dark-mode .data-network-chip,body.dark-mode .data-plan-type-chip{background:#0e1b2d;border-color:#243852;color:#eef4ff}
-body.dark-mode .data-network-chip.active,body.dark-mode .data-plan-type-chip.active{background:#122238;border-color:#0b5cff;color:#6fa0ff}
 .data-beneficiary-card{background:#fff;border:1px solid #e8ebf1;border-radius:16px;padding:13px;margin-bottom:13px;box-shadow:0 2px 10px rgba(15,23,42,.03)}
-.data-phone-row{display:grid;grid-template-columns:48px 1fr 30px;align-items:center;gap:9px}
+.data-phone-row{display:grid;grid-template-columns:122px 1fr 30px;align-items:center;gap:9px}
 .data-network-select-wrap{display:flex;align-items:center;gap:7px;border-right:1px solid #e2e5ea;padding-right:9px}
 .network-badge{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px;text-transform:lowercase;flex:0 0 auto}
 .network-badge.glo{background:#18a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}.network-badge.neutral{background:#d9dee7;color:#667085}
-.data-network-select{position:absolute;opacity:0;pointer-events:none;width:0;height:0;border:0}
+.data-network-select{display:none}
 .data-phone-input{border:0;outline:0;font-size:16px;font-weight:750;min-width:0;width:100%;background:transparent;color:#111827}
 .data-phone-input::placeholder{color:#9ca3af;font-weight:600}
 .contact-btn{border:0;background:transparent;font-size:20px;color:#7b8492}
@@ -989,7 +980,7 @@ body.dark-mode .data-network-chip.active,body.dark-mode .data-plan-type-chip.act
 .save-toggle span{display:block;width:23px;height:23px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
 .save-toggle.on{background:#0b5cff}.save-toggle.on span{transform:translateX(18px)}
 .beneficiary-link{border:0;background:transparent;color:#0b5cff;font-weight:800;font-size:13px}
-.data-service-row{display:none}
+.data-service-row{display:flex;align-items:center;gap:8px;margin:0 0 12px}
 .data-service-label{font-size:12px;font-weight:800;color:#667085;white-space:nowrap}
 .data-service-select{width:100%;border:1px solid #e0e5ec;background:#fff;border-radius:11px;padding:9px 11px;font-weight:800;color:#1f2937;outline:none}
 .data-categories{display:flex;gap:7px;overflow:auto;padding:1px 0 10px;margin-bottom:2px;scrollbar-width:none}
@@ -1013,19 +1004,17 @@ body.dark-mode .data-network-chip.active,body.dark-mode .data-plan-type-chip.act
 .sparkle-loader-text{margin-top:10px;font-weight:800;color:#475467}
 @keyframes sparkleLogoPulse{0%,100%{transform:rotate(-4deg) scale(1);opacity:.92}50%{transform:rotate(4deg) scale(1.06);opacity:1}}
 @keyframes dataSpin{to{transform:rotate(360deg)}}
-.data-empty{grid-column:1/-1;padding:25px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
+.data-empty{grid-column:1/-1;padding:25px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}.data-empty-title{display:block;font-size:24px;line-height:1.25;color:#111827;font-weight:950;margin-bottom:7px}.data-empty-sub{display:block;color:#667085;font-size:13px;font-weight:650}
 .data-bottom-action{position:sticky;bottom:0;background:linear-gradient(transparent,#f7f8fb 14%);padding:12px 0 2px;margin-top:5px}
 .data-bottom-action .btn{border-radius:11px}
 .gsubz-error{grid-column:1/-1;background:#fff4f4;color:#a40000;border:1px solid #ffd6d6;padding:11px;border-radius:11px;margin:7px 0;font-size:12px}
 .gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:11px;padding:11px;margin:10px 0;font-size:12px}
 @media(max-width:700px){
  .data-page-shell,.service-page{margin:0 -2px;border-radius:16px}
- .data-phone-row{grid-template-columns:42px 1fr 27px}
- .data-network-chips{gap:6px}
- .data-network-chip{padding:10px 3px 8px;font-size:11px}
- .data-network-chip .chip-badge{width:34px;height:34px;font-size:11px}
- .data-plan-type-chip{padding:15px 14px;font-size:15px}
+ .data-phone-row{grid-template-columns:105px 1fr 27px}
+ .data-network-select-wrap{gap:5px;padding-right:7px}
  .network-badge{width:35px;height:35px;font-size:12px}
+ .data-network-select{width:58px;font-size:11px}
  .data-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
  .data-plan-card{min-height:128px;padding:12px 9px 10px}
  .data-plan-size{font-size:17px}
@@ -1664,47 +1653,33 @@ Privacy Policy
     </div>
 
     <div id="dataSingle">
-      <!-- 1. Network chips -->
-      <div class="data-network-section">
-        <p class="data-step-label">1. Select network</p>
-        <div class="data-network-chips" id="dataNetworkChips">
-          <button type="button" class="data-network-chip" data-network="MTN" onclick="selectDataNetwork('MTN')">
-            <span class="chip-badge mtn">mtn</span>MTN
-          </button>
-          <button type="button" class="data-network-chip" data-network="Airtel" onclick="selectDataNetwork('Airtel')">
-            <span class="chip-badge airtel">at</span>Airtel
-          </button>
-          <button type="button" class="data-network-chip" data-network="Glo" onclick="selectDataNetwork('Glo')">
-            <span class="chip-badge glo">glo</span>Glo
-          </button>
-          <button type="button" class="data-network-chip" data-network="9mobile" onclick="selectDataNetwork('9mobile')">
-            <span class="chip-badge nine">9m</span>9mobile
-          </button>
-        </div>
-        <select id="dataNetwork" class="data-network-select" aria-hidden="true" tabindex="-1">
-          <option value="" selected>Select</option>
-          <option value="MTN">MTN</option>
-          <option value="Airtel">Airtel</option>
-          <option value="Glo">Glo</option>
-          <option value="9mobile">9mobile</option>
-        </select>
+      <div class="network-picker-title">1. Select a network</div>
+      <p class="network-picker-subtitle">Choose the network you want to buy data for.</p>
+      <div class="network-picker" id="dataNetworkPicker" role="group" aria-label="Select data network">
+        <button type="button" class="network-card" data-network="MTN" onclick="selectNetworkCard('data','MTN')">
+          <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Airtel" onclick="selectNetworkCard('data','Airtel')">
+          <span class="network-card-logo airtel">at</span><span>Airtel</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Glo" onclick="selectNetworkCard('data','Glo')">
+          <span class="network-card-logo glo">glo</span><span>Glo</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="9mobile" onclick="selectNetworkCard('data','9mobile')">
+          <span class="network-card-logo nine">9m</span><span>9mobile</span><span class="network-card-check">✓</span>
+        </button>
       </div>
 
-      <!-- 2. Plan type (Gifting / SME) – large buttons -->
-      <div class="data-plan-type-section">
-        <p class="data-step-label">2. Select plan type</p>
-        <p class="data-plan-type-hint" id="dataPlanTypeHint">Tap a network above first (MTN, Airtel, Glo or 9mobile)</p>
-        <div class="data-plan-type-chips" id="dataPlanTypeChips">
-          <button type="button" class="data-plan-type-chip disabled" disabled style="opacity:.5">Select a network above to see Gifting / SME</button>
-        </div>
-        <select id="dataService" class="data-service-select" onchange="onDataServiceChange()" style="margin-top:10px;font-size:16px;padding:14px 12px;min-height:52px;border-radius:12px;font-weight:800">
-          <option value="">Select a network first</option>
-        </select>
-      </div>
+      <select class="data-network-select data-network-hidden" id="dataNetwork" onchange="onDataNetworkChange()" aria-hidden="true">
+        <option value="" selected>Select</option>
+        <option value="MTN">MTN</option>
+        <option value="Airtel">Airtel</option>
+        <option value="Glo">Glo</option>
+        <option value="9mobile">9mobile</option>
+      </select>
 
       <div class="data-beneficiary-card">
-        <div class="data-phone-row">
-          <span class="network-badge neutral" id="dataNetworkBadge">—</span>
+        <div class="data-phone-row data-phone-section">
           <input class="data-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
           <button class="contact-btn" onclick="chooseDataBeneficiary()" title="Choose beneficiary">♙</button>
         </div>
@@ -1718,11 +1693,19 @@ Privacy Policy
         </div>
       </div>
 
+      <div class="network-picker-title" style="font-size:20px;margin-top:20px">2. Select a service</div>
+      <div class="data-service-row">
+        <span class="data-service-label">Plan type</span>
+        <select class="data-service-select" id="dataService" onchange="onDataServiceChange()" disabled>
+          <option value="">Select a network first</option>
+        </select>
+      </div>
+
       <div class="data-categories" id="dataCategories"></div>
 
       <div id="dataPlanError"></div>
       <div id="dataPlans" class="data-plan-grid">
-        <div class="data-empty">Select a network, then select Gifting or SME to view live plans.</div>
+        <div class="data-empty"><strong class="data-empty-title">Select a network first</strong><span class="data-empty-sub">Choose a network above to continue.</span></div>
       </div>
 
       <div class="data-bottom-action">
@@ -1748,34 +1731,29 @@ Privacy Policy
       <button class="data-purchase-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Recharge</button>
     </div>
     <div id="airtimeSingle">
-      <!-- Network chips – same style as Data -->
-      <div class="data-network-section">
-        <p class="data-step-label">1. Select network</p>
-        <div class="data-network-chips" id="airtimeNetworkChips">
-          <button type="button" class="data-network-chip active" data-network="MTN" onclick="selectAirtimeNetwork('MTN')">
-            <span class="chip-badge mtn">mtn</span>MTN
-          </button>
-          <button type="button" class="data-network-chip" data-network="Airtel" onclick="selectAirtimeNetwork('Airtel')">
-            <span class="chip-badge airtel">at</span>Airtel
-          </button>
-          <button type="button" class="data-network-chip" data-network="Glo" onclick="selectAirtimeNetwork('Glo')">
-            <span class="chip-badge glo">glo</span>Glo
-          </button>
-          <button type="button" class="data-network-chip" data-network="9mobile" onclick="selectAirtimeNetwork('9mobile')">
-            <span class="chip-badge nine">9m</span>9mobile
-          </button>
-        </div>
-        <select id="airtimeNetwork" class="data-network-select" aria-hidden="true" tabindex="-1">
-          <option value="MTN" selected>MTN</option>
-          <option value="Airtel">Airtel</option>
-          <option value="Glo">Glo</option>
-          <option value="9mobile">9mobile</option>
-        </select>
+      <div class="network-picker-title">1. Select a network</div>
+      <p class="network-picker-subtitle">Choose the network you want to recharge.</p>
+      <div class="network-picker" id="airtimeNetworkPicker" role="group" aria-label="Select airtime network">
+        <button type="button" class="network-card active" data-network="MTN" onclick="selectNetworkCard('airtime','MTN')">
+          <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Airtel" onclick="selectNetworkCard('airtime','Airtel')">
+          <span class="network-card-logo airtel">at</span><span>Airtel</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Glo" onclick="selectNetworkCard('airtime','Glo')">
+          <span class="network-card-logo glo">glo</span><span>Glo</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="9mobile" onclick="selectNetworkCard('airtime','9mobile')">
+          <span class="network-card-logo nine">9m</span><span>9mobile</span><span class="network-card-check">✓</span>
+        </button>
       </div>
+
+      <select class="data-network-select data-network-hidden" id="airtimeNetwork" onchange="updateNetworkBadge('airtime')" aria-hidden="true">
+        <option value="MTN" selected>MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
+      </select>
 
       <div class="data-beneficiary-card">
         <div class="data-phone-row">
-          <span class="network-badge mtn" id="airtimeNetworkBadge">mtn</span>
           <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
           <button class="contact-btn" onclick="chooseGenericBeneficiary('airtime')">♙</button>
         </div>
@@ -3506,6 +3484,26 @@ async function gsubzRequest(path, method="GET", data=null){
   if(result&&result.error){const err=new Error(String(result.error));err.responseBody=result;throw err;}return result;
 }
 
+function renderNetworkPicker(service,network){
+  const picker=document.getElementById(service+"NetworkPicker");
+  if(!picker)return;
+  picker.querySelectorAll(".network-card").forEach(card=>{
+    const active=card.dataset.network===network;
+    card.classList.toggle("active",active);
+    card.setAttribute("aria-pressed",active?"true":"false");
+  });
+}
+function selectNetworkCard(service,network){
+  const select=document.getElementById(service+"Network");
+  if(!select)return;
+  select.value=network;
+  renderNetworkPicker(service,network);
+  if(service==="data"){
+    onDataNetworkChange();
+  }else{
+    updateNetworkBadge(service);
+  }
+}
 function networkBadgeClass(network){
   if(network==="MTN") return "mtn";
   if(network==="Airtel") return "airtel";
@@ -3518,6 +3516,7 @@ function updateNetworkBadge(service){
   const badge=document.getElementById(service+"NetworkBadge");
   if(!el||!badge)return;
   const network=el.value;
+  renderNetworkPicker(service,network);
   badge.className="network-badge "+networkBadgeClass(network);
   badge.textContent=network==="9mobile"?"9m":(network?network.toLowerCase():"—");
 }
@@ -3532,7 +3531,11 @@ function sparklePlanLoader(text="Loading plans…"){
 function clearDataPlans(message="Select a network, then select a service to view live plans."){
   const box=document.getElementById("dataPlans");
   if(box){
-    box.innerHTML=`<div class="data-empty">${escapeHtml(message)}</div>`;
+    const networkSelected=!!(document.getElementById("dataNetwork")?.value);
+    const isNetworkPrompt=!networkSelected || String(message).toLowerCase().includes("select a network");
+    box.innerHTML=isNetworkPrompt
+      ? '<div class="data-empty"><strong class="data-empty-title">Select a network first</strong><span class="data-empty-sub">Choose a network above to continue.</span></div>'
+      : `<div class="data-empty">${escapeHtml(message)}</div>`;
     box._shownPlans=[];
   }
   selectedDataPlan=null;
@@ -3542,120 +3545,25 @@ function clearDataPlans(message="Select a network, then select a service to view
 
 function renderDataServiceOptions(network){
   const select=document.getElementById("dataService");
-  const chips=document.getElementById("dataPlanTypeChips");
-  const hint=document.getElementById("dataPlanTypeHint");
+  if(!select)return;
   const options=DATA_SERVICE_OPTIONS[network]||[];
   selectedDataService=null;
   selectedDataServiceLabel="";
-  selectedServiceID=null;
-
-  console.log("[Sparkle] renderDataServiceOptions network=", network, "options=", options);
-
-  if(select){
-    select.disabled = !network || !options.length;
-    select.style.display = "block";
-    if(!network){
-      select.innerHTML='<option value="">Select a network first</option>';
-    }else if(!options.length){
-      select.innerHTML='<option value="">No service available</option>';
-    }else{
-      select.innerHTML='<option value="">Tap or select: Gifting / SME</option>'+options.map(o=>`<option value="${escapeHtml(o.id)}">${escapeHtml(o.label)}</option>`).join("");
-    }
-  }
-
-  if(hint){
-    if(!network){
-      hint.textContent = "Tap a network above first (MTN, Airtel, Glo or 9mobile)";
-      hint.style.color = "#667085";
-    }else if(!options.length){
-      hint.textContent = "No plan types for this network";
-      hint.style.color = "#a40000";
-    }else{
-      hint.textContent = "Network: " + network + " — now pick Gifting or SME below";
-      hint.style.color = "#0b5cff";
-      hint.style.fontWeight = "800";
-    }
-  }
-
-  if(chips){
-    if(!network || !options.length){
-      chips.innerHTML = '<button type="button" class="data-plan-type-chip disabled" disabled style="opacity:.5">Select a network above to see Gifting / SME</button>';
-    }else{
-      chips.innerHTML = options.map(o =>
-        `<button type="button" class="data-plan-type-chip" data-service-id="${escapeHtml(o.id)}" onclick="selectDataPlanType('${escapeHtml(o.id)}','${escapeHtml(o.label)}')">
-          ${escapeHtml(o.label)}
-        </button>`
-      ).join("");
-    }
-  }
-}
-
-/** Tap network chip on Data page */
-function selectDataNetwork(network){
-  try {
-    network = String(network || "").trim();
-    console.log("[Sparkle] selectDataNetwork:", network);
-    const select = document.getElementById("dataNetwork");
-    if (select) select.value = network;
-    document.querySelectorAll("#dataNetworkChips .data-network-chip").forEach(b => {
-      b.classList.toggle("active", b.getAttribute("data-network") === network);
-    });
-    // Update badge immediately
-    const badge = document.getElementById("dataNetworkBadge");
-    if (badge) {
-      badge.className = "network-badge " + networkBadgeClass(network);
-      badge.textContent = network === "9mobile" ? "9m" : (network ? network.toLowerCase() : "—");
-    }
-    onDataNetworkChange();
-  } catch (err) {
-    console.error("[Sparkle] selectDataNetwork error:", err);
-    alert("Network select error: " + (err.message || err));
-  }
-}
-
-/** Tap network chip on Airtime page */
-function selectAirtimeNetwork(network){
-  const select=document.getElementById("airtimeNetwork");
-  if(select) select.value = network || "MTN";
-  document.querySelectorAll("#airtimeNetworkChips .data-network-chip").forEach(b=>{
-    b.classList.toggle("active", b.getAttribute("data-network") === network);
-  });
-  updateNetworkBadge("airtime");
-}
-
-/** Tap plan type chip (Gifting / SME / Fibre X) */
-function selectDataPlanType(serviceID, label){
-  serviceID = String(serviceID || "").trim();
-  const select=document.getElementById("dataService");
-  if(select) select.value = serviceID;
-
-  document.querySelectorAll("#dataPlanTypeChips .data-plan-type-chip").forEach(b=>{
-    b.classList.toggle("active", b.getAttribute("data-service-id") === serviceID);
-  });
-
-  selectedNetwork = document.getElementById("dataNetwork")?.value || "";
-  selectedDataService = serviceID || null;
-  selectedServiceID = serviceID || null;
-  selectedDataServiceLabel = label || "";
-  selectedDataPlan = null;
-
-  console.log("Selected network:", selectedNetwork);
-  console.log("Selected serviceID:", selectedServiceID);
-
-  if(!serviceID){
-    clearDataPlans("Select a plan type (Gifting or SME) to load live plans.");
+  select.disabled=!network || !options.length;
+  if(!network){
+    select.innerHTML='<option value="">Select a network first</option>';
     return;
   }
-  clearDataPlans();
-  loadDataPlans(serviceID);
+  if(!options.length){
+    select.innerHTML='<option value="">No service available</option>';
+    return;
+  }
+  select.innerHTML='<option value="">Select a service</option>'+options.map(o=>`<option value="${escapeHtml(o.id)}">${escapeHtml(o.label)}</option>`).join("");
 }
 
 function onDataNetworkChange(){
   updateNetworkBadge("data");
   const network=document.getElementById("dataNetwork")?.value||"";
-  document.querySelectorAll("#dataNetworkChips .data-network-chip").forEach(b=>{
-    b.classList.toggle("active", b.getAttribute("data-network") === network);
-  });
   const token=++dataServiceLoadToken;
   selectedNetwork=network;
   selectedDataPlan=null;
@@ -3664,18 +3572,30 @@ function onDataNetworkChange(){
   selectedDataServiceLabel="";
   dataPlansCache={};
   renderDataServiceOptions(network);
-  clearDataPlans(network ? "Select a plan type (Gifting or SME) to load live plans." : "Select a network first.");
-  const summary=document.getElementById("dataSummary");
-  if(summary){summary.classList.remove("show");summary.innerHTML="";}
+  clearDataPlans(network ? "Select a service to load live GSUBZ plans." : "Select a network, then select a service to view live plans.");
   if(token!==dataServiceLoadToken)return;
 }
 
 function onDataServiceChange(){
-  // Kept for compatibility if hidden select changes
   const select=document.getElementById("dataService");
   const serviceID=String(select?.value||"").trim();
   const option=select?.selectedOptions?.[0];
-  selectDataPlanType(serviceID, option?.textContent || "");
+  selectedNetwork=document.getElementById("dataNetwork")?.value||"";
+  selectedDataService=serviceID||null;
+  selectedServiceID=serviceID||null;
+  selectedDataServiceLabel=option?.textContent||"";
+  selectedDataPlan=null;
+
+  console.log("Selected network:", selectedNetwork);
+  console.log("Selected serviceID:", selectedServiceID);
+
+  if(!serviceID){
+    clearDataPlans("Select a service to load live GSUBZ plans.");
+    return;
+  }
+
+  clearDataPlans();
+  loadDataPlans(serviceID);
 }
 
 async function loadDataPlans(serviceID){
@@ -3756,27 +3676,6 @@ function renderDataPlans(plans){
       <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
     </button>`).join("");
 }
-
-function selectDataPlan(index, value, price, name, duration){
-  const box = document.getElementById("dataPlans");
-  const shown = box?._shownPlans || [];
-  let plan = shown.find(x => String(x._value) === String(value));
-  if (!plan && Number.isInteger(index) && shown[index] && String(shown[index]._value) === String(value)) {
-    plan = shown[index];
-  }
-  if (!plan) {
-    plan = { _value: String(value ?? ""), _price: Number(price || 0), _name: name || "", _duration: duration || "", _size: name || "" };
-  }
-  selectedDataPlan = plan;
-  if (selectedServiceID && dataPlansCache[selectedServiceID]) {
-    renderDataPlans(dataPlansCache[selectedServiceID]);
-  } else if (box && shown.length) {
-    renderDataPlans(shown);
-  }
-  const summary = document.getElementById("dataSummary");
-  if (summary) { summary.classList.remove("show"); summary.innerHTML = ""; }
-}
-
 function extractPlanDuration(plan){
   const candidates=[];
   if(plan&&typeof plan==="object"){
@@ -3797,45 +3696,38 @@ function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if
 function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
 function splitPlanName(plan){const raw=String(plan?.displayName||plan?.name||"").trim();const duration=planDuration(plan);const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
 function normalizePlans(result){
-  // Real GSUBZ shapes:
-  // Data:  { success, service, data: { plans: [{displayName,value,price,api_price}] } }
-  // Cable: { success, service, data: { list: [{display_name,value,price}] } }
-  let plans = [];
-  let location = "none";
-  if (Array.isArray(result?.data?.plans)) { plans = result.data.plans; location = "data.plans"; }
-  else if (Array.isArray(result?.data?.list)) { plans = result.data.list; location = "data.list"; }
-  else if (Array.isArray(result?.plans)) { plans = result.plans; location = "plans"; }
-  else if (Array.isArray(result?.data)) { plans = result.data; location = "data"; }
-  else if (Array.isArray(result?.results)) { plans = result.results; location = "results"; }
-  else if (Array.isArray(result?.list)) { plans = result.list; location = "list"; }
-  else if (Array.isArray(result)) { plans = result; location = "root array"; }
-
+  // GSUBZ wraps live data plans inside data.plans.
+  // Do not read result.plans: that property does not exist in the live response.
+  const plans=Array.isArray(result?.data?.plans)?result.data.plans:[];
   console.groupCollapsed("[Sparkle DATA] GSUBZ plan response inspection");
-  console.log("Full Edge Function response:", result);
-  console.log("Resolved plans array location:", location);
-  console.log("Raw GSUBZ plans:", plans);
-  if (plans[0]) {
-    const f = plans[0];
-    console.log("First raw plan:", f);
+  console.log("Raw GSUBZ response:",result);
+  console.log("Raw GSUBZ plans:",plans);
+  if(plans[0]){
+    const f=plans[0];
+    console.log("First raw plan:",f);
+    console.log("Mapped fields:",{
+      planName:f.displayName,
+      validity:planDuration(f)||"not separately returned",
+      price:f.api_price ?? f.price,
+      planIdentifier:f.value
+    });
   }
   console.groupEnd();
-
-  return plans.map((p, i) => {
-    const name = p.displayName || p.display_name || p.name || (p.value ? String(p.value) : (p.PlanName || ("Plan " + (i + 1))));
-    const forDuration = { ...p, displayName: name, name: name };
-    const d = splitPlanName(forDuration);
+  return plans.map((p,i)=>{
+    const name=p.displayName||p.display_name||p.name||(p.value?String(p.value):(p.PlanName||("Plan "+(i+1))));
+    const d=splitPlanName(p);
     return {
       ...p,
-      _name: name,
-      _value: String(p.value ?? p.plan ?? p.variation_code ?? p.plan_id ?? ""),
-      _price: Number(p.api_price ?? p.price ?? 0),
-      _category: planCategory(forDuration),
-      _categoryLabel: planCategoryLabel(forDuration),
-      _duration: d.duration,
-      _days: planDays(forDuration),
-      _size: d.size
+      _name:name,
+      _value:p.value??p.plan??p.variation_code??"",
+      _price:Number(p.api_price??p.price??0),
+      _category:planCategory(p),
+      _categoryLabel:planCategoryLabel(p),
+      _duration:d.duration,
+      _days:planDays(p),
+      _size:d.size
     };
-  }).filter(p => p._value !== "" && Number.isFinite(p._price) && p._price >= 0);
+  }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>=0);
 }
 function categoryTabsForPlans(plans){
   const tabs=[{key:"All",label:"All"}];
@@ -4597,26 +4489,6 @@ document.addEventListener("DOMContentLoaded",()=>{
     loadCablePlans();
     updateNetworkBadge("data");
   },300);
-  // Event delegation backup for network chips (in case inline onclick fails)
-  document.body.addEventListener("click", function(e){
-    const netBtn = e.target.closest("#dataNetworkChips .data-network-chip");
-    if(netBtn){
-      e.preventDefault();
-      selectDataNetwork(netBtn.getAttribute("data-network"));
-      return;
-    }
-    const typeBtn = e.target.closest("#dataPlanTypeChips .data-plan-type-chip:not([disabled])");
-    if(typeBtn && typeBtn.getAttribute("data-service-id")){
-      e.preventDefault();
-      selectDataPlanType(typeBtn.getAttribute("data-service-id"), typeBtn.textContent.trim());
-      return;
-    }
-    const airBtn = e.target.closest("#airtimeNetworkChips .data-network-chip");
-    if(airBtn){
-      e.preventDefault();
-      selectAirtimeNetwork(airBtn.getAttribute("data-network"));
-    }
-  });
 });
 </script>
 
