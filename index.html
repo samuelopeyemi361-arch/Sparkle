@@ -3396,8 +3396,10 @@ const DATA_SERVICE_OPTIONS = {
 
 const airtimeServiceMap = {MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"};
 let selectedDataPlan = null;
-let selectedDataCategory = "Hot";
+let selectedDataCategory = "All";
 let selectedDataService = null;
+let selectedServiceID = null;
+let selectedNetwork = "";
 let selectedDataServiceLabel = "";
 let dataPlansCache = {};
 let dataServiceLoadToken = 0;
@@ -3486,47 +3488,65 @@ function onDataNetworkChange(){
   updateNetworkBadge("data");
   const network=document.getElementById("dataNetwork")?.value||"";
   const token=++dataServiceLoadToken;
+  selectedNetwork=network;
   selectedDataPlan=null;
   selectedDataService=null;
+  selectedServiceID=null;
   selectedDataServiceLabel="";
   dataPlansCache={};
   renderDataServiceOptions(network);
   clearDataPlans(network ? "Select a service to load live GSUBZ plans." : "Select a network, then select a service to view live plans.");
-  // Changing network must never show plans belonging to the previous network.
-  if(token!==dataServiceLoadToken) return;
+  if(token!==dataServiceLoadToken)return;
 }
 
 function onDataServiceChange(){
   const select=document.getElementById("dataService");
-  const serviceID=select?.value||"";
+  const serviceID=String(select?.value||"").trim();
   const option=select?.selectedOptions?.[0];
+  selectedNetwork=document.getElementById("dataNetwork")?.value||"";
   selectedDataService=serviceID||null;
+  selectedServiceID=serviceID||null;
   selectedDataServiceLabel=option?.textContent||"";
   selectedDataPlan=null;
+
+  console.log("Selected network:", selectedNetwork);
+  console.log("Selected serviceID:", selectedServiceID);
+
   if(!serviceID){
     clearDataPlans("Select a service to load live GSUBZ plans.");
     return;
   }
+
+  clearDataPlans();
   loadDataPlans(serviceID);
 }
 
 async function loadDataPlans(serviceID){
-  const requestedServiceID=String(serviceID||selectedDataService||document.getElementById("dataService")?.value||"").trim();
-  console.log("Selected serviceID:",requestedServiceID);
-  console.log("ServiceID immediately before Supabase function call:",requestedServiceID);
+  const requestedServiceID=String(serviceID||selectedServiceID||selectedDataService||document.getElementById("dataService")?.value||"").trim();
+  selectedNetwork=document.getElementById("dataNetwork")?.value||selectedNetwork||"";
+  selectedServiceID=requestedServiceID||null;
+  selectedDataService=requestedServiceID||null;
+
+  console.log("Selected network:", selectedNetwork);
+  console.log("Selected serviceID:", selectedServiceID);
+  console.log("ServiceID immediately before Supabase function call:", requestedServiceID);
+
   const box=document.getElementById("dataPlans");
   if(!requestedServiceID){
     clearDataPlans("Select a service to load live GSUBZ plans.");
     return;
   }
-  selectedDataService=requestedServiceID;
+
   if(box) box.innerHTML=sparklePlanLoader("Loading plans…");
   const error=document.getElementById("dataPlanError");
   if(error) error.innerHTML="";
+
   try{
     if(!dataPlansCache[requestedServiceID]){
       console.log("[Sparkle DATA] Calling GSUBZ with serviceID:",requestedServiceID);
-      dataPlansCache[requestedServiceID]=normalizePlans(await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET"));
+      dataPlansCache[requestedServiceID]=normalizePlans(
+        await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET")
+      );
     }
     renderDataPlans(dataPlansCache[requestedServiceID]);
   }catch(e){
@@ -3535,25 +3555,40 @@ async function loadDataPlans(serviceID){
     if(error) error.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load live GSUBZ plans.")+'</div>';
   }
 }
+
 function renderDataPlans(plans){
   const box=document.getElementById("dataPlans");
   if(!box)return;
   const safePlans=Array.isArray(plans)?plans:[];
+
+  // GSUBZ is the source of truth. Do not require HOT/DAILY/WEEKLY/MONTHLY
+  // (or any other category) before showing returned plans.
   renderDataCategoryTabs(safePlans);
-  let filtered=safePlans.filter(p=>{
-    if(selectedDataCategory==="Hot") return [2,3,7,30].includes(p._days);
-    if(selectedDataCategory==="Daily") return p._days===1;
-    if(selectedDataCategory==="Weekly") return p._days===7;
-    if(selectedDataCategory==="Monthly") return p._days===30;
-    if(String(selectedDataCategory).startsWith("duration:")) return p._days===Number(String(selectedDataCategory).split(":")[1]);
-    if(selectedDataCategory==="Other") return !Number.isFinite(p._days);
-    return p._categoryLabel===selectedDataCategory;
-  });
+
+  let filtered=safePlans;
+  if(selectedDataCategory && selectedDataCategory!=="All"){
+    if(String(selectedDataCategory).startsWith("duration:")){
+      const requestedDays=Number(String(selectedDataCategory).split(":")[1]);
+      filtered=safePlans.filter(p=>Number.isFinite(p._days)&&p._days===requestedDays);
+    }
+  }
+
   if(!filtered.length){
-    box.innerHTML='<div class="data-empty">No '+escapeHtml(String(selectedDataCategory).toUpperCase())+' plans are currently available for this service.</div>';
+    // A selected optional filter may have no plans. Never block the service
+    // with a fake "HOT plans unavailable" message. Return to All instead.
+    if(selectedDataCategory!=="All"){
+      selectedDataCategory="All";
+      renderDataCategoryTabs(safePlans);
+      filtered=safePlans;
+    }
+  }
+
+  if(!filtered.length){
+    box.innerHTML='<div class="data-empty">No valid live plans were returned by GSUBZ for this service.</div>';
     box._shownPlans=[];
     return;
   }
+
   box._shownPlans=filtered;
   box.innerHTML=filtered.map((p,i)=>`
     <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
@@ -3589,9 +3624,29 @@ function normalizePlans(result){
   if(plans[0]){const f=plans[0];console.log("First raw plan:",f);console.log("Mapped fields:",{planName:f.displayName,dataSize:(String(f.displayName||"").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i)||[])[1]||"not separately returned",validity:planDuration(f)||"not separately returned",price:f.api_price,normalPrice:f.price,planIdentifier:f.value,identifierField:f.PlanName});}console.groupEnd();
   return plans.map((p,i)=>{const name=p.displayName||p.name||(p.value?String(p.value):(p.PlanName||("Plan "+(i+1))));const d=splitPlanName(p);return {...p,_name:name,_value:p.value??p.plan??p.variation_code??"",_price:Number(p.api_price??p.price??0),_category:planCategory(p),_categoryLabel:planCategoryLabel(p),_duration:d.duration,_days:planDays(p),_size:d.size};}).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>=0);
 }
-function categoryTabsForPlans(plans){const tabs=[];const add=(k,l)=>{if(!tabs.some(x=>x.key===k))tabs.push({key:k,label:l});};if(plans.some(p=>[2,3,7,30].includes(p._days)))add("Hot","Hot");if(plans.some(p=>p._days===1))add("Daily","Daily");if(plans.some(p=>p._days===7))add("Weekly","Weekly");if(plans.some(p=>p._days===30))add("Monthly","Monthly");[...new Set(plans.map(p=>p._days).filter(d=>Number.isFinite(d)&&![1,2,3,7,30].includes(d)))].sort((a,b)=>a-b).forEach(d=>add("duration:"+d,d+" Days"));if(plans.some(p=>!Number.isFinite(p._days)))add("Other","Other");return tabs;}
-function renderDataCategoryTabs(plans){const c=document.getElementById("dataCategories");if(!c)return;const tabs=categoryTabsForPlans(plans);if(!tabs.length){c.innerHTML="";selectedDataCategory="Hot";return;}if(!tabs.some(t=>t.key===selectedDataCategory))selectedDataCategory=tabs[0].key;c.innerHTML=tabs.map(t=>`<button type="button" class="data-category ${t.key===selectedDataCategory?"active":""}" onclick="selectDataCategory(${JSON.stringify(t.key)},this)">${escapeHtml(t.label)}</button>`).join("");}
-function selectDataCategory(category,button){selectedDataCategory=category;document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));button?.classList.add("active");if(selectedDataService)renderDataPlans(dataPlansCache[selectedDataService]||[]);else clearDataPlans("Select a service to load live GSUBZ plans.");}
+function categoryTabsForPlans(plans){
+  const tabs=[{key:"All",label:"All"}];
+  const durations=[...new Set((Array.isArray(plans)?plans:[])
+    .map(p=>p?._days)
+    .filter(d=>Number.isFinite(d)&&d>0))]
+    .sort((a,b)=>a-b);
+  durations.forEach(d=>tabs.push({key:"duration:"+d,label:d===1?"1 day":d+" days"}));
+  return tabs;
+}
+function renderDataCategoryTabs(plans){
+  const c=document.getElementById("dataCategories");
+  if(!c)return;
+  const tabs=categoryTabsForPlans(plans);
+  if(!tabs.some(t=>t.key===selectedDataCategory))selectedDataCategory="All";
+  c.innerHTML=tabs.map(t=>`<button type="button" class="data-category ${t.key===selectedDataCategory?"active":""}" onclick="selectDataCategory(${JSON.stringify(t.key)},this)">${escapeHtml(t.label)}</button>`).join("");
+}
+function selectDataCategory(category,button){
+  selectedDataCategory=category||"All";
+  document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
+  button?.classList.add("active");
+  if(selectedServiceID)renderDataPlans(dataPlansCache[selectedServiceID]||[]);
+  else clearDataPlans("Select a service to load live GSUBZ plans.");
+}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
 function beneficiaryKey(type){
