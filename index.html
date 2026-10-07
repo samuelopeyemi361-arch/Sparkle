@@ -3510,6 +3510,60 @@ function onDataServiceChange(){
   loadDataPlans(serviceID);
 }
 
+async function loadDataPlans(serviceID){
+  const requestedServiceID=String(serviceID||selectedDataService||document.getElementById("dataService")?.value||"").trim();
+  console.log("Selected serviceID:",requestedServiceID);
+  console.log("ServiceID immediately before Supabase function call:",requestedServiceID);
+  const box=document.getElementById("dataPlans");
+  if(!requestedServiceID){
+    clearDataPlans("Select a service to load live GSUBZ plans.");
+    return;
+  }
+  selectedDataService=requestedServiceID;
+  if(box) box.innerHTML=sparklePlanLoader("Loading plans…");
+  const error=document.getElementById("dataPlanError");
+  if(error) error.innerHTML="";
+  try{
+    if(!dataPlansCache[requestedServiceID]){
+      console.log("[Sparkle DATA] Calling GSUBZ with serviceID:",requestedServiceID);
+      dataPlansCache[requestedServiceID]=normalizePlans(await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET"));
+    }
+    renderDataPlans(dataPlansCache[requestedServiceID]);
+  }catch(e){
+    console.error("[Sparkle DATA] Plans request failed for serviceID:",requestedServiceID,e);
+    if(box) box.innerHTML="";
+    if(error) error.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load live GSUBZ plans.")+'</div>';
+  }
+}
+function renderDataPlans(plans){
+  const box=document.getElementById("dataPlans");
+  if(!box)return;
+  const safePlans=Array.isArray(plans)?plans:[];
+  renderDataCategoryTabs(safePlans);
+  let filtered=safePlans.filter(p=>{
+    if(selectedDataCategory==="Hot") return [2,3,7,30].includes(p._days);
+    if(selectedDataCategory==="Daily") return p._days===1;
+    if(selectedDataCategory==="Weekly") return p._days===7;
+    if(selectedDataCategory==="Monthly") return p._days===30;
+    if(String(selectedDataCategory).startsWith("duration:")) return p._days===Number(String(selectedDataCategory).split(":")[1]);
+    if(selectedDataCategory==="Other") return !Number.isFinite(p._days);
+    return p._categoryLabel===selectedDataCategory;
+  });
+  if(!filtered.length){
+    box.innerHTML='<div class="data-empty">No '+escapeHtml(String(selectedDataCategory).toUpperCase())+' plans are currently available for this service.</div>';
+    box._shownPlans=[];
+    return;
+  }
+  box._shownPlans=filtered;
+  box.innerHTML=filtered.map((p,i)=>`
+    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
+      <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
+      <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
+      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
+      <span class="data-plan-buy">Buy</span>
+      <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
+    </button>`).join("");
+}
 function extractPlanDuration(plan){
   const candidates=[];
   if(plan&&typeof plan==="object"){
