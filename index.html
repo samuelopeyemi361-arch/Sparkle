@@ -3409,11 +3409,94 @@ let dataServiceLoadToken = 0;
 let selectedCablePlan = null;
 
 async function gsubzRequest(path, method="GET", data=null){
+  const upperMethod=String(method||"GET").toUpperCase();
+
+  // The existing Sparkle Gsubz Edge Function expects plan requests as:
+  // GET /functions/v1/gsubz?action=plans&service=mtn_sme
+  // Supabase functions.invoke() sends a POST body, so it cannot be used for
+  // this specific GET+query-string contract. Keep invoke() for POST requests.
+  if(upperMethod==="GET") {
+    const sessionResult=await supabaseClient.auth.getSession();
+    const accessToken=sessionResult?.data?.session?.access_token;
+    if(!accessToken) throw new Error("You are not logged in or your session has expired.");
+
+    const incoming=new URL(path, window.location.origin);
+    const url=new URL(SUPABASE_URL+"/functions/v1/"+GSUBZ_FUNCTION_NAME);
+    incoming.searchParams.forEach((value,key)=>url.searchParams.set(key,value));
+
+    console.groupCollapsed("[Sparkle → GSUBZ] GET request");
+    console.log("Edge Function:",GSUBZ_FUNCTION_NAME);
+    console.log("Request URL:",url.toString());
+    console.log("Method:",upperMethod);
+    console.log("Query:",Object.fromEntries(url.searchParams.entries()));
+
+    let response;
+    let rawBody="";
+    try{
+      response=await fetch(url.toString(),{
+        method:"GET",
+        headers:{
+          "Authorization":"Bearer "+accessToken,
+          "apikey":SUPABASE_KEY,
+          "Accept":"application/json"
+        }
+      });
+      rawBody=await response.text();
+    }catch(fetchError){
+      console.error("Network/fetch error:",fetchError);
+      console.groupEnd();
+      throw fetchError;
+    }
+
+    console.log("Response status:",response.status,response.statusText);
+    console.log("Response body (raw):",rawBody);
+
+    let result=null;
+    try{ result=rawBody ? JSON.parse(rawBody) : null; }
+    catch(parseError){ console.error("Response JSON parse error:",parseError); }
+
+    console.log("Response body (parsed):",result);
+    console.groupEnd();
+
+    if(!response.ok){
+      const detail=result?.error || result?.message || result?.api_response || rawBody || response.statusText;
+      const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);
+      err.status=response.status;
+      err.responseBody=result ?? rawBody;
+      throw err;
+    }
+    if(result && result.error){
+      const err=new Error(String(result.error));
+      err.status=response.status;
+      err.responseBody=result;
+      throw err;
+    }
+    return result;
+  }
+
+  // Existing POST contract for purchases/verification remains unchanged.
   const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{
-    body:{path,method,data}
+    body:{path,method:upperMethod,data}
   });
-  if(error) throw new Error(error.message || "Unable to reach Gsubz.");
-  if(result && result.error) throw new Error(result.error);
+
+  console.groupCollapsed("[Sparkle → GSUBZ] POST request");
+  console.log("Edge Function:",GSUBZ_FUNCTION_NAME);
+  console.log("Path:",path);
+  console.log("Method:",upperMethod);
+  console.log("Request body:",data);
+  console.log("Supabase invoke response body:",result);
+  console.log("Supabase invoke error:",error);
+  console.groupEnd();
+
+  if(error){
+    console.error("GSUBZ Edge Function POST error:",error);
+    throw new Error(error.message || "Unable to reach Gsubz.");
+  }
+  if(result && result.error){
+    const err=new Error(String(result.error));
+    err.responseBody=result;
+    throw err;
+  }
   return result;
 }
 
@@ -3563,6 +3646,15 @@ async function loadDataPlans(serviceID){
   document.getElementById("dataPlanError").innerHTML="";
 
   try{
+    // Log the exact serviceID before the request. This must never be empty.
+    console.log("[Sparkle DATA] Selected network:",network);
+    console.log("[Sparkle DATA] Selected service:",selectedDataServiceLabel);
+    console.log("[Sparkle DATA] Exact serviceID being sent:",selectedService);
+
+    if(!selectedService){
+      throw new Error("Data serviceID is empty. Select a data service first.");
+    }
+
     if(!dataPlansCache[selectedService]){
       const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(selectedService),"GET");
       if(token!==dataServiceLoadToken)return;
@@ -3574,7 +3666,11 @@ async function loadDataPlans(serviceID){
     if(token!==dataServiceLoadToken)return;
     box.innerHTML="";
     document.getElementById("dataPlanError").innerHTML='<div class="gsubz-error">Unable to load plans. Please try again.</div>';
-    console.error("Gsubz plans request failed:",e);
+    console.error("[Sparkle DATA] Gsubz plans request failed.");
+    console.error("[Sparkle DATA] Exact serviceID:",selectedService);
+    console.error("[Sparkle DATA] Error:",e);
+    console.error("[Sparkle DATA] HTTP status:",e?.status ?? "not available");
+    console.error("[Sparkle DATA] Response body:",e?.responseBody ?? "not available");
   }
 }
 
