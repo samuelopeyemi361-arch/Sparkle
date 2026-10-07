@@ -1664,12 +1664,7 @@ Privacy Policy
         </select>
       </div>
 
-      <div class="data-categories">
-        <button class="data-category active" onclick="selectDataCategory('Hot',this)">Hot</button>
-        <button class="data-category" onclick="selectDataCategory('Weekly',this)">Weekly</button>
-        <button class="data-category" onclick="selectDataCategory('Monthly',this)">Monthly</button>
-        <button class="data-category" onclick="selectDataCategory('Daily',this)">Daily</button>
-      </div>
+      <div class="data-categories" id="dataCategories"></div>
 
       <div id="dataPlanError"></div>
       <div id="dataPlans" class="data-plan-grid">
@@ -3410,94 +3405,29 @@ let selectedCablePlan = null;
 
 async function gsubzRequest(path, method="GET", data=null){
   const upperMethod=String(method||"GET").toUpperCase();
-
-  // The existing Sparkle Gsubz Edge Function expects plan requests as:
-  // GET /functions/v1/gsubz?action=plans&service=mtn_sme
-  // Supabase functions.invoke() sends a POST body, so it cannot be used for
-  // this specific GET+query-string contract. Keep invoke() for POST requests.
-  if(upperMethod==="GET") {
+  if(upperMethod==="GET"){
     const sessionResult=await supabaseClient.auth.getSession();
     const accessToken=sessionResult?.data?.session?.access_token;
-    if(!accessToken) throw new Error("You are not logged in or your session has expired.");
-
-    const incoming=new URL(path, window.location.origin);
+    if(!accessToken)throw new Error("You are not logged in or your session has expired.");
+    const incoming=new URL(path,window.location.origin);
     const url=new URL(SUPABASE_URL+"/functions/v1/"+GSUBZ_FUNCTION_NAME);
     incoming.searchParams.forEach((value,key)=>url.searchParams.set(key,value));
-
+    // The existing gsubz Edge Function expects plan lookups as
+    // GET ?action=plans&service=<serviceID>.
+    if(incoming.pathname==="/api/plans/"||incoming.pathname==="/api/plans")url.searchParams.set("action","plans");
     console.groupCollapsed("[Sparkle → GSUBZ] GET request");
-    console.log("Edge Function:",GSUBZ_FUNCTION_NAME);
-    console.log("Request URL:",url.toString());
-    console.log("Method:",upperMethod);
-    console.log("Query:",Object.fromEntries(url.searchParams.entries()));
-
-    let response;
-    let rawBody="";
-    try{
-      response=await fetch(url.toString(),{
-        method:"GET",
-        headers:{
-          "Authorization":"Bearer "+accessToken,
-          "apikey":SUPABASE_KEY,
-          "Accept":"application/json"
-        }
-      });
-      rawBody=await response.text();
-    }catch(fetchError){
-      console.error("Network/fetch error:",fetchError);
-      console.groupEnd();
-      throw fetchError;
-    }
-
-    console.log("Response status:",response.status,response.statusText);
-    console.log("Response body (raw):",rawBody);
-
-    let result=null;
-    try{ result=rawBody ? JSON.parse(rawBody) : null; }
-    catch(parseError){ console.error("Response JSON parse error:",parseError); }
-
-    console.log("Response body (parsed):",result);
-    console.groupEnd();
-
-    if(!response.ok){
-      const detail=result?.error || result?.message || result?.api_response || rawBody || response.statusText;
-      const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);
-      err.status=response.status;
-      err.responseBody=result ?? rawBody;
-      throw err;
-    }
-    if(result && result.error){
-      const err=new Error(String(result.error));
-      err.status=response.status;
-      err.responseBody=result;
-      throw err;
-    }
-    return result;
+    console.log("Edge Function:",GSUBZ_FUNCTION_NAME);console.log("Request URL:",url.toString());console.log("Method:",upperMethod);console.log("Query:",Object.fromEntries(url.searchParams.entries()));
+    let response,rawBody="";
+    try{response=await fetch(url.toString(),{method:"GET",headers:{"Authorization":"Bearer "+accessToken,"apikey":SUPABASE_KEY,"Accept":"application/json"}});rawBody=await response.text();}catch(fetchError){console.error("Network/fetch error:",fetchError);console.groupEnd();throw fetchError;}
+    console.log("Response status:",response.status,response.statusText);console.log("Response body (raw):",rawBody);
+    let result=null;try{result=rawBody?JSON.parse(rawBody):null;}catch(parseError){console.error("Response JSON parse error:",parseError);}console.log("Response body (parsed):",result);console.groupEnd();
+    if(!response.ok){const detail=result?.error||result?.message||result?.api_response||rawBody||response.statusText;const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);err.status=response.status;err.responseBody=result??rawBody;throw err;}
+    if(result&&result.error){const err=new Error(String(result.error));err.status=response.status;err.responseBody=result;throw err;}return result;
   }
-
-  // Existing POST contract for purchases/verification remains unchanged.
-  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{
-    body:{path,method:upperMethod,data}
-  });
-
-  console.groupCollapsed("[Sparkle → GSUBZ] POST request");
-  console.log("Edge Function:",GSUBZ_FUNCTION_NAME);
-  console.log("Path:",path);
-  console.log("Method:",upperMethod);
-  console.log("Request body:",data);
-  console.log("Supabase invoke response body:",result);
-  console.log("Supabase invoke error:",error);
-  console.groupEnd();
-
-  if(error){
-    console.error("GSUBZ Edge Function POST error:",error);
-    throw new Error(error.message || "Unable to reach Gsubz.");
-  }
-  if(result && result.error){
-    const err=new Error(String(result.error));
-    err.responseBody=result;
-    throw err;
-  }
-  return result;
+  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:{path,method:upperMethod,data}});
+  console.groupCollapsed("[Sparkle → GSUBZ] POST request");console.log("Edge Function:",GSUBZ_FUNCTION_NAME);console.log("Path:",path);console.log("Method:",upperMethod);console.log("Request body:",data);console.log("Supabase invoke response body:",result);console.log("Supabase invoke error:",error);console.groupEnd();
+  if(error){console.error("GSUBZ Edge Function POST error:",error);throw new Error(error.message||"Unable to reach Gsubz.");}
+  if(result&&result.error){const err=new Error(String(result.error));err.responseBody=result;throw err;}return result;
 }
 
 function networkBadgeClass(network){
@@ -3580,144 +3510,34 @@ function onDataServiceChange(){
   loadDataPlans(serviceID);
 }
 
-function planDuration(name){
-  const s=String(name||"").toLowerCase();
-  if(/\b30\s*(?:day|days)\b|monthly|\b1\s*month\b/.test(s)) return "30 days";
-  if(/\b14\s*(?:day|days)\b|2\s*weeks?/.test(s)) return "14 days";
-  if(/\b7\s*(?:day|days)\b|weekly|1\s*week/.test(s)) return "7 days";
-  if(/\b3\s*(?:day|days)\b/.test(s)) return "3 days";
-  if(/\b2\s*(?:day|days)\b/.test(s)) return "2 days";
-  if(/\b1\s*(?:day|days)\b|daily/.test(s)) return "1 day";
-  const m=s.match(/(\d+)\s*days?/);
-  return m ? m[1]+" days" : "";
+function extractPlanDuration(plan){
+  const candidates=[];
+  if(plan&&typeof plan==="object"){
+    [plan.duration,plan.validity,plan.validityPeriod,plan.validity_period,plan.days,plan.durationDays,plan.validityDays,plan.validity_days,plan.displayName,plan.name,plan.PlanName].forEach(v=>{if(v!==undefined&&v!==null&&String(v).trim()!=="")candidates.push(String(v));});
+  }else if(plan!==undefined&&plan!==null)candidates.push(String(plan));
+  for(const rawValue of candidates){
+    const raw=String(rawValue).trim().toLowerCase();if(!raw)continue;
+    if(/^\d+(?:\.\d+)?$/.test(raw)){const n=Number(raw);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
+    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:day|days|d)\b/);if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:week|weeks|wk|wks)\b/);if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return {days:n,label:n===7?"7 days":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:month|months|mo|mos)\b/);if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return {days:n,label:n===30?"30 days":n+" days"};}
+    if(/\bmonthly\b/.test(raw))return {days:30,label:"30 days"};if(/\bweekly\b/.test(raw))return {days:7,label:"7 days"};if(/\bdaily\b/.test(raw))return {days:1,label:"1 day"};
+  }return {days:null,label:""};
 }
-function planDays(name){
-  const d=planDuration(name).match(/\d+/);
-  return d?Number(d[0]):null;
-}
-function planCategory(name){
-  const days=planDays(name);
-  if(days===30)return "Monthly";
-  if(days===7)return "Weekly";
-  if(days===1)return "Daily";
-  if([2,3,7,30].includes(days))return "Hot";
-  return "Other";
-}
-function splitPlanName(name){
-  const raw=String(name||"").trim();
-  const duration=planDuration(raw);
-  let size=raw.replace(/\s*[-|]\s*(?:\d+\s*(?:day|days)|weekly|monthly|daily).*$/i,"").trim();
-  if(!size){
-    const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
-    size=m?m[1]:raw;
-  }
-  return {size,duration};
-}
+function planDuration(plan){return extractPlanDuration(plan).label;}
+function planDays(plan){return extractPlanDuration(plan).days;}
+function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";return "Other";}
+function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
+function splitPlanName(plan){const raw=String(plan?.displayName||plan?.name||"").trim();const duration=planDuration(plan);const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
 function normalizePlans(result){
   const plans=Array.isArray(result?.plans)?result.plans:[];
-  return plans.map((p,i)=>{
-    const name=p.displayName||p.name||(p.value?String(p.value):("Plan "+(i+1)));
-    const display=splitPlanName(name);
-    return {
-      ...p,
-      _name:name,
-      _value:p.value ?? p.plan ?? p.variation_code ?? "",
-      _price:Number(p.api_price ?? p.price ?? 0),
-      _category:planCategory(name),
-      _duration:display.duration,
-      _size:display.size
-    };
-  }).filter(p=>p._value!=="" && Number.isFinite(p._price) && p._price>=0);
+  console.groupCollapsed("[Sparkle DATA] GSUBZ plan response inspection");console.log("Raw GSUBZ plans:",plans);
+  if(plans[0]){const f=plans[0];console.log("First raw plan:",f);console.log("Mapped fields:",{planName:f.displayName,dataSize:(String(f.displayName||"").match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i)||[])[1]||"not separately returned",validity:planDuration(f)||"not separately returned",price:f.api_price,normalPrice:f.price,planIdentifier:f.value,identifierField:f.PlanName});}console.groupEnd();
+  return plans.map((p,i)=>{const name=p.displayName||p.name||(p.value?String(p.value):(p.PlanName||("Plan "+(i+1))));const d=splitPlanName(p);return {...p,_name:name,_value:p.value??p.plan??p.variation_code??"",_price:Number(p.api_price??p.price??0),_category:planCategory(p),_categoryLabel:planCategoryLabel(p),_duration:d.duration,_days:planDays(p),_size:d.size};}).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>=0);
 }
-
-async function loadDataPlans(serviceID){
-  const selectedService=serviceID||selectedDataService||document.getElementById("dataService")?.value||"";
-  const network=document.getElementById("dataNetwork")?.value||"";
-  const box=document.getElementById("dataPlans");
-  if(!box)return;
-  if(!network || !selectedService){
-    clearDataPlans("Select a network and service to view live plans.");
-    return;
-  }
-
-  const token=++dataServiceLoadToken;
-  selectedDataPlan=null;
-  box.innerHTML=sparklePlanLoader("Loading plans…");
-  document.getElementById("dataPlanError").innerHTML="";
-
-  try{
-    // Log the exact serviceID before the request. This must never be empty.
-    console.log("[Sparkle DATA] Selected network:",network);
-    console.log("[Sparkle DATA] Selected service:",selectedDataServiceLabel);
-    console.log("[Sparkle DATA] Exact serviceID being sent:",selectedService);
-
-    if(!selectedService){
-      throw new Error("Data serviceID is empty. Select a data service first.");
-    }
-
-    if(!dataPlansCache[selectedService]){
-      const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(selectedService),"GET");
-      if(token!==dataServiceLoadToken)return;
-      dataPlansCache[selectedService]=normalizePlans(result);
-    }
-    if(token!==dataServiceLoadToken)return;
-    renderDataPlans(dataPlansCache[selectedService]);
-  }catch(e){
-    if(token!==dataServiceLoadToken)return;
-    box.innerHTML="";
-    document.getElementById("dataPlanError").innerHTML='<div class="gsubz-error">Unable to load plans. Please try again.</div>';
-    console.error("[Sparkle DATA] Gsubz plans request failed.");
-    console.error("[Sparkle DATA] Exact serviceID:",selectedService);
-    console.error("[Sparkle DATA] Error:",e);
-    console.error("[Sparkle DATA] HTTP status:",e?.status ?? "not available");
-    console.error("[Sparkle DATA] Response body:",e?.responseBody ?? "not available");
-  }
-}
-
-function renderDataPlans(plans){
-  const box=document.getElementById("dataPlans");
-  if(!box)return;
-  const filtered=plans.filter(p=>{
-    if(selectedDataCategory==="Hot") return [2,3,7,30].includes(planDays(p._name));
-    return p._category===selectedDataCategory;
-  });
-  if(!filtered.length){
-    box.innerHTML='<div class="data-empty">No '+escapeHtml(selectedDataCategory.toUpperCase())+' plans are currently available for this service.</div>';
-    box._shownPlans=[];
-    return;
-  }
-  box._shownPlans=filtered;
-  box.innerHTML=filtered.map((p,i)=>`
-    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="buyDataPlan(${i})">
-      <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
-      <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
-      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-      <span class="data-plan-buy">Buy</span>
-      <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||"")}</div>
-    </button>`).join("");
-}
-
-function selectDataPlan(index){
-  const box=document.getElementById("dataPlans");
-  const plans=box?._shownPlans||[];
-  const plan=plans[index];
-  if(!plan)return;
-  selectedDataPlan=plan;
-  renderDataPlans(dataPlansCache[selectedDataService]||[]);
-}
-
-function buyDataPlan(index){
-  selectDataPlan(index);
-  showPurchaseSummary("data");
-}
-
-function selectDataCategory(category,button){
-  selectedDataCategory=category;
-  document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
-  button.classList.add("active");
-  if(selectedDataService) renderDataPlans(dataPlansCache[selectedDataService]||[]);
-  else clearDataPlans("Select a service to load live GSUBZ plans.");
-}
+function categoryTabsForPlans(plans){const tabs=[];const add=(k,l)=>{if(!tabs.some(x=>x.key===k))tabs.push({key:k,label:l});};if(plans.some(p=>[2,3,7,30].includes(p._days)))add("Hot","Hot");if(plans.some(p=>p._days===1))add("Daily","Daily");if(plans.some(p=>p._days===7))add("Weekly","Weekly");if(plans.some(p=>p._days===30))add("Monthly","Monthly");[...new Set(plans.map(p=>p._days).filter(d=>Number.isFinite(d)&&![1,2,3,7,30].includes(d)))].sort((a,b)=>a-b).forEach(d=>add("duration:"+d,d+" Days"));if(plans.some(p=>!Number.isFinite(p._days)))add("Other","Other");return tabs;}
+function renderDataCategoryTabs(plans){const c=document.getElementById("dataCategories");if(!c)return;const tabs=categoryTabsForPlans(plans);if(!tabs.length){c.innerHTML="";selectedDataCategory="Hot";return;}if(!tabs.some(t=>t.key===selectedDataCategory))selectedDataCategory=tabs[0].key;c.innerHTML=tabs.map(t=>`<button type="button" class="data-category ${t.key===selectedDataCategory?"active":""}" onclick="selectDataCategory(${JSON.stringify(t.key)},this)">${escapeHtml(t.label)}</button>`).join("");}
+function selectDataCategory(category,button){selectedDataCategory=category;document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));button?.classList.add("active");if(selectedDataService)renderDataPlans(dataPlansCache[selectedDataService]||[]);else clearDataPlans("Select a service to load live GSUBZ plans.");}
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
 function beneficiaryKey(type){
