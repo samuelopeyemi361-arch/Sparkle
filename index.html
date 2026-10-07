@@ -933,53 +933,234 @@ body.dark-mode .earn-stat{background:#0b1727}
 
 
 /* =====================================================
-   GSUBZ / BILLSJET-STYLE DATA UI
+   SPARKLE VTU — PROFESSIONAL DATA / AIRTIME UI
    ===================================================== */
-.data-page-shell{background:#f6f6f8;border-radius:22px;padding:0;overflow:hidden}
-.data-topbar{display:flex;align-items:center;gap:14px;padding:18px 4px 20px}
-.data-back{width:42px;height:42px;border:0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:25px}
-.data-topbar h1{font-size:25px;margin:0;font-weight:900}
-.data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f0f0f2;border-radius:28px;padding:4px;margin-bottom:22px}
-.data-purchase-tab{border:0;background:transparent;border-radius:25px;padding:15px 10px;font-weight:900;font-size:15px;color:#4d4b55}
-.data-purchase-tab.active{background:#fff;border:2px solid #ff0b78;color:#ff0b78}
-.data-beneficiary-card{background:#fff;border-radius:20px;padding:18px 16px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,.03)}
-.data-phone-row{display:grid;grid-template-columns:116px 1fr 34px;align-items:center;gap:12px}
-.data-network-select-wrap{display:flex;align-items:center;gap:9px;border-right:1px solid #bbb;padding-right:12px}
-.network-badge{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:19px;text-transform:lowercase}
-.network-badge.glo{background:#19a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}
-.data-network-select{border:0;background:transparent;font-weight:800;outline:0;width:62px}
-.data-phone-input{border:0;outline:0;font-size:18px;font-weight:800;min-width:0;width:100%;background:transparent}
-.contact-btn{border:0;background:transparent;font-size:25px;color:#777}
-.data-divider{height:1px;background:#ddd;margin-top:18px}
-.beneficiary-actions{display:flex;align-items:center;justify-content:space-between;padding-top:17px}
-.save-beneficiary{display:flex;align-items:center;gap:12px;font-weight:800;color:#5a5961}
-.save-toggle{width:58px;height:34px;border:0;border-radius:20px;background:#e5e5e7;padding:3px;position:relative}
-.save-toggle span{display:block;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
-.save-toggle.on{background:#ff0b78}.save-toggle.on span{transform:translateX(24px)}
-.beneficiary-link{border:0;background:transparent;color:#4e1699;font-weight:900;font-size:15px}
-.data-categories{display:flex;gap:10px;overflow:auto;padding:3px 0 12px;margin-bottom:6px}
-.data-category{border:1px solid #d9d0e8;background:#fff;border-radius:25px;padding:11px 20px;white-space:nowrap;font-weight:800}
-.data-category.active{background:#4e1598;color:#fff;border-color:#4e1598}
-.data-plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
-.data-plan-card{border:2px solid #ddd1ef;background:#fbf8ff;border-radius:17px;padding:24px 12px;text-align:center;min-height:205px;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
-.data-plan-card.selected{border-color:#4e1598;box-shadow:0 0 0 1px #4e1598}
-.data-plan-name{font-size:20px;font-weight:900;color:#4e1598}
-.data-plan-price{font-size:20px;font-weight:900;margin-top:12px}
-.data-plan-duration{font-size:13px;color:#777;margin-top:12px}
-.data-loading{padding:28px;text-align:center;color:#777;background:#fff;border-radius:16px}
-.data-empty{padding:25px;text-align:center;color:#777;background:#fff;border-radius:16px}
-.data-bottom-action{position:sticky;bottom:0;background:#f6f6f8;padding:12px 0 2px;margin-top:12px}
-.data-bottom-action .btn{border-radius:13px}
-.gsubz-error{background:#fff0f0;color:#a40000;border:1px solid #ffd1d1;padding:12px;border-radius:12px;margin:12px 0;font-size:13px}
-.gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:12px;padding:12px;margin:12px 0;font-size:13px}
+.data-page-shell{
+  background:#f4f6fb;
+  border-radius:20px;
+  padding:0 0 8px;
+  overflow:hidden;
+  max-width:720px;
+  margin:0 auto;
+}
+.data-topbar{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:14px 4px 16px;
+}
+.data-back{
+  width:38px;height:38px;border:0;border-radius:50%;
+  background:#fff;display:grid;place-items:center;
+  font-size:22px;box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.data-topbar h1{font-size:20px;margin:0;font-weight:800;letter-spacing:-.3px}
+
+/* Phone + network row */
+.vtu-phone-card{
+  background:#fff;
+  border-radius:16px;
+  padding:14px 14px 12px;
+  margin-bottom:14px;
+  box-shadow:0 2px 10px rgba(15,35,80,.04);
+  border:1px solid #e8eef7;
+}
+.vtu-phone-row{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  align-items:center;
+  gap:10px;
+}
+.vtu-network-pill{
+  display:flex;align-items:center;gap:7px;
+  background:#f7f9fc;border-radius:12px;
+  padding:6px 10px 6px 6px;
+  border:1px solid #e4eaf3;
+  cursor:pointer;
+  position:relative;
+}
+.vtu-network-pill select{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;
+}
+.network-dot{
+  width:32px;height:32px;border-radius:50%;
+  display:grid;place-items:center;
+  color:#fff;font-weight:900;font-size:11px;
+  text-transform:uppercase;flex-shrink:0;
+}
+.network-dot.mtn{background:#ffcc00;color:#111}
+.network-dot.airtel{background:#e60012}
+.network-dot.glo{background:#19a900}
+.network-dot.nine{background:#00a651}
+.vtu-net-label{font-size:12px;font-weight:800;color:#334155}
+.vtu-phone-input{
+  border:0;outline:0;font-size:16px;font-weight:700;
+  width:100%;background:transparent;color:inherit;
+  letter-spacing:.3px;
+}
+.vtu-phone-input::placeholder{color:#94a3b8;font-weight:600}
+.vtu-contact-btn{
+  border:0;background:#f1f5f9;width:36px;height:36px;
+  border-radius:10px;font-size:16px;color:#64748b;
+}
+
+/* Service type (SME / Gifting / etc) */
+.vtu-service-row{
+  display:flex;gap:8px;overflow-x:auto;
+  padding:2px 0 12px;scrollbar-width:none;
+}
+.vtu-service-row::-webkit-scrollbar{display:none}
+.vtu-service-chip{
+  border:1.5px solid #dde3ef;background:#fff;
+  border-radius:20px;padding:7px 14px;
+  font-size:12px;font-weight:800;color:#475569;
+  white-space:nowrap;cursor:pointer;transition:.15s;
+}
+.vtu-service-chip.active{
+  background:#0b5cff;color:#fff;border-color:#0b5cff;
+  box-shadow:0 4px 12px rgba(11,92,255,.25);
+}
+.vtu-service-chip:hover:not(.active){border-color:#0b5cff;color:#0b5cff}
+
+/* Categories */
+.vtu-cats{
+  display:flex;gap:6px;overflow-x:auto;
+  padding:0 0 12px;scrollbar-width:none;
+}
+.vtu-cats::-webkit-scrollbar{display:none}
+.vtu-cat{
+  border:0;background:#e8eef8;border-radius:10px;
+  padding:8px 14px;font-size:12px;font-weight:800;
+  color:#475569;white-space:nowrap;cursor:pointer;
+}
+.vtu-cat.active{background:#0b5cff;color:#fff}
+
+/* Plan grid — compact professional cards */
+.vtu-plan-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:10px;
+}
+.vtu-plan-card{
+  background:#fff;
+  border:1.5px solid #e4eaf3;
+  border-radius:14px;
+  padding:14px 10px 12px;
+  text-align:center;
+  cursor:pointer;
+  transition:.15s;
+  display:flex;flex-direction:column;align-items:center;
+  min-height:0;
+}
+.vtu-plan-card:hover{border-color:#0b5cff;box-shadow:0 4px 14px rgba(11,92,255,.1)}
+.vtu-plan-card.selected{
+  border-color:#0b5cff;
+  background:#f0f5ff;
+  box-shadow:0 0 0 2px rgba(11,92,255,.15);
+}
+.vtu-plan-size{
+  font-size:17px;font-weight:900;color:#0b5cff;
+  letter-spacing:-.3px;line-height:1.2;
+}
+.vtu-plan-valid{
+  font-size:11px;color:#64748b;margin-top:4px;font-weight:600;
+}
+.vtu-plan-price{
+  font-size:14px;font-weight:800;color:#0f172a;
+  margin-top:8px;
+}
+.vtu-plan-buy{
+  margin-top:8px;
+  border:0;background:#0b5cff;color:#fff;
+  border-radius:8px;padding:6px 0;width:100%;
+  font-size:11px;font-weight:800;cursor:pointer;
+  opacity:0;transform:translateY(4px);transition:.15s;
+  pointer-events:none;
+}
+.vtu-plan-card.selected .vtu-plan-buy,
+.vtu-plan-card:hover .vtu-plan-buy{
+  opacity:1;transform:none;pointer-events:auto;
+}
+
+/* States */
+.vtu-loading,.vtu-empty{
+  padding:32px 16px;text-align:center;color:#64748b;
+  background:#fff;border-radius:14px;font-size:13px;
+  border:1px solid #e8eef7;
+}
+.vtu-loading::before{
+  content:"";display:block;width:28px;height:28px;
+  border:3px solid #e2e8f0;border-top-color:#0b5cff;
+  border-radius:50%;margin:0 auto 12px;
+  animation:sparkleRoll .7s linear infinite;
+}
+.gsubz-error{
+  background:#fef2f2;color:#b91c1c;border:1px solid #fecaca;
+  padding:12px 14px;border-radius:12px;margin:8px 0;font-size:13px;
+}
+.gsubz-customer{
+  background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;
+  border-radius:12px;padding:12px;margin:8px 0;font-size:13px;
+}
+
+/* Bottom action */
+.vtu-bottom{
+  position:sticky;bottom:0;background:linear-gradient(transparent,#f4f6fb 30%);
+  padding:14px 0 4px;margin-top:10px;
+}
+.vtu-bottom .btn{border-radius:12px;padding:14px;font-size:15px}
+
+/* Airtime compact */
+.vtu-amount-row{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0;
+}
+.vtu-amount-chip{
+  border:1.5px solid #e4eaf3;background:#fff;border-radius:10px;
+  padding:10px 4px;text-align:center;font-weight:800;font-size:13px;
+  cursor:pointer;color:#334155;
+}
+.vtu-amount-chip.active{background:#0b5cff;color:#fff;border-color:#0b5cff}
+.vtu-amount-input{
+  width:100%;padding:12px 14px;border:1.5px solid #e4eaf3;
+  border-radius:12px;font-size:16px;font-weight:700;outline:none;
+  background:#fff;color:inherit;
+}
+.vtu-amount-input:focus{border-color:#0b5cff}
+
+/* Purchase tabs (single / bulk) */
+.data-purchase-tabs{
+  display:grid;grid-template-columns:1fr 1fr;
+  background:#e8eef8;border-radius:12px;padding:3px;margin-bottom:14px;
+}
+.data-purchase-tab{
+  border:0;background:transparent;border-radius:10px;
+  padding:10px;font-weight:800;font-size:13px;color:#64748b;
+}
+.data-purchase-tab.active{background:#fff;color:#0b5cff;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+
+body.dark-mode .vtu-phone-card,
+body.dark-mode .vtu-plan-card,
+body.dark-mode .vtu-loading,
+body.dark-mode .vtu-empty,
+body.dark-mode .vtu-amount-chip,
+body.dark-mode .vtu-amount-input{
+  background:#0e1b2d;border-color:#213149;color:#eef4ff;
+}
+body.dark-mode .vtu-network-pill{background:#122238;border-color:#243852}
+body.dark-mode .vtu-cat{background:#122238;color:#9fb0c8}
+body.dark-mode .vtu-service-chip{background:#0e1b2d;border-color:#213149;color:#9fb0c8}
+body.dark-mode .data-purchase-tabs{background:#122238}
+body.dark-mode .data-purchase-tab.active{background:#0e1b2d;color:#6fa0ff}
+
 @media(max-width:700px){
- .data-page-shell{margin:0 -2px;border-radius:18px}
- .data-phone-row{grid-template-columns:105px 1fr 30px}
- .data-network-select-wrap{gap:5px;padding-right:8px}
- .network-badge{width:48px;height:48px}
- .data-network-select{width:54px;font-size:12px}
- .data-plan-grid{grid-template-columns:repeat(2,1fr);gap:12px}
- .data-plan-card{min-height:190px;padding:18px 8px}
+  .data-page-shell{margin:0 -2px;border-radius:16px}
+  .vtu-plan-grid{grid-template-columns:repeat(2,1fr);gap:8px}
+  .vtu-plan-size{font-size:15px}
+  .vtu-plan-price{font-size:13px}
+  .vtu-amount-row{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:380px){
+  .vtu-plan-grid{grid-template-columns:repeat(2,1fr)}
 }
 
 </style>
@@ -1605,53 +1786,53 @@ Privacy Policy
   <div class="data-page-shell">
     <div class="data-topbar">
       <button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button>
-      <h1>Data</h1>
+      <h1>Buy Data</h1>
     </div>
 
     <div class="data-purchase-tabs">
-      <button class="data-purchase-tab active" id="dataSingleTab" onclick="switchServiceMode('data','single',this)">Single Recharge</button>
-      <button class="data-purchase-tab" id="dataBulkTab" onclick="switchServiceMode('data','bulk',this)">Bulk Recharge</button>
+      <button class="data-purchase-tab active" id="dataSingleTab" onclick="switchServiceMode('data','single',this)">Single</button>
+      <button class="data-purchase-tab" id="dataBulkTab" onclick="switchServiceMode('data','bulk',this)">Bulk</button>
     </div>
 
     <div id="dataSingle">
-      <div class="data-beneficiary-card">
-        <div class="data-phone-row">
-          <div class="data-network-select-wrap">
-            <span class="network-badge glo" id="dataNetworkBadge">glo</span>
-            <select class="data-network-select" id="dataNetwork" onchange="onDataNetworkChange()">
+      <!-- Phone + Network -->
+      <div class="vtu-phone-card">
+        <div class="vtu-phone-row">
+          <div class="vtu-network-pill" id="dataNetworkPill">
+            <span class="network-dot glo" id="dataNetworkBadge">G</span>
+            <span class="vtu-net-label" id="dataNetLabel">Glo</span>
+            <select id="dataNetwork" onchange="onDataNetworkChange()">
               <option value="MTN">MTN</option>
               <option value="Airtel">Airtel</option>
               <option value="Glo" selected>Glo</option>
               <option value="9mobile">9mobile</option>
             </select>
           </div>
-          <input class="data-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
-          <button class="contact-btn" onclick="chooseDataBeneficiary()" title="Choose beneficiary">♙</button>
-        </div>
-        <div class="data-divider"></div>
-        <div class="beneficiary-actions">
-          <div class="save-beneficiary">
-            <button class="save-toggle" id="saveBeneficiaryToggle" onclick="toggleSaveBeneficiary()" aria-label="Save beneficiary"><span></span></button>
-            <span>Save Beneficiary</span>
-          </div>
-          <button class="beneficiary-link" onclick="chooseDataBeneficiary()">Choose Beneficiary</button>
+          <input class="vtu-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="0801 234 5678">
+          <button class="vtu-contact-btn" onclick="chooseDataBeneficiary()" title="Beneficiaries">☰</button>
         </div>
       </div>
 
-      <div class="data-categories">
-        <button class="data-category active" onclick="selectDataCategory('Hot',this)">Hot</button>
-        <button class="data-category" onclick="selectDataCategory('Weekly',this)">Weekly</button>
-        <button class="data-category" onclick="selectDataCategory('Monthly',this)">Monthly</button>
-        <button class="data-category" onclick="selectDataCategory('Daily',this)">Daily</button>
+      <!-- Service type: SME / Gifting / etc -->
+      <div class="vtu-service-row" id="dataServiceTypes">
+        <!-- populated by JS from network services -->
+      </div>
+
+      <!-- Categories -->
+      <div class="vtu-cats" id="dataCategories">
+        <button class="vtu-cat active" onclick="selectDataCategory('Hot',this)">HOT</button>
+        <button class="vtu-cat" onclick="selectDataCategory('Daily',this)">DAILY</button>
+        <button class="vtu-cat" onclick="selectDataCategory('Weekly',this)">WEEKLY</button>
+        <button class="vtu-cat" onclick="selectDataCategory('Monthly',this)">MONTHLY</button>
       </div>
 
       <div id="dataPlanError"></div>
-      <div id="dataPlans" class="data-plan-grid">
-        <div class="data-loading">Loading Glo data plans…</div>
+      <div id="dataPlans" class="vtu-plan-grid">
+        <div class="vtu-loading">Loading plans…</div>
       </div>
 
-      <div class="data-bottom-action">
-        <button class="btn primary full" onclick="showPurchaseSummary('data')">Continue</button>
+      <div class="vtu-bottom">
+        <button class="btn primary full" onclick="showPurchaseSummary('data')">Continue to Payment</button>
       </div>
       <div class="summary-card" id="dataSummary"></div>
     </div>
@@ -1666,39 +1847,55 @@ Privacy Policy
 </section>
 
 <section class="page" id="airtimePage">
-  <div class="service-page">
-    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Airtime</h1></div>
+  <div class="data-page-shell">
+    <div class="data-topbar">
+      <button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button>
+      <h1>Buy Airtime</h1>
+    </div>
     <div class="data-purchase-tabs">
-      <button class="data-purchase-tab active" onclick="switchServiceMode('airtime','single',this)">Single Recharge</button>
-      <button class="data-purchase-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Recharge</button>
+      <button class="data-purchase-tab active" onclick="switchServiceMode('airtime','single',this)">Single</button>
+      <button class="data-purchase-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk</button>
     </div>
     <div id="airtimeSingle">
-      <div class="data-beneficiary-card">
-        <div class="data-phone-row">
-          <div class="data-network-select-wrap">
-            <span class="network-badge mtn" id="airtimeNetworkBadge">mtn</span>
-            <select class="data-network-select" id="airtimeNetwork" onchange="updateNetworkBadge('airtime')">
-              <option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
+      <div class="vtu-phone-card">
+        <div class="vtu-phone-row">
+          <div class="vtu-network-pill">
+            <span class="network-dot mtn" id="airtimeNetworkBadge">M</span>
+            <span class="vtu-net-label" id="airtimeNetLabel">MTN</span>
+            <select id="airtimeNetwork" onchange="onAirtimeNetworkChange()">
+              <option value="MTN">MTN</option>
+              <option value="Airtel">Airtel</option>
+              <option value="Glo">Glo</option>
+              <option value="9mobile">9mobile</option>
             </select>
           </div>
-          <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="Phone number">
-          <button class="contact-btn" onclick="chooseGenericBeneficiary('airtime')">♙</button>
-        </div>
-        <div class="data-divider"></div>
-        <div class="beneficiary-actions">
-          <div class="save-beneficiary"><button class="save-toggle" id="airtimeSaveToggle" onclick="toggleGenericSave('airtime')"><span></span></button><span>Save Beneficiary</span></div>
-          <button class="beneficiary-link" onclick="chooseGenericBeneficiary('airtime')">Choose Beneficiary</button>
+          <input class="vtu-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="0801 234 5678">
+          <button class="vtu-contact-btn" onclick="chooseGenericBeneficiary('airtime')" title="Beneficiaries">☰</button>
         </div>
       </div>
-      <div class="service-form-grid">
-        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" min="100" placeholder="500"></div>
+
+      <div class="vtu-amount-row" id="airtimeQuickAmounts">
+        <button class="vtu-amount-chip" onclick="setAirtimeAmount(100,this)">₦100</button>
+        <button class="vtu-amount-chip" onclick="setAirtimeAmount(200,this)">₦200</button>
+        <button class="vtu-amount-chip" onclick="setAirtimeAmount(500,this)">₦500</button>
+        <button class="vtu-amount-chip" onclick="setAirtimeAmount(1000,this)">₦1,000</button>
       </div>
-      <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
+
+      <div class="vtu-phone-card" style="margin-top:4px">
+        <label style="font-size:11px;font-weight:800;color:#64748b;display:block;margin-bottom:6px">CUSTOM AMOUNT</label>
+        <input class="vtu-amount-input" id="airtimeAmount" type="number" min="50" placeholder="Enter amount" oninput="clearAirtimeChips()">
+      </div>
+
+      <div class="vtu-bottom">
+        <button class="btn primary full" onclick="showPurchaseSummary('airtime')">Continue to Payment</button>
+      </div>
       <div class="summary-card" id="airtimeSummary"></div>
     </div>
     <div id="airtimeBulk" style="display:none">
-      <div class="bulk-list" id="airtimeBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
-      <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
+      <div class="bulk-list" id="airtimeBulkList"></div>
+      <button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
+      <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div>
+      <button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
     </div>
   </div>
 </section>
@@ -2562,7 +2759,7 @@ email:email
 
 if(profileError){
 
-console.error(
+console.warn(
 "Profile update error:",
 profileError
 );
@@ -2738,7 +2935,7 @@ await supabaseClient
 
 if(error){
 
-console.error(
+console.warn(
 "Profile error:",
 error
 );
@@ -3237,10 +3434,12 @@ function openServicePage(service){
 }
 
 function switchServiceMode(service, mode, button){
-  document.querySelectorAll("#"+service+"Page .service-tab").forEach(b=>b.classList.remove("active"));
-  button.classList.add("active");
-  document.getElementById(service+"Single").style.display = mode==="single" ? "block" : "none";
-  document.getElementById(service+"Bulk").style.display = mode==="bulk" ? "block" : "none";
+  document.querySelectorAll("#"+service+"Page .data-purchase-tab").forEach(b=>b.classList.remove("active"));
+  if(button) button.classList.add("active");
+  const singleEl = document.getElementById(service+"Single");
+  const bulkEl = document.getElementById(service+"Bulk");
+  if(singleEl) singleEl.style.display = mode==="single" ? "block" : "none";
+  if(bulkEl) bulkEl.style.display = mode==="bulk" ? "block" : "none";
   if(mode==="bulk" && !bulkRows[service].length) addBulkRow(service);
 }
 
@@ -3269,31 +3468,32 @@ function toggleNotifications(){
    ===================================================== */
 
 async function createDedicatedAccount(){
-  try{
-    const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) return;
-
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva");
-    if(error){
-      console.error("Virtual account error:",error);
-      document.getElementById("dvaStatus").textContent="Unavailable";
-      return;
-    }
-
-    if(data?.success && data.account){
-      document.getElementById("dvaAccountName").textContent=data.account.account_name || "—";
-      document.getElementById("dvaAccountNumber").textContent=data.account.account_number || "—";
-      document.getElementById("dvaBankName").textContent=data.account.bank_name || "—";
-      document.getElementById("dvaStatus").textContent="Ready";
-    }else{
-      document.getElementById("dvaStatus").textContent="Unavailable";
-      console.error("Virtual account creation failed:",data?.error || data);
-    }
-  }catch(error){
-    console.error("Virtual account function error:",error);
-    const status=document.getElementById("dvaStatus");
-    if(status) status.textContent="Unavailable";
-  }
+  const setUnavailable = () => {
+    const status = document.getElementById("dvaStatus");
+    const nameEl = document.getElementById("dvaAccountName");
+    const numEl  = document.getElementById("dvaAccountNumber");
+    const bankEl = document.getElementById("dvaBankName");
+    if (status) status.textContent = "Unavailable";
+    if (nameEl) nameEl.textContent = "—";
+    if (numEl)  numEl.textContent  = "—";
+    if (bankEl) bankEl.textContent = "—";
+  };
+  try {
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData?.user) { setUnavailable(); return; }
+    let data = null, error = null;
+    try {
+      const res = await supabaseClient.functions.invoke("create-paystack-dva");
+      data = res.data; error = res.error;
+    } catch (e) { setUnavailable(); return; }
+    if (error) { setUnavailable(); return; }
+    if (data?.success && data.account) {
+      document.getElementById("dvaAccountName").textContent  = data.account.account_name  || "—";
+      document.getElementById("dvaAccountNumber").textContent = data.account.account_number || "—";
+      document.getElementById("dvaBankName").textContent      = data.account.bank_name     || "—";
+      document.getElementById("dvaStatus").textContent        = "Ready";
+    } else { setUnavailable(); }
+  } catch (err) { setUnavailable(); }
 }
 
 function copyDVA(){
@@ -3350,25 +3550,66 @@ async function shareReferral(){
 /* =====================================================
    GSUBZ LIVE INTEGRATION
    ===================================================== */
-const GSUBZ_FUNCTION_NAME = "gsubz"; // existing Supabase Edge Function
+const GSUBZ_FUNCTION_NAME = "gsubz";
+
+/* Official GSUBZ service IDs — prices differ per type (SME vs Gifting) */
+const NETWORK_SERVICES = {
+  MTN: [
+    { id: "mtn_sme",     label: "SME" },
+    { id: "mtn_gifting", label: "Gifting" },
+    { id: "mtn_fibrex",  label: "Fibre X" }
+  ],
+  Airtel: [
+    { id: "airtel_sme",     label: "SME" },
+    { id: "airtel_gifting", label: "Gifting" }
+  ],
+  Glo: [
+    { id: "glo_sme",  label: "SME" },
+    { id: "glo_data", label: "Gifting" }
+  ],
+  "9mobile": [
+    { id: "etisalat_data", label: "Data" }
+  ]
+};
+
+/* Default service when network is first selected */
 const gsubzServiceMap = {
   MTN: "mtn_sme",
-  Airtel: "airtel_gifting",
-  Glo: "glo_data",
+  Airtel: "airtel_sme",
+  Glo: "glo_sme",
   "9mobile": "etisalat_data"
 };
+
+/* Public GSUBZ plans API — no key required for listing */
+const GSUBZ_PLANS_URL = "https://api.gsubz.com/api/plans/";
+
 let selectedDataPlan = null;
 let selectedDataCategory = "Hot";
+let selectedDataService = null; // current GSUBZ service id e.g. mtn_sme
 let dataPlansCache = {};
 let selectedCablePlan = null;
 
 async function gsubzRequest(path, method="GET", data=null){
-  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{
-    body:{path,method,data}
-  });
-  if(error) throw new Error(error.message || "Unable to reach Gsubz.");
-  if(result && result.error) throw new Error(result.error);
-  return result;
+  try {
+    const {data:result, error} = await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME, {
+      body: { path, method, data }
+    });
+    if (error) {
+      const msg = (error.message && error.message !== "FunctionsHttpError")
+        ? error.message
+        : "Gsubz service unavailable. Please try again later.";
+      throw new Error(msg);
+    }
+    if (result && result.error) {
+      const errMsg = typeof result.error === "string"
+        ? result.error
+        : (result.error.message || result.error.msg || "Gsubz request failed.");
+      throw new Error(errMsg);
+    }
+    return result;
+  } catch (e) {
+    throw new Error(e && e.message ? e.message : "Unable to reach Gsubz.");
+  }
 }
 
 function networkBadgeClass(network){
@@ -3377,90 +3618,202 @@ function networkBadgeClass(network){
   if(network==="Glo") return "glo";
   return "nine";
 }
+function networkShort(network){
+  if(network==="MTN") return "M";
+  if(network==="Airtel") return "A";
+  if(network==="Glo") return "G";
+  return "9";
+}
 function updateNetworkBadge(service){
-  const el=document.getElementById(service+"Network");
-  const badge=document.getElementById(service+"NetworkBadge");
-  if(el&&badge){ badge.className="network-badge "+networkBadgeClass(el.value); badge.textContent=el.value==="9mobile"?"9m":el.value.toLowerCase(); }
+  const el = document.getElementById(service+"Network");
+  const badge = document.getElementById(service+"NetworkBadge");
+  const label = document.getElementById(service+"NetLabel");
+  if(!el) return;
+  const net = el.value;
+  if(badge){
+    badge.className = "network-dot " + networkBadgeClass(net);
+    badge.textContent = networkShort(net);
+  }
+  if(label) label.textContent = net;
 }
 function onDataNetworkChange(){
   updateNetworkBadge("data");
-  selectedDataPlan=null;
+  selectedDataPlan = null;
+  renderDataServiceTypes();
+  loadDataPlans();
+}
+function onAirtimeNetworkChange(){
+  updateNetworkBadge("airtime");
+}
+
+/* ---- Service type chips (SME / Gifting / …) ---- */
+function renderDataServiceTypes(){
+  const network = document.getElementById("dataNetwork")?.value || "Glo";
+  const services = NETWORK_SERVICES[network] || [];
+  const row = document.getElementById("dataServiceTypes");
+  if(!row) return;
+
+  if(!services.length){
+    row.innerHTML = "";
+    selectedDataService = gsubzServiceMap[network];
+    return;
+  }
+
+  // Keep previous selection if still valid, else pick first
+  if(!services.find(s => s.id === selectedDataService)){
+    selectedDataService = services[0].id;
+  }
+
+  row.innerHTML = services.map(s =>
+    `<button class="vtu-service-chip ${s.id===selectedDataService?"active":""}" onclick="selectDataService('${s.id}',this)">${escapeHtml(s.label)}</button>`
+  ).join("");
+}
+function selectDataService(serviceId, button){
+  selectedDataService = serviceId;
+  selectedDataPlan = null;
+  document.querySelectorAll("#dataServiceTypes .vtu-service-chip").forEach(b => b.classList.remove("active"));
+  if(button) button.classList.add("active");
   loadDataPlans();
 }
 
+/* ---- Plan helpers ---- */
 function planDuration(name){
-  const s=String(name||"").toLowerCase();
-  if(/30\s*day|monthly/.test(s)) return "30 days";
+  const s = String(name||"").toLowerCase();
+  if(/30\s*day|monthly|1\s*month/.test(s)) return "30 days";
   if(/14\s*day|2\s*week/.test(s)) return "14 days";
-  if(/7\s*day|weekly/.test(s)) return "7 days";
+  if(/7\s*day|weekly|1\s*week/.test(s)) return "7 days";
   if(/3\s*day/.test(s)) return "3 days";
   if(/2\s*day/.test(s)) return "2 days";
-  if(/1\s*day|daily/.test(s)) return "1 day";
-  const m=s.match(/(\d+)\s*days?/); return m ? m[1]+" days" : "";
+  if(/1\s*day|daily|24\s*h/.test(s)) return "1 day";
+  const m = s.match(/(\d+)\s*days?/);
+  return m ? m[1]+" days" : "";
 }
 function planCategory(name){
-  const s=String(name||"").toLowerCase();
-  if(/30\s*day|monthly/.test(s)) return "Monthly";
-  if(/7\s*day|weekly/.test(s)) return "Weekly";
-  if(/1\s*day|daily/.test(s)) return "Daily";
+  const s = String(name||"").toLowerCase();
+  // HOT = short-term popular packs (2d, 3d, 7d, 30d when mixed)
+  if(/30\s*day|monthly|1\s*month/.test(s)) return "Monthly";
+  if(/7\s*day|weekly|1\s*week/.test(s)) return "Weekly";
+  if(/1\s*day|daily|24\s*h/.test(s)) return "Daily";
+  // 2-day and 3-day go into HOT
   return "Hot";
 }
-function normalizePlans(result){
-  const plans=Array.isArray(result?.plans)?result.plans:[];
-  return plans.map((p,i)=>({
-    ...p,
-    _name:p.displayName || p.name || ("Plan "+(i+1)),
-    _value:p.value || p.plan || p.variation_code,
-    _price:Number(p.api_price ?? p.price ?? 0),
-    _category:planCategory(p.displayName || p.name),
-    _duration:planDuration(p.displayName || p.name)
-  })).filter(p=>p._value && p._price>=0);
+function extractDataSize(name){
+  const s = String(name||"");
+  const m = s.match(/(\d+(?:\.\d+)?)\s*(TB|GB|MB|kb)/i);
+  if(m) return m[1] + m[2].toUpperCase();
+  return s.replace(/\s*-?\s*\d+\s*days?/i,"").trim() || s;
 }
+function normalizePlans(result){
+  const plans = Array.isArray(result?.plans) ? result.plans : [];
+  return plans.map((p,i) => {
+    const rawName = p.displayName || p.name || ("Plan "+(i+1));
+    // Live price from GSUBZ at this moment (api_price = what you pay now)
+    const livePrice = Number(p.api_price ?? p.price ?? 0);
+    return {
+      ...p,
+      _name: rawName,
+      _size: extractDataSize(rawName),
+      _value: p.value || p.plan || p.variation_code,
+      _price: livePrice,
+      _category: planCategory(rawName),
+      _duration: planDuration(rawName)
+    };
+  }).filter(p => p._value && p._price > 0);
+}
+
+/* Live plans from GSUBZ public API — current selling price, never hard-coded */
+async function fetchLiveGsubzPlans(serviceId){
+  const url = GSUBZ_PLANS_URL + "?service=" + encodeURIComponent(serviceId);
+  const res = await fetch(url, { method: "GET", cache: "no-store" });
+  if (!res.ok) throw new Error("Could not reach GSUBZ (" + res.status + ")");
+  return await res.json();
+}
+
 async function loadDataPlans(){
-  const network=document.getElementById("dataNetwork")?.value || "Glo";
-  const service=gsubzServiceMap[network];
-  const box=document.getElementById("dataPlans");
-  if(!box) return;
-  box.innerHTML='<div class="data-loading">Loading '+network+' data plans…</div>';
-  document.getElementById("dataPlanError").innerHTML="";
-  try{
-    if(!dataPlansCache[service]){
-      dataPlansCache[service]=normalizePlans(await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET"));
-    }
+  const network = document.getElementById("dataNetwork")?.value || "Glo";
+  const service = selectedDataService || gsubzServiceMap[network];
+  const box = document.getElementById("dataPlans");
+  if (!box) return;
+
+  box.innerHTML = '<div class="vtu-loading">Loading live ' + network + ' prices…</div>';
+  const errBox = document.getElementById("dataPlanError");
+  if (errBox) errBox.innerHTML = "";
+
+  try {
+    // Always pull fresh from GSUBZ so the price is what they sell right now
+    const result = await fetchLiveGsubzPlans(service);
+    dataPlansCache[service] = normalizePlans(result);
     renderDataPlans(dataPlansCache[service]);
-  }catch(e){
-    console.error("Gsubz plans:",e);
-    box.innerHTML="";
-    document.getElementById("dataPlanError").innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load Gsubz data plans.")+'</div>';
+  } catch (e) {
+    console.warn("Gsubz plans:", e && e.message ? e.message : e);
+    box.innerHTML = "";
+    if (errBox) errBox.innerHTML = '<div class="gsubz-error">' + escapeHtml(e.message || "Unable to load live prices from GSUBZ.") + '</div>';
   }
 }
+
 function renderDataPlans(plans){
-  const box=document.getElementById("dataPlans");
-  const filtered=plans.filter(p=>p._category===selectedDataCategory);
-  const shown=filtered.length?filtered:plans;
-  if(!shown.length){box.innerHTML='<div class="data-empty">No plans available for this network.</div>';return;}
-  box.innerHTML=shown.map((p,i)=>`
-    <button class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
-      <div class="data-plan-name">${escapeHtml(p._name)}</div>
-      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-      <div class="data-plan-duration">${escapeHtml(p._duration || "")}</div>
-    </button>`).join("");
-  box._shownPlans=shown;
+  const box = document.getElementById("dataPlans");
+  if(!box) return;
+
+  let shown;
+  if(selectedDataCategory === "Hot"){
+    // HOT = 2-day, 3-day, 7-day + any plan marked Hot, plus a sample of monthly if few
+    shown = plans.filter(p =>
+      p._category === "Hot" ||
+      /2\s*day|3\s*day|7\s*day/.test(String(p._name).toLowerCase())
+    );
+    if(shown.length < 3) shown = plans.slice(0, 12); // fallback: show first plans
+  } else {
+    shown = plans.filter(p => p._category === selectedDataCategory);
+  }
+
+  if(!shown.length){
+    box.innerHTML = '<div class="vtu-empty">No '+selectedDataCategory.toLowerCase()+' plans for this service.</div>';
+    return;
+  }
+
+  box.innerHTML = shown.map((p,i) => `
+    <div class="vtu-plan-card ${selectedDataPlan && String(selectedDataPlan._value)===String(p._value)?"selected":""}"
+         onclick="selectDataPlan(${i},${JSON.stringify(String(p._value))},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
+      <div class="vtu-plan-size">${escapeHtml(p._size)}</div>
+      <div class="vtu-plan-valid">${escapeHtml(p._duration || "—")}</div>
+      <div class="vtu-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:0})}</div>
+      <button class="vtu-plan-buy" onclick="event.stopPropagation();selectDataPlan(${i},${JSON.stringify(String(p._value))},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)});showPurchaseSummary('data')">Buy</button>
+    </div>
+  `).join("");
+  box._shownPlans = shown;
 }
-function selectDataPlan(index,value,price,name,duration){
-  const box=document.getElementById("dataPlans");
-  const plans=box._shownPlans||[];
-  selectedDataPlan=plans.find(p=>String(p._value)===String(value)) || {_value:value,_price:price,_name:name,_duration:duration};
-  renderDataPlans(dataPlansCache[gsubzServiceMap[document.getElementById("dataNetwork").value]]||[]);
+
+function selectDataPlan(index, value, price, name, duration){
+  const box = document.getElementById("dataPlans");
+  const plans = box?._shownPlans || [];
+  selectedDataPlan = plans.find(p => String(p._value) === String(value))
+    || {_value:value, _price:price, _name:name, _duration:duration, _size:extractDataSize(name)};
+  const service = selectedDataService || gsubzServiceMap[document.getElementById("dataNetwork")?.value || "Glo"];
+  renderDataPlans(dataPlansCache[service] || []);
 }
-function selectDataCategory(category,button){
-  selectedDataCategory=category;
-  document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
-  button.classList.add("active");
-  const service=gsubzServiceMap[document.getElementById("dataNetwork").value||"Glo"];
-  renderDataPlans(dataPlansCache[service]||[]);
+
+function selectDataCategory(category, button){
+  selectedDataCategory = category;
+  document.querySelectorAll("#dataCategories .vtu-cat").forEach(b => b.classList.remove("active"));
+  if(button) button.classList.add("active");
+  const service = selectedDataService || gsubzServiceMap[document.getElementById("dataNetwork")?.value || "Glo"];
+  renderDataPlans(dataPlansCache[service] || []);
 }
-function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+
+function escapeHtml(v){
+  return String(v??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));
+}
+
+/* Airtime quick amounts */
+function setAirtimeAmount(amount, chip){
+  document.getElementById("airtimeAmount").value = amount;
+  document.querySelectorAll("#airtimeQuickAmounts .vtu-amount-chip").forEach(c => c.classList.remove("active"));
+  if(chip) chip.classList.add("active");
+}
+function clearAirtimeChips(){
+  document.querySelectorAll("#airtimeQuickAmounts .vtu-amount-chip").forEach(c => c.classList.remove("active"));
+}
 
 function beneficiaryKey(type){
   const userId=window.currentSparkleUser?.id || "guest";
@@ -3495,32 +3848,51 @@ function chooseGenericBeneficiary(type){
   if(type==="cable") document.getElementById("cableNumber").value=number;
 }
 
+let cablePlansCache = {};
+
 async function loadCablePlans(){
-  const provider=document.getElementById("cableProvider")?.value||"DSTV";
-  const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
-  const box=document.getElementById("cablePlans");
-  if(!box)return;
-  box.innerHTML='<div class="data-loading">Loading '+provider+' plans…</div>';
-  try{
-    const result=await gsubzRequest("/api/plans/?service="+service,"GET");
-    const plans=normalizePlans(result);
-    if(!plans.length){box.innerHTML='<div class="data-empty">No '+provider+' plans available.</div>';return;}
-    box.innerHTML=plans.map((p,i)=>`
-      <button class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" onclick="selectCablePlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)})">
-        <div class="data-plan-name">${escapeHtml(p._name)}</div>
-        <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-        <div class="data-plan-duration">${escapeHtml(p._duration||"")}</div>
-      </button>`).join("");
-    box._plans=plans;
-  }catch(e){
-    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
+  const provider = document.getElementById("cableProvider")?.value || "DSTV";
+  const service = {DSTV:"dstv", GOtv:"gotv", Startimes:"startimes"}[provider];
+  const box = document.getElementById("cablePlans");
+  if (!box) return;
+  box.innerHTML = '<div class="vtu-loading">Loading live '+provider+' prices…</div>';
+  try {
+    // Fresh from GSUBZ every time
+    const result = await fetchLiveGsubzPlans(service);
+    cablePlansCache[service] = normalizePlans(result);
+    const plans = cablePlansCache[service];
+    if (!plans.length) {
+      box.innerHTML = '<div class="vtu-empty">No '+provider+' plans available.</div>';
+      return;
+    }
+    box.innerHTML = plans.map((p,i)=>`
+      <div class="vtu-plan-card ${selectedCablePlan && String(selectedCablePlan._value)===String(p._value)?"selected":""}"
+           onclick="selectCablePlan(${i},${JSON.stringify(String(p._value))},${p._price},${JSON.stringify(p._name)})">
+        <div class="vtu-plan-size">${escapeHtml(p._name)}</div>
+        <div class="vtu-plan-valid">${escapeHtml(p._duration||"")}</div>
+        <div class="vtu-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:0})}</div>
+        <button class="vtu-plan-buy" onclick="event.stopPropagation();selectCablePlan(${i},${JSON.stringify(String(p._value))},${p._price},${JSON.stringify(p._name)});showPurchaseSummary('cable')">Buy</button>
+      </div>`).join("");
+    box._plans = plans;
+  } catch (e) {
+    console.warn("Cable plans:", e && e.message ? e.message : e);
+    box.innerHTML = '<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
   }
 }
-function selectCablePlan(index,value,price,name){
-  const box=document.getElementById("cablePlans");
-  const p=(box._plans||[]).find(x=>String(x._value)===String(value));
-  selectedCablePlan=p||{_value:value,_price:price,_name:name};
-  (box._plans||[]); loadCablePlans();
+function selectCablePlan(index, value, price, name){
+  const box = document.getElementById("cablePlans");
+  const p = (box._plans || []).find(x => String(x._value) === String(value));
+  selectedCablePlan = p || {_value:value, _price:price, _name:name};
+  if (box && box._plans) {
+    box.innerHTML = box._plans.map((pl,i)=>`
+      <div class="vtu-plan-card ${selectedCablePlan && String(selectedCablePlan._value)===String(pl._value)?"selected":""}"
+           onclick="selectCablePlan(${i},${JSON.stringify(String(pl._value))},${pl._price},${JSON.stringify(pl._name)})">
+        <div class="vtu-plan-size">${escapeHtml(pl._name)}</div>
+        <div class="vtu-plan-valid">${escapeHtml(pl._duration||"")}</div>
+        <div class="vtu-plan-price">₦${pl._price.toLocaleString("en-NG",{maximumFractionDigits:0})}</div>
+        <button class="vtu-plan-buy" onclick="event.stopPropagation();selectCablePlan(${i},${JSON.stringify(String(pl._value))},${pl._price},${JSON.stringify(pl._name)});showPurchaseSummary('cable')">Buy</button>
+      </div>`).join("");
+  }
 }
 async function verifyCable(){
   const provider={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[document.getElementById("cableProvider").value];
@@ -3556,12 +3928,14 @@ function getSinglePurchase(service){
   }
   if(service==="data"){
     if(!selectedDataPlan) loadDataPlans();
+    const network = document.getElementById("dataNetwork").value;
     return {
       service:"Data",
-      network:document.getElementById("dataNetwork").value,
+      network: network,
       phone:document.getElementById("dataPhone").value.trim(),
       plan:selectedDataPlan?._name || "",
       planValue:selectedDataPlan?._value || "",
+      serviceId: selectedDataService || gsubzServiceMap[network],
       amount:Number(selectedDataPlan?._price || 0)
     };
   }
@@ -3581,12 +3955,9 @@ function showPurchaseSummary(service){
     alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : "Enter a phone number and valid amount.");
     return;
   }
-  if(service==="data" && document.getElementById("saveBeneficiaryToggle")?.classList.contains("on")){
-    saveBeneficiary("data",p.phone,p.phone);
-  }
-  if(service==="airtime" && document.getElementById("airtimeSaveToggle")?.classList.contains("on")){
-    saveBeneficiary("airtime",p.phone,p.phone);
-  }
+  // Auto-save beneficiary on successful selection
+  if(service==="data" && p.phone) saveBeneficiary("data", p.phone, p.phone);
+  if(service==="airtime" && p.phone) saveBeneficiary("airtime", p.phone, p.phone);
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
   const box=document.getElementById(service+"Summary");
@@ -3599,13 +3970,6 @@ function showPurchaseSummary(service){
     <div class="summary-line"><span>Total</span><strong>${money(p.amount)}</strong></div>
     <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">MAKE PAYMENT</button>`;
   box.classList.add("show");
-}
-
-function verifyCable(){
-  const n=document.getElementById("cableNumber").value.trim();
-  const box=document.getElementById("cableVerify");
-  if(!n){box.textContent="Enter a smartcard/IUC number first.";return;}
-  box.textContent="Subscriber verification will be performed by the secure bill-payment backend before a real charge is submitted.";
 }
 
 function addBulkRow(service){
@@ -3725,8 +4089,8 @@ async function processPendingPurchase(){
         const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
         data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
       }else if(p.service==="Data"){
-        const serviceID=gsubzServiceMap[p.network];
-        data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
+        const serviceID = p.serviceId || selectedDataService || gsubzServiceMap[p.network];
+        data={serviceID, plan:String(p.planValue), amount:"", phone:p.phone, requestID};
       }else if(p.service==="Cable TV"){
         const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
         data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:"",customerID:p.phone,requestID};
@@ -3753,7 +4117,7 @@ async function processPendingPurchase(){
     await loadWallet((await supabaseClient.auth.getUser()).data.user?.id);
     await loadTransactions((await supabaseClient.auth.getUser()).data.user?.id);
   }catch(error){
-    console.error("Gsubz purchase:",error);
+    console.warn("Gsubz purchase:",error);
     overlay.classList.remove("show");
     alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
   }
@@ -3823,7 +4187,7 @@ await supabaseClient
 
 if(error){
 
-console.error(
+console.warn(
 "Wallet error:",
 error
 );
@@ -3880,7 +4244,7 @@ await supabaseClient
 
 if(error){
 
-console.error(error);
+console.warn(error);
 
 box.innerHTML =
 "<p style='color:#ef4444'>Unable to load transactions.</p>";
@@ -4195,8 +4559,11 @@ loadUser();
 /* Initialize live Gsubz plan screens */
 document.addEventListener("DOMContentLoaded",()=>{
   setTimeout(()=>{
-    loadDataPlans();
-    loadCablePlans();
+    renderDataServiceTypes();
+    updateNetworkBadge("data");
+    updateNetworkBadge("airtime");
+    Promise.resolve(loadDataPlans()).catch(e => console.warn("Data plans init:", e && e.message));
+    Promise.resolve(loadCablePlans()).catch(e => console.warn("Cable plans init:", e && e.message));
   },300);
 });
 </script>
