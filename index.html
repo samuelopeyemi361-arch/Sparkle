@@ -933,67 +933,53 @@ body.dark-mode .earn-stat{background:#0b1727}
 
 
 /* =====================================================
-   SPARKLE FINTECH DATA / AIRTIME UI
-   Compact, mobile-first and GSUBZ driven.
+   GSUBZ / BILLSJET-STYLE DATA UI
    ===================================================== */
-.data-page-shell,.service-page{background:#f7f8fb;border-radius:20px;padding:0;overflow:hidden}
-.data-topbar{display:flex;align-items:center;gap:12px;padding:12px 2px 14px}
-.data-back{width:38px;height:38px;border:1px solid #e7eaf0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:23px;color:#111827}
-.data-topbar h1{font-size:22px;margin:0;font-weight:900;color:#111827}
-.data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#eef0f4;border-radius:16px;padding:3px;margin-bottom:14px}
-.data-purchase-tab{border:0;background:transparent;border-radius:13px;padding:10px 8px;font-weight:800;font-size:13px;color:#5b6472}
-.data-purchase-tab.active{background:#fff;color:#0b5cff;box-shadow:0 1px 5px rgba(15,23,42,.08)}
-.data-beneficiary-card{background:#fff;border:1px solid #e8ebf1;border-radius:16px;padding:13px;margin-bottom:13px;box-shadow:0 2px 10px rgba(15,23,42,.03)}
-.data-phone-row{display:grid;grid-template-columns:122px 1fr 30px;align-items:center;gap:9px}
-.data-network-select-wrap{display:flex;align-items:center;gap:7px;border-right:1px solid #e2e5ea;padding-right:9px}
-.network-badge{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px;text-transform:lowercase;flex:0 0 auto}
-.network-badge.glo{background:#18a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}
-.data-network-select{border:0;background:transparent;font-weight:800;outline:0;width:66px;font-size:13px;color:#1f2937}
-.data-phone-input{border:0;outline:0;font-size:16px;font-weight:750;min-width:0;width:100%;background:transparent;color:#111827}
-.data-phone-input::placeholder{color:#9ca3af;font-weight:600}
-.contact-btn{border:0;background:transparent;font-size:20px;color:#7b8492}
-.data-divider{height:1px;background:#edf0f3;margin-top:12px}
-.beneficiary-actions{display:flex;align-items:center;justify-content:space-between;padding-top:11px}
-.save-beneficiary{display:flex;align-items:center;gap:9px;font-weight:750;font-size:13px;color:#505967}
-.save-toggle{width:45px;height:27px;border:0;border-radius:20px;background:#e5e7eb;padding:2px;position:relative}
-.save-toggle span{display:block;width:23px;height:23px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
-.save-toggle.on{background:#0b5cff}.save-toggle.on span{transform:translateX(18px)}
-.beneficiary-link{border:0;background:transparent;color:#0b5cff;font-weight:800;font-size:13px}
-.data-service-row{display:flex;align-items:center;gap:8px;margin:0 0 12px}
-.data-service-label{font-size:12px;font-weight:800;color:#667085;white-space:nowrap}
-.data-service-select{width:100%;border:1px solid #e0e5ec;background:#fff;border-radius:11px;padding:9px 11px;font-weight:800;color:#1f2937;outline:none}
-.data-categories{display:flex;gap:7px;overflow:auto;padding:1px 0 10px;margin-bottom:2px;scrollbar-width:none}
-.data-categories::-webkit-scrollbar{display:none}
-.data-category{border:1px solid #dfe3e9;background:#fff;border-radius:20px;padding:8px 15px;white-space:nowrap;font-size:12px;font-weight:800;color:#566071}
-.data-category.active{background:#111827;color:#fff;border-color:#111827}
-.data-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
-.data-plan-card{border:1px solid #e3e6ec;background:#fff;border-radius:14px;padding:14px 10px 11px;text-align:left;min-height:132px;display:flex;flex-direction:column;cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,.035);transition:.15s}
-.data-plan-card:hover{transform:translateY(-1px)}
-.data-plan-card.selected{border-color:#0b5cff;box-shadow:0 0 0 2px rgba(11,92,255,.12)}
-.data-plan-size{font-size:18px;font-weight:900;color:#111827;line-height:1.15}
-.data-plan-validity{font-size:11px;color:#667085;margin-top:4px}
-.data-plan-price{font-size:15px;font-weight:900;color:#0b5cff;margin-top:auto;padding-top:9px}
-.data-plan-buy{margin-top:8px;border:0;border-radius:8px;background:#0b5cff;color:#fff;font-size:11px;font-weight:850;padding:7px 8px;cursor:pointer}
-.data-plan-buy:active{transform:scale(.98)}
-.data-plan-service{font-size:10px;color:#7b8492;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.data-loading{grid-column:1/-1;padding:26px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
-.data-loading::before{content:"";display:inline-block;width:16px;height:16px;border:2px solid #d7dce5;border-top-color:#0b5cff;border-radius:50%;vertical-align:-4px;margin-right:7px;animation:dataSpin .8s linear infinite}
-@keyframes dataSpin{to{transform:rotate(360deg)}}
-.data-empty{grid-column:1/-1;padding:25px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
-.data-bottom-action{position:sticky;bottom:0;background:linear-gradient(transparent,#f7f8fb 14%);padding:12px 0 2px;margin-top:5px}
-.data-bottom-action .btn{border-radius:11px}
-.gsubz-error{grid-column:1/-1;background:#fff4f4;color:#a40000;border:1px solid #ffd6d6;padding:11px;border-radius:11px;margin:7px 0;font-size:12px}
-.gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:11px;padding:11px;margin:10px 0;font-size:12px}
+.data-page-shell{background:#f6f6f8;border-radius:22px;padding:0;overflow:hidden}
+.data-topbar{display:flex;align-items:center;gap:14px;padding:18px 4px 20px}
+.data-back{width:42px;height:42px;border:0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:25px}
+.data-topbar h1{font-size:25px;margin:0;font-weight:900}
+.data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#f0f0f2;border-radius:28px;padding:4px;margin-bottom:22px}
+.data-purchase-tab{border:0;background:transparent;border-radius:25px;padding:15px 10px;font-weight:900;font-size:15px;color:#4d4b55}
+.data-purchase-tab.active{background:#fff;border:2px solid #ff0b78;color:#ff0b78}
+.data-beneficiary-card{background:#fff;border-radius:20px;padding:18px 16px;margin-bottom:18px;box-shadow:0 2px 12px rgba(0,0,0,.03)}
+.data-phone-row{display:grid;grid-template-columns:116px 1fr 34px;align-items:center;gap:12px}
+.data-network-select-wrap{display:flex;align-items:center;gap:9px;border-right:1px solid #bbb;padding-right:12px}
+.network-badge{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:19px;text-transform:lowercase}
+.network-badge.glo{background:#19a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}
+.data-network-select{border:0;background:transparent;font-weight:800;outline:0;width:62px}
+.data-phone-input{border:0;outline:0;font-size:18px;font-weight:800;min-width:0;width:100%;background:transparent}
+.contact-btn{border:0;background:transparent;font-size:25px;color:#777}
+.data-divider{height:1px;background:#ddd;margin-top:18px}
+.beneficiary-actions{display:flex;align-items:center;justify-content:space-between;padding-top:17px}
+.save-beneficiary{display:flex;align-items:center;gap:12px;font-weight:800;color:#5a5961}
+.save-toggle{width:58px;height:34px;border:0;border-radius:20px;background:#e5e5e7;padding:3px;position:relative}
+.save-toggle span{display:block;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
+.save-toggle.on{background:#ff0b78}.save-toggle.on span{transform:translateX(24px)}
+.beneficiary-link{border:0;background:transparent;color:#4e1699;font-weight:900;font-size:15px}
+.data-categories{display:flex;gap:10px;overflow:auto;padding:3px 0 12px;margin-bottom:6px}
+.data-category{border:1px solid #d9d0e8;background:#fff;border-radius:25px;padding:11px 20px;white-space:nowrap;font-weight:800}
+.data-category.active{background:#4e1598;color:#fff;border-color:#4e1598}
+.data-plan-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.data-plan-card{border:2px solid #ddd1ef;background:#fbf8ff;border-radius:17px;padding:24px 12px;text-align:center;min-height:205px;display:flex;flex-direction:column;justify-content:center;cursor:pointer}
+.data-plan-card.selected{border-color:#4e1598;box-shadow:0 0 0 1px #4e1598}
+.data-plan-name{font-size:20px;font-weight:900;color:#4e1598}
+.data-plan-price{font-size:20px;font-weight:900;margin-top:12px}
+.data-plan-duration{font-size:13px;color:#777;margin-top:12px}
+.data-loading{padding:28px;text-align:center;color:#777;background:#fff;border-radius:16px}
+.data-empty{padding:25px;text-align:center;color:#777;background:#fff;border-radius:16px}
+.data-bottom-action{position:sticky;bottom:0;background:#f6f6f8;padding:12px 0 2px;margin-top:12px}
+.data-bottom-action .btn{border-radius:13px}
+.gsubz-error{background:#fff0f0;color:#a40000;border:1px solid #ffd1d1;padding:12px;border-radius:12px;margin:12px 0;font-size:13px}
+.gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:12px;padding:12px;margin:12px 0;font-size:13px}
 @media(max-width:700px){
- .data-page-shell,.service-page{margin:0 -2px;border-radius:16px}
- .data-phone-row{grid-template-columns:105px 1fr 27px}
- .data-network-select-wrap{gap:5px;padding-right:7px}
- .network-badge{width:35px;height:35px;font-size:12px}
- .data-network-select{width:58px;font-size:11px}
- .data-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
- .data-plan-card{min-height:128px;padding:12px 9px 10px}
- .data-plan-size{font-size:17px}
- .data-plan-price{font-size:14px}
+ .data-page-shell{margin:0 -2px;border-radius:18px}
+ .data-phone-row{grid-template-columns:105px 1fr 30px}
+ .data-network-select-wrap{gap:5px;padding-right:8px}
+ .network-badge{width:48px;height:48px}
+ .data-network-select{width:54px;font-size:12px}
+ .data-plan-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+ .data-plan-card{min-height:190px;padding:18px 8px}
 }
 
 </style>
@@ -1650,13 +1636,6 @@ Privacy Policy
           </div>
           <button class="beneficiary-link" onclick="chooseDataBeneficiary()">Choose Beneficiary</button>
         </div>
-      </div>
-
-      <div class="data-service-row">
-        <span class="data-service-label">Plan type</span>
-        <select class="data-service-select" id="dataService" onchange="onDataServiceChange()">
-          <option>Loading available services…</option>
-        </select>
       </div>
 
       <div class="data-categories">
@@ -3258,7 +3237,7 @@ function openServicePage(service){
 }
 
 function switchServiceMode(service, mode, button){
-  document.querySelectorAll("#"+service+"Page .data-purchase-tab").forEach(b=>b.classList.remove("active"));
+  document.querySelectorAll("#"+service+"Page .service-tab").forEach(b=>b.classList.remove("active"));
   button.classList.add("active");
   document.getElementById(service+"Single").style.display = mode==="single" ? "block" : "none";
   document.getElementById(service+"Bulk").style.display = mode==="bulk" ? "block" : "none";
@@ -3372,13 +3351,15 @@ async function shareReferral(){
    GSUBZ LIVE INTEGRATION
    ===================================================== */
 const GSUBZ_FUNCTION_NAME = "gsubz"; // existing Supabase Edge Function
-const airtimeServiceMap = {MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"};
+const gsubzServiceMap = {
+  MTN: "mtn_sme",
+  Airtel: "airtel_gifting",
+  Glo: "glo_data",
+  "9mobile": "etisalat_data"
+};
 let selectedDataPlan = null;
 let selectedDataCategory = "Hot";
-let selectedDataService = null;
 let dataPlansCache = {};
-let dataServicesCache = null;
-let dataServiceLoadToken = 0;
 let selectedCablePlan = null;
 
 async function gsubzRequest(path, method="GET", data=null){
@@ -3401,156 +3382,46 @@ function updateNetworkBadge(service){
   const badge=document.getElementById(service+"NetworkBadge");
   if(el&&badge){ badge.className="network-badge "+networkBadgeClass(el.value); badge.textContent=el.value==="9mobile"?"9m":el.value.toLowerCase(); }
 }
-
-function dataServiceMatchesNetwork(service,network){
-  const id=String(service?.serviceID||"").toLowerCase();
-  const name=String(service?.displayName||"").toLowerCase();
-  if(network==="MTN") return id.startsWith("mtn_") || /\bmtn\b/.test(name);
-  if(network==="Airtel") return id.startsWith("airtel_") || /\bairtel\b/.test(name);
-  if(network==="Glo") return id.startsWith("glo_") || /\bglo\b/.test(name);
-  return id.startsWith("etisalat_") || /9mobile|t2/.test(name);
-}
-
-function fallbackDataServices(network){
-  const map={
-    MTN:[
-      {serviceID:"mtn_gifting",displayName:"MTN Gifting Data"},
-      {serviceID:"mtn_sme",displayName:"MTN SME Data"},
-      {serviceID:"mtn_fibrex",displayName:"MTN Fibre X (Wifi)"}
-    ],
-    Airtel:[
-      {serviceID:"airtel_gifting",displayName:"Airtel Gifting Data"},
-      {serviceID:"airtel_sme",displayName:"Airtel SME Data"}
-    ],
-    Glo:[
-      {serviceID:"glo_data",displayName:"Glo Corporate Gifting Data"},
-      {serviceID:"glo_sme",displayName:"Glo SME Data"}
-    ],
-    "9mobile":[{serviceID:"etisalat_data",displayName:"9mobile or T2 Data"}]
-  };
-  return map[network]||[];
-}
-
-async function fetchAllDataServices(){
-  if(dataServicesCache) return dataServicesCache;
-  const result=await gsubzRequest("/api/category/","GET");
-  const categories=Array.isArray(result)?result:[];
-  const services=[];
-  categories.forEach(cat=>{
-    (Array.isArray(cat?.services)?cat.services:[]).forEach(service=>{
-      const id=String(service?.serviceID||"");
-      if(id && !services.some(x=>x.serviceID===id)) services.push(service);
-    });
-  });
-  dataServicesCache=services;
-  return services;
-}
-
-function renderDataServiceOptions(services){
-  const select=document.getElementById("dataService");
-  if(!select)return;
-  if(!services.length){
-    select.innerHTML='<option value="">No data service available</option>';
-    selectedDataService=null;
-    return;
-  }
-  select.innerHTML=services.map(s=>`<option value="${escapeHtml(s.serviceID)}">${escapeHtml(s.displayName||s.serviceID)}</option>`).join("");
-  const current=services.find(s=>s.serviceID===selectedDataService)||services[0];
-  selectedDataService=current.serviceID;
-  select.value=selectedDataService;
-}
-
-async function loadDataServices(){
-  const network=document.getElementById("dataNetwork")?.value||"Glo";
-  const token=++dataServiceLoadToken;
-  const select=document.getElementById("dataService");
-  const box=document.getElementById("dataPlans");
-  if(select)select.innerHTML='<option value="">Loading available Gsubz services…</option>';
-  if(box)box.innerHTML='<div class="data-loading">Loading '+escapeHtml(network)+' services…</div>';
-  document.getElementById("dataPlanError").innerHTML="";
-  selectedDataPlan=null;
-  selectedDataService=null;
-  try{
-    let allServices;
-    try{ allServices=await fetchAllDataServices(); }
-    catch(e){ allServices=[]; }
-    if(token!==dataServiceLoadToken)return;
-    let services=allServices.filter(s=>dataServiceMatchesNetwork(s,network));
-    if(!services.length) services=fallbackDataServices(network);
-    renderDataServiceOptions(services);
-    if(selectedDataService) await loadDataPlans();
-  }catch(e){
-    if(token!==dataServiceLoadToken)return;
-    console.error("Gsubz data services:",e);
-    if(select)select.innerHTML='<option value="">Unable to load services</option>';
-    if(box)box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load Gsubz services.")+'</div>';
-  }
-}
-
 function onDataNetworkChange(){
   updateNetworkBadge("data");
-  loadDataServices();
-}
-function onDataServiceChange(){
-  selectedDataService=document.getElementById("dataService")?.value||null;
   selectedDataPlan=null;
   loadDataPlans();
 }
 
 function planDuration(name){
   const s=String(name||"").toLowerCase();
-  if(/\b30\s*(?:day|days)\b|monthly|\b1\s*month\b/.test(s)) return "30 days";
-  if(/\b14\s*(?:day|days)\b|2\s*weeks?/.test(s)) return "14 days";
-  if(/\b7\s*(?:day|days)\b|weekly|1\s*week/.test(s)) return "7 days";
-  if(/\b3\s*(?:day|days)\b/.test(s)) return "3 days";
-  if(/\b2\s*(?:day|days)\b/.test(s)) return "2 days";
-  if(/\b1\s*(?:day|days)\b|daily/.test(s)) return "1 day";
+  if(/30\s*day|monthly/.test(s)) return "30 days";
+  if(/14\s*day|2\s*week/.test(s)) return "14 days";
+  if(/7\s*day|weekly/.test(s)) return "7 days";
+  if(/3\s*day/.test(s)) return "3 days";
+  if(/2\s*day/.test(s)) return "2 days";
+  if(/1\s*day|daily/.test(s)) return "1 day";
   const m=s.match(/(\d+)\s*days?/); return m ? m[1]+" days" : "";
 }
-function planDays(name){
-  const d=planDuration(name).match(/\d+/);
-  return d?Number(d[0]):null;
-}
 function planCategory(name){
-  const days=planDays(name);
-  if(days===30)return "Monthly";
-  if(days===7)return "Weekly";
-  if(days===1)return "Daily";
-  if([2,3,7,30].includes(days))return "Hot";
-  return "Other";
-}
-function splitPlanName(name){
-  const raw=String(name||"").trim();
-  const duration=planDuration(raw);
-  let size=raw.replace(/\s*[-|]\s*(?:\d+\s*(?:day|days)|weekly|monthly|daily).*$/i,"").trim();
-  if(!size){
-    const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))/i);
-    size=m?m[1]:raw;
-  }
-  return {size,duration};
+  const s=String(name||"").toLowerCase();
+  if(/30\s*day|monthly/.test(s)) return "Monthly";
+  if(/7\s*day|weekly/.test(s)) return "Weekly";
+  if(/1\s*day|daily/.test(s)) return "Daily";
+  return "Hot";
 }
 function normalizePlans(result){
   const plans=Array.isArray(result?.plans)?result.plans:[];
-  return plans.map((p,i)=>{
-    const name=p.displayName||p.name||("Plan "+(i+1));
-    const display=splitPlanName(name);
-    return {
-      ...p,
-      _name:name,
-      _value:p.value || p.plan || p.variation_code,
-      _price:Number(p.api_price ?? p.price ?? 0),
-      _category:planCategory(name),
-      _duration:display.duration,
-      _size:display.size
-    };
-  }).filter(p=>p._value && p._price>=0);
+  return plans.map((p,i)=>({
+    ...p,
+    _name:p.displayName || p.name || ("Plan "+(i+1)),
+    _value:p.value || p.plan || p.variation_code,
+    _price:Number(p.api_price ?? p.price ?? 0),
+    _category:planCategory(p.displayName || p.name),
+    _duration:planDuration(p.displayName || p.name)
+  })).filter(p=>p._value && p._price>=0);
 }
 async function loadDataPlans(){
   const network=document.getElementById("dataNetwork")?.value || "Glo";
-  const service=selectedDataService || document.getElementById("dataService")?.value;
+  const service=gsubzServiceMap[network];
   const box=document.getElementById("dataPlans");
-  if(!box || !service)return;
-  box.innerHTML='<div class="data-loading">Loading '+escapeHtml(network)+' plans…</div>';
+  if(!box) return;
+  box.innerHTML='<div class="data-loading">Loading '+network+' data plans…</div>';
   document.getElementById("dataPlanError").innerHTML="";
   try{
     if(!dataPlansCache[service]){
@@ -3565,37 +3436,29 @@ async function loadDataPlans(){
 }
 function renderDataPlans(plans){
   const box=document.getElementById("dataPlans");
-  const filtered=plans.filter(p=>{
-    if(selectedDataCategory==="Hot") return [2,3,7,30].includes(planDays(p._name));
-    return p._category===selectedDataCategory;
-  });
-  if(!filtered.length){
-    box.innerHTML='<div class="data-empty">No '+escapeHtml(selectedDataCategory.toUpperCase())+' plans are currently available for this service.</div>';
-    box._shownPlans=[];
-    return;
-  }
-  box._shownPlans=filtered;
-  box.innerHTML=filtered.map((p,i)=>`
-    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
-      <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
-      <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
+  const filtered=plans.filter(p=>p._category===selectedDataCategory);
+  const shown=filtered.length?filtered:plans;
+  if(!shown.length){box.innerHTML='<div class="data-empty">No plans available for this network.</div>';return;}
+  box.innerHTML=shown.map((p,i)=>`
+    <button class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)})">
+      <div class="data-plan-name">${escapeHtml(p._name)}</div>
       <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-      <span class="data-plan-buy">Buy</span>
-      <div class="data-plan-service">${escapeHtml(document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
+      <div class="data-plan-duration">${escapeHtml(p._duration || "")}</div>
     </button>`).join("");
+  box._shownPlans=shown;
 }
 function selectDataPlan(index,value,price,name,duration){
   const box=document.getElementById("dataPlans");
   const plans=box._shownPlans||[];
   selectedDataPlan=plans.find(p=>String(p._value)===String(value)) || {_value:value,_price:price,_name:name,_duration:duration};
-  renderDataPlans(dataPlansCache[selectedDataService]||[]);
-  document.getElementById("dataSummary")?.scrollIntoView({behavior:"smooth",block:"nearest"});
+  renderDataPlans(dataPlansCache[gsubzServiceMap[document.getElementById("dataNetwork").value]]||[]);
 }
 function selectDataCategory(category,button){
   selectedDataCategory=category;
   document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
   button.classList.add("active");
-  renderDataPlans(dataPlansCache[selectedDataService]||[]);
+  const service=gsubzServiceMap[document.getElementById("dataNetwork").value||"Glo"];
+  renderDataPlans(dataPlansCache[service]||[]);
 }
 function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
 
@@ -3637,17 +3500,16 @@ async function loadCablePlans(){
   const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
   const box=document.getElementById("cablePlans");
   if(!box)return;
-  box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
+  box.innerHTML='<div class="data-loading">Loading '+provider+' plans…</div>';
   try{
     const result=await gsubzRequest("/api/plans/?service="+service,"GET");
     const plans=normalizePlans(result);
-    if(!plans.length){box.innerHTML='<div class="data-empty">No '+escapeHtml(provider)+' plans available.</div>';return;}
+    if(!plans.length){box.innerHTML='<div class="data-empty">No '+provider+' plans available.</div>';return;}
     box.innerHTML=plans.map((p,i)=>`
-      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" onclick="selectCablePlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)})">
-        <div class="data-plan-size">${escapeHtml(p._name)}</div>
-        <div class="data-plan-validity">${escapeHtml(p._duration||"Package")}</div>
+      <button class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" onclick="selectCablePlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)})">
+        <div class="data-plan-name">${escapeHtml(p._name)}</div>
         <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-        <span class="data-plan-buy">Buy</span>
+        <div class="data-plan-duration">${escapeHtml(p._duration||"")}</div>
       </button>`).join("");
     box._plans=plans;
   }catch(e){
@@ -3700,7 +3562,6 @@ function getSinglePurchase(service){
       phone:document.getElementById("dataPhone").value.trim(),
       plan:selectedDataPlan?._name || "",
       planValue:selectedDataPlan?._value || "",
-      serviceID:selectedDataService || document.getElementById("dataService")?.value || "",
       amount:Number(selectedDataPlan?._price || 0)
     };
   }
@@ -3738,6 +3599,13 @@ function showPurchaseSummary(service){
     <div class="summary-line"><span>Total</span><strong>${money(p.amount)}</strong></div>
     <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">MAKE PAYMENT</button>`;
   box.classList.add("show");
+}
+
+function verifyCable(){
+  const n=document.getElementById("cableNumber").value.trim();
+  const box=document.getElementById("cableVerify");
+  if(!n){box.textContent="Enter a smartcard/IUC number first.";return;}
+  box.textContent="Subscriber verification will be performed by the secure bill-payment backend before a real charge is submitted.";
 }
 
 function addBulkRow(service){
@@ -3857,7 +3725,7 @@ async function processPendingPurchase(){
         const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
         data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
       }else if(p.service==="Data"){
-        const serviceID=p.serviceID || selectedDataService;
+        const serviceID=gsubzServiceMap[p.network];
         data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
       }else if(p.service==="Cable TV"){
         const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
@@ -4327,7 +4195,7 @@ loadUser();
 /* Initialize live Gsubz plan screens */
 document.addEventListener("DOMContentLoaded",()=>{
   setTimeout(()=>{
-    loadDataServices();
+    loadDataPlans();
     loadCablePlans();
   },300);
 });
