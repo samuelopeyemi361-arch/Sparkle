@@ -3721,12 +3721,38 @@ function normalizePlans(result){
   }).filter(p => p._value && p._price > 0);
 }
 
-/* Live plans from GSUBZ public API — current selling price, never hard-coded */
+/* Live plans from GSUBZ — current selling price, never hard-coded.
+   GSUBZ does not send CORS headers, so the browser often blocks a direct call.
+   Order: direct → CORS-safe proxy → Supabase Edge Function (if deployed). */
 async function fetchLiveGsubzPlans(serviceId){
-  const url = GSUBZ_PLANS_URL + "?service=" + encodeURIComponent(serviceId);
-  const res = await fetch(url, { method: "GET", cache: "no-store" });
-  if (!res.ok) throw new Error("Could not reach GSUBZ (" + res.status + ")");
-  return await res.json();
+  const target = GSUBZ_PLANS_URL + "?service=" + encodeURIComponent(serviceId);
+
+  // 1) Direct (works if opened in environments that allow it)
+  try {
+    const res = await fetch(target, { method: "GET", cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && Array.isArray(data.plans)) return data;
+    }
+  } catch (_) { /* CORS or network — try next */ }
+
+  // 2) Public CORS proxy (live prices still come from GSUBZ)
+  try {
+    const proxied = "https://corsproxy.io/?" + encodeURIComponent(target);
+    const res2 = await fetch(proxied, { method: "GET", cache: "no-store" });
+    if (res2.ok) {
+      const data2 = await res2.json();
+      if (data2 && Array.isArray(data2.plans)) return data2;
+    }
+  } catch (_) { /* try Edge Function next */ }
+
+  // 3) Your Supabase Edge Function (best for production once deployed)
+  try {
+    const viaFn = await gsubzRequest("/api/plans/?service=" + encodeURIComponent(serviceId), "GET");
+    if (viaFn && Array.isArray(viaFn.plans)) return viaFn;
+  } catch (_) { /* fall through */ }
+
+  throw new Error("Unable to load live prices from GSUBZ. Check your connection.");
 }
 
 async function loadDataPlans(){
@@ -3740,9 +3766,12 @@ async function loadDataPlans(){
   if (errBox) errBox.innerHTML = "";
 
   try {
-    // Always pull fresh from GSUBZ so the price is what they sell right now
     const result = await fetchLiveGsubzPlans(service);
     dataPlansCache[service] = normalizePlans(result);
+    if (!dataPlansCache[service].length) {
+      box.innerHTML = '<div class="vtu-empty">No plans returned for this service right now.</div>';
+      return;
+    }
     renderDataPlans(dataPlansCache[service]);
   } catch (e) {
     console.warn("Gsubz plans:", e && e.message ? e.message : e);
