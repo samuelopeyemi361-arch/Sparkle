@@ -3961,38 +3961,65 @@ function chooseGenericBeneficiary(type){
   if(type==="cable") document.getElementById("cableNumber").value=number;
 }
 
+function extractCablePlanArray(payload){
+  // The public GSUBZ endpoint returns { service, PlanName, plans: [...] }.
+  // The Sparkle Edge Function may wrap that response in data/result/body.
+  const queue=[payload];
+  const seen=new Set();
+  while(queue.length){
+    const item=queue.shift();
+    if(!item||typeof item!=="object"||seen.has(item))continue;
+    seen.add(item);
+    if(Array.isArray(item)){
+      if(item.length&&item.some(x=>x&&typeof x==="object"&&("value" in x||"variation_code" in x||"api_price" in x||"price" in x)))return item;
+      continue;
+    }
+    for(const key of ["plans","data","result","body","response","content"]){
+      if(item[key]!==undefined&&item[key]!==null){
+        const child=item[key];
+        if(key==="plans"&&Array.isArray(child))return child;
+        queue.push(child);
+      }
+    }
+  }
+  return [];
+}
+function firstCableValue(values){
+  for(const value of values){
+    if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
+  }
+  return "";
+}
 async function loadCablePlans(){
   const provider=document.getElementById("cableProvider")?.value||"DSTV";
   const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
   const box=document.getElementById("cablePlans");
   if(!box)return;
 
-  // Reset the previous provider's selection before loading another provider.
+  // Clear any package selected for the previous provider before loading the new one.
   const loadToken=++cablePlanLoadToken;
   selectedCablePlan=null;
   const summary=document.getElementById("cableSummary");
   if(summary)summary.innerHTML="";
   box._plans=[];
-  box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
+  box.innerHTML=sparklePlanLoader("Loading "+provider+" plans…");
 
   try{
     const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
     if(loadToken!==cablePlanLoadToken)return;
-
-    // GSUBZ normally returns { plans: [...] }; tolerate wrappers from the Edge Function too.
-    const rawPlans=Array.isArray(result?.plans)?result.plans:
-      (Array.isArray(result?.data?.plans)?result.data.plans:
-      (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:
-      (Array.isArray(result?.data)?result.data:[])));
+    const rawPlans=extractCablePlanArray(result);
     const plans=rawPlans.map((p,i)=>{
-      const name=p?.displayName||p?.display_name||p?.name||p?.PlanName||p?.value||("Package "+(i+1));
-      const value=p?.value??p?.variation_code??p?.variationCode??p?.plan??"";
-      const price=Number(p?.api_price??p?.price??p?.amount??NaN);
-      return {...p,_name:String(name),_value:String(value),_price:price,_duration:p?.duration||p?.validity||"Package"};
+      const rawValue=firstCableValue([p?.value,p?.variation_code,p?.variationCode,p?.plan,p?.plan_id,p?.id]);
+      const rawPrice=firstCableValue([p?.api_price,p?.apiPrice,p?.price,p?.amount,p?.selling_price,p?.sellingPrice]);
+      const price=Number(String(rawPrice).replace(/[₦,\s]/g,""));
+      const name=firstCableValue([p?.displayName,p?.display_name,p?.name,p?.description,p?.plan_name,p?.PlanName,rawValue,"Package "+(i+1)]);
+      const duration=firstCableValue([p?.duration,p?.validity,p?.validity_period,p?.period,"Package"]);
+      return {...p,_name:String(name),_value:String(rawValue).trim(),_price:price,_duration:String(duration)};
     }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
 
     if(!plans.length){
-      box.innerHTML='<div class="data-empty">No valid '+escapeHtml(provider)+' packages are currently available. Please try again later.</div>';
+      console.warn("[Sparkle] GSUBZ cable plans response had no usable packages",{provider,service,response:result,receivedPlans:rawPlans.length});
+      box.innerHTML='<div class="data-empty">No valid '+escapeHtml(provider)+' packages were returned by GSUBZ. Please refresh and try again.</div>';
       return;
     }
     box._plans=plans;
