@@ -1025,10 +1025,6 @@ body.dark-mode .earn-stat{background:#0b1727}
  .data-plan-price{font-size:14px}
 }
 
-
-.header-logout{border:1px solid var(--line);background:#fff;color:#334155;border-radius:10px;padding:9px 13px;font-weight:800;cursor:pointer}.header-logout:hover{background:#f8fafc}
-.fund-verified-box{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:14px;padding:14px;margin-bottom:16px}.fund-verified-box p{margin:6px 0 0;font-size:13px;line-height:1.6;color:#475569}.fund-dva-grid{margin-bottom:16px}.fund-note{font-size:12px;color:var(--muted);line-height:1.6;margin:12px 0 0}.fund-dva-grid .dva-item strong{word-break:break-word}
-@media(max-width:700px){.header-logout{display:inline-flex;padding:8px 10px;font-size:12px}.fund-dva-grid{grid-template-columns:1fr}}
 </style>
 </head>
 
@@ -1519,8 +1515,6 @@ Privacy Policy
               <small id="userEmail"></small>
             </div>
           </div>
-
-          <button class="header-logout" onclick="logout()" title="Logout">Logout</button>
         </div>
       </div>
     </header>
@@ -1536,7 +1530,7 @@ Privacy Policy
           <div class="wallet-card">
             <small>AVAILABLE WALLET BALANCE</small>
             <div class="wallet-balance" id="walletBalance">₦0.00</div>
-            <button class="btn" onclick="openFundWallet()">Fund Wallet</button>
+            <button class="btn" onclick="alert('Wallet funding will be connected to the verified payment flow.')">Fund Wallet</button>
           </div>
 
           <div class="dva-card">
@@ -2221,32 +2215,6 @@ Save Changes
 </div>
 
 
-<!-- ================= FUND WALLET MODAL ================= -->
-
-<div class="modal" id="fundWalletModal">
-  <div class="modal-box" style="max-width:560px">
-    <div class="modal-head">
-      <h2>Fund Wallet</h2>
-      <button class="close" onclick="closeFundWallet()">×</button>
-    </div>
-
-    <div class="fund-verified-box">
-      <strong>Verified wallet funding</strong>
-      <p>Wallet funding is connected to Sparkle's verified payment flow. Transfer money to your dedicated Sparkle account below.</p>
-    </div>
-
-    <div class="dva-grid fund-dva-grid">
-      <div class="dva-item"><label>ACCOUNT NAME</label><strong id="fundAccountName">Loading…</strong></div>
-      <div class="dva-item"><label>ACCOUNT NUMBER</label><strong id="fundAccountNumber">Loading…</strong></div>
-      <div class="dva-item"><label>BANK</label><strong id="fundBankName">Loading…</strong></div>
-    </div>
-
-    <button class="btn primary full" onclick="copyDVA();">Copy Account Number</button>
-    <p class="fund-note">After your transfer is verified, Sparkle will automatically credit your wallet and record the transaction.</p>
-  </div>
-</div>
-
-
 <!-- ================= PASSWORD MODAL ================= -->
 
 <div class="modal"
@@ -2829,9 +2797,6 @@ document
 document
 .getElementById("dashboard")
 .classList.add("active");
-
-// Every successful login/session always opens the Sparkle Home page.
-showDashPage("home", document.querySelector('.nav-item[onclick*="showDashPage(\'home\'"]'));
 
 
 const {data:profile} =
@@ -3489,20 +3454,6 @@ async function createDedicatedAccount(){
     const status=document.getElementById("dvaStatus");
     if(status) status.textContent="Unable to create";
   }
-}
-
-function openFundWallet(){
-  const modal=document.getElementById("fundWalletModal");
-  if(!modal) return;
-  const set=(id,value)=>{const el=document.getElementById(id);if(el)el.textContent=value||"—";};
-  set("fundAccountName",document.getElementById("dvaAccountName")?.textContent);
-  set("fundAccountNumber",document.getElementById("dvaAccountNumber")?.textContent);
-  set("fundBankName",document.getElementById("dvaBankName")?.textContent);
-  modal.classList.add("show");
-}
-
-function closeFundWallet(){
-  document.getElementById("fundWalletModal")?.classList.remove("show");
 }
 
 function copyDVA(){
@@ -4215,7 +4166,28 @@ async function processPendingPurchase(){
   document.getElementById("processingProgress").textContent =
     pendingPurchase.type==="bulk" ? `Processing ${pendingPurchase.items.length} transaction(s)…` : "Connecting to Gsubz…";
 
+  let userId=null;
   try{
+    const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+    if(userError || !userData?.user) throw new Error("You are not logged in.");
+    userId=userData.user.id;
+
+    /* Check the wallet before sending any order to Gsubz. */
+    const total=Number(pendingPurchase.total||0);
+    const {data:wallet,error:walletError}=await supabaseClient
+      .from("wallets")
+      .select("balance")
+      .eq("user_id",userId)
+      .single();
+    if(walletError || !wallet) throw new Error("Unable to load your wallet balance.");
+    const startingBalance=Number(wallet.balance||0);
+    if(total<=0) throw new Error("Invalid purchase amount.");
+    if(startingBalance<total){
+      throw new Error(`Insufficient wallet balance. You need ${money(total)} but your wallet has ${money(startingBalance)}.`);
+    }
+
+    let processedAmount=0;
+
     for(let i=0;i<pendingPurchase.items.length;i++){
       const p=pendingPurchase.items[i];
       document.getElementById("processingProgress").textContent =
@@ -4236,28 +4208,79 @@ async function processPendingPurchase(){
         throw new Error("Unsupported service.");
       }
 
+      const purchaseAmount=Number(p.amount||0);
+      if(purchaseAmount<=0) throw new Error("Invalid purchase amount.");
+
       const result=await gsubzRequest("/api/pay/","POST",data);
       if(result?.status!=="successful"){
         throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
       }
 
+      /* Gsubz has confirmed success. Now debit the Sparkle wallet and record it. */
+      const {data:latestWallet,error:latestWalletError}=await supabaseClient
+        .from("wallets")
+        .select("balance")
+        .eq("user_id",userId)
+        .single();
+      if(latestWalletError || !latestWallet) throw new Error("Purchase succeeded, but Sparkle could not read your wallet balance. Please contact support before making another purchase.");
+
+      const currentBalance=Number(latestWallet.balance||0);
+      if(currentBalance<purchaseAmount){
+        throw new Error("Purchase succeeded, but there is not enough wallet balance to record the debit. Please contact support immediately.");
+      }
+      const newBalance=currentBalance-purchaseAmount;
+
+      const {data:updatedWallet,error:walletUpdateError}=await supabaseClient
+        .from("wallets")
+        .update({balance:newBalance,updated_at:new Date().toISOString()})
+        .eq("user_id",userId)
+        .eq("balance",currentBalance)
+        .select("balance")
+        .maybeSingle();
+      if(walletUpdateError || !updatedWallet){
+        throw new Error("Purchase succeeded, but Sparkle could not safely deduct your wallet. Please contact support immediately.");
+      }
+
+      const reference=result.transactionID || requestID;
+      const {error:txError}=await supabaseClient
+        .from("wallet_transactions")
+        .insert({
+          user_id:userId,
+          type:"debit",
+          amount:purchaseAmount,
+          service:p.service,
+          status:"success",
+          reference:reference
+        });
+      if(txError){
+        console.error("Wallet transaction record error:",txError);
+        /* The wallet was already safely debited; do not reverse a successful service purchase. */
+      }
+
+      processedAmount+=purchaseAmount;
+
       if(i===pendingPurchase.items.length-1){
         showReceipt({
           service:p.service,
-          reference:result.transactionID || requestID,
+          reference:reference,
           customer:p.phone,
-          amount:Number(result.amountPaid ?? result.amount ?? p.amount)
+          amount:Number(result.amountPaid ?? result.amount ?? purchaseAmount)
         });
       }
     }
+
     overlay.classList.remove("show");
     pendingPurchase=null;
-    await loadWallet((await supabaseClient.auth.getUser()).data.user?.id);
-    await loadTransactions((await supabaseClient.auth.getUser()).data.user?.id);
+    await loadWallet(userId);
+    await loadTransactions(userId);
   }catch(error){
     console.error("Gsubz purchase:",error);
     overlay.classList.remove("show");
     alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
+    if(userId){
+      await loadWallet(userId);
+      await loadTransactions(userId);
+    }
   }
 }
 
@@ -4291,34 +4314,20 @@ async function downloadReceiptPDF(){
   pdf.save("sparkle-receipt.pdf");
 }
 
-async function fetchWalletTransactions(userId,limit=100){
-  const tables=["wallet_transaction","wallet_transactions"];
-  for(const table of tables){
-    const result=await supabaseClient.from(table)
-      .select("id,type,amount,service,status,created_at,reference")
-      .eq("user_id",userId)
-      .order("created_at",{ascending:false})
-      .limit(limit);
-    if(!result.error) return result.data||[];
-  }
-  return null;
-}
-
 async function loadAllTransactions(){
   const box=document.getElementById("allTransactions");
   if(!box) return;
-  const {data:userData}=await supabaseClient.auth.getUser();
-  const userId=userData?.user?.id;
-  if(!userId){box.innerHTML="<p style='color:#64748b'>Please login to view transactions.</p>";return;}
-  const data=await fetchWalletTransactions(userId,100);
-  if(data===null){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
-  if(!data.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
+  const {data,error}=await supabaseClient.from("wallet_transactions")
+    .select("id,type,amount,service,status,created_at")
+    .eq("user_id",(await supabaseClient.auth.getUser()).data.user.id)
+    .order("created_at",{ascending:false}).limit(100);
+  if(error){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
+  if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
   box.innerHTML=data.map(tx=>{
     const amount=Number(tx.amount||0);
-    const isCredit=["credit","deposit","funding"].includes(String(tx.type||"").toLowerCase());
-    const cls=isCredit?"credit":"debit";
-    const sign=isCredit?"+":"-";
-    return `<div class="tx"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+    const cls=tx.type==="credit"?"credit":"debit";
+    const sign=tx.type==="credit"?"+":"-";
+    return `<div class="tx"><div><strong>${tx.service||"Wallet transaction"}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${tx.status||""}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
   }).join("");
 }
 
@@ -4375,18 +4384,109 @@ maximumFractionDigits:2
    ===================================================== */
 
 async function loadTransactions(userId){
-  const box=document.getElementById("transactions");
-  if(!box) return;
-  const data=await fetchWalletTransactions(userId,10);
-  if(data===null){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
-  if(!data.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
-  box.innerHTML=data.map(tx=>{
-    const amount=Number(tx.amount||0);
-    const isCredit=["credit","deposit","funding"].includes(String(tx.type||"").toLowerCase());
-    const sign=isCredit?"+":"-";
-    const cls=isCredit?"credit":"debit";
-    return `<div class="tx"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
-  }).join("");
+
+const box =
+document.getElementById("transactions");
+
+
+const {data,error} =
+await supabaseClient
+.from("wallet_transactions")
+.select(
+"id,type,amount,service,status,created_at"
+)
+.eq("user_id",userId)
+.order(
+"created_at",
+{ascending:false}
+)
+.limit(10);
+
+
+if(error){
+
+console.error(error);
+
+box.innerHTML =
+"<p style='color:#ef4444'>Unable to load transactions.</p>";
+
+return;
+
+}
+
+
+if(!data || data.length===0){
+
+box.innerHTML =
+"<p style='color:#64748b'>No transactions yet.</p>";
+
+return;
+
+}
+
+
+box.innerHTML =
+data.map(tx=>{
+
+const amount =
+Number(tx.amount || 0);
+
+
+const sign =
+tx.type === "credit"
+? "+"
+: "-";
+
+
+const cls =
+tx.type === "credit"
+? "credit"
+: "debit";
+
+
+const date =
+new Date(
+tx.created_at
+).toLocaleString("en-NG");
+
+
+return `
+
+<div class="tx">
+
+<div>
+
+<strong>
+${tx.service || "Wallet transaction"}
+</strong>
+
+<br>
+
+<small>
+${date} · ${tx.status || ""}
+</small>
+
+</div>
+
+
+<strong class="${cls}">
+
+${sign}₦${amount.toLocaleString(
+"en-NG",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+)}
+
+</strong>
+
+</div>
+
+`;
+
+}).join("");
+
 }
 
 
