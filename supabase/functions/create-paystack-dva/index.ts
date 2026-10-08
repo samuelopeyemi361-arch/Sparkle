@@ -26,16 +26,16 @@ serve(async (req) => {
       throw new Error("Supabase configuration is missing");
     }
 
-    // Get the logged-in Sparkle user
+    // Client used ONLY to identify the logged-in Sparkle user
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
       throw new Error("Authorization header is missing");
     }
 
-    const supabase = createClient(
+    const userClient = createClient(
       SUPABASE_URL,
-      SERVICE_ROLE_KEY,
+      Deno.env.get("SUPABASE_ANON_KEY") || "",
       {
         global: {
           headers: {
@@ -48,11 +48,17 @@ serve(async (req) => {
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = await userClient.auth.getUser();
 
     if (userError || !user) {
       throw new Error("Unable to identify Sparkle user");
     }
+
+    // Service-role client used for database writes
+    const adminClient = createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY,
+    );
 
     const body = await req.json();
 
@@ -76,12 +82,19 @@ serve(async (req) => {
       );
     }
 
-    // Check if this Sparkle user already has a dedicated account
-    const { data: existingAccount } = await supabase
-      .from("paystack_dedicated_accounts")
-      .select("account_number, account_name, bank_name, customer_code")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Check whether this user already has an account
+    const { data: existingAccount, error: existingError } =
+      await adminClient
+        .from("paystack_dedicated_accounts")
+        .select(
+          "account_number, account_name, bank_name, customer_code",
+        )
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
 
     if (existingAccount?.account_number) {
       return new Response(
@@ -148,7 +161,7 @@ serve(async (req) => {
 
     const customerCode = customer.data.customer_code;
 
-    // Create dedicated Wema account
+    // Create Wema dedicated account
     const accountRes = await fetch(
       "https://api.paystack.co/dedicated_account",
       {
@@ -187,8 +200,8 @@ serve(async (req) => {
 
     const data = account.data;
 
-    // SAVE THE ACCOUNT TO SPARKLE
-    const { error: saveError } = await supabase
+    // Save using SERVICE ROLE so RLS cannot block the insert
+    const { error: saveError } = await adminClient
       .from("paystack_dedicated_accounts")
       .insert({
         user_id: user.id,
@@ -220,7 +233,6 @@ serve(async (req) => {
         },
       },
     );
-
   } catch (error) {
     console.error(error);
 
