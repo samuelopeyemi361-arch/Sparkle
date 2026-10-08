@@ -28,9 +28,10 @@ Deno.serve(async (req) => {
 
   try {
     const topifySecret = Deno.env.get("TOPIFY_SECRET_KEY");
+
     const businessId =
       Deno.env.get("TOPIFY_BUSINESS_ID") ||
-      "TPYBIZLHBUMTIECF2";
+      "TPYBIZLHBUMTIECF2B";
 
     if (!topifySecret) {
       return json(
@@ -55,7 +56,6 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Only logged-in Sparkle users can create a wallet account.
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
@@ -97,7 +97,6 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
 
-    // We intentionally accept NO BVN or NIN.
     const email = String(
       body.email || user.email || ""
     ).trim();
@@ -135,10 +134,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    // IMPORTANT:
-    // Only Moniepoint (30901) is requested.
-    // PalmPay (20946) is NOT included.
-    // Therefore BVN/NIN is NOT sent.
+    // Moniepoint only.
+    // BVN/NIN is NOT sent.
     const payload = {
       email: email,
       name: name,
@@ -151,16 +148,11 @@ Deno.serve(async (req) => {
       `${TOPIFY_URL}/api/v1/virtual-accounts/reserve`,
       {
         method: "POST",
-
         headers: {
-          Authorization:
-            `Bearer ${topifySecret}`,
-          "Content-Type":
-            "application/json",
-          Accept:
-            "application/json",
+          Authorization: `Bearer ${topifySecret}`,
+          "Content-Type": "application/json",
+          Accept: "application/json",
         },
-
         body: JSON.stringify(payload),
       }
     );
@@ -196,14 +188,11 @@ Deno.serve(async (req) => {
 
     return json({
       status: true,
-
       message:
         "Sparkle wallet account created successfully.",
-
       data: {
         customer_code:
-          result?.data?.customer
-            ?.customer_code || null,
+          result?.data?.customer?.customer_code || null,
 
         account_number:
           account?.account_number || null,
@@ -212,12 +201,10 @@ Deno.serve(async (req) => {
           account?.account_name || null,
 
         bank_name:
-          account?.bank_name ||
-          "Moniepoint",
+          account?.bank_name || "Moniepoint",
 
         provider:
-          account?.provider ||
-          "moniepoint",
+          account?.provider || "moniepoint",
       },
     });
 
