@@ -1616,8 +1616,6 @@ Privacy Policy
               <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
             </div>
 
-            <button type="button" class="btn" onclick="logout()" style="margin-top:16px;width:100%;border:1px solid #ef4444;color:#ef4444;background:#fff;">Log out</button>
-
             <div class="profile-message" id="profileMessage"></div>
 
             <div class="profile-grid">
@@ -3409,58 +3407,52 @@ function toggleNotifications(){
    ===================================================== */
 
 async function createDedicatedAccount(){
-  const status=document.getElementById("dvaStatus");
   try{
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user){ if(status) status.textContent="Login required"; return; }
+    if(userError || !userData?.user) return;
+
     const user=userData.user;
+    let profile=null;
+    try{
+      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).single();
+      profile=result.data || null;
+    }catch(e){ console.warn("Profile lookup skipped:",e); }
 
-    const {data:sessionData}=await supabaseClient.auth.getSession();
-    const accessToken=sessionData?.session?.access_token;
-    if(!accessToken){ if(status) status.textContent="Login required"; return; }
+    const firstName=profile?.first_name || user.user_metadata?.first_name || "";
+    const lastName=profile?.last_name || user.user_metadata?.last_name || "";
+    const name=(profile?.full_name || `${firstName} ${lastName}`.trim() || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
+    const email=(profile?.email || user.email || "").trim();
+    const phone=(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
 
-    const {data:profile}=await supabaseClient.from("profiles")
-      .select("first_name,last_name,full_name,phone")
-      .eq("id",user.id).single();
-
-    const name=(profile?.full_name || [profile?.first_name,profile?.last_name].filter(Boolean).join(" ") || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
-    const phoneNumber=String(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
-    if(!phoneNumber){ if(status) status.textContent="Add phone number"; return; }
-    if(status) status.textContent="Creating…";
-
-    const {data,error}=await supabaseClient.functions.invoke("topify-dva",{
-      body:{name,email:user.email || "",phoneNumber},
-      headers:{Authorization:`Bearer ${accessToken}`}
-    });
-    if(error){
-      console.error("Virtual account error:",error);
-      let message="Unable to create account";
-      try{
-        if(error.context && typeof error.context.json === "function"){
-          const body=await error.context.json();
-          message=body?.message || (body?.errors ? JSON.stringify(body.errors) : message);
-        }
-      }catch(e){}
-      if(data?.message) message=data.message;
-      if(data?.errors) message=data.message || JSON.stringify(data.errors);
-      if(status) status.textContent=String(message).slice(0,120);
+    if(!email || !name){
+      const status=document.getElementById("dvaStatus");
+      if(status) status.textContent="Account details missing";
       return;
     }
 
-    if(data?.status===true && data?.data){
-      const account=data.data;
-      document.getElementById("dvaAccountName").textContent=account.account_name || "—";
-      document.getElementById("dvaAccountNumber").textContent=account.account_number || "—";
-      document.getElementById("dvaBankName").textContent=account.bank_name || "Moniepoint";
-      if(status) status.textContent="Ready";
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{
+      body:{email,name,phone}
+    });
+
+    if(error){
+      console.error("Virtual account error:",error);
+      document.getElementById("dvaStatus").textContent="Unable to create";
+      return;
+    }
+
+    if(data?.success && data.account_number){
+      document.getElementById("dvaAccountName").textContent=data.account_name || name;
+      document.getElementById("dvaAccountNumber").textContent=data.account_number;
+      document.getElementById("dvaBankName").textContent=data.bank_name || "—";
+      document.getElementById("dvaStatus").textContent="Ready";
     }else{
-      const message=data?.message || (data?.errors ? JSON.stringify(data.errors) : "Unable to create account");
-      if(status) status.textContent=String(message).slice(0,120);
+      document.getElementById("dvaStatus").textContent=data?.paystack_error || data?.error || "Unable to create";
       console.error("Virtual account creation failed:",data);
     }
   }catch(error){
     console.error("Virtual account function error:",error);
-    if(status) status.textContent="Unable to create account";
+    const status=document.getElementById("dvaStatus");
+    if(status) status.textContent="Unable to create";
   }
 }
 
