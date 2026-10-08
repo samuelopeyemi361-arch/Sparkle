@@ -1,6 +1,9 @@
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -19,9 +22,41 @@ serve(async (req) => {
       throw new Error("PAYSTACK_SECRET_KEY is missing");
     }
 
+    if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+      throw new Error("Supabase configuration is missing");
+    }
+
+    // Get the logged-in Sparkle user
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader) {
+      throw new Error("Authorization header is missing");
+    }
+
+    const supabase = createClient(
+      SUPABASE_URL,
+      SERVICE_ROLE_KEY,
+      {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      },
+    );
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      throw new Error("Unable to identify Sparkle user");
+    }
+
     const body = await req.json();
 
-    const email = String(body.email || "").trim();
+    const email = String(body.email || user.email || "").trim();
     const name = String(body.name || "").trim();
     const phone = String(body.phone || "").trim();
 
@@ -33,6 +68,34 @@ serve(async (req) => {
         }),
         {
           status: 400,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        },
+      );
+    }
+
+    // Check if this Sparkle user already has a dedicated account
+    const { data: existingAccount } = await supabase
+      .from("paystack_dedicated_accounts")
+      .select("account_number, account_name, bank_name, customer_code")
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (existingAccount?.account_number) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          account: {
+            account_number: existingAccount.account_number,
+            account_name: existingAccount.account_name,
+            bank_name: existingAccount.bank_name,
+          },
+          customer_code: existingAccount.customer_code,
+        }),
+        {
+          status: 200,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
@@ -85,7 +148,7 @@ serve(async (req) => {
 
     const customerCode = customer.data.customer_code;
 
-    // Request dedicated account
+    // Create dedicated Wema account
     const accountRes = await fetch(
       "https://api.paystack.co/dedicated_account",
       {
@@ -124,12 +187,29 @@ serve(async (req) => {
 
     const data = account.data;
 
-    return new Response(
-      JSON.stringify({
-        success: true,
+    // SAVE THE ACCOUNT TO SPARKLE
+    const { error: saveError } = await supabase
+      .from("paystack_dedicated_accounts")
+      .insert({
+        user_id: user.id,
         account_number: data.account_number,
         account_name: data.account_name,
         bank_name: data.bank?.name || "Wema Bank",
+        customer_code: customerCode,
+      });
+
+    if (saveError) {
+      throw saveError;
+    }
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        account: {
+          account_number: data.account_number,
+          account_name: data.account_name,
+          bank_name: data.bank?.name || "Wema Bank",
+        },
         customer_code: customerCode,
       }),
       {
@@ -142,12 +222,15 @@ serve(async (req) => {
     );
 
   } catch (error) {
+    console.error(error);
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : String(error),
+        error:
+          error instanceof Error
+            ? error.message
+            : String(error),
       }),
       {
         status: 500,
