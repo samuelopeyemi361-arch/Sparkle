@@ -3756,13 +3756,21 @@ function renderDataPlans(plans){
 
   box._shownPlans=filtered;
   box.innerHTML=filtered.map((p,i)=>`
-    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)}); return false;">
+    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}">
       <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
       <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
       <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
       <span class="data-plan-buy">Buy</span>
       <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
     </button>`).join("");
+  box.querySelectorAll(".data-plan-card").forEach(card=>{
+    card.addEventListener("click",e=>{
+      e.preventDefault();
+      const index=Number(card.dataset.planIndex);
+      const plan=filtered[index];
+      if(plan) selectDataPlan(index,plan._value,plan._price,plan._name,plan._duration);
+    });
+  });
 }
 function selectDataPlan(index,value,price,name,duration){
   const box=document.getElementById("dataPlans");
@@ -3903,23 +3911,36 @@ async function loadCablePlans(){
     const result=await gsubzRequest("/api/plans/?service="+service,"GET");
     const plans=normalizePlans(result);
     if(!plans.length){box.innerHTML='<div class="data-empty">No '+escapeHtml(provider)+' plans available.</div>';return;}
+    box._plans=plans;
     box.innerHTML=plans.map((p,i)=>`
-      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" onclick="selectCablePlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)})">
+      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" data-plan-index="${i}">
         <div class="data-plan-size">${escapeHtml(p._name)}</div>
         <div class="data-plan-validity">${escapeHtml(p._duration||"Package")}</div>
         <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
         <span class="data-plan-buy">Buy</span>
       </button>`).join("");
-    box._plans=plans;
+    box.querySelectorAll(".data-plan-card").forEach(card=>{
+      card.addEventListener("click",e=>{
+        e.preventDefault();
+        const index=Number(card.dataset.planIndex);
+        const plan=plans[index];
+        if(plan) selectCablePlan(index,plan._value,plan._price,plan._name);
+      });
+    });
   }catch(e){
     box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
   }
 }
 function selectCablePlan(index,value,price,name){
   const box=document.getElementById("cablePlans");
-  const p=(box._plans||[]).find(x=>String(x._value)===String(value));
-  selectedCablePlan=p||{_value:value,_price:price,_name:name};
-  (box._plans||[]); loadCablePlans();
+  const plans=Array.isArray(box?._plans)?box._plans:[];
+  const p=plans.find(x=>String(x._value)===String(value));
+  selectedCablePlan=p||{_value:String(value||""),_price:Number(price||0),_name:String(name||"")};
+  if(box){
+    box.querySelectorAll(".data-plan-card").forEach(card=>card.classList.remove("selected"));
+    const cards=box.querySelectorAll(".data-plan-card");
+    if(cards[index]) cards[index].classList.add("selected");
+  }
 }
 async function verifyCable(){
   const provider={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[document.getElementById("cableProvider").value];
@@ -3970,7 +3991,7 @@ function showEducationSummary(){
   const box=document.getElementById("educationSummary");
   if(!selectedEducationService||!p){alert("Select a result pin first.");return;}
   if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
-  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(p._name)}</strong><span>${escapeHtml(phone)}</span><b>${money(p._price)}</b><small>Ready for confirmation. Live GSUBZ plan value: ${escapeHtml(p._value)}</small></div>`;
+  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(p._name)}</strong><span>${escapeHtml(phone)}</span><b>${money(p._price)}</b><small>Ready for confirmation. Live GSUBZ plan value: ${escapeHtml(p._value)}</small><button class="btn primary full" style="margin-top:14px" onclick="showPurchaseSummary('education')">Continue to Payment</button></div>`;
 }
 function selectElectricityService(id,label){
   selectedElectricityService=id;
@@ -3989,7 +4010,7 @@ function showElectricitySummary(){
   if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
   if(!Number.isFinite(amount)||amount<100){alert("Enter a valid electricity amount of at least ₦100.");return;}
   const label=document.querySelector(`#electricityServices [data-service="${CSS.escape(selectedElectricityService)}"] h3`)?.textContent||selectedElectricityService;
-  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(type)} • Meter ${escapeHtml(meter)} • ${escapeHtml(phone)}</span><b>${money(amount)}</b><small>Electricity amount is chosen by you; it is not a fixed plan price.</small></div>`;
+  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(type)} • Meter ${escapeHtml(meter)} • ${escapeHtml(phone)}</span><b>${money(amount)}</b><small>Electricity amount is chosen by you; it is not a fixed plan price.</small><button class="btn primary full" style="margin-top:14px" onclick="showPurchaseSummary('electricity')">Continue to Payment</button></div>`;
 }
 
 /* =====================================================
@@ -4023,20 +4044,30 @@ function getSinglePurchase(service){
       amount:Number(selectedDataPlan?._price || 0)
     };
   }
-  return {
-    service:"Cable TV",
-    network:document.getElementById("cableProvider").value,
-    phone:document.getElementById("cableNumber").value.trim(),
-    plan:selectedCablePlan?._name || "",
-    planValue:selectedCablePlan?._value || "",
-    amount:Number(selectedCablePlan?._price || 0)
-  };
+  if(service==="cable"){
+    return {
+      service:"Cable TV",
+      network:document.getElementById("cableProvider").value,
+      phone:document.getElementById("cableNumber").value.trim(),
+      plan:selectedCablePlan?._name || "",
+      planValue:selectedCablePlan?._value || "",
+      amount:Number(selectedCablePlan?._price || 0)
+    };
+  }
+  if(service==="education"){
+    const p=educationPlansCache[selectedEducationService];
+    return {service:"Education Pin",network:selectedEducationService||"",phone:document.getElementById("educationPhone")?.value.trim()||"",plan:p?._name||"",planValue:p?._value||"",amount:Number(p?._price||0),serviceID:selectedEducationService||""};
+  }
+  if(service==="electricity"){
+    return {service:"Electricity",network:selectedElectricityService||"",phone:document.getElementById("electricityPhone")?.value.trim()||"",plan:document.getElementById("electricityType")?.value||"prepaid",planValue:document.getElementById("electricityType")?.value||"prepaid",amount:Number(document.getElementById("electricityAmount")?.value||0),billersCode:document.getElementById("electricityMeter")?.value.trim()||"",serviceID:selectedElectricityService||""};
+  }
+  return {service:"",network:"",phone:"",amount:0};
 }
 
 function showPurchaseSummary(service){
   const p=getSinglePurchase(service);
-  if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue)){
-    alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : "Enter a phone number and valid amount.");
+  if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue) || (service==="education"&&!p.planValue) || (service==="electricity"&&!p.billersCode)){
+    alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : service==="education" ? "Select an education pin and enter a phone number." : service==="electricity" ? "Select a provider, meter number and amount." : "Enter a phone number and valid amount.");
     return;
   }
   if(service==="data" && document.getElementById("saveBeneficiaryToggle")?.classList.contains("on")){
@@ -4054,7 +4085,7 @@ function showPurchaseSummary(service){
     <div class="summary-line"><span>Network</span><strong>${escapeHtml(p.network)}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Service</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
     <div class="summary-line"><span>${service==="cable"?"Smartcard/IUC":"Recipient Phone"}</span><strong>${escapeHtml(p.phone)}</strong></div>
-    <div class="summary-line"><span>Data plan</span><strong>${escapeHtml(p.plan)}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"Package":service==="data"?"Data plan":service==="education"?"Result pin":service==="electricity"?"Bill type":"Plan"}</span><strong>${escapeHtml(p.plan)}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
     <div class="summary-line"><span>Current Price</span><strong>${money(p.amount)}</strong></div>
     <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">${service==="data"?"Confirm & Buy":"MAKE PAYMENT"}</button>`;
@@ -4162,128 +4193,85 @@ async function confirmTransactionPIN(){
 async function processPendingPurchase(){
   if(!pendingPurchase) return;
   const overlay=document.getElementById("processingOverlay");
+  const user=(await supabaseClient.auth.getUser()).data.user;
+  if(!user){ alert("Please log in again."); return; }
   overlay.classList.add("show");
-  document.getElementById("processingProgress").textContent =
-    pendingPurchase.type==="bulk" ? `Processing ${pendingPurchase.items.length} transaction(s)…` : "Connecting to Gsubz…";
-
-  let userId=null;
+  let completed=0;
   try{
-    const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) throw new Error("You are not logged in.");
-    userId=userData.user.id;
-
-    /* Check the wallet before sending any order to Gsubz. */
-    const total=Number(pendingPurchase.total||0);
-    const {data:wallet,error:walletError}=await supabaseClient
-      .from("wallets")
-      .select("balance")
-      .eq("user_id",userId)
-      .single();
-    if(walletError || !wallet) throw new Error("Unable to load your wallet balance.");
-    const startingBalance=Number(wallet.balance||0);
-    if(total<=0) throw new Error("Invalid purchase amount.");
-    if(startingBalance<total){
-      throw new Error(`Insufficient wallet balance. You need ${money(total)} but your wallet has ${money(startingBalance)}.`);
-    }
-
-    let processedAmount=0;
-
     for(let i=0;i<pendingPurchase.items.length;i++){
       const p=pendingPurchase.items[i];
-      document.getElementById("processingProgress").textContent =
-        pendingPurchase.type==="bulk" ? `Processing ${i+1}/${pendingPurchase.items.length}…` : "Processing your purchase…";
+      const amount=Number(p.amount||0);
+      if(!amount || amount<=0) throw new Error("Invalid purchase amount.");
+      document.getElementById("processingProgress").textContent=pendingPurchase.type==="bulk"?`Processing ${i+1}/${pendingPurchase.items.length}…`:"Checking wallet…";
       const requestID="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
 
-      let data;
-      if(p.service==="Airtime"){
-        const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
-        data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
-      }else if(p.service==="Data"){
-        const serviceID=p.serviceID || selectedDataService;
-        data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
-      }else if(p.service==="Cable TV"){
-        const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
-        data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:"",customerID:p.phone,requestID};
-      }else{
-        throw new Error("Unsupported service.");
+      // Reserve the money before sending the provider request. If the provider fails,
+      // the exact amount is refunded and the failed transaction is recorded.
+      const {data:wallet,error:walletReadError}=await supabaseClient.from("wallets").select("balance").eq("user_id",user.id).single();
+      if(walletReadError||!wallet) throw new Error("Unable to read your wallet balance.");
+      const currentBalance=Number(wallet.balance||0);
+      if(currentBalance<amount) throw new Error(`Insufficient wallet balance. You need ${money(amount)}.`);
+      const newBalance=currentBalance-amount;
+      const {data:updatedWallet,error:walletDebitError}=await supabaseClient.from("wallets").update({balance:newBalance,updated_at:new Date().toISOString()}).eq("user_id",user.id).gte("balance",amount).select("balance").single();
+      if(walletDebitError||!updatedWallet) throw new Error("Unable to debit your wallet. Please try again.");
+
+      let txId=null;
+      const {data:tx,error:txError}=await supabaseClient.from("wallet_transactions").insert({user_id:user.id,type:"debit",amount:amount,service:p.service,status:"pending"}).select("id").single();
+      if(txError||!tx){
+        await supabaseClient.from("wallets").update({balance:currentBalance,updated_at:new Date().toISOString()}).eq("user_id",user.id);
+        throw new Error("Unable to create the transaction record. Your wallet was not charged.");
       }
+      txId=tx.id;
 
-      const purchaseAmount=Number(p.amount||0);
-      if(purchaseAmount<=0) throw new Error("Invalid purchase amount.");
+      try{
+        document.getElementById("processingProgress").textContent=pendingPurchase.type==="bulk"?`Processing ${i+1}/${pendingPurchase.items.length}…`:"Connecting to Gsubz…";
+        let data;
+        if(p.service==="Airtime"){
+          const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
+          data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
+        }else if(p.service==="Data"){
+          const serviceID=p.serviceID||selectedDataService;
+          data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
+        }else if(p.service==="Cable TV"){
+          const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
+          data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:String(p.amount),customerID:p.phone,requestID};
+        }else if(p.service==="Education Pin"){
+          data={serviceID:p.serviceID||p.network,variation_code:String(p.planValue),phone:p.phone,amount:String(p.amount),requestID};
+        }else if(p.service==="Electricity"){
+          data={serviceID:p.serviceID||p.network,variation_code:String(p.planValue),billersCode:p.billersCode,phone:p.phone,amount:String(p.amount),requestID};
+        }else{
+          throw new Error("Unsupported service.");
+        }
 
-      const result=await gsubzRequest("/api/pay/","POST",data);
-      if(result?.status!=="successful"){
-        throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
-      }
+        const result=await gsubzRequest("/api/pay/","POST",data);
+        if(result?.status!=="successful") throw new Error(result?.api_response||result?.description||"Gsubz transaction failed.");
 
-      /* Gsubz has confirmed success. Now debit the Sparkle wallet and record it. */
-      const {data:latestWallet,error:latestWalletError}=await supabaseClient
-        .from("wallets")
-        .select("balance")
-        .eq("user_id",userId)
-        .single();
-      if(latestWalletError || !latestWallet) throw new Error("Purchase succeeded, but Sparkle could not read your wallet balance. Please contact support before making another purchase.");
-
-      const currentBalance=Number(latestWallet.balance||0);
-      if(currentBalance<purchaseAmount){
-        throw new Error("Purchase succeeded, but there is not enough wallet balance to record the debit. Please contact support immediately.");
-      }
-      const newBalance=currentBalance-purchaseAmount;
-
-      const {data:updatedWallet,error:walletUpdateError}=await supabaseClient
-        .from("wallets")
-        .update({balance:newBalance,updated_at:new Date().toISOString()})
-        .eq("user_id",userId)
-        .eq("balance",currentBalance)
-        .select("balance")
-        .maybeSingle();
-      if(walletUpdateError || !updatedWallet){
-        throw new Error("Purchase succeeded, but Sparkle could not safely deduct your wallet. Please contact support immediately.");
-      }
-
-      const reference=result.transactionID || requestID;
-      const {error:txError}=await supabaseClient
-        .from("wallet_transactions")
-        .insert({
-          user_id:userId,
-          type:"debit",
-          amount:purchaseAmount,
-          service:p.service,
-          status:"success",
-          reference:reference
-        });
-      if(txError){
-        console.error("Wallet transaction record error:",txError);
-        /* The wallet was already safely debited; do not reverse a successful service purchase. */
-      }
-
-      processedAmount+=purchaseAmount;
-
-      if(i===pendingPurchase.items.length-1){
-        showReceipt({
-          service:p.service,
-          reference:reference,
-          customer:p.phone,
-          amount:Number(result.amountPaid ?? result.amount ?? purchaseAmount)
-        });
+        const {error:txUpdateError}=await supabaseClient.from("wallet_transactions").update({status:"success"}).eq("id",txId).eq("user_id",user.id);
+        if(txUpdateError) console.error("Transaction status update failed:",txUpdateError);
+        completed++;
+        if(i===pendingPurchase.items.length-1){
+          showReceipt({service:p.service,reference:result.transactionID||requestID,customer:p.phone,amount:Number(result.amountPaid??result.amount??p.amount)});
+        }
+      }catch(providerError){
+        // Refund only this purchase after a provider failure.
+        await supabaseClient.from("wallets").update({balance:newBalance+amount,updated_at:new Date().toISOString()}).eq("user_id",user.id);
+        await supabaseClient.from("wallet_transactions").update({status:"failed"}).eq("id",txId).eq("user_id",user.id);
+        throw providerError;
       }
     }
-
-    overlay.classList.remove("show");
     pendingPurchase=null;
-    await loadWallet(userId);
-    await loadTransactions(userId);
+    await loadWallet(user.id);
+    await loadTransactions(user.id);
   }catch(error){
-    console.error("Gsubz purchase:",error);
+    console.error("Sparkle purchase:",error);
+    pendingPurchase=null;
+    alert((completed>0?completed+" transaction(s) completed. ":"")+"Transaction failed: "+(error.message||"Unable to process the transaction."));
+    await loadWallet(user.id);
+    await loadTransactions(user.id);
+  }finally{
     overlay.classList.remove("show");
-    alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
-    if(userId){
-      await loadWallet(userId);
-      await loadTransactions(userId);
-    }
   }
 }
-
 /* =====================================================
    RECEIPTS
    ===================================================== */
