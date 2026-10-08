@@ -36,7 +36,9 @@ async function verifySignature(
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response("ok", {
+      headers: corsHeaders,
+    });
   }
 
   if (req.method !== "POST") {
@@ -48,6 +50,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.text();
+
     const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
 
     if (!paystackSecret) {
@@ -80,7 +83,9 @@ Deno.serve(async (req) => {
 
     if (event.event !== "charge.success") {
       return new Response(
-        JSON.stringify({ received: true }),
+        JSON.stringify({
+          received: true,
+        }),
         {
           status: 200,
           headers: {
@@ -92,6 +97,7 @@ Deno.serve(async (req) => {
     }
 
     const data = event.data;
+
     const reference = data.reference;
     const amount = Number(data.amount) / 100;
 
@@ -99,11 +105,18 @@ Deno.serve(async (req) => {
       throw new Error("Invalid payment data");
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    
+    // IMPORTANT:
+    // This matches the secret name you created in Supabase.
+    const serviceRoleKey = Deno.env.get("SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl) {
+      throw new Error("SUPABASE_URL is not configured");
+    }
 
     if (!serviceRoleKey) {
-      throw new Error("SUPABASE_SERVICE_ROLE_KEY is not configured");
+      throw new Error("SERVICE_ROLE_KEY is not configured");
     }
 
     const supabase = createClient(
@@ -111,12 +124,17 @@ Deno.serve(async (req) => {
       serviceRoleKey,
     );
 
-    // Prevent duplicate credit
-    const { data: existingTransaction } = await supabase
-      .from("wallet_transaction")
-      .select("id")
-      .eq("reference", reference)
-      .maybeSingle();
+    // Prevent duplicate processing
+    const { data: existingTransaction, error: existingError } =
+      await supabase
+        .from("wallet_transaction")
+        .select("id")
+        .eq("reference", reference)
+        .maybeSingle();
+
+    if (existingError) {
+      throw existingError;
+    }
 
     if (existingTransaction) {
       return new Response(
@@ -134,8 +152,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Paystack's DVA charge.success payload contains
-    // the receiving dedicated account number here.
+    // Get the Paystack dedicated account that received the money
     const accountNumber =
       data.authorization?.receiver_bank_account_number;
 
@@ -155,12 +172,14 @@ Deno.serve(async (req) => {
     }
 
     if (!dedicatedAccount) {
-      throw new Error("Sparkle user for this account was not found");
+      throw new Error(
+        "Sparkle user for this account was not found",
+      );
     }
 
     const userId = dedicatedAccount.user_id;
 
-    // Get current wallet
+    // Get user's wallet
     const { data: wallet, error: walletError } =
       await supabase
         .from("wallets")
@@ -172,7 +191,8 @@ Deno.serve(async (req) => {
       throw new Error("Wallet not found");
     }
 
-    const newBalance = Number(wallet.balance) + amount;
+    const currentBalance = Number(wallet.balance);
+    const newBalance = currentBalance + amount;
 
     // Credit wallet
     const { error: updateError } =
@@ -230,9 +250,10 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "Webhook processing failed",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Webhook processing failed",
       }),
       {
         status: 500,
