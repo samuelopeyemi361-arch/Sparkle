@@ -3434,7 +3434,16 @@ async function createDedicatedAccount(){
     });
     if(error){
       console.error("Virtual account error:",error);
-      if(status) status.textContent="Unavailable";
+      let message="Unable to create account";
+      try{
+        if(error.context && typeof error.context.json === "function"){
+          const body=await error.context.json();
+          message=body?.message || (body?.errors ? JSON.stringify(body.errors) : message);
+        }
+      }catch(e){}
+      if(data?.message) message=data.message;
+      if(data?.errors) message=data.message || JSON.stringify(data.errors);
+      if(status) status.textContent=String(message).slice(0,120);
       return;
     }
 
@@ -3445,12 +3454,13 @@ async function createDedicatedAccount(){
       document.getElementById("dvaBankName").textContent=account.bank_name || "Moniepoint";
       if(status) status.textContent="Ready";
     }else{
-      if(status) status.textContent="Unavailable";
-      console.error("Virtual account creation failed:",data?.message || data);
+      const message=data?.message || (data?.errors ? JSON.stringify(data.errors) : "Unable to create account");
+      if(status) status.textContent=String(message).slice(0,120);
+      console.error("Virtual account creation failed:",data);
     }
   }catch(error){
     console.error("Virtual account function error:",error);
-    if(status) status.textContent="Unavailable";
+    if(status) status.textContent="Unable to create account";
   }
 }
 
