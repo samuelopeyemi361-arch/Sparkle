@@ -3403,33 +3403,74 @@ function toggleNotifications(){
 }
 
 /* =====================================================
-   PAYSTACK DEDICATED VIRTUAL ACCOUNT
+   SPARKLE MONIEPOINT DEDICATED VIRTUAL ACCOUNT
+   Topify → Moniepoint
+   No BVN/NIN is collected by the website.
    ===================================================== */
 
 async function createDedicatedAccount(){
+  const status=document.getElementById("dvaStatus");
+  const accountName=document.getElementById("dvaAccountName");
+  const accountNumber=document.getElementById("dvaAccountNumber");
+  const bankName=document.getElementById("dvaBankName");
+
   try{
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) return;
-
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva");
-    if(error){
-      console.error("Virtual account error:",error);
-      document.getElementById("dvaStatus").textContent="Unavailable";
+    if(userError || !userData?.user){
+      if(status) status.textContent="Login required";
       return;
     }
 
-    if(data?.success && data.account){
-      document.getElementById("dvaAccountName").textContent=data.account.account_name || "—";
-      document.getElementById("dvaAccountNumber").textContent=data.account.account_number || "—";
-      document.getElementById("dvaBankName").textContent=data.account.bank_name || "—";
-      document.getElementById("dvaStatus").textContent="Ready";
-    }else{
-      document.getElementById("dvaStatus").textContent="Unavailable";
-      console.error("Virtual account creation failed:",data?.error || data);
+    if(status) status.textContent="Creating…";
+
+    const user=userData.user;
+    let name=(user.user_metadata?.full_name || user.user_metadata?.name || "").trim();
+    if(!name){
+      const first=(user.user_metadata?.first_name || "").trim();
+      const last=(user.user_metadata?.last_name || "").trim();
+      name=[first,last].filter(Boolean).join(" ");
     }
+    if(!name) name=user.email?.split("@")[0] || "Sparkle User";
+
+    // This is the existing Edge Function name. Its deployed code now
+    // creates the Moniepoint account through Topify.
+    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva",{
+      body:{
+        name,
+        email:user.email || "",
+        phoneNumber:user.phone || user.user_metadata?.phone || ""
+      }
+    });
+
+    if(error){
+      console.error("Virtual account error:",error);
+      if(status) status.textContent="Unavailable";
+      return;
+    }
+
+    // New Topify response format.
+    if(data?.status === true && data?.data){
+      const account=data.data;
+      if(accountName) accountName.textContent=account.account_name || "—";
+      if(accountNumber) accountNumber.textContent=account.account_number || "—";
+      if(bankName) bankName.textContent=account.bank_name || "Moniepoint";
+      if(status) status.textContent="Ready";
+      return;
+    }
+
+    // Keep compatibility with the previous Paystack response format.
+    if(data?.success && data.account){
+      if(accountName) accountName.textContent=data.account.account_name || "—";
+      if(accountNumber) accountNumber.textContent=data.account.account_number || "—";
+      if(bankName) bankName.textContent=data.account.bank_name || "—";
+      if(status) status.textContent="Ready";
+      return;
+    }
+
+    if(status) status.textContent="Unavailable";
+    console.error("Virtual account creation failed:",data?.message || data?.error || data);
   }catch(error){
     console.error("Virtual account function error:",error);
-    const status=document.getElementById("dvaStatus");
     if(status) status.textContent="Unavailable";
   }
 }
@@ -3500,7 +3541,8 @@ const DATA_SERVICE_OPTIONS = {
     {id:"mtn_fibrex", label:"MTN Fibre X"}
   ],
   Airtel: [
-    {id:"airtel_gifting", label:"Airtel Gifting"}
+    {id:"airtel_gifting", label:"Airtel Gifting"},
+    {id:"airtel_sme", label:"Airtel SME"}
   ],
   Glo: [
     {id:"glo_data", label:"Glo Corporate Gifting"},
@@ -3733,7 +3775,7 @@ function renderDataPlans(plans){
 
   box._shownPlans=filtered;
   box.innerHTML=filtered.map((p,i)=>`
-    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)});return false;">
+    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)}); return false;">
       <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
       <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
       <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
