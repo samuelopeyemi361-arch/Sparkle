@@ -1616,6 +1616,8 @@ Privacy Policy
               <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
             </div>
 
+            <button type="button" class="btn" onclick="logout()" style="margin-top:16px;width:100%;border:1px solid #ef4444;color:#ef4444;background:#fff;">Log out</button>
+
             <div class="profile-message" id="profileMessage"></div>
 
             <div class="profile-grid">
@@ -3403,91 +3405,33 @@ function toggleNotifications(){
 }
 
 /* =====================================================
-   SPARKLE MONIEPOINT DEDICATED VIRTUAL ACCOUNT
-   Topify → Moniepoint
-   No BVN/NIN is collected by the website.
+   PAYSTACK DEDICATED VIRTUAL ACCOUNT
    ===================================================== */
 
 async function createDedicatedAccount(){
-  const status=document.getElementById("dvaStatus");
-  const accountName=document.getElementById("dvaAccountName");
-  const accountNumber=document.getElementById("dvaAccountNumber");
-  const bankName=document.getElementById("dvaBankName");
-
   try{
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user){
-      if(status) status.textContent="Login required";
-      return;
-    }
+    if(userError || !userData?.user) return;
 
-    if(status) status.textContent="Creating…";
-
-    const user=userData.user;
-
-    // Get the phone number saved in the Sparkle profile. Supabase Auth
-    // often does not contain the user's phone, even when Sparkle does.
-    const {data:profile}=await supabaseClient
-      .from("profiles")
-      .select("first_name,last_name,full_name,phone")
-      .eq("id",user.id)
-      .single();
-
-    let name=(profile?.full_name || user.user_metadata?.full_name || user.user_metadata?.name || "").trim();
-    if(!name){
-      const first=(user.user_metadata?.first_name || "").trim();
-      const last=(user.user_metadata?.last_name || "").trim();
-      name=[first,last].filter(Boolean).join(" ");
-    }
-    if(!name) name=user.email?.split("@")[0] || "Sparkle User";
-
-    // This is the existing Edge Function name. Its deployed code now
-    // creates the Moniepoint account through Topify.
-    const phoneNumber=(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
-
-    if(!phoneNumber){
-      console.error("Sparkle profile has no phone number.");
-      if(status) status.textContent="Add phone number";
-      return;
-    }
-
-    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva",{
-      body:{
-        name,
-        email:user.email || "",
-        phoneNumber
-      }
-    });
-
+    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva");
     if(error){
       console.error("Virtual account error:",error);
-      if(status) status.textContent="Unavailable";
+      document.getElementById("dvaStatus").textContent="Unavailable";
       return;
     }
 
-    // New Topify response format.
-    if(data?.status === true && data?.data){
-      const account=data.data;
-      if(accountName) accountName.textContent=account.account_name || "—";
-      if(accountNumber) accountNumber.textContent=account.account_number || "—";
-      if(bankName) bankName.textContent=account.bank_name || "Moniepoint";
-      if(status) status.textContent="Ready";
-      return;
-    }
-
-    // Keep compatibility with the previous Paystack response format.
     if(data?.success && data.account){
-      if(accountName) accountName.textContent=data.account.account_name || "—";
-      if(accountNumber) accountNumber.textContent=data.account.account_number || "—";
-      if(bankName) bankName.textContent=data.account.bank_name || "—";
-      if(status) status.textContent="Ready";
-      return;
+      document.getElementById("dvaAccountName").textContent=data.account.account_name || "—";
+      document.getElementById("dvaAccountNumber").textContent=data.account.account_number || "—";
+      document.getElementById("dvaBankName").textContent=data.account.bank_name || "—";
+      document.getElementById("dvaStatus").textContent="Ready";
+    }else{
+      document.getElementById("dvaStatus").textContent="Unavailable";
+      console.error("Virtual account creation failed:",data?.error || data);
     }
-
-    if(status) status.textContent="Unavailable";
-    console.error("Virtual account creation failed:",data?.message || data?.error || data);
   }catch(error){
     console.error("Virtual account function error:",error);
+    const status=document.getElementById("dvaStatus");
     if(status) status.textContent="Unavailable";
   }
 }
