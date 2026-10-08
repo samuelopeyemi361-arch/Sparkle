@@ -17,17 +17,27 @@ Deno.serve(async (req) => {
 
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: "Not authenticated" }),
+        JSON.stringify({
+          success: false,
+          error: "Not authenticated",
+        }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
         },
       );
     }
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
     const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw new Error("Supabase configuration is missing");
+    }
 
     if (!paystackSecret) {
       throw new Error("PAYSTACK_SECRET_KEY is not configured");
@@ -52,19 +62,33 @@ Deno.serve(async (req) => {
 
     if (userError || !user) {
       return new Response(
-        JSON.stringify({ error: "Invalid session" }),
+        JSON.stringify({
+          success: false,
+          error: "Invalid session",
+        }),
         {
           status: 401,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
         },
       );
     }
 
-    const { data: existingAccount } = await supabase
-      .from("paystack_dedicated_accounts")
-      .select("*")
-      .eq("user_id", user.id)
-      .maybeSingle();
+    // Check whether this user already has a DVA
+    const { data: existingAccount, error: existingError } =
+      await supabase
+        .from("paystack_dedicated_accounts")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+    if (existingError) {
+      throw new Error(
+        `Could not check existing account: ${existingError.message}`,
+      );
+    }
 
     if (existingAccount?.account_number) {
       return new Response(
@@ -75,26 +99,44 @@ Deno.serve(async (req) => {
         }),
         {
           status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
         },
       );
     }
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("first_name, last_name, phone, email")
-      .eq("id", user.id)
-      .single();
+    // Get Sparkle user's profile
+    const { data: profile, error: profileError } =
+      await supabase
+        .from("profiles")
+        .select("first_name, last_name, phone, email")
+        .eq("id", user.id)
+        .single();
 
     if (profileError || !profile) {
-      throw new Error("Customer profile not found");
-    }
-
-    if (!profile.first_name || !profile.last_name || !profile.email) {
       throw new Error(
-        "Please complete your name and email before requesting an account",
+        `Customer profile not found: ${
+          profileError?.message || "No profile record"
+        }`,
       );
     }
+
+    if (
+      !profile.first_name ||
+      !profile.last_name ||
+      !profile.email ||
+      !profile.phone
+    ) {
+      throw new Error(
+        "Please complete your first name, last name, phone number and email before requesting a funding account.",
+      );
+    }
+
+    // ---------------------------------------------------------
+    // STEP 1: Create Paystack customer
+    // ---------------------------------------------------------
 
     const customerResponse = await fetch(
       "https://api.paystack.co/customer",
@@ -108,7 +150,7 @@ Deno.serve(async (req) => {
           email: profile.email,
           first_name: profile.first_name,
           last_name: profile.last_name,
-          phone: profile.phone || undefined,
+          phone: profile.phone,
         }),
       },
     );
@@ -116,12 +158,20 @@ Deno.serve(async (req) => {
     const customerResult = await customerResponse.json();
 
     if (!customerResponse.ok || !customerResult.status) {
+      console.error("PAYSTACK CUSTOMER ERROR:", customerResult);
+
       throw new Error(
-        customerResult.message || "Unable to create Paystack customer",
+        `Paystack customer error: ${
+          customerResult.message || "Unable to create customer"
+        }`,
       );
     }
 
     const customerCode = customerResult.data.customer_code;
+
+    // ---------------------------------------------------------
+    // STEP 2: Create Dedicated Virtual Account
+    // ---------------------------------------------------------
 
     const dvaResponse = await fetch(
       "https://api.paystack.co/dedicated_account",
@@ -140,30 +190,51 @@ Deno.serve(async (req) => {
 
     const dvaResult = await dvaResponse.json();
 
+    console.log("PAYSTACK DVA RESPONSE:", dvaResult);
+
     if (!dvaResponse.ok || !dvaResult.status) {
       throw new Error(
-        dvaResult.message || "Unable to create dedicated account",
+        `Paystack DVA error: ${
+          dvaResult.message || "Unable to create dedicated account"
+        }`,
       );
     }
 
     const account = dvaResult.data;
 
-    const { error: saveError } = await supabase
-      .from("paystack_dedicated_accounts")
-      .insert({
-        user_id: user.id,
-        customer_code: customerCode,
-        account_name: account.account_name,
-        account_number: account.account_number,
-        bank_name: account.bank?.name || null,
-        bank_slug: account.bank?.slug || null,
-      });
+    if (!account?.account_number) {
+      throw new Error(
+        `Paystack did not return an account number. Response: ${JSON.stringify(
+          dvaResult,
+        )}`,
+      );
+    }
+
+    // ---------------------------------------------------------
+    // STEP 3: Save DVA in Sparkle
+    // ---------------------------------------------------------
+
+    const { error: saveError } =
+      await supabase
+        .from("paystack_dedicated_accounts")
+        .insert({
+          user_id: user.id,
+          customer_code: customerCode,
+          account_name: account.account_name,
+          account_number: account.account_number,
+          bank_name: account.bank?.name || null,
+          bank_slug: account.bank?.slug || null,
+        });
 
     if (saveError) {
       throw new Error(
-        `Account was created but could not be saved: ${saveError.message}`,
+        `Paystack created the account, but Sparkle could not save it: ${saveError.message}`,
       );
     }
+
+    // ---------------------------------------------------------
+    // SUCCESS
+    // ---------------------------------------------------------
 
     return new Response(
       JSON.stringify({
@@ -172,25 +243,36 @@ Deno.serve(async (req) => {
           account_name: account.account_name,
           account_number: account.account_number,
           bank_name: account.bank?.name || null,
+          bank_slug: account.bank?.slug || null,
         },
-        message: "Dedicated account created successfully",
+        message: "Dedicated funding account created successfully",
       }),
       {
         status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       },
     );
+
   } catch (error) {
+    console.error("CREATE DVA ERROR:", error);
+
     return new Response(
       JSON.stringify({
         success: false,
-        error: error instanceof Error
-          ? error.message
-          : "Something went wrong",
+        error:
+          error instanceof Error
+            ? error.message
+            : "Something went wrong while creating the funding account",
       }),
       {
         status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        headers: {
+          ...corsHeaders,
+          "Content-Type": "application/json",
+        },
       },
     );
   }
