@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const PAYSTACK_SECRET_KEY = Deno.env.get("PAYSTACK_SECRET_KEY");
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
 const SERVICE_ROLE_KEY = Deno.env.get("SERVICE_ROLE_KEY");
+const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,7 +27,7 @@ serve(async (req) => {
       throw new Error("Supabase configuration is missing");
     }
 
-    // Client used ONLY to identify the logged-in Sparkle user
+    // Identify the logged-in Sparkle user
     const authHeader = req.headers.get("Authorization");
 
     if (!authHeader) {
@@ -35,7 +36,7 @@ serve(async (req) => {
 
     const userClient = createClient(
       SUPABASE_URL,
-      Deno.env.get("SUPABASE_ANON_KEY") || "",
+      SUPABASE_ANON_KEY || "",
       {
         global: {
           headers: {
@@ -54,17 +55,38 @@ serve(async (req) => {
       throw new Error("Unable to identify Sparkle user");
     }
 
-    // Service-role client used for database writes
+    // Admin client — bypasses RLS
     const adminClient = createClient(
       SUPABASE_URL,
       SERVICE_ROLE_KEY,
     );
 
-    const body = await req.json();
+    let body: Record<string, unknown> = {};
 
-    const email = String(body.email || user.email || "").trim();
-    const name = String(body.name || "").trim();
-    const phone = String(body.phone || "").trim();
+    try {
+      body = await req.json();
+    } catch {
+      body = {};
+    }
+
+    const email = String(
+      body.email || user.email || "",
+    ).trim();
+
+    const name = String(
+      body.name ||
+      user.user_metadata?.full_name ||
+      user.user_metadata?.name ||
+      user.email?.split("@")[0] ||
+      "Sparkle User",
+    ).trim();
+
+    const phone = String(
+      body.phone ||
+      user.phone ||
+      user.user_metadata?.phone ||
+      "",
+    ).trim();
 
     if (!email || !name) {
       return new Response(
@@ -82,7 +104,11 @@ serve(async (req) => {
       );
     }
 
-    // Check whether this user already has an account
+    /*
+     * FIRST:
+     * Check whether Sparkle already saved a dedicated account
+     * for this user.
+     */
     const { data: existingAccount, error: existingError } =
       await adminClient
         .from("paystack_dedicated_accounts")
@@ -96,16 +122,31 @@ serve(async (req) => {
       throw existingError;
     }
 
+    // If the account already exists, return it.
     if (existingAccount?.account_number) {
       return new Response(
         JSON.stringify({
           success: true,
+
+          // Top-level fields for Sparkle website
+          account_number: existingAccount.account_number,
+          account_name:
+            existingAccount.account_name || name,
+          bank_name:
+            existingAccount.bank_name || "Wema Bank",
+
+          // Also return account object
           account: {
-            account_number: existingAccount.account_number,
-            account_name: existingAccount.account_name,
-            bank_name: existingAccount.bank_name,
+            account_number:
+              existingAccount.account_number,
+            account_name:
+              existingAccount.account_name || name,
+            bank_name:
+              existingAccount.bank_name || "Wema Bank",
           },
-          customer_code: existingAccount.customer_code,
+
+          customer_code:
+            existingAccount.customer_code || null,
         }),
         {
           status: 200,
@@ -117,17 +158,24 @@ serve(async (req) => {
       );
     }
 
+    /*
+     * CREATE PAYSTACK CUSTOMER
+     */
     const names = name.split(/\s+/);
-    const firstName = names.shift() || "Sparkle";
-    const lastName = names.join(" ") || "User";
 
-    // Create Paystack customer
+    const firstName =
+      names.shift() || "Sparkle";
+
+    const lastName =
+      names.join(" ") || "User";
+
     const customerRes = await fetch(
       "https://api.paystack.co/customer",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          Authorization:
+            `Bearer ${PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -147,7 +195,8 @@ serve(async (req) => {
           success: false,
           stage: "customer_creation",
           paystack_status: customerRes.status,
-          paystack_error: customer.message || customer,
+          paystack_error:
+            customer.message || customer,
         }),
         {
           status: 400,
@@ -159,15 +208,19 @@ serve(async (req) => {
       );
     }
 
-    const customerCode = customer.data.customer_code;
+    const customerCode =
+      customer.data.customer_code;
 
-    // Create Wema dedicated account
+    /*
+     * CREATE WEMA DEDICATED ACCOUNT
+     */
     const accountRes = await fetch(
       "https://api.paystack.co/dedicated_account",
       {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
+          Authorization:
+            `Bearer ${PAYSTACK_SECRET_KEY}`,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
@@ -185,7 +238,8 @@ serve(async (req) => {
           success: false,
           stage: "dedicated_account_creation",
           paystack_status: accountRes.status,
-          paystack_error: account.message || account,
+          paystack_error:
+            account.message || account,
           customer_code: customerCode,
         }),
         {
@@ -200,29 +254,48 @@ serve(async (req) => {
 
     const data = account.data;
 
-    // Save using SERVICE ROLE so RLS cannot block the insert
-    const { error: saveError } = await adminClient
-      .from("paystack_dedicated_accounts")
-      .insert({
-        user_id: user.id,
-        account_number: data.account_number,
-        account_name: data.account_name,
-        bank_name: data.bank?.name || "Wema Bank",
-        customer_code: customerCode,
-      });
+    /*
+     * SAVE ACCOUNT TO SPARKLE
+     */
+    const { error: saveError } =
+      await adminClient
+        .from("paystack_dedicated_accounts")
+        .insert({
+          user_id: user.id,
+          account_number: data.account_number,
+          account_name: data.account_name,
+          bank_name:
+            data.bank?.name || "Wema Bank",
+          customer_code: customerCode,
+        });
 
     if (saveError) {
       throw saveError;
     }
 
+    /*
+     * RETURN ACCOUNT
+     *
+     * Both top-level fields and account object are
+     * returned so the current Sparkle website can
+     * display the account.
+     */
     return new Response(
       JSON.stringify({
         success: true,
+
+        account_number: data.account_number,
+        account_name: data.account_name,
+        bank_name:
+          data.bank?.name || "Wema Bank",
+
         account: {
           account_number: data.account_number,
           account_name: data.account_name,
-          bank_name: data.bank?.name || "Wema Bank",
+          bank_name:
+            data.bank?.name || "Wema Bank",
         },
+
         customer_code: customerCode,
       }),
       {
@@ -233,6 +306,7 @@ serve(async (req) => {
         },
       },
     );
+
   } catch (error) {
     console.error(error);
 
