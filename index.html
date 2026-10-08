@@ -3574,6 +3574,7 @@ let selectedDataServiceLabel = "";
 let dataPlansCache = {};
 let dataServiceLoadToken = 0;
 let selectedCablePlan = null;
+let cablePlanLoadToken = 0;
 
 async function gsubzRequest(path, method="GET", data=null){
   const upperMethod=String(method||"GET").toUpperCase();
@@ -3965,29 +3966,54 @@ async function loadCablePlans(){
   const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
   const box=document.getElementById("cablePlans");
   if(!box)return;
+
+  // Reset the previous provider's selection before loading another provider.
+  const loadToken=++cablePlanLoadToken;
+  selectedCablePlan=null;
+  const summary=document.getElementById("cableSummary");
+  if(summary)summary.innerHTML="";
+  box._plans=[];
   box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
+
   try{
-    const result=await gsubzRequest("/api/plans/?service="+service,"GET");
-    const plans=normalizePlans(result);
-    if(!plans.length){box.innerHTML='<div class="data-empty">No '+escapeHtml(provider)+' plans available.</div>';box._plans=[];return;}
+    const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
+    if(loadToken!==cablePlanLoadToken)return;
+
+    // GSUBZ normally returns { plans: [...] }; tolerate wrappers from the Edge Function too.
+    const rawPlans=Array.isArray(result?.plans)?result.plans:
+      (Array.isArray(result?.data?.plans)?result.data.plans:
+      (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:
+      (Array.isArray(result?.data)?result.data:[])));
+    const plans=rawPlans.map((p,i)=>{
+      const name=p?.displayName||p?.display_name||p?.name||p?.PlanName||p?.value||("Package "+(i+1));
+      const value=p?.value??p?.variation_code??p?.variationCode??p?.plan??"";
+      const price=Number(p?.api_price??p?.price??p?.amount??NaN);
+      return {...p,_name:String(name),_value:String(value),_price:price,_duration:p?.duration||p?.validity||"Package"};
+    }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
+
+    if(!plans.length){
+      box.innerHTML='<div class="data-empty">No valid '+escapeHtml(provider)+' packages are currently available. Please try again later.</div>';
+      return;
+    }
     box._plans=plans;
     box.innerHTML=plans.map((p,i)=>`
-      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" data-plan-index="${i}">
+      <button type="button" class="data-plan-card" data-plan-index="${i}">
         <div class="data-plan-size">${escapeHtml(p._name)}</div>
-        <div class="data-plan-validity">${escapeHtml(p._duration||"Package")}</div>
+        <div class="data-plan-validity">${escapeHtml(p._duration)}</div>
         <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-        <span class="data-plan-buy">Buy</span>
+        <span class="data-plan-buy">Select</span>
       </button>`).join("");
     box.querySelectorAll(".data-plan-card").forEach(card=>{
       card.addEventListener("click",e=>{
         e.preventDefault();
         const i=Number(card.dataset.planIndex);
-        const p=box._plans?.[i];
-        if(p) selectCablePlan(i,p._value,p._price,p._name);
+        const plan=box._plans?.[i];
+        if(plan)selectCablePlan(i,plan._value,plan._price,plan._name);
       });
     });
   }catch(e){
-    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
+    if(loadToken!==cablePlanLoadToken)return;
+    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||("Unable to load "+provider+" plans."))+'</div>';
   }
 }
 function selectCablePlan(index,value,price,name){
