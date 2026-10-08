@@ -845,6 +845,8 @@ body.dark-mode .bulk-row select{
   width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:11px;
   display:grid;place-items:center;font-size:18px;position:relative
 }
+.logout-btn{width:auto;min-width:40px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:800;white-space:nowrap;cursor:pointer}
+.logout-btn span{display:inline}
 .notification-dot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#ef4444}
 .page{display:none}
 .page.active{display:block}
@@ -1507,7 +1509,7 @@ Privacy Policy
         <div class="dash-actions">
           <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
           <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
-          <button class="icon-btn" title="Logout" onclick="logout()" aria-label="Logout">↪</button>
+          <button class="icon-btn logout-btn" title="Logout" onclick="logout()" aria-label="Logout">↪ <span>Logout</span></button>
 
           <div class="userbox">
             <div class="avatar" id="avatar">S</div>
@@ -4695,11 +4697,14 @@ async function showFundWallet(){
 }
 
 async function logout(){
-
-await supabaseClient.auth.signOut();
-
+try{
+const {error}=await supabaseClient.auth.signOut({scope:"local"});
+if(error) throw error;
 showHomepage();
-
+}catch(error){
+console.error("Sparkle logout failed:",error);
+alert("Logout failed. Please try again.");
+}
 }
 
 
