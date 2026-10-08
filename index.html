@@ -3409,29 +3409,47 @@ function toggleNotifications(){
    ===================================================== */
 
 async function createDedicatedAccount(){
+  const status=document.getElementById("dvaStatus");
   try{
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) return;
+    if(userError || !userData?.user){ if(status) status.textContent="Login required"; return; }
+    const user=userData.user;
 
-    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva");
+    const {data:sessionData}=await supabaseClient.auth.getSession();
+    const accessToken=sessionData?.session?.access_token;
+    if(!accessToken){ if(status) status.textContent="Login required"; return; }
+
+    const {data:profile}=await supabaseClient.from("profiles")
+      .select("first_name,last_name,full_name,phone")
+      .eq("id",user.id).single();
+
+    const name=(profile?.full_name || [profile?.first_name,profile?.last_name].filter(Boolean).join(" ") || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
+    const phoneNumber=String(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
+    if(!phoneNumber){ if(status) status.textContent="Add phone number"; return; }
+    if(status) status.textContent="Creating…";
+
+    const {data,error}=await supabaseClient.functions.invoke("topify-dva",{
+      body:{name,email:user.email || "",phoneNumber},
+      headers:{Authorization:`Bearer ${accessToken}`}
+    });
     if(error){
       console.error("Virtual account error:",error);
-      document.getElementById("dvaStatus").textContent="Unavailable";
+      if(status) status.textContent="Unavailable";
       return;
     }
 
-    if(data?.success && data.account){
-      document.getElementById("dvaAccountName").textContent=data.account.account_name || "—";
-      document.getElementById("dvaAccountNumber").textContent=data.account.account_number || "—";
-      document.getElementById("dvaBankName").textContent=data.account.bank_name || "—";
-      document.getElementById("dvaStatus").textContent="Ready";
+    if(data?.status===true && data?.data){
+      const account=data.data;
+      document.getElementById("dvaAccountName").textContent=account.account_name || "—";
+      document.getElementById("dvaAccountNumber").textContent=account.account_number || "—";
+      document.getElementById("dvaBankName").textContent=account.bank_name || "Moniepoint";
+      if(status) status.textContent="Ready";
     }else{
-      document.getElementById("dvaStatus").textContent="Unavailable";
-      console.error("Virtual account creation failed:",data?.error || data);
+      if(status) status.textContent="Unavailable";
+      console.error("Virtual account creation failed:",data?.message || data);
     }
   }catch(error){
     console.error("Virtual account function error:",error);
-    const status=document.getElementById("dvaStatus");
     if(status) status.textContent="Unavailable";
   }
 }
