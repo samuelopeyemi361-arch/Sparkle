@@ -3411,7 +3411,7 @@ async function createDedicatedAccount(){
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
     if(userError || !userData?.user) return;
 
-    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva");
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva");
     if(error){
       console.error("Virtual account error:",error);
       document.getElementById("dvaStatus").textContent="Unavailable";
@@ -3500,8 +3500,7 @@ const DATA_SERVICE_OPTIONS = {
     {id:"mtn_fibrex", label:"MTN Fibre X"}
   ],
   Airtel: [
-    {id:"airtel_gifting", label:"Airtel Gifting"},
-    {id:"airtel_sme", label:"Airtel SME"}
+    {id:"airtel_gifting", label:"Airtel Gifting"}
   ],
   Glo: [
     {id:"glo_data", label:"Glo Corporate Gifting"},
@@ -3734,7 +3733,7 @@ function renderDataPlans(plans){
 
   box._shownPlans=filtered;
   box.innerHTML=filtered.map((p,i)=>`
-    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)}); return false;">
+    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}" onclick="selectDataPlan(${i},${JSON.stringify(p._value)},${p._price},${JSON.stringify(p._name)},${JSON.stringify(p._duration)});return false;">
       <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
       <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
       <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
