@@ -1,6 +1,8 @@
 // Sparkle — Supabase Edge Function
-// Creates a dedicated Moniepoint virtual account through Topify.
-// NO BVN/NIN is collected or sent.
+// Creates a permanent PalmPay funding account through Topify.
+// NIN/BVN is NOT requested during Sparkle registration.
+// If Topify's PalmPay endpoint requires identity data, this function
+// reads it only if the user has voluntarily saved it in their Profile.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -12,7 +14,8 @@ const corsHeaders = {
 };
 
 const TOPIFY_URL = "https://apipay.topify.ng";
-const MONIEPOINT_CODE = "30901";
+const PALMPAY_CODE = "20946";
+const BUSINESS_ID = "TPYBIZLHBUMTIECF2B";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -28,10 +31,6 @@ Deno.serve(async (req) => {
 
   try {
     const topifySecret = Deno.env.get("TOPIFY_SECRET_KEY");
-
-    const businessId =
-      Deno.env.get("TOPIFY_BUSINESS_ID") ||
-      "TPYBIZLHBUMTIECF2B";
 
     if (!topifySecret) {
       return json(
@@ -109,6 +108,15 @@ Deno.serve(async (req) => {
       body.phoneNumber || ""
     ).trim();
 
+    // Optional Profile KYC fields.
+    const identityType = String(
+      body.identity_document_type || ""
+    ).trim().toLowerCase();
+
+    const identityNumber = String(
+      body.identity_number || ""
+    ).trim();
+
     if (!email || !name || !phoneNumber) {
       return json(
         {
@@ -134,14 +142,40 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Moniepoint only.
-    // BVN/NIN is NOT sent.
+    /*
+      PalmPay requires identity information according to
+      Topify's current Reserve API.
+
+      Therefore:
+      - Registration does NOT request NIN/BVN.
+      - This function does NOT invent or bypass identity information.
+      - Identity is only sent if the user voluntarily provides
+        it from their Sparkle Profile.
+    */
+
+    if (
+      !["bvn", "nin", "cac"].includes(identityType) ||
+      !identityNumber
+    ) {
+      return json(
+        {
+          status: false,
+          message:
+            "Your funding account provider requires identity verification. You can optionally add your NIN or BVN in Profile.",
+          code: "IDENTITY_REQUIRED_FOR_PALMPAY",
+        },
+        422
+      );
+    }
+
     const payload = {
-      email: email,
-      name: name,
+      email,
+      name,
       phoneNumber: normalizedPhone,
-      bankCode: [MONIEPOINT_CODE],
-      businessId: businessId,
+      bankCode: [PALMPAY_CODE],
+      businessId: BUSINESS_ID,
+      identity_document_type: identityType,
+      identity_number: identityNumber,
     };
 
     const response = await fetch(
@@ -165,9 +199,8 @@ Deno.serve(async (req) => {
           status: false,
           message:
             result?.message ||
-            "Topify could not create the account.",
-          errors:
-            result?.errors || null,
+            "Topify could not create the PalmPay account.",
+          errors: result?.errors || null,
         },
         response.status || 502
       );
@@ -183,13 +216,13 @@ Deno.serve(async (req) => {
         (item: any) =>
           String(item?.provider || "")
             .toLowerCase()
-            .includes("moniepoint")
+            .includes("palmpay")
       ) || accounts[0];
 
     return json({
       status: true,
       message:
-        "Sparkle wallet account created successfully.",
+        "Sparkle PalmPay funding account created successfully.",
       data: {
         customer_code:
           result?.data?.customer?.customer_code || null,
@@ -201,10 +234,10 @@ Deno.serve(async (req) => {
           account?.account_name || null,
 
         bank_name:
-          account?.bank_name || "Moniepoint",
+          account?.bank_name || "PalmPay",
 
         provider:
-          account?.provider || "moniepoint",
+          account?.provider || "palmpay",
       },
     });
 
@@ -218,7 +251,7 @@ Deno.serve(async (req) => {
       {
         status: false,
         message:
-          "Unable to create the wallet account right now.",
+          "Unable to create the PalmPay funding account right now.",
       },
       500
     );
