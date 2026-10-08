@@ -16,19 +16,7 @@ serve(async (req) => {
 
   try {
     if (!PAYSTACK_SECRET_KEY) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "PAYSTACK_SECRET_KEY is not configured",
-        }),
-        {
-          status: 500,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      throw new Error("PAYSTACK_SECRET_KEY is missing");
     }
 
     const body = await req.json();
@@ -36,9 +24,6 @@ serve(async (req) => {
     const email = String(body.email || "").trim();
     const name = String(body.name || "").trim();
     const phone = String(body.phone || "").trim();
-    const preferredBank = String(
-      body.preferred_bank || "wema-bank",
-    ).trim();
 
     if (!email || !name) {
       return new Response(
@@ -56,12 +41,12 @@ serve(async (req) => {
       );
     }
 
-    const parts = name.split(/\s+/);
-    const firstName = parts.shift() || "Sparkle";
-    const lastName = parts.join(" ") || firstName;
+    const names = name.split(/\s+/);
+    const firstName = names.shift() || "Sparkle";
+    const lastName = names.join(" ") || "User";
 
-    // 1. Create Paystack customer
-    const customerResponse = await fetch(
+    // Create Paystack customer
+    const customerRes = await fetch(
       "https://api.paystack.co/customer",
       {
         method: "POST",
@@ -73,23 +58,23 @@ serve(async (req) => {
           email,
           first_name: firstName,
           last_name: lastName,
-          phone: phone || undefined,
+          ...(phone ? { phone } : {}),
         }),
       },
     );
 
-    const customerData = await customerResponse.json();
+    const customer = await customerRes.json();
 
-    if (!customerResponse.ok || !customerData.status) {
+    if (!customerRes.ok || !customer.status) {
       return new Response(
         JSON.stringify({
           success: false,
-          stage: "customer",
-          error:
-            customerData.message || "Unable to create Paystack customer",
+          stage: "customer_creation",
+          paystack_status: customerRes.status,
+          paystack_error: customer.message || customer,
         }),
         {
-          status: customerResponse.status || 400,
+          status: 400,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
@@ -98,10 +83,10 @@ serve(async (req) => {
       );
     }
 
-    const customerCode = customerData.data.customer_code;
+    const customerCode = customer.data.customer_code;
 
-    // 2. Create dedicated virtual account
-    const accountResponse = await fetch(
+    // Request dedicated account
+    const accountRes = await fetch(
       "https://api.paystack.co/dedicated_account",
       {
         method: "POST",
@@ -111,25 +96,24 @@ serve(async (req) => {
         },
         body: JSON.stringify({
           customer: customerCode,
-          preferred_bank: preferredBank,
+          preferred_bank: "wema-bank",
         }),
       },
     );
 
-    const accountData = await accountResponse.json();
+    const account = await accountRes.json();
 
-    if (!accountResponse.ok || !accountData.status) {
+    if (!accountRes.ok || !account.status) {
       return new Response(
         JSON.stringify({
           success: false,
-          stage: "dedicated_account",
-          error:
-            accountData.message ||
-            "Paystack could not create the dedicated account",
+          stage: "dedicated_account_creation",
+          paystack_status: accountRes.status,
+          paystack_error: account.message || account,
           customer_code: customerCode,
         }),
         {
-          status: accountResponse.status || 400,
+          status: 400,
           headers: {
             ...corsHeaders,
             "Content-Type": "application/json",
@@ -138,18 +122,15 @@ serve(async (req) => {
       );
     }
 
-    const account = accountData.data;
+    const data = account.data;
 
     return new Response(
       JSON.stringify({
         success: true,
+        account_number: data.account_number,
+        account_name: data.account_name,
+        bank_name: data.bank?.name || "Wema Bank",
         customer_code: customerCode,
-        account_name: account.account_name,
-        account_number: account.account_number,
-        bank_name: account.bank?.name || "",
-        bank_slug: account.bank?.slug || preferredBank,
-        currency: account.currency || "NGN",
-        message: "Dedicated virtual account created successfully",
       }),
       {
         status: 200,
@@ -159,13 +140,14 @@ serve(async (req) => {
         },
       },
     );
+
   } catch (error) {
     return new Response(
       JSON.stringify({
         success: false,
         error: error instanceof Error
           ? error.message
-          : "Unexpected server error",
+          : String(error),
       }),
       {
         status: 500,
