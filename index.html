@@ -3411,7 +3411,7 @@ async function createDedicatedAccount(){
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
     if(userError || !userData?.user) return;
 
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva");
+    const {data,error}=await supabaseClient.functions.invoke("create-dedicated-dva");
     if(error){
       console.error("Virtual account error:",error);
       document.getElementById("dvaStatus").textContent="Unavailable";
