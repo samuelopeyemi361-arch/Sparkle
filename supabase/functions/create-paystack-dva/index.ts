@@ -1,3 +1,7 @@
+// Sparkle — Supabase Edge Function
+// Creates a dedicated Moniepoint virtual account through Topify.
+// NO BVN/NIN is collected or sent.
+
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -7,40 +11,61 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+const TOPIFY_URL = "https://apipay.topify.ng";
+const MONIEPOINT_CODE = "30901";
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  try {
-    const authHeader = req.headers.get("Authorization");
+  if (req.method !== "POST") {
+    return json(
+      { status: false, message: "POST requests only." },
+      405
+    );
+  }
 
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Not authenticated",
-        }),
+  try {
+    const topifySecret = Deno.env.get("TOPIFY_SECRET_KEY");
+    const businessId =
+      Deno.env.get("TOPIFY_BUSINESS_ID") ||
+      "TPYBIZLHBUMTIECF2";
+
+    if (!topifySecret) {
+      return json(
         {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          status: false,
+          message: "TOPIFY_SECRET_KEY is not configured.",
         },
+        500
       );
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY");
-    const paystackSecret = Deno.env.get("PAYSTACK_SECRET_KEY");
 
     if (!supabaseUrl || !supabaseAnonKey) {
-      throw new Error("Supabase configuration is missing");
+      return json(
+        {
+          status: false,
+          message: "Supabase environment is not configured.",
+        },
+        500
+      );
     }
 
-    if (!paystackSecret) {
-      throw new Error("PAYSTACK_SECRET_KEY is not configured");
+    // Only logged-in Sparkle users can create a wallet account.
+    const authHeader = req.headers.get("Authorization");
+
+    if (!authHeader) {
+      return json(
+        {
+          status: false,
+          message: "You must be logged in.",
+        },
+        401
+      );
     }
 
     const supabase = createClient(
@@ -52,7 +77,7 @@ Deno.serve(async (req) => {
             Authorization: authHeader,
           },
         },
-      },
+      }
     );
 
     const {
@@ -61,219 +86,171 @@ Deno.serve(async (req) => {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: "Invalid session",
-        }),
+      return json(
         {
-          status: 401,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          status: false,
+          message: "Invalid or expired login session.",
         },
+        401
       );
     }
 
-    // Check whether this user already has a DVA
-    const { data: existingAccount, error: existingError } =
-      await supabase
-        .from("paystack_dedicated_accounts")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
+    const body = await req.json();
 
-    if (existingError) {
-      throw new Error(
-        `Could not check existing account: ${existingError.message}`,
-      );
-    }
+    // We intentionally accept NO BVN or NIN.
+    const email = String(
+      body.email || user.email || ""
+    ).trim();
 
-    if (existingAccount?.account_number) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          account: existingAccount,
-          message: "Dedicated account already exists",
-        }),
+    const name = String(
+      body.name || ""
+    ).trim();
+
+    const phoneNumber = String(
+      body.phoneNumber || ""
+    ).trim();
+
+    if (!email || !name || !phoneNumber) {
+      return json(
         {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
+          status: false,
+          message:
+            "email, name and phoneNumber are required.",
         },
+        400
       );
     }
 
-    // Get Sparkle user's profile
-    const { data: profile, error: profileError } =
-      await supabase
-        .from("profiles")
-        .select("first_name, last_name, phone, email")
-        .eq("id", user.id)
-        .single();
+    const normalizedPhone =
+      phoneNumber.replace(/\s+/g, "");
 
-    if (profileError || !profile) {
-      throw new Error(
-        `Customer profile not found: ${
-          profileError?.message || "No profile record"
-        }`,
+    if (!/^(\+234|234|0)\d{10}$/.test(normalizedPhone)) {
+      return json(
+        {
+          status: false,
+          message:
+            "Enter a valid Nigerian phone number.",
+        },
+        400
       );
     }
 
-    if (
-      !profile.first_name ||
-      !profile.last_name ||
-      !profile.email ||
-      !profile.phone
-    ) {
-      throw new Error(
-        "Please complete your first name, last name, phone number and email before requesting a funding account.",
-      );
-    }
+    // IMPORTANT:
+    // Only Moniepoint (30901) is requested.
+    // PalmPay (20946) is NOT included.
+    // Therefore BVN/NIN is NOT sent.
+    const payload = {
+      email: email,
+      name: name,
+      phoneNumber: normalizedPhone,
+      bankCode: [MONIEPOINT_CODE],
+      businessId: businessId,
+    };
 
-    // ---------------------------------------------------------
-    // STEP 1: Create Paystack customer
-    // ---------------------------------------------------------
-
-    const customerResponse = await fetch(
-      "https://api.paystack.co/customer",
+    const response = await fetch(
+      `${TOPIFY_URL}/api/v1/virtual-accounts/reserve`,
       {
         method: "POST",
+
         headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-          "Content-Type": "application/json",
+          Authorization:
+            `Bearer ${topifySecret}`,
+          "Content-Type":
+            "application/json",
+          Accept:
+            "application/json",
         },
-        body: JSON.stringify({
-          email: profile.email,
-          first_name: profile.first_name,
-          last_name: profile.last_name,
-          phone: profile.phone,
-        }),
-      },
+
+        body: JSON.stringify(payload),
+      }
     );
 
-    const customerResult = await customerResponse.json();
+    const result = await response.json();
 
-    if (!customerResponse.ok || !customerResult.status) {
-      console.error("PAYSTACK CUSTOMER ERROR:", customerResult);
-
-      throw new Error(
-        `Paystack customer error: ${
-          customerResult.message || "Unable to create customer"
-        }`,
+    if (!response.ok || result?.status === false) {
+      return json(
+        {
+          status: false,
+          message:
+            result?.message ||
+            "Topify could not create the account.",
+          errors:
+            result?.errors || null,
+        },
+        response.status || 502
       );
     }
 
-    const customerCode = customerResult.data.customer_code;
+    const accounts =
+      Array.isArray(result?.data?.accounts)
+        ? result.data.accounts
+        : [];
 
-    // ---------------------------------------------------------
-    // STEP 2: Create Dedicated Virtual Account
-    // ---------------------------------------------------------
+    const account =
+      accounts.find(
+        (item: any) =>
+          String(item?.provider || "")
+            .toLowerCase()
+            .includes("moniepoint")
+      ) || accounts[0];
 
-    const dvaResponse = await fetch(
-      "https://api.paystack.co/dedicated_account",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${paystackSecret}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          customer: customerCode,
-          preferred_bank: "wema-bank",
-        }),
+    return json({
+      status: true,
+
+      message:
+        "Sparkle wallet account created successfully.",
+
+      data: {
+        customer_code:
+          result?.data?.customer
+            ?.customer_code || null,
+
+        account_number:
+          account?.account_number || null,
+
+        account_name:
+          account?.account_name || null,
+
+        bank_name:
+          account?.bank_name ||
+          "Moniepoint",
+
+        provider:
+          account?.provider ||
+          "moniepoint",
       },
-    );
-
-    const dvaResult = await dvaResponse.json();
-
-    console.log("PAYSTACK DVA RESPONSE:", dvaResult);
-
-    if (!dvaResponse.ok || !dvaResult.status) {
-      throw new Error(
-        `Paystack DVA error: ${
-          dvaResult.message || "Unable to create dedicated account"
-        }`,
-      );
-    }
-
-    const account = dvaResult.data;
-
-    if (!account?.account_number) {
-      throw new Error(
-        `Paystack did not return an account number. Response: ${JSON.stringify(
-          dvaResult,
-        )}`,
-      );
-    }
-
-    // ---------------------------------------------------------
-    // STEP 3: Save DVA in Sparkle
-    // ---------------------------------------------------------
-
-    const { error: saveError } =
-      await supabase
-        .from("paystack_dedicated_accounts")
-        .insert({
-          user_id: user.id,
-          customer_code: customerCode,
-          account_name: account.account_name,
-          account_number: account.account_number,
-          bank_name: account.bank?.name || null,
-          bank_slug: account.bank?.slug || null,
-        });
-
-    if (saveError) {
-      throw new Error(
-        `Paystack created the account, but Sparkle could not save it: ${saveError.message}`,
-      );
-    }
-
-    // ---------------------------------------------------------
-    // SUCCESS
-    // ---------------------------------------------------------
-
-    return new Response(
-      JSON.stringify({
-        success: true,
-        account: {
-          account_name: account.account_name,
-          account_number: account.account_number,
-          bank_name: account.bank?.name || null,
-          bank_slug: account.bank?.slug || null,
-        },
-        message: "Dedicated funding account created successfully",
-      }),
-      {
-        status: 200,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
-      },
-    );
+    });
 
   } catch (error) {
-    console.error("CREATE DVA ERROR:", error);
+    console.error(
+      "Sparkle Topify error:",
+      error
+    );
 
-    return new Response(
-      JSON.stringify({
-        success: false,
-        error:
-          error instanceof Error
-            ? error.message
-            : "Something went wrong while creating the funding account",
-      }),
+    return json(
       {
-        status: 500,
-        headers: {
-          ...corsHeaders,
-          "Content-Type": "application/json",
-        },
+        status: false,
+        message:
+          "Unable to create the wallet account right now.",
       },
+      500
     );
   }
 });
+
+function json(
+  data: unknown,
+  status = 200
+) {
+  return new Response(
+    JSON.stringify(data),
+    {
+      status,
+      headers: {
+        ...corsHeaders,
+        "Content-Type":
+          "application/json",
+      },
+    }
+  );
+}
