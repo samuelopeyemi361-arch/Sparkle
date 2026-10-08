@@ -531,6 +531,18 @@ a{text-decoration:none;color:inherit}
   margin:0
 }
 
+.fund-modal-box{max-width:500px!important}
+.fund-intro{color:var(--muted);line-height:1.6;margin:-6px 0 18px}
+.fund-account-panel{background:linear-gradient(135deg,#071b4d,#0b5cff);color:#fff;border-radius:18px;padding:22px;margin:16px 0}
+.fund-account-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:.8;font-weight:800;margin-bottom:5px}
+.fund-account-value{font-size:17px;font-weight:900;word-break:break-word;margin-bottom:16px}
+.fund-account-value.number{font-size:25px;letter-spacing:1px}
+.fund-account-bank{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.fund-note{font-size:13px;line-height:1.55;color:var(--muted);background:#f5f8ff;border:1px solid var(--line);border-radius:12px;padding:13px}
+.fund-actions{display:flex;gap:10px;margin-top:16px}
+.fund-actions .btn{flex:1}
+@media(max-width:520px){.fund-modal-box{padding:22px!important}.fund-account-value.number{font-size:22px}.fund-actions{flex-direction:column}}
+
 .close{
   border:0;
   background:#f1f5f9;
@@ -1493,9 +1505,7 @@ Privacy Policy
       <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
     </nav>
 
-    <div class="sidebar-bottom">
-      <button class="nav-item" onclick="logout()" style="width:100%"><span class="nav-icon">↪</span>Logout</button>
-    </div>
+    <div class="sidebar-bottom"></div>
   </aside>
 
   <div class="dash-main">
@@ -1509,7 +1519,6 @@ Privacy Policy
         <div class="dash-actions">
           <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
           <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
-          <button class="icon-btn logout-btn" title="Logout" onclick="logout()" aria-label="Logout">↪ <span>Logout</span></button>
 
           <div class="userbox">
             <div class="avatar" id="avatar">S</div>
@@ -1632,6 +1641,7 @@ Privacy Policy
 
             <div class="profile-actions">
               <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
+              <button class="btn" onclick="logout()" style="border-color:#fecaca;color:#b91c1c">↪ Logout</button>
               <button class="btn" onclick="openPinModal()">Transaction PIN</button>
               <button class="btn" onclick="openPasswordModal()">Change Password</button>
               <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
@@ -1884,6 +1894,21 @@ Privacy Policy
     <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
     <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
     <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
+  </div>
+</div>
+
+<!-- FUND WALLET -->
+<div class="modal" id="fundWalletModal" role="dialog" aria-modal="true" aria-labelledby="fundWalletTitle" onclick="if(event.target===this)closeFundWallet()">
+  <div class="modal-box fund-modal-box">
+    <div class="modal-head"><h2 id="fundWalletTitle">Fund your Sparkle Wallet</h2><button class="close" type="button" onclick="closeFundWallet()" aria-label="Close">×</button></div>
+    <p class="fund-intro">Transfer money from any bank app to the dedicated account below. Your Sparkle wallet will be credited after Paystack confirms the transfer.</p>
+    <div class="fund-account-panel">
+      <div class="fund-account-label">Account name</div><div class="fund-account-value" id="fundAccountName">Loading account…</div>
+      <div class="fund-account-label">Account number</div><div class="fund-account-value number" id="fundAccountNumber">Loading…</div>
+      <div class="fund-account-bank"><div><div class="fund-account-label">Bank</div><div class="fund-account-value" id="fundBankName" style="margin-bottom:0">Loading…</div></div><span>🏦</span></div>
+    </div>
+    <div class="fund-note"><strong>Important:</strong> Send the transfer to this account number. Do not mark your wallet as funded manually; Sparkle updates your balance when the payment provider confirms receipt.</div>
+    <div class="fund-actions"><button class="btn primary" type="button" onclick="copyFundAccountNumber()">Copy account number</button><button class="btn" type="button" onclick="closeFundWallet()">Done</button></div>
   </div>
 </div>
 
@@ -4684,16 +4709,43 @@ document
    ===================================================== */
 
 async function showFundWallet(){
-  const card=document.querySelector(".dva-card");
-  if(card){
-    card.scrollIntoView({behavior:"smooth",block:"center"});
-    card.style.boxShadow="0 0 0 3px rgba(11,92,255,.18)";
-    setTimeout(()=>card.style.boxShadow="",1800);
+  const modal=document.getElementById("fundWalletModal");
+  if(!modal) return;
+  const read=(id,fallback)=>{
+    const value=document.getElementById(id)?.textContent?.trim();
+    return value && !["Loading…","Loading...","—"].includes(value) ? value : fallback;
+  };
+  document.getElementById("fundAccountName").textContent=read("dvaAccountName","Loading account…");
+  document.getElementById("fundAccountNumber").textContent=read("dvaAccountNumber","Loading…");
+  document.getElementById("fundBankName").textContent=read("dvaBankName","Loading…");
+  modal.classList.add("show");
+  if(read("dvaAccountNumber","")===""){
+    await createDedicatedAccount();
+    document.getElementById("fundAccountName").textContent=read("dvaAccountName","Account unavailable");
+    document.getElementById("fundAccountNumber").textContent=read("dvaAccountNumber","Please try again shortly");
+    document.getElementById("fundBankName").textContent=read("dvaBankName","—");
   }
-  const name=document.getElementById("dvaAccountName")?.textContent||"Loading…";
-  const number=document.getElementById("dvaAccountNumber")?.textContent||"Loading…";
-  const bank=document.getElementById("dvaBankName")?.textContent||"Loading…";
-  alert("Fund your Sparkle wallet\n\nAccount Name: "+name+"\nAccount Number: "+number+"\nBank: "+bank+"\n\nTransfer to this dedicated account. Your wallet will be credited after Paystack confirms the transfer.");
+}
+
+function closeFundWallet(){
+  document.getElementById("fundWalletModal")?.classList.remove("show");
+}
+
+async function copyFundAccountNumber(){
+  const value=document.getElementById("fundAccountNumber")?.textContent?.trim();
+  if(!value || value==="Loading…" || value==="Please try again shortly"){
+    alert("Your dedicated account number is not ready yet. Please try again shortly.");
+    return;
+  }
+  try{
+    if(navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+    }else{
+      const field=document.createElement("textarea");field.value=value;field.style.position="fixed";field.style.opacity="0";document.body.appendChild(field);field.select();
+      const copied=document.execCommand("copy");field.remove();if(!copied) throw new Error("Copy failed");
+    }
+    alert("Dedicated account number copied.");
+  }catch(error){console.error("Account copy failed:",error);alert("Please copy the account number manually.");}
 }
 
 async function logout(){
