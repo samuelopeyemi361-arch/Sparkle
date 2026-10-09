@@ -1098,10 +1098,18 @@ body.dark-mode .earn-stat{background:#0b1727}
  .sparkle-support-arrow{font-size:22px;margin-left:0}
 }
 @media(prefers-reduced-motion:reduce){#sparkle-support-panel{animation:none}#sparkle-support-toggle,.sparkle-support-option{transition:none}}
+</style>
 
 <style id="sparkle-purchase-summary-screen-styles">
 #sparkle-purchase-summary-screen{position:fixed;inset:0;z-index:100000;background:#f5f7fb;display:none;overflow-y:auto;padding:env(safe-area-inset-top,12px) 16px env(safe-area-inset-bottom,20px)}
 #sparkle-purchase-summary-screen.is-open{display:block}
+#sparkle-continue-roll{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(255,255,255,.97);color:#0b5cff}
+#sparkle-continue-roll.is-visible{display:flex}
+#sparkle-continue-roll .sparkle-roll-mark{width:62px;height:62px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#0b5cff,#1648b8);color:#fff;font-size:30px;font-weight:950;box-shadow:0 10px 28px rgba(11,92,255,.22);animation:sparkleRollOnce .85s cubic-bezier(.2,.75,.25,1) both}
+#sparkle-continue-roll .sparkle-roll-caption{font-size:13px;font-weight:800;color:#475467}
+@keyframes sparkleRollOnce{from{transform:rotate(0deg) scale(.88)}70%{transform:rotate(330deg) scale(1.06)}to{transform:rotate(360deg) scale(1)}}
+@media(prefers-reduced-motion:reduce){#sparkle-continue-roll .sparkle-roll-mark{animation-duration:.01ms}}
+
 .sparkle-summary-page{width:min(520px,100%);margin:0 auto;padding:12px 0 28px;color:#101828;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 .sparkle-summary-top{display:flex;align-items:center;gap:12px;margin:6px 0 24px}
 .sparkle-summary-back{border:0;border-radius:12px;width:42px;height:42px;background:#fff;box-shadow:0 2px 8px #1018280d;font-size:25px;color:#344054;cursor:pointer}
@@ -1118,7 +1126,6 @@ body.dark-mode .earn-stat{background:#0b1727}
 .sparkle-summary-total strong{font-size:23px;color:#0b5cff}
 .sparkle-summary-confirm{margin-top:20px}
 @media(max-width:600px){#sparkle-support-widget{bottom:88px}.sparkle-summary-card{padding:18px}.sparkle-summary-page{padding-top:6px}}
-</style>
 </style>
 
 </head>
@@ -4274,6 +4281,7 @@ function showPurchaseSummary(service){
   }
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
+  try { sessionStorage.setItem("sparklePendingPurchase", JSON.stringify({service, purchase:pendingPurchase})); } catch(e) {}
   const networkName=String(p.network||p.service);
   const networkKey=service==="cable"?"cable":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
   const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV"}[networkKey];
@@ -4294,8 +4302,31 @@ function showPurchaseSummary(service){
   window.sparkleSummaryReturnScroll=window.scrollY||0;
   content.innerHTML=summaryMarkup;
   screen.scrollTop=0;
-  screen.classList.add("is-open");
-  screen.setAttribute("aria-hidden","false");
+  // Give the review screen its own URL, like a dedicated confirmation link.
+  // The screen remains a full-page view so the purchase form is not visible underneath.
+  window.sparkleSummaryBaseUrl = window.location.pathname + window.location.hash;
+  try {
+    if (!new URLSearchParams(window.location.search).has("page") || new URLSearchParams(window.location.search).get("page") !== "confirm") {
+      window.history.pushState({sparklePurchaseReview:true}, "", window.location.pathname + "?page=confirm" + window.location.hash);
+    }
+  } catch (e) {}
+  screen.scrollTop=0;
+  const roll=document.getElementById("sparkle-continue-roll");
+  if(roll){
+    const mark=roll.querySelector(".sparkle-roll-mark");
+    roll.classList.add("is-visible");
+    roll.setAttribute("aria-hidden","false");
+    if(mark){mark.style.animation="none";void mark.offsetWidth;mark.style.animation="";}
+    window.setTimeout(()=>{
+      roll.classList.remove("is-visible");
+      roll.setAttribute("aria-hidden","true");
+      screen.classList.add("is-open");
+      screen.setAttribute("aria-hidden","false");
+    },900);
+  }else{
+    screen.classList.add("is-open");
+    screen.setAttribute("aria-hidden","false");
+  }
 }
 
 function addBulkRow(service){
@@ -4951,6 +4982,8 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 
 <!-- Sparkle customer support widget -->
+<div id="sparkle-continue-roll" aria-hidden="true"><div class="sparkle-roll-mark">S</div><div class="sparkle-roll-caption">Preparing your purchase summary…</div></div>
+
 <div id="sparkle-purchase-summary-screen" aria-hidden="true">
   <main class="sparkle-summary-page">
     <header class="sparkle-summary-top"><button type="button" class="sparkle-summary-back" id="sparkle-summary-back" aria-label="Back to purchase">‹</button><h2>Review your purchase</h2></header>
@@ -4994,11 +5027,39 @@ document.addEventListener("DOMContentLoaded",()=>{
    screen.scrollTop=0;
    const content=document.getElementById('sparkle-summary-screen-content');
    if(content) content.innerHTML='';
+   try { sessionStorage.removeItem('sparklePendingPurchase'); } catch(e) {}
+   // Remove the dedicated confirmation URL when leaving the review page.
+   try {
+     const params=new URLSearchParams(window.location.search);
+     if(params.get('page')==='confirm') window.history.replaceState({},'',(window.sparkleSummaryBaseUrl||window.location.pathname));
+   } catch(e) {}
    if(restoreScroll) window.scrollTo({top:Number(window.sparkleSummaryReturnScroll||0),behavior:'auto'});
  }
  window.sparkleConfirmPurchase=function(){closeReview(false);openPinForPurchase();};
  document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
+ window.addEventListener('popstate',()=>{if(screen?.classList.contains('is-open'))closeReview(true);});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&screen?.classList.contains('is-open'))closeReview(true);});
+ // A confirmation URL should reopen the dedicated summary if refreshed in the same session.
+ try {
+   const params=new URLSearchParams(window.location.search);
+   const saved=sessionStorage.getItem('sparklePendingPurchase');
+   if(params.get('page')==='confirm' && saved){
+     const parsed=JSON.parse(saved);
+     if(parsed && parsed.purchase && Array.isArray(parsed.purchase.items) && parsed.purchase.items.length){
+       pendingPurchase=parsed.purchase;
+       currentService=parsed.service || String(parsed.purchase.items[0].service||'').toLowerCase();
+       const p=parsed.purchase.items[0];
+       const service=currentService;
+       const networkName=String(p.network||p.service||'');
+       const networkKey=service==='cable'?'cable':networkName.toLowerCase()==='airtel'?'airtel':networkName.toLowerCase()==='mtn'?'mtn':networkName.toLowerCase()==='glo'?'glo':'nine';
+       const networkMark={mtn:'mtn',airtel:'at',glo:'glo',nine:'9m',cable:'TV'}[networkKey];
+       const label=service==='data'?'Data purchase':service==='airtime'?'Airtime purchase':'Cable TV subscription';
+       const markup=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${label}</div></div></div><div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service||'')}</strong></div><div class="summary-line"><span>${service==='cable'?'TV provider':'Network'}</span><strong>${escapeHtml(p.network||'')}</strong></div>${service==='data'?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||'')}</strong></div>`:''}<div class="summary-line"><span>${service==='cable'?'Decoder / IUC number':'Recipient Phone'}</span><strong>${escapeHtml(p.phone||'')}</strong></div><div class="summary-line"><span>${service==='data'?'Data plan':service==='cable'?'Subscription plan':'Airtime amount'}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(parsed.purchase.total||p.amount)}</strong></div><button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==='cable'?'Confirm & Pay':service==='data'?'Confirm & Buy':'Confirm & Buy Airtime'}</button>`;
+       const content=document.getElementById('sparkle-summary-screen-content');
+       if(content){content.innerHTML=markup;screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');}
+     }
+   }
+ } catch(e) {}
 })();
 </script>
 <script id="sparkle-support-widget-script">
