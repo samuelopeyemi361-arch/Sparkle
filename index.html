@@ -531,18 +531,6 @@ a{text-decoration:none;color:inherit}
   margin:0
 }
 
-.fund-modal-box{max-width:500px!important}
-.fund-intro{color:var(--muted);line-height:1.6;margin:-6px 0 18px}
-.fund-account-panel{background:linear-gradient(135deg,#071b4d,#0b5cff);color:#fff;border-radius:18px;padding:22px;margin:16px 0}
-.fund-account-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;opacity:.8;font-weight:800;margin-bottom:5px}
-.fund-account-value{font-size:17px;font-weight:900;word-break:break-word;margin-bottom:16px}
-.fund-account-value.number{font-size:25px;letter-spacing:1px}
-.fund-account-bank{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.fund-note{font-size:13px;line-height:1.55;color:var(--muted);background:#f5f8ff;border:1px solid var(--line);border-radius:12px;padding:13px}
-.fund-actions{display:flex;gap:10px;margin-top:16px}
-.fund-actions .btn{flex:1}
-@media(max-width:520px){.fund-modal-box{padding:22px!important}.fund-account-value.number{font-size:22px}.fund-actions{flex-direction:column}}
-
 .close{
   border:0;
   background:#f1f5f9;
@@ -857,8 +845,6 @@ body.dark-mode .bulk-row select{
   width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:11px;
   display:grid;place-items:center;font-size:18px;position:relative
 }
-.logout-btn{width:auto;min-width:40px;padding:0 10px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:14px;font-weight:800;white-space:nowrap;cursor:pointer}
-.logout-btn span{display:inline}
 .notification-dot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#ef4444}
 .page{display:none}
 .page.active{display:block}
@@ -1505,7 +1491,9 @@ Privacy Policy
       <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
     </nav>
 
-    <div class="sidebar-bottom"></div>
+    <div class="sidebar-bottom">
+      <button class="nav-item" onclick="logout()" style="width:100%"><span class="nav-icon">↪</span>Logout</button>
+    </div>
   </aside>
 
   <div class="dash-main">
@@ -1519,6 +1507,7 @@ Privacy Policy
         <div class="dash-actions">
           <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
           <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
+          <button class="icon-btn" title="Logout" onclick="logout()" aria-label="Logout">↪</button>
 
           <div class="userbox">
             <div class="avatar" id="avatar">S</div>
@@ -1641,7 +1630,6 @@ Privacy Policy
 
             <div class="profile-actions">
               <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
-              <button class="btn" onclick="logout()" style="border-color:#fecaca;color:#b91c1c">↪ Logout</button>
               <button class="btn" onclick="openPinModal()">Transaction PIN</button>
               <button class="btn" onclick="openPasswordModal()">Change Password</button>
               <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
@@ -1894,21 +1882,6 @@ Privacy Policy
     <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
     <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
     <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
-  </div>
-</div>
-
-<!-- FUND WALLET -->
-<div class="modal" id="fundWalletModal" role="dialog" aria-modal="true" aria-labelledby="fundWalletTitle" onclick="if(event.target===this)closeFundWallet()">
-  <div class="modal-box fund-modal-box">
-    <div class="modal-head"><h2 id="fundWalletTitle">Fund your Sparkle Wallet</h2><button class="close" type="button" onclick="closeFundWallet()" aria-label="Close">×</button></div>
-    <p class="fund-intro">Transfer money from any bank app to the dedicated account below. Your Sparkle wallet will be credited after Paystack confirms the transfer.</p>
-    <div class="fund-account-panel">
-      <div class="fund-account-label">Account name</div><div class="fund-account-value" id="fundAccountName">Loading account…</div>
-      <div class="fund-account-label">Account number</div><div class="fund-account-value number" id="fundAccountNumber">Loading…</div>
-      <div class="fund-account-bank"><div><div class="fund-account-label">Bank</div><div class="fund-account-value" id="fundBankName" style="margin-bottom:0">Loading…</div></div><span>🏦</span></div>
-    </div>
-    <div class="fund-note"><strong>Important:</strong> Send the transfer to this account number. Do not mark your wallet as funded manually; Sparkle updates your balance when the payment provider confirms receipt.</div>
-    <div class="fund-actions"><button class="btn primary" type="button" onclick="copyFundAccountNumber()">Copy account number</button><button class="btn" type="button" onclick="closeFundWallet()">Done</button></div>
   </div>
 </div>
 
@@ -3574,7 +3547,6 @@ let selectedDataServiceLabel = "";
 let dataPlansCache = {};
 let dataServiceLoadToken = 0;
 let selectedCablePlan = null;
-let cablePlanLoadToken = 0;
 
 async function gsubzRequest(path, method="GET", data=null){
   const upperMethod=String(method||"GET").toUpperCase();
@@ -3961,86 +3933,61 @@ function chooseGenericBeneficiary(type){
   if(type==="cable") document.getElementById("cableNumber").value=number;
 }
 
-function extractCablePlanArray(payload){
-  // The public GSUBZ endpoint returns { service, PlanName, plans: [...] }.
-  // The Sparkle Edge Function may wrap that response in data/result/body.
-  const queue=[payload];
-  const seen=new Set();
-  while(queue.length){
-    const item=queue.shift();
-    if(!item||typeof item!=="object"||seen.has(item))continue;
-    seen.add(item);
-    if(Array.isArray(item)){
-      if(item.length&&item.some(x=>x&&typeof x==="object"&&("value" in x||"variation_code" in x||"api_price" in x||"price" in x)))return item;
-      continue;
-    }
-    for(const key of ["plans","data","result","body","response","content"]){
-      if(item[key]!==undefined&&item[key]!==null){
-        const child=item[key];
-        if(key==="plans"&&Array.isArray(child))return child;
-        queue.push(child);
-      }
-    }
-  }
-  return [];
-}
-function firstCableValue(values){
-  for(const value of values){
-    if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;
-  }
-  return "";
-}
 async function loadCablePlans(){
   const provider=document.getElementById("cableProvider")?.value||"DSTV";
   const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
   const box=document.getElementById("cablePlans");
   if(!box)return;
-
-  // Clear any package selected for the previous provider before loading the new one.
-  const loadToken=++cablePlanLoadToken;
-  selectedCablePlan=null;
-  const summary=document.getElementById("cableSummary");
-  if(summary)summary.innerHTML="";
-  box._plans=[];
-  box.innerHTML=sparklePlanLoader("Loading "+provider+" plans…");
-
+  box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
   try{
     const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
-    if(loadToken!==cablePlanLoadToken)return;
-    const rawPlans=extractCablePlanArray(result);
-    const plans=rawPlans.map((p,i)=>{
-      const rawValue=firstCableValue([p?.value,p?.variation_code,p?.variationCode,p?.plan,p?.plan_id,p?.id]);
-      const rawPrice=firstCableValue([p?.api_price,p?.apiPrice,p?.price,p?.amount,p?.selling_price,p?.sellingPrice]);
-      const price=Number(String(rawPrice).replace(/[₦,\s]/g,""));
-      const name=firstCableValue([p?.displayName,p?.display_name,p?.name,p?.description,p?.plan_name,p?.PlanName,rawValue,"Package "+(i+1)]);
-      const duration=firstCableValue([p?.duration,p?.validity,p?.validity_period,p?.period,"Package"]);
-      return {...p,_name:String(name),_value:String(rawValue).trim(),_price:price,_duration:String(duration)};
-    }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
-
+    const rawPlans=Array.isArray(result?.data?.plans)?result.data.plans:
+      (Array.isArray(result?.plans)?result.plans:
+      (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:[]));
+    const plans=normalizePlans(result);
     if(!plans.length){
-      console.warn("[Sparkle] GSUBZ cable plans response had no usable packages",{provider,service,response:result,receivedPlans:rawPlans.length});
-      box.innerHTML='<div class="data-empty">No valid '+escapeHtml(provider)+' packages were returned by GSUBZ. Please refresh and try again.</div>';
-      return;
+      let reason="GSUBZ returned no usable plans for "+provider+".";
+      const apiMessage=result?.error||result?.message||result?.description||result?.detail||result?.data?.message;
+      if(!result){
+        reason="GSUBZ returned an empty response. The Sparkle GSUBZ Edge Function may not be forwarding the plans response.";
+      }else if(apiMessage){
+        reason="GSUBZ says: "+String(apiMessage);
+      }else if(!rawPlans.length){
+        reason="The response did not contain a plans list. Returned fields: "+Object.keys(result).join(", ")+". Check the GSUBZ Edge Function response format.";
+      }else{
+        const missingCode=rawPlans.filter(p=>!(p?.value??p?.plan??p?.variation_code)).length;
+        const badPrice=rawPlans.filter(p=>!Number.isFinite(Number(p?.api_price??p?.price))||Number(p?.api_price??p?.price)<=0).length;
+        reason="GSUBZ returned "+rawPlans.length+" plan record(s), but Sparkle could not use them. Missing package code: "+missingCode+"; missing/invalid price: "+badPrice+". Expected value and api_price (or price).";
+      }
+      console.error("[Sparkle cable plans] No usable plans",{provider,service,response:result,rawPlans,reason});
+      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(reason)+'</strong><p>Please try again later. If this continues, the GSUBZ Edge Function/API response needs checking.</p></div>';
+      box._plans=[];return;
     }
     box._plans=plans;
     box.innerHTML=plans.map((p,i)=>`
-      <button type="button" class="data-plan-card" data-plan-index="${i}">
+      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" data-plan-index="${i}">
         <div class="data-plan-size">${escapeHtml(p._name)}</div>
-        <div class="data-plan-validity">${escapeHtml(p._duration)}</div>
+        <div class="data-plan-validity">${escapeHtml(p._duration||"Package")}</div>
         <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
-        <span class="data-plan-buy">Select</span>
+        <span class="data-plan-buy">Buy</span>
       </button>`).join("");
     box.querySelectorAll(".data-plan-card").forEach(card=>{
       card.addEventListener("click",e=>{
         e.preventDefault();
         const i=Number(card.dataset.planIndex);
-        const plan=box._plans?.[i];
-        if(plan)selectCablePlan(i,plan._value,plan._price,plan._name);
+        const p=box._plans?.[i];
+        if(p) selectCablePlan(i,p._value,p._price,p._name);
       });
     });
   }catch(e){
-    if(loadToken!==cablePlanLoadToken)return;
-    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||("Unable to load "+provider+" plans."))+'</div>';
+    console.error("[Sparkle cable plans] Request failed",e,e?.responseBody);
+    const status=e?.status;
+    let reason=e?.message||"Unable to load cable plans.";
+    if(status===401||status===403) reason="Authorization error (HTTP "+status+"). Please sign in again; if it continues, check the Supabase/GSUBZ Edge Function permissions.";
+    else if(status>=500) reason="Server/GSUBZ error (HTTP "+status+"): "+reason;
+    else if(!status&&/fetch|network|failed to fetch/i.test(reason)) reason="Network request failed. Check your internet connection and whether the Supabase GSUBZ Edge Function is available.";
+    box.innerHTML='<div class="gsubz-error">'+escapeHtml(reason)+'</div>';
+    box._plans=[];
   }
 }
 function selectCablePlan(index,value,price,name){
@@ -4762,54 +4709,24 @@ document
    ===================================================== */
 
 async function showFundWallet(){
-  const modal=document.getElementById("fundWalletModal");
-  if(!modal) return;
-  const read=(id,fallback)=>{
-    const value=document.getElementById(id)?.textContent?.trim();
-    return value && !["Loading…","Loading...","—"].includes(value) ? value : fallback;
-  };
-  document.getElementById("fundAccountName").textContent=read("dvaAccountName","Loading account…");
-  document.getElementById("fundAccountNumber").textContent=read("dvaAccountNumber","Loading…");
-  document.getElementById("fundBankName").textContent=read("dvaBankName","Loading…");
-  modal.classList.add("show");
-  if(read("dvaAccountNumber","")===""){
-    await createDedicatedAccount();
-    document.getElementById("fundAccountName").textContent=read("dvaAccountName","Account unavailable");
-    document.getElementById("fundAccountNumber").textContent=read("dvaAccountNumber","Please try again shortly");
-    document.getElementById("fundBankName").textContent=read("dvaBankName","—");
+  const card=document.querySelector(".dva-card");
+  if(card){
+    card.scrollIntoView({behavior:"smooth",block:"center"});
+    card.style.boxShadow="0 0 0 3px rgba(11,92,255,.18)";
+    setTimeout(()=>card.style.boxShadow="",1800);
   }
-}
-
-function closeFundWallet(){
-  document.getElementById("fundWalletModal")?.classList.remove("show");
-}
-
-async function copyFundAccountNumber(){
-  const value=document.getElementById("fundAccountNumber")?.textContent?.trim();
-  if(!value || value==="Loading…" || value==="Please try again shortly"){
-    alert("Your dedicated account number is not ready yet. Please try again shortly.");
-    return;
-  }
-  try{
-    if(navigator.clipboard && window.isSecureContext){
-      await navigator.clipboard.writeText(value);
-    }else{
-      const field=document.createElement("textarea");field.value=value;field.style.position="fixed";field.style.opacity="0";document.body.appendChild(field);field.select();
-      const copied=document.execCommand("copy");field.remove();if(!copied) throw new Error("Copy failed");
-    }
-    alert("Dedicated account number copied.");
-  }catch(error){console.error("Account copy failed:",error);alert("Please copy the account number manually.");}
+  const name=document.getElementById("dvaAccountName")?.textContent||"Loading…";
+  const number=document.getElementById("dvaAccountNumber")?.textContent||"Loading…";
+  const bank=document.getElementById("dvaBankName")?.textContent||"Loading…";
+  alert("Fund your Sparkle wallet\n\nAccount Name: "+name+"\nAccount Number: "+number+"\nBank: "+bank+"\n\nTransfer to this dedicated account. Your wallet will be credited after Paystack confirms the transfer.");
 }
 
 async function logout(){
-try{
-const {error}=await supabaseClient.auth.signOut({scope:"local"});
-if(error) throw error;
+
+await supabaseClient.auth.signOut();
+
 showHomepage();
-}catch(error){
-console.error("Sparkle logout failed:",error);
-alert("Logout failed. Please try again.");
-}
+
 }
 
 
