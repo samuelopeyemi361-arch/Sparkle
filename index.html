@@ -2037,6 +2037,19 @@ Privacy Policy
   </div>
 </div>
 
+<div class="modal pin-modal" id="setPinModal" style="z-index:100003">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Set Transaction PIN</h2><button class="close" onclick="closeSetPinModal()">×</button></div>
+    <p style="color:var(--muted)">Create a private 4-digit PIN to authorize Recharge PIN purchases.</p>
+    <label for="newTransactionPin">New 4-digit PIN</label>
+    <input id="newTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
+    <label for="confirmTransactionPin">Confirm PIN</label>
+    <input id="confirmTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
+    <p id="setPinMessage" style="color:#ef4444;font-size:13px"></p>
+    <button id="saveTransactionPinButton" class="btn primary full" onclick="saveTransactionPIN()">Save Transaction PIN</button>
+  </div>
+</div>
+
 <!-- PROCESSING -->
 <div class="processing-overlay" id="processingOverlay">
   <div>
@@ -4300,7 +4313,7 @@ function showRechargePinSummary(){
   if(roll){const markEl=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(markEl){markEl.style.animation="none";void markEl.offsetWidth;markEl.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},900);}else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
 }
 
-async function confirmRechargePinPurchase(){
+async function confirmRechargePinPurchase(pin){
   const button=document.getElementById("sparkle-recharge-pin-confirm");
   const resultBox=document.getElementById("sparkle-recharge-pin-result");
   const network=document.getElementById("rechargePinNetwork")?.value||"";
@@ -4311,43 +4324,51 @@ async function confirmRechargePinPurchase(){
   if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100||(denomination<500&&quantity<10)){
     resultBox.innerHTML='<div class="gsubz-error">Invalid quantity. For denominations below ₦500, order at least 10 cards.</div>';return;
   }
-  button.disabled=true;button.textContent="Checking wallet…";
-  resultBox.innerHTML='<p>Checking your Sparkle wallet…</p>';
-  let userId=null, before=null, charged=false;
+  button.disabled=true;button.textContent="Verifying PIN & reserving wallet…";
+  resultBox.innerHTML='<p>Securely verifying your PIN and checking your wallet…</p>';
   try{
     const userResult=await supabaseClient.auth.getUser();
-    userId=userResult?.data?.user?.id;
+    const userId=userResult?.data?.user?.id;
     if(!userId)throw new Error("Please log in again before purchasing.");
-    const walletResult=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).single();
-    if(walletResult.error||!walletResult.data)throw new Error("Sparkle wallet could not be loaded.");
-    before=Number(walletResult.data.balance||0);
-    if(!Number.isFinite(before)||before<total)throw new Error("Insufficient Sparkle wallet balance. You need "+money(total)+".");
-    button.textContent="Generating PINs…";
-    resultBox.innerHTML='<p>Sending your order to GSubz. Please keep this page open and do not retry.</p>';
-    const {data,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:{action:"recharge_pins",network:network.toLowerCase(),value:denomination,number:quantity}});
-    if(error){button.disabled=true;button.textContent="Order status must be checked";resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz response was not confirmed.</strong><p>Do not tap again yet. Check the provider/order status first to avoid duplicate PIN generation.</p></div>';throw new Error("The request could not be confirmed. Check the GSubz order status before trying again. "+(error.message||""));}
-    if(!data||data.success!==true||String(data.data?.status||"").toLowerCase()!=="success"){
-      throw new Error(data?.message||data?.data?.message||data?.error||"GSubz did not confirm the PIN order. No wallet charge was made.");
+    const requestId="SPK-"+crypto.randomUUID();
+    button.textContent="Processing order…";
+    resultBox.innerHTML='<p>Processing securely. Please do not close this page or submit again.</p>';
+    throw new Error("Recharge PIN purchases are paused until the secure server-side purchase function is deployed. Your wallet has not been charged.");
+    if(error){
+      let errorData=null;
+      try{if(error.context&&typeof error.context.json==="function")errorData=await error.context.json();}catch(e){}
+      if(errorData?.status==="failed"){
+        button.disabled=false;button.textContent="Try again";
+        throw new Error(errorData.message||"The provider rejected the order. Wallet funds have been returned.");
+      }
+      if(errorData?.message && /incorrect transaction pin|enter your 4-digit pin|set your transaction pin first|too many incorrect|insufficient wallet|invalid network|invalid denomination|wallet not found|already been used|choose a 4-digit pin/i.test(errorData.message)){
+        button.disabled=false;button.textContent="Try again";
+        throw new Error(errorData.message);
+      }
+      if(errorData?.status==="unknown" || error.status===502 || !error.context){
+        button.textContent="Order status needs checking";
+        resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p></div>';
+        throw new Error("Order status could not be confirmed. Do not retry; contact support with reference "+(errorData?.reference||requestId)+".");
+      }
+      button.disabled=false;button.textContent="Try again";
+      throw new Error(errorData?.message||error.message||"Purchase could not be completed.");
     }
-    const after=before-total;
-    const debit=await supabaseClient.from("wallets").update({balance:after,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",before).select("balance");
-    if(debit.error||!debit.data||debit.data.length===0){
-      resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz reports the PIN order succeeded, but Sparkle could not deduct your wallet.</strong><p>Do not submit again. Contact support with the PIN order details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
-      throw new Error("PIN order succeeded but wallet deduction failed. Do not retry; contact support.");
+    if(data?.status==="unknown"){
+      button.textContent="Order status needs checking";
+      resultBox.innerHTML='<div class="gsubz-error"><strong>Order status is being checked.</strong><p>Your funds remain reserved to prevent a duplicate. Do not submit again. Contact support with reference '+escapeHtml(data.reference||requestId)+'.</p></div>';
+      return;
     }
-    charged=true;
-    const tx=await supabaseClient.from("wallet_transactions").insert({user_id:userId,type:"debit",amount:total,service:"Recharge Pin Printing",status:"success"});
-    if(tx.error){
-      resultBox.innerHTML='<div class="gsubz-error"><strong>PINs were generated and the wallet was charged, but transaction history could not be saved.</strong><p>Keep these order details and contact support.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
-      throw new Error("PIN order succeeded. Wallet was charged, but history could not be saved; contact support.");
+    if(!data?.success){
+      button.disabled=false;button.textContent="Try again";
+      throw new Error(data?.message||"The order failed. If the provider confirmed failure, wallet funds have been returned.");
     }
-    resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charged: '+money(total)+'</p><p>Save or screenshot the PIN and serial details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(\'home\',document.querySelector(\'.nav-item\'));loadWallet(\''+userId+'\');loadTransactions(\''+userId+'\')">Done</button></div>';
+    resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charged: '+money(total)+'</p><p>Order reference: '+escapeHtml(data.reference||requestId)+'</p><p>Save or screenshot the PIN and serial details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(\'home\',document.querySelector(\'.nav-item\'));loadWallet(\''+userId+'\');loadTransactions(\''+userId+'\')">Done</button></div>';
     button.style.display="none";
     await loadWallet(userId);await loadTransactions(userId);
   }catch(e){
-    console.error("Recharge PIN purchase:",e);
-    if(resultBox&&!charged&&!resultBox.innerHTML.includes("Do not retry"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
-    if(button&&button.style.display!=="none"&&button.textContent!=="Order status must be checked"){button.disabled=false;button.textContent="Try again only after checking order status";}
+    console.error("Secure Recharge PIN purchase:",e);
+    if(resultBox&&!resultBox.innerHTML.includes("Do not submit again")&&!resultBox.innerHTML.includes("Order status is being checked"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
+    if(button&&button.textContent!=="Order status needs checking"&&button.style.display!=="none"){button.disabled=false;if(button.textContent!=="Try again")button.textContent="Try again";}
   }
 }
 
@@ -4529,7 +4550,27 @@ function openPinForPurchase(){
 }
 
 function openPinModal(){
-  alert("Transaction PIN setup requires a secure server-side PIN table/function. The purchase PIN screen is ready, but no PIN is stored in the browser.");
+  document.getElementById("setPinModal").classList.add("show");
+  document.getElementById("setPinMessage").textContent="";
+  document.getElementById("newTransactionPin").value="";
+  document.getElementById("confirmTransactionPin").value="";
+}
+function closeSetPinModal(){document.getElementById("setPinModal").classList.remove("show");}
+async function saveTransactionPIN(){
+  const pin=document.getElementById("newTransactionPin").value.trim();
+  const confirm=document.getElementById("confirmTransactionPin").value.trim();
+  const msg=document.getElementById("setPinMessage");
+  const btn=document.getElementById("saveTransactionPinButton");
+  if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a 4-digit PIN.";return;}
+  if(pin!==confirm){msg.textContent="The PINs do not match.";return;}
+  btn.disabled=true;btn.textContent="Saving securely…";msg.textContent="";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"set",pin}});
+    if(error||!data?.success)throw new Error(data?.message||error?.message||"Could not save your PIN. Backend setup may be incomplete.");
+    msg.style.color="#16a34a";msg.textContent="Transaction PIN saved securely. You can now authorize purchases.";
+    setTimeout(()=>closeSetPinModal(),1200);
+  }catch(e){msg.style.color="#ef4444";msg.textContent=e.message||"Could not save your PIN.";}
+  finally{btn.disabled=false;btn.textContent="Save Transaction PIN";}
 }
 
 function closePinModal(){document.getElementById("pinModal").classList.remove("show");}
@@ -4544,19 +4585,30 @@ document.addEventListener("input",e=>{
 
 async function confirmTransactionPIN(){
   const pin=[...document.querySelectorAll(".pin-box")].map(x=>x.value).join("");
+  const msg=document.getElementById("pinMessage");
   if(pin.length!==4){
-    document.getElementById("pinMessage").textContent="Enter your 4-digit transaction PIN.";
+    msg.textContent="Enter your 4-digit transaction PIN.";
     return;
   }
-  if(window.sparkleRechargePinPending){
-    document.getElementById("pinMessage").textContent="Secure transaction PIN verification is not configured yet. No order was sent.";
-    return;
+  const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
+  if(button){button.disabled=true;button.textContent="Verifying PIN…";}
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
+    if(error||!data?.success) throw new Error(data?.message||error?.message||"Transaction PIN verification failed.");
+    closePinModal();
+    // The PIN function verifies identity only; it does not debit the wallet or process provider orders.
+    // Keep real purchases blocked until the server-side secure purchase function is deployed.
+    alert("Your PIN is correct, but purchases are temporarily unavailable while Sparkle's secure purchase processing is being connected. Your wallet has not been charged.");
+  }catch(e){
+    msg.textContent=e.message||"Could not verify your PIN.";
+  }finally{
+    if(button){button.disabled=false;button.textContent="MAKE PAYMENT";}
   }
-  closePinModal();
-  await processPendingPurchase();
 }
 
 async function processPendingPurchase(){
+  alert("Purchases are temporarily paused while Sparkle secure server-side wallet debit and provider processing are completed. Your wallet has not been charged.");
+  return;
   if(!pendingPurchase) return;
   const overlay=document.getElementById("processingOverlay");
   overlay.classList.add("show");
@@ -5193,9 +5245,9 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 <script id="sparkle-support-widget-script">
 (function(){
-  // Add the real WhatsApp URLs here when Sparkle's support links are ready.
-  const SPARKLE_SUPPORT_WHATSAPP_CHAT = "";
-  const SPARKLE_SUPPORT_WHATSAPP_CHANNEL = "";
+  // Sparkle customer support WhatsApp links.
+  const SPARKLE_SUPPORT_WHATSAPP_CHAT = "https://wa.me/2348089206869?text=Hi%20Sparkle%20Support%2C%20I%20have%20a%20question";
+  const SPARKLE_SUPPORT_WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V";
   const SPARKLE_SUPPORT_EMAIL = "support@sparkle.com";
   const toggle=document.getElementById('sparkle-support-toggle');
   const panel=document.getElementById('sparkle-support-panel');
