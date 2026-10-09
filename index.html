@@ -303,22 +303,24 @@ a{text-decoration:none;color:inherit}
 }
 
 .wallet-card{
-  background:linear-gradient(135deg,#0b5cff,#071b4d);
-  color:#fff;
-  border-radius:22px;
-  padding:28px;
-  margin-bottom:25px
+  position:relative;overflow:hidden;
+  background:linear-gradient(120deg,#071b4d 0%,#0b5cff 62%,#477cff 100%);
+  color:#fff;border:1px solid rgba(255,255,255,.16);
+  border-radius:24px;padding:28px 30px;margin-bottom:25px;
+  box-shadow:0 16px 34px rgba(11,92,255,.18);
 }
-
-.wallet-card small{
-  opacity:.8
+.wallet-card:after{
+  content:"";position:absolute;width:220px;height:220px;border-radius:50%;
+  right:-55px;top:-100px;background:rgba(255,255,255,.08);pointer-events:none;
 }
-
-.wallet-balance{
-  font-size:38px;
-  font-weight:900;
-  margin:8px 0 20px
-}
+.wallet-card-top{display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;z-index:1}
+.wallet-card-label{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;letter-spacing:1.1px;opacity:.92}
+.wallet-card-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.15);font-size:21px}
+.wallet-card-caption{margin:13px 0 0;color:rgba(255,255,255,.78);font-size:13px;position:relative;z-index:1}
+.wallet-balance{font-size:clamp(30px,4vw,42px);line-height:1.15;letter-spacing:-.8px;font-weight:900;margin:10px 0 22px;position:relative;z-index:1}
+.wallet-card .fund-wallet-btn{background:#fff;color:#0b4fd4;border:1px solid #fff;border-radius:12px;padding:12px 18px;font-weight:900;box-shadow:0 6px 15px rgba(0,0,0,.12);position:relative;z-index:1}
+.wallet-card .fund-wallet-btn:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(0,0,0,.16)}
+@media(max-width:600px){.wallet-card{padding:23px 20px;border-radius:20px}.wallet-balance{margin-bottom:19px}}
 
 .service-grid{
   display:grid;
@@ -841,6 +843,7 @@ body.dark-mode .bulk-row select{
 .dash-main{margin-left:235px;width:calc(100% - 235px)}
 .dashnav{position:sticky;top:0;z-index:800}
 .dash-actions{display:flex;align-items:center;gap:8px}
+.dash-actions .userbox{display:none!important}
 .icon-btn{
   width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:11px;
   display:grid;place-items:center;font-size:18px;position:relative
@@ -1491,9 +1494,6 @@ Privacy Policy
       <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
     </nav>
 
-    <div class="sidebar-bottom">
-      <button class="nav-item" onclick="logout()" style="width:100%"><span class="nav-icon">↪</span>Logout</button>
-    </div>
   </aside>
 
   <div class="dash-main">
@@ -1507,7 +1507,6 @@ Privacy Policy
         <div class="dash-actions">
           <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
           <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
-          <button class="icon-btn" title="Logout" onclick="logout()" aria-label="Logout">↪</button>
 
           <div class="userbox">
             <div class="avatar" id="avatar">S</div>
@@ -1529,9 +1528,13 @@ Privacy Policy
           <p class="dashboard-subtitle">Manage your bills, wallet and everyday payments in one place.</p>
 
           <div class="wallet-card">
-            <small>AVAILABLE WALLET BALANCE</small>
+            <div class="wallet-card-top">
+              <div class="wallet-card-label"><span class="wallet-card-icon">₦</span> AVAILABLE WALLET BALANCE</div>
+              <span aria-hidden="true" style="font-size:22px;opacity:.75">✦</span>
+            </div>
+            <p class="wallet-card-caption">Your Sparkle balance, ready for everyday payments.</p>
             <div class="wallet-balance" id="walletBalance">₦0.00</div>
-            <button class="btn" onclick="showFundWallet()">Fund Wallet</button>
+            <button class="btn fund-wallet-btn" onclick="showFundWallet()">＋ &nbsp; Fund Wallet</button>
           </div>
 
           <div class="dva-card">
@@ -1630,10 +1633,11 @@ Privacy Policy
 
             <div class="profile-actions">
               <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
-              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
               <button class="btn" onclick="openPasswordModal()">Change Password</button>
               <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
               <button class="btn" onclick="openLegal('privacy')">Privacy Policy</button>
+              <button class="btn" onclick="logout()">↪ Logout</button>
+              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
             </div>
           </section>
 
