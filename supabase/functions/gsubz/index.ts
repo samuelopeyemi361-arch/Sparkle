@@ -14,13 +14,7 @@ const DATA_SERVICES = [
   "mtn_sme",
 ];
 
-const AIRTIME_SERVICES = [
-  "mtn",
-  "airtel",
-  "glo",
-  "etisalat",
-];
-
+const AIRTIME_SERVICES = ["mtn", "airtel", "glo", "etisalat"];
 const CABLE_SERVICES = ["dstv", "gotv", "startimes"];
 
 const corsHeaders = {
@@ -39,9 +33,7 @@ function json(data: unknown, status = 200) {
 }
 
 function normalizeNetwork(value: unknown): string {
-  const network = String(value || "")
-    .trim()
-    .toLowerCase();
+  const network = String(value || "").trim().toLowerCase();
 
   const networks: Record<string, string> = {
     mtn: "mtn",
@@ -58,71 +50,27 @@ function normalizeNetwork(value: unknown): string {
 serve(async (req) => {
   try {
     if (req.method === "OPTIONS") {
-      return new Response("ok", {
-        headers: corsHeaders,
-      });
+      return new Response("ok", { headers: corsHeaders });
     }
 
     const url = new URL(req.url);
 
-    /*
-     * GET PLANS
-     *
-     * Supports:
-     * ?service=mtn_sme
-     * ?action=plans&service=mtn_sme
-     * ?service=dstv
-     * ?service=gotv
-     * ?service=startimes
-     */
+    // GET PLANS AND SERVICES
     if (req.method === "GET") {
-      const action =
-        url.searchParams.get("action") || "plans";
+      const action = url.searchParams.get("action") || "plans";
 
       if (action === "services") {
         return json({
           success: true,
           services: [
-            {
-              serviceID: "mtn_gifting",
-              network: "MTN",
-              type: "Gifting",
-            },
-            {
-              serviceID: "mtn_sme",
-              network: "MTN",
-              type: "SME",
-            },
-            {
-              serviceID: "mtn_fibrex",
-              network: "MTN",
-              type: "Fibre X",
-            },
-            {
-              serviceID: "airtel_gifting",
-              network: "Airtel",
-              type: "Gifting",
-            },
-            {
-              serviceID: "airtel_sme",
-              network: "Airtel",
-              type: "SME",
-            },
-            {
-              serviceID: "glo_data",
-              network: "Glo",
-              type: "Corporate Gifting",
-            },
-            {
-              serviceID: "glo_sme",
-              network: "Glo",
-              type: "SME",
-            },
-            {
-              serviceID: "etisalat_data",
-              network: "9mobile",
-              type: "Data",
-            },
+            { serviceID: "mtn_gifting", network: "MTN", type: "Gifting" },
+            { serviceID: "mtn_sme", network: "MTN", type: "SME" },
+            { serviceID: "mtn_fibrex", network: "MTN", type: "Fibre X" },
+            { serviceID: "airtel_gifting", network: "Airtel", type: "Gifting" },
+            { serviceID: "airtel_sme", network: "Airtel", type: "SME" },
+            { serviceID: "glo_data", network: "Glo", type: "Corporate Gifting" },
+            { serviceID: "glo_sme", network: "Glo", type: "SME" },
+            { serviceID: "etisalat_data", network: "9mobile", type: "Data" },
           ],
         });
       }
@@ -133,33 +81,19 @@ serve(async (req) => {
         "";
 
       if (!service) {
-        return json(
-          {
-            success: false,
-            error: "Missing service",
-          },
-          400,
-        );
+        return json({ success: false, error: "Missing service" }, 400);
       }
 
       const providerResponse = await fetch(
         `${GSUBZ_BASE}/api/plans/?service=${encodeURIComponent(service)}`,
         {
           method: "GET",
-          headers: {
-            Accept: "application/json",
-          },
+          headers: { Accept: "application/json" },
         },
       );
 
       const data = await providerResponse.json();
 
-      /*
-       * NORMALISE PLAN RESPONSES
-       *
-       * Preserve the original provider response in `data`.
-       * Also expose a top-level `plans` array for Sparkle.
-       */
       const candidates = [
         data?.plans,
         data?.data?.plans,
@@ -177,9 +111,7 @@ serve(async (req) => {
 
       const plans = rawPlans
         .map((item: any) => {
-          if (!item || typeof item !== "object") {
-            return null;
-          }
+          if (!item || typeof item !== "object") return null;
 
           const value =
             item.value ??
@@ -241,18 +173,13 @@ serve(async (req) => {
       );
     }
 
-    /*
-     * POST REQUESTS
-     */
+    // POST REQUESTS
     if (req.method === "POST") {
       const apiKey = Deno.env.get("GSUBZ_API_KEY");
 
       if (!apiKey) {
         return json(
-          {
-            success: false,
-            error: "GSUBZ_API_KEY is missing",
-          },
+          { success: false, error: "GSUBZ_API_KEY is missing" },
           500,
         );
       }
@@ -263,21 +190,14 @@ serve(async (req) => {
         body = await req.json();
       } catch {
         return json(
-          {
-            success: false,
-            error: "Invalid JSON request body",
-          },
+          { success: false, error: "Invalid JSON request body" },
           400,
         );
       }
 
-      /*
-       * BALANCE
-       */
-      const action = String(
-        body.action || "",
-      ).toLowerCase();
+      const action = String(body.action || "").toLowerCase();
 
+      // BALANCE
       if (action === "balance") {
         const form = new FormData();
         form.append("api", apiKey);
@@ -286,9 +206,7 @@ serve(async (req) => {
           `${GSUBZ_BASE}/api/balance/`,
           {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
+            headers: { Authorization: `Bearer ${apiKey}` },
             body: form,
           },
         );
@@ -296,36 +214,155 @@ serve(async (req) => {
         const data = await providerResponse.json();
 
         return json(
-          {
-            success: providerResponse.ok,
-            data,
-          },
+          { success: providerResponse.ok, data },
           providerResponse.status,
         );
       }
 
-      /*
-       * ACCEPT DIFFERENT FIELD NAMES
-       * FROM THE EXISTING SPARKLE FRONTEND.
-       */
+      // RECHARGE PIN PRINTING
+      if (
+        action === "recharge_pins" ||
+        action === "recharge-pins"
+      ) {
+        const network = String(
+          body.network || body.provider || "",
+        ).trim().toLowerCase();
+
+        const allowedNetworks = [
+          "mtn",
+          "airtel",
+          "glo",
+          "9mobile",
+        ];
+
+        const value = Number(
+          body.value ?? body.denomination ?? body.amount,
+        );
+
+        const number = Number(
+          body.number ?? body.quantity,
+        );
+
+        if (!allowedNetworks.includes(network)) {
+          return json(
+            {
+              success: false,
+              error: "Invalid recharge PIN network",
+              message: "Choose MTN, Airtel, Glo, or 9mobile.",
+            },
+            400,
+          );
+        }
+
+        if (![100, 200, 400, 500].includes(value)) {
+          return json(
+            {
+              success: false,
+              error: "Invalid recharge PIN denomination",
+              message: "Choose ₦100, ₦200, ₦400, or ₦500.",
+            },
+            400,
+          );
+        }
+
+        if (!Number.isSafeInteger(number) || number < 1) {
+          return json(
+            {
+              success: false,
+              error: "Invalid recharge PIN quantity",
+              message: "Quantity must be a positive whole number.",
+            },
+            400,
+          );
+        }
+
+        // IMPORTANT: Enforce the minimum quantity on the server.
+        if (value < 500 && number < 10) {
+          return json(
+            {
+              success: false,
+              error: "Minimum quantity is 10",
+              message:
+                "You must order at least 10 PINs for denominations below ₦500.",
+              minimumQuantity: 10,
+              denomination: value,
+            },
+            400,
+          );
+        }
+
+        const form = new FormData();
+        form.append("network", network);
+        form.append("value", String(value));
+        form.append("number", String(number));
+
+        let providerResponse: Response;
+        let providerData: any;
+
+        try {
+          providerResponse = await fetch(
+            `${GSUBZ_BASE}/apiV2/generate/`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: `Bearer ${apiKey}`,
+                Accept: "application/json",
+              },
+              body: form,
+              signal: AbortSignal.timeout(60000),
+            },
+          );
+
+          providerData = await providerResponse.json();
+        } catch {
+          return json(
+            {
+              success: false,
+              error: "Recharge PIN provider unavailable",
+              message:
+                "GSubz did not return a usable response. Check the order status before retrying to avoid duplicate purchases.",
+            },
+            502,
+          );
+        }
+
+        // Require an explicit success status from the provider.
+        const providerSucceeded =
+          providerResponse.ok &&
+          String(providerData?.status || "").toLowerCase() ===
+            "success";
+
+        return json(
+          {
+            success: providerSucceeded,
+            type: "recharge_pins",
+            network,
+            value,
+            number,
+            data: providerData,
+            ...(providerSucceeded
+              ? {}
+              : {
+                  error:
+                    "Recharge PIN order was not confirmed successful",
+                }),
+          },
+          providerResponse.ok ? 200 : providerResponse.status,
+        );
+      }
+
+      // ACCEPT EXISTING SPARKLE FIELD NAMES
       let serviceID = String(
-        body.serviceID ||
-        body.service ||
-        "",
+        body.serviceID || body.service || "",
       ).trim();
 
       const network = normalizeNetwork(
         body.network ||
-        body.provider ||
-        body.operator ||
-        serviceID,
+          body.provider ||
+          body.operator ||
+          serviceID,
       );
 
-      /*
-       * If Sparkle sends:
-       * network = MTN
-       * instead of serviceID = mtn
-       */
       if (
         !serviceID ||
         !AIRTIME_SERVICES.includes(serviceID)
@@ -337,43 +374,38 @@ serve(async (req) => {
 
       const phone = String(
         body.phone ||
-        body.phoneNumber ||
-        body.mobile ||
-        "",
+          body.phoneNumber ||
+          body.mobile ||
+          "",
       ).trim();
 
       const amount = String(
-        body.amount ||
-        body.price ||
-        "",
+        body.amount || body.price || "",
       ).trim();
 
       const plan = String(
         body.plan ||
-        body.planValue ||
-        body.value ||
-        body.variation_code ||
-        "",
+          body.planValue ||
+          body.value ||
+          body.variation_code ||
+          "",
       ).trim();
 
       const requestID = String(
         body.requestID ||
-        body.requestId ||
-        body.reference ||
-        "",
+          body.requestId ||
+          body.reference ||
+          "",
       ).trim();
 
-      /*
-       * AIRTIME
-       */
+      // AIRTIME
       if (AIRTIME_SERVICES.includes(serviceID)) {
         if (!phone || !amount) {
           return json(
             {
               success: false,
               error: "Missing airtime fields",
-              message:
-                "Airtime requires phone and amount.",
+              message: "Airtime requires phone and amount.",
             },
             400,
           );
@@ -389,15 +421,13 @@ serve(async (req) => {
             {
               success: false,
               error: "Invalid airtime amount",
-              message:
-                "Airtime amount must be at least ₦100.",
+              message: "Airtime amount must be at least ₦100.",
             },
             400,
           );
         }
 
         const form = new FormData();
-
         form.append("serviceID", serviceID);
         form.append("api", apiKey);
         form.append("amount", amount);
@@ -411,9 +441,7 @@ serve(async (req) => {
           `${GSUBZ_BASE}/api/pay/`,
           {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
+            headers: { Authorization: `Bearer ${apiKey}` },
             body: form,
           },
         );
@@ -431,32 +459,23 @@ serve(async (req) => {
         );
       }
 
-      /*
-       * DATA
-       */
+      // DATA
       if (DATA_SERVICES.includes(serviceID)) {
         if (!phone || !plan) {
           return json(
             {
               success: false,
               error: "Missing data fields",
-              message:
-                "Data requires phone and plan.",
+              message: "Data requires phone and plan.",
             },
             400,
           );
         }
 
         const form = new FormData();
-
         form.append("serviceID", serviceID);
         form.append("plan", plan);
         form.append("api", apiKey);
-
-        /*
-         * GSUBZ requires amount to be
-         * an empty string for data.
-         */
         form.append("amount", "");
         form.append("phone", phone);
 
@@ -468,9 +487,7 @@ serve(async (req) => {
           `${GSUBZ_BASE}/api/pay/`,
           {
             method: "POST",
-            headers: {
-              Authorization: `Bearer ${apiKey}`,
-            },
+            headers: { Authorization: `Bearer ${apiKey}` },
             body: form,
           },
         );
@@ -488,9 +505,6 @@ serve(async (req) => {
         );
       }
 
-      /*
-       * UNKNOWN SERVICE
-       */
       return json(
         {
           success: false,
@@ -505,10 +519,7 @@ serve(async (req) => {
     }
 
     return json(
-      {
-        success: false,
-        error: "Method not allowed",
-      },
+      { success: false, error: "Method not allowed" },
       405,
     );
   } catch (error) {
