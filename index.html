@@ -1296,9 +1296,9 @@ Everything you need for instant recharge, subscriptions and everyday utility pay
 </div>
 
 <div class="card">
-<div class="icon">💰</div>
-<h3>Airtime to Cash</h3>
-<p>Convert supported airtime balances to cash.</p>
+<div class="icon">🪪</div>
+<h3>Recharge Pin Printing</h3>
+<p>Buy and print recharge cards for supported networks.</p>
 </div>
 
 <div class="card">
@@ -1659,7 +1659,7 @@ Privacy Policy
             <div class="service" onclick="openServicePage('cable')"><span>📺</span>Cable TV<small>Subscriptions</small></div>
             <div class="service" onclick="openServicePage('electricity')"><span>⚡</span>Electricity<small>Power Bills</small></div>
             <div class="service" onclick="openServicePage('education')"><span>🎟️</span>Education Pins<small>WAEC • NECO • NABTEB</small></div>
-            <div class="service"><span>💰</span>Airtime Cash<small>Coming soon</small></div>
+            <div class="service" onclick="openServicePage('rechargepin')"><span>🪪</span>Recharge Pin Printing<small>Print recharge cards</small></div>
           </div>
 
           <div class="txbox">
@@ -1935,6 +1935,22 @@ Privacy Policy
     <div id="educationError"></div>
     <div class="data-bottom-action"><button class="btn primary full" onclick="showEducationSummary()">Continue</button></div>
     <div class="summary-card" id="educationSummary"></div>
+  </div>
+</section>
+
+
+<section class="page" id="rechargepinPage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Recharge Pin Printing</h1></div>
+    <p class="network-picker-subtitle">Choose the network, recharge amount, and number of cards you want to print.</p>
+    <div class="data-beneficiary-card">
+      <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
+      <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="500">₦500</option><option value="1000">₦1,000</option></select></div>
+      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="1" max="100" step="1" value="1" placeholder="Number of cards" oninput="updateRechargePinTotal()"></div>
+      <div class="summary-line" style="margin-top:12px"><span>Card value total</span><strong id="rechargePinTotal">₦100.00</strong></div>
+    </div>
+    <p class="electricity-note">PINs and serial numbers will only be issued after the GSubz recharge-PIN endpoint is connected and the order is successfully verified.</p>
+    <div class="data-bottom-action"><button class="btn primary full" onclick="showRechargePinSummary()">Continue</button></div>
   </div>
 </section>
 
@@ -4224,6 +4240,36 @@ function showElectricitySummary(){
 
 function money(n){
   return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function updateRechargePinTotal(){
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
+  const total=denomination*quantity;
+  const box=document.getElementById("rechargePinTotal");
+  if(box)box.textContent=money(Number.isFinite(total)?total:0);
+}
+function showRechargePinSummary(){
+  const network=document.getElementById("rechargePinNetwork")?.value||"";
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
+  if(!network||!Number.isInteger(quantity)||quantity<1||quantity>100||!Number.isFinite(denomination)||denomination<=0){alert("Choose a network and denomination, then enter a quantity from 1 to 100.");return;}
+  const total=denomination*quantity;
+  currentService="rechargepin";
+  pendingPurchase={type:"single",items:[{service:"Recharge Card PIN",network,phone:"Recharge card printing",plan:`${money(denomination)} × ${quantity} card(s)`,amount:total,quantity,denomination}],total};
+  try{sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:"rechargepin",purchase:pendingPurchase}));}catch(e){}
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
+  window.sparkleSummaryReturnScroll=window.scrollY||0;
+  const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
+  const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
+  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>PIN delivery</span><strong>Printable PINs and serials</strong></div><div class="sparkle-summary-total"><span>Card value total</span><strong>${money(total)}</strong></div><p class="electricity-note">This is a review of your order. PIN generation and payment are not active until the GSubz recharge-PIN endpoint is connected.</p><button class="btn primary full sparkle-summary-confirm" onclick="closeReview(false);alert('Recharge PIN orders are not live yet. No payment has been taken. The GSubz PIN endpoint must be connected before cards can be generated.');">Confirm details</button>`;
+  screen.scrollTop=0;
+  window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+  try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
+  const roll=document.getElementById("sparkle-continue-roll");
+  if(roll){const markEl=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(markEl){markEl.style.animation="none";void markEl.offsetWidth;markEl.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},900);}else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
 }
 
 function getSinglePurchase(service){
