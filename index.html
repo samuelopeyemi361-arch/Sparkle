@@ -1946,10 +1946,10 @@ Privacy Policy
     <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Recharge Pin Printing</h1></div>
     <p class="network-picker-subtitle">Choose the network, recharge amount, and number of cards you want to print.</p>
     <div class="data-beneficiary-card">
-      <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
+      <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork" onchange="updateRechargePinTotal()"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
       <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="400">₦400</option><option value="500">₦500</option></select></div>
-      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="100" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
-      <div class="summary-line" style="margin-top:12px"><span>Card value total</span><strong id="rechargePinTotal">₦100.00</strong></div>
+      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="20" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
+      <div class="summary-line" style="margin-top:12px"><span>Wallet total</span><strong id="rechargePinTotal">Loading price…</strong></div>
     </div>
     <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, the minimum order is 10 cards. Your Sparkle wallet is checked before an order is sent.</p>
     <div class="data-bottom-action"><button class="btn primary full" onclick="showRechargePinSummary()">Continue</button></div>
@@ -4257,6 +4257,34 @@ function money(n){
   return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+let sparkleRechargePinPrices = {};
+let sparkleRechargePinPricesLoaded = false;
+let sparkleRechargePinPriceLoadPromise = null;
+
+async function loadRechargePinPrices(force=false){
+  if(sparkleRechargePinPricesLoaded && !force) return sparkleRechargePinPrices;
+  if(sparkleRechargePinPriceLoadPromise && !force) return sparkleRechargePinPriceLoadPromise;
+  sparkleRechargePinPriceLoadPromise=(async()=>{
+    const {data,error}=await supabaseClient
+      .from("sparkle_recharge_pin_prices")
+      .select("network,denomination,selling_price_per_pin,min_quantity")
+      .not("selling_price_per_pin","is",null);
+    if(error) throw new Error("Could not load Recharge PIN prices. Please try again later.");
+    const prices={};
+    (data||[]).forEach(row=>{
+      const price=Number(row.selling_price_per_pin);
+      if(Number.isFinite(price)&&price>0) prices[String(row.network)+":"+Number(row.denomination)]={price,min:Number(row.min_quantity||1)};
+    });
+    sparkleRechargePinPrices=prices;
+    sparkleRechargePinPricesLoaded=true;
+    return prices;
+  })();
+  try{return await sparkleRechargePinPriceLoadPromise;}
+  finally{sparkleRechargePinPriceLoadPromise=null;}
+}
+function getRechargePinPrice(network,denomination){
+  return sparkleRechargePinPrices[String(network)+":"+Number(denomination)]?.price||null;
+}
 function normalizeRechargePinQuantity(){
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const qtyInput=document.getElementById("rechargePinQuantity");
@@ -4264,25 +4292,30 @@ function normalizeRechargePinQuantity(){
   const minimum=denomination<500?10:1;
   let quantity=Number(qtyInput.value||0);
   if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
-  if(quantity>100)quantity=100;
-  qtyInput.min=String(minimum);
+  if(quantity>20)quantity=20;
+  qtyInput.min=String(minimum);qtyInput.max="20";
   qtyInput.value=String(Math.floor(quantity));
 }
-function updateRechargePinTotal(){
+async function updateRechargePinTotal(){
+  const network=document.getElementById("rechargePinNetwork")?.value||"";
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const qtyInput=document.getElementById("rechargePinQuantity");
   const minimum=denomination<500?10:1;
   let quantity=Number(qtyInput?.value||0);
   if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
-  if(quantity>100)quantity=100;
-  if(qtyInput)qtyInput.min=String(minimum);
-  // Do not rewrite the field during typing: otherwise entering 12 can become 10, then 100.
-  const total=denomination*quantity;
+  if(quantity>20)quantity=20;
+  if(qtyInput){qtyInput.min=String(minimum);qtyInput.max="20";}
   const box=document.getElementById("rechargePinTotal");
-  if(box)box.textContent=money(Number.isFinite(total)?total:0);
+  if(box)box.textContent="Loading price…";
+  try{
+    await loadRechargePinPrices();
+    const unitPrice=getRechargePinPrice(network,denomination);
+    if(box)box.textContent=unitPrice===null?"Price unavailable":money(unitPrice*quantity);
+  }catch(e){if(box)box.textContent="Price unavailable";console.warn("Recharge PIN price load:",e);}
 }
-document.addEventListener("DOMContentLoaded",()=>updateRechargePinTotal());
-function showRechargePinSummary(){
+document.addEventListener("DOMContentLoaded",()=>{updateRechargePinTotal();});
+
+async function showRechargePinSummary(){
   const network=document.getElementById("rechargePinNetwork")?.value||"";
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const quantityInput=document.getElementById("rechargePinQuantity");
@@ -4294,7 +4327,10 @@ function showRechargePinSummary(){
   updateRechargePinTotal();
   quantity=Number(quantityInput?.value||quantity);
   if(!network||![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<minimum||quantity>100){alert("Choose a network and denomination, then enter a valid quantity.");return;}
-  const total=denomination*quantity;
+  let unitPrice=getRechargePinPrice(network,denomination);
+  try{if(unitPrice===null){await loadRechargePinPrices(true);unitPrice=getRechargePinPrice(network,denomination);}}catch(e){alert("Recharge PIN prices could not be loaded. Please try again later.");return;}
+  if(unitPrice===null){alert("The selling price for this Recharge PIN is not configured yet.");return;}
+  const total=Number((unitPrice*quantity).toFixed(2));
   currentService="rechargepin";
   pendingPurchase={type:"single",items:[{service:"Recharge Pin Printing",network,phone:"Recharge card printing",plan:`${money(denomination)} × ${quantity} card(s)`,amount:total,quantity,denomination}],total};
   window.sparkleRechargePinPending=true;
@@ -4305,7 +4341,7 @@ function showRechargePinSummary(){
   window.sparkleSummaryReturnScroll=window.scrollY||0;
   const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
   const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
-  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Continue</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
+  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Selling price per card</span><strong>${money(unitPrice)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Continue</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
   screen.scrollTop=0;
   window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
   try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
@@ -4319,56 +4355,47 @@ async function confirmRechargePinPurchase(pin){
   const network=document.getElementById("rechargePinNetwork")?.value||"";
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
-  const total=denomination*quantity;
   if(!button||!resultBox)return;
-  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100||(denomination<500&&quantity<10)){
+  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>20||(denomination<500&&quantity<10)){
     resultBox.innerHTML='<div class="gsubz-error">Invalid quantity. For denominations below ₦500, order at least 10 cards.</div>';return;
   }
-  button.disabled=true;button.textContent="Verifying PIN & reserving wallet…";
-  resultBox.innerHTML='<p>Securely verifying your PIN and checking your wallet…</p>';
+  let unitPrice=getRechargePinPrice(network,denomination);
+  try{if(unitPrice===null){await loadRechargePinPrices(true);unitPrice=getRechargePinPrice(network,denomination);}}catch(e){resultBox.innerHTML='<div class="gsubz-error">Could not load current prices. Please try again.</div>';return;}
+  if(unitPrice===null){resultBox.innerHTML='<div class="gsubz-error">This Recharge PIN price is not configured. Please contact support.</div>';return;}
+  const total=Number((unitPrice*quantity).toFixed(2));
+  button.disabled=true;button.textContent="Processing order…";
+  resultBox.innerHTML='<p>Checking your account and processing securely. Please do not close this page or submit again.</p>';
+  let userId=null;
+  const requestId="SPK-"+crypto.randomUUID();
   try{
     const userResult=await supabaseClient.auth.getUser();
-    const userId=userResult?.data?.user?.id;
+    userId=userResult?.data?.user?.id;
     if(!userId)throw new Error("Please log in again before purchasing.");
-    const requestId="SPK-"+crypto.randomUUID();
-    button.textContent="Processing order…";
-    resultBox.innerHTML='<p>Processing securely. Please do not close this page or submit again.</p>';
-    throw new Error("Recharge PIN purchases are paused until the secure server-side purchase function is deployed. Your wallet has not been charged.");
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-recharge-pins",{body:{request_id:requestId,network,denomination,quantity,pin}});
     if(error){
       let errorData=null;
       try{if(error.context&&typeof error.context.json==="function")errorData=await error.context.json();}catch(e){}
-      if(errorData?.status==="failed"){
-        button.disabled=false;button.textContent="Try again";
-        throw new Error(errorData.message||"The provider rejected the order. Wallet funds have been returned.");
-      }
-      if(errorData?.message && /incorrect transaction pin|enter your 4-digit pin|set your transaction pin first|too many incorrect|insufficient wallet|invalid network|invalid denomination|wallet not found|already been used|choose a 4-digit pin/i.test(errorData.message)){
-        button.disabled=false;button.textContent="Try again";
-        throw new Error(errorData.message);
-      }
-      if(errorData?.status==="unknown" || error.status===502 || !error.context){
+      if(errorData?.status==="unknown"||error.status===502||!error.context){
         button.textContent="Order status needs checking";
         resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p></div>';
-        throw new Error("Order status could not be confirmed. Do not retry; contact support with reference "+(errorData?.reference||requestId)+".");
+        return;
       }
-      button.disabled=false;button.textContent="Try again";
       throw new Error(errorData?.message||error.message||"Purchase could not be completed.");
     }
     if(data?.status==="unknown"){
       button.textContent="Order status needs checking";
-      resultBox.innerHTML='<div class="gsubz-error"><strong>Order status is being checked.</strong><p>Your funds remain reserved to prevent a duplicate. Do not submit again. Contact support with reference '+escapeHtml(data.reference||requestId)+'.</p></div>';
+      resultBox.innerHTML='<div class="gsubz-error"><strong>Order status could not be confirmed.</strong><p>Do not submit again. Contact Sparkle Support with reference '+escapeHtml(data.reference||requestId)+'.</p></div>';
       return;
     }
-    if(!data?.success){
-      button.disabled=false;button.textContent="Try again";
-      throw new Error(data?.message||"The order failed. If the provider confirmed failure, wallet funds have been returned.");
-    }
-    resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charged: '+money(total)+'</p><p>Order reference: '+escapeHtml(data.reference||requestId)+'</p><p>Save or screenshot the PIN and serial details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(\'home\',document.querySelector(\'.nav-item\'));loadWallet(\''+userId+'\');loadTransactions(\''+userId+'\')">Done</button></div>';
+    if(!data?.success||data?.status!=="success")throw new Error(data?.message||"The order was not confirmed successful. Check with support before retrying.");
+    const pins=data.pins||data.data?.pins||data.data;
+    resultBox.innerHTML=`<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charge: ${money(total)}</p><p>Order reference: ${escapeHtml(data.reference||requestId)}</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">${escapeHtml(JSON.stringify(pins,null,2))}</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadWallet(&quot;${userId}&quot;);loadTransactions(&quot;${userId}&quot;)">Done</button></div>`;
     button.style.display="none";
     await loadWallet(userId);await loadTransactions(userId);
   }catch(e){
     console.error("Secure Recharge PIN purchase:",e);
-    if(resultBox&&!resultBox.innerHTML.includes("Do not submit again")&&!resultBox.innerHTML.includes("Order status is being checked"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
-    if(button&&button.textContent!=="Order status needs checking"&&button.style.display!=="none"){button.disabled=false;if(button.textContent!=="Try again")button.textContent="Try again";}
+    if(resultBox&&!resultBox.innerHTML.includes("Do not submit again")&&!resultBox.innerHTML.includes("Order status could not be confirmed"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
+    if(button&&button.textContent!=="Order status needs checking"&&button.style.display!=="none"){button.disabled=false;button.textContent="Try again";}
   }
 }
 
@@ -4596,9 +4623,11 @@ async function confirmTransactionPIN(){
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
     if(error||!data?.success) throw new Error(data?.message||error?.message||"Transaction PIN verification failed.");
     closePinModal();
-    // The PIN function verifies identity only; it does not debit the wallet or process provider orders.
-    // Keep real purchases blocked until the server-side secure purchase function is deployed.
-    alert("Your PIN is correct, but purchases are temporarily unavailable while Sparkle's secure purchase processing is being connected. Your wallet has not been charged.");
+    if(currentService==="rechargepin" && window.sparkleRechargePinPending){
+      await confirmRechargePinPurchase(pin);
+      return;
+    }
+    alert("Your PIN is correct. This service's secure purchase processing is not connected yet, so your wallet has not been charged.");
   }catch(e){
     msg.textContent=e.message||"Could not verify your PIN.";
   }finally{
