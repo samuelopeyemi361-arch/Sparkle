@@ -1,3 +1,4 @@
+
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 
 const GSUBZ_BASE = "https://api.gsubz.com";
@@ -20,12 +21,13 @@ const AIRTIME_SERVICES = [
   "etisalat",
 ];
 
+const CABLE_SERVICES = ["dstv", "gotv", "startimes"];
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods":
-    "GET, POST, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Content-Type": "application/json",
 };
 
@@ -69,6 +71,9 @@ serve(async (req) => {
      * Supports:
      * ?service=mtn_sme
      * ?action=plans&service=mtn_sme
+     * ?service=dstv
+     * ?service=gotv
+     * ?service=startimes
      */
     if (req.method === "GET") {
       const action =
@@ -149,11 +154,88 @@ serve(async (req) => {
 
       const data = await providerResponse.json();
 
+      /*
+       * NORMALISE PLAN RESPONSES
+       *
+       * Preserve the original provider response in `data`.
+       * Also expose a top-level `plans` array for Sparkle.
+       */
+      const candidates = [
+        data?.plans,
+        data?.data?.plans,
+        data?.data?.data?.plans,
+        data?.result?.plans,
+        data?.results?.plans,
+        Array.isArray(data?.data) ? data.data : null,
+        Array.isArray(data?.result) ? data.result : null,
+        Array.isArray(data?.results) ? data.results : null,
+        Array.isArray(data) ? data : null,
+      ];
+
+      const rawPlans =
+        candidates.find((item) => Array.isArray(item)) ?? [];
+
+      const plans = rawPlans
+        .map((item: any) => {
+          if (!item || typeof item !== "object") {
+            return null;
+          }
+
+          const value =
+            item.value ??
+            item.variation_code ??
+            item.variationCode ??
+            item.code ??
+            item.id ??
+            item.plan;
+
+          const displayName =
+            item.displayName ??
+            item.display_name ??
+            item.name ??
+            item.label ??
+            item.title ??
+            item.package_name ??
+            item.packageName ??
+            item.plan_name ??
+            (value != null ? String(value) : "");
+
+          const price =
+            item.api_price ??
+            item.price ??
+            item.amount ??
+            item.selling_price ??
+            item.sellingPrice;
+
+          if (
+            value == null ||
+            String(value).trim() === "" ||
+            !displayName ||
+            price == null
+          ) {
+            return null;
+          }
+
+          return {
+            ...item,
+            value: String(value),
+            variation_code: String(value),
+            displayName: String(displayName),
+            price,
+            api_price: item.api_price ?? price,
+          };
+        })
+        .filter((item: any) => item !== null);
+
       return json(
         {
           success: providerResponse.ok,
           service,
           data,
+          plans,
+          PlanName: CABLE_SERVICES.includes(service)
+            ? "variation_code"
+            : data?.PlanName ?? "plan",
         },
         providerResponse.status,
       );
@@ -163,8 +245,7 @@ serve(async (req) => {
      * POST REQUESTS
      */
     if (req.method === "POST") {
-      const apiKey =
-        Deno.env.get("GSUBZ_API_KEY");
+      const apiKey = Deno.env.get("GSUBZ_API_KEY");
 
       if (!apiKey) {
         return json(
@@ -212,8 +293,7 @@ serve(async (req) => {
           },
         );
 
-        const data =
-          await providerResponse.json();
+        const data = await providerResponse.json();
 
         return json(
           {
@@ -299,8 +379,7 @@ serve(async (req) => {
           );
         }
 
-        const numericAmount =
-          Number(amount);
+        const numericAmount = Number(amount);
 
         if (
           !Number.isFinite(numericAmount) ||
@@ -319,48 +398,27 @@ serve(async (req) => {
 
         const form = new FormData();
 
-        form.append(
-          "serviceID",
-          serviceID,
-        );
-
-        form.append(
-          "api",
-          apiKey,
-        );
-
-        form.append(
-          "amount",
-          amount,
-        );
-
-        form.append(
-          "phone",
-          phone,
-        );
+        form.append("serviceID", serviceID);
+        form.append("api", apiKey);
+        form.append("amount", amount);
+        form.append("phone", phone);
 
         if (requestID) {
-          form.append(
-            "requestID",
-            requestID,
-          );
+          form.append("requestID", requestID);
         }
 
-        const providerResponse =
-          await fetch(
-            `${GSUBZ_BASE}/api/pay/`,
-            {
-              method: "POST",
-              headers: {
-                Authorization:
-                  `Bearer ${apiKey}`,
-              },
-              body: form,
+        const providerResponse = await fetch(
+          `${GSUBZ_BASE}/api/pay/`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
             },
-          );
+            body: form,
+          },
+        );
 
-        const data =
-          await providerResponse.json();
+        const data = await providerResponse.json();
 
         return json(
           {
@@ -391,57 +449,33 @@ serve(async (req) => {
 
         const form = new FormData();
 
-        form.append(
-          "serviceID",
-          serviceID,
-        );
-
-        form.append(
-          "plan",
-          plan,
-        );
-
-        form.append(
-          "api",
-          apiKey,
-        );
+        form.append("serviceID", serviceID);
+        form.append("plan", plan);
+        form.append("api", apiKey);
 
         /*
          * GSUBZ requires amount to be
          * an empty string for data.
          */
-        form.append(
-          "amount",
-          "",
-        );
-
-        form.append(
-          "phone",
-          phone,
-        );
+        form.append("amount", "");
+        form.append("phone", phone);
 
         if (requestID) {
-          form.append(
-            "requestID",
-            requestID,
-          );
+          form.append("requestID", requestID);
         }
 
-        const providerResponse =
-          await fetch(
-            `${GSUBZ_BASE}/api/pay/`,
-            {
-              method: "POST",
-              headers: {
-                Authorization:
-                  `Bearer ${apiKey}`,
-              },
-              body: form,
+        const providerResponse = await fetch(
+          `${GSUBZ_BASE}/api/pay/`,
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${apiKey}`,
             },
-          );
+            body: form,
+          },
+        );
 
-        const data =
-          await providerResponse.json();
+        const data = await providerResponse.json();
 
         return json(
           {
@@ -463,10 +497,8 @@ serve(async (req) => {
           error: "Unsupported service",
           serviceID,
           network,
-          supportedAirtime:
-            AIRTIME_SERVICES,
-          supportedData:
-            DATA_SERVICES,
+          supportedAirtime: AIRTIME_SERVICES,
+          supportedData: DATA_SERVICES,
         },
         400,
       );
