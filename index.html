@@ -1945,11 +1945,11 @@ Privacy Policy
     <p class="network-picker-subtitle">Choose the network, recharge amount, and number of cards you want to print.</p>
     <div class="data-beneficiary-card">
       <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
-      <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="500">₦500</option><option value="1000">₦1,000</option></select></div>
+      <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="400">₦400</option><option value="500">₦500</option></select></div>
       <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="1" max="100" step="1" value="1" placeholder="Number of cards" oninput="updateRechargePinTotal()"></div>
       <div class="summary-line" style="margin-top:12px"><span>Card value total</span><strong id="rechargePinTotal">₦100.00</strong></div>
     </div>
-    <p class="electricity-note">PINs and serial numbers will only be issued after the GSubz recharge-PIN endpoint is connected and the order is successfully verified.</p>
+    <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, GSubz requires at least 10 cards per order. Your Sparkle wallet is checked before an order is sent.</p>
     <div class="data-bottom-action"><button class="btn primary full" onclick="showRechargePinSummary()">Continue</button></div>
   </div>
 </section>
@@ -4248,15 +4248,18 @@ function updateRechargePinTotal(){
   const total=denomination*quantity;
   const box=document.getElementById("rechargePinTotal");
   if(box)box.textContent=money(Number.isFinite(total)?total:0);
+  const qtyInput=document.getElementById("rechargePinQuantity");
+  if(qtyInput)qtyInput.min=denomination<500?"10":"1";
 }
 function showRechargePinSummary(){
   const network=document.getElementById("rechargePinNetwork")?.value||"";
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
-  if(!network||!Number.isInteger(quantity)||quantity<1||quantity>100||!Number.isFinite(denomination)||denomination<=0){alert("Choose a network and denomination, then enter a quantity from 1 to 100.");return;}
+  if(!network||![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100){alert("Choose a network and denomination, then enter a quantity from 1 to 100.");return;}
+  if(denomination<500&&quantity<10){alert("GSubz requires at least 10 cards for denominations below ₦500.");return;}
   const total=denomination*quantity;
   currentService="rechargepin";
-  pendingPurchase={type:"single",items:[{service:"Recharge Card PIN",network,phone:"Recharge card printing",plan:`${money(denomination)} × ${quantity} card(s)`,amount:total,quantity,denomination}],total};
+  pendingPurchase={type:"single",items:[{service:"Recharge Pin Printing",network,phone:"Recharge card printing",plan:`${money(denomination)} × ${quantity} card(s)`,amount:total,quantity,denomination}],total};
   try{sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:"rechargepin",purchase:pendingPurchase}));}catch(e){}
   const screen=document.getElementById("sparkle-purchase-summary-screen");
   const content=document.getElementById("sparkle-summary-screen-content");
@@ -4264,12 +4267,63 @@ function showRechargePinSummary(){
   window.sparkleSummaryReturnScroll=window.scrollY||0;
   const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
   const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
-  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>PIN delivery</span><strong>Printable PINs and serials</strong></div><div class="sparkle-summary-total"><span>Card value total</span><strong>${money(total)}</strong></div><p class="electricity-note">This is a review of your order. PIN generation and payment are not active until the GSubz recharge-PIN endpoint is connected.</p><button class="btn primary full sparkle-summary-confirm" onclick="closeReview(false);alert('Recharge PIN orders are not live yet. No payment has been taken. The GSubz PIN endpoint must be connected before cards can be generated.');">Confirm details</button>`;
+  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><p class="electricity-note">Confirming sends a live order to GSubz and, if successful, charges your Sparkle wallet by the total shown. Do not tap twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" onclick="confirmRechargePinPurchase()">Confirm and Generate PINs</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
   screen.scrollTop=0;
   window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
   try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
   const roll=document.getElementById("sparkle-continue-roll");
   if(roll){const markEl=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(markEl){markEl.style.animation="none";void markEl.offsetWidth;markEl.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},900);}else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
+}
+
+async function confirmRechargePinPurchase(){
+  const button=document.getElementById("sparkle-recharge-pin-confirm");
+  const resultBox=document.getElementById("sparkle-recharge-pin-result");
+  const network=document.getElementById("rechargePinNetwork")?.value||"";
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
+  const total=denomination*quantity;
+  if(!button||!resultBox)return;
+  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100||(denomination<500&&quantity<10)){
+    resultBox.innerHTML='<div class="gsubz-error">Invalid quantity. For denominations below ₦500, order at least 10 cards.</div>';return;
+  }
+  button.disabled=true;button.textContent="Checking wallet…";
+  resultBox.innerHTML='<p>Checking your Sparkle wallet…</p>';
+  let userId=null, before=null, charged=false;
+  try{
+    const userResult=await supabaseClient.auth.getUser();
+    userId=userResult?.data?.user?.id;
+    if(!userId)throw new Error("Please log in again before purchasing.");
+    const walletResult=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).single();
+    if(walletResult.error||!walletResult.data)throw new Error("Sparkle wallet could not be loaded.");
+    before=Number(walletResult.data.balance||0);
+    if(!Number.isFinite(before)||before<total)throw new Error("Insufficient Sparkle wallet balance. You need "+money(total)+".");
+    button.textContent="Generating PINs…";
+    resultBox.innerHTML='<p>Sending your order to GSubz. Please keep this page open and do not retry.</p>';
+    const {data,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:{action:"recharge_pins",network:network.toLowerCase(),value:denomination,number:quantity}});
+    if(error){button.disabled=true;button.textContent="Order status must be checked";resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz response was not confirmed.</strong><p>Do not tap again yet. Check the provider/order status first to avoid duplicate PIN generation.</p></div>';throw new Error("The request could not be confirmed. Check the GSubz order status before trying again. "+(error.message||""));}
+    if(!data||data.success!==true||String(data.data?.status||"").toLowerCase()!=="success"){
+      throw new Error(data?.message||data?.data?.message||data?.error||"GSubz did not confirm the PIN order. No wallet charge was made.");
+    }
+    const after=before-total;
+    const debit=await supabaseClient.from("wallets").update({balance:after,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",before).select("balance");
+    if(debit.error||!debit.data||debit.data.length===0){
+      resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz reports the PIN order succeeded, but Sparkle could not deduct your wallet.</strong><p>Do not submit again. Contact support with the PIN order details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
+      throw new Error("PIN order succeeded but wallet deduction failed. Do not retry; contact support.");
+    }
+    charged=true;
+    const tx=await supabaseClient.from("wallet_transactions").insert({user_id:userId,type:"debit",amount:total,service:"Recharge Pin Printing",status:"success"});
+    if(tx.error){
+      resultBox.innerHTML='<div class="gsubz-error"><strong>PINs were generated and the wallet was charged, but transaction history could not be saved.</strong><p>Keep these order details and contact support.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
+      throw new Error("PIN order succeeded. Wallet was charged, but history could not be saved; contact support.");
+    }
+    resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charged: '+money(total)+'</p><p>Save or screenshot the PIN and serial details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(\'home\',document.querySelector(\'.nav-item\'));loadWallet(\''+userId+'\');loadTransactions(\''+userId+'\')">Done</button></div>';
+    button.style.display="none";
+    await loadWallet(userId);await loadTransactions(userId);
+  }catch(e){
+    console.error("Recharge PIN purchase:",e);
+    if(resultBox&&!charged&&!resultBox.innerHTML.includes("Do not retry"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
+    if(button&&button.style.display!=="none"&&button.textContent!=="Order status must be checked"){button.disabled=false;button.textContent="Try again only after checking order status";}
+  }
 }
 
 function getSinglePurchase(service){
