@@ -3940,27 +3940,21 @@ async function loadCablePlans(){
   if(!box)return;
   box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
   try{
-    const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
-    const rawPlans=Array.isArray(result?.data?.plans)?result.data.plans:
-      (Array.isArray(result?.plans)?result.plans:
-      (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:[]));
-    const plans=normalizePlans(result);
+    const result=await gsubzRequest("/api/plans/?service="+service,"GET");
+    // Cable response from the existing GSUBZ Edge Function may wrap the plan
+    // array directly in `data` (response fields: success, service, data).
+    // Normalize only the cable response so data-plan handling stays untouched.
+    const cablePayload=Array.isArray(result?.data)
+      ? {...result,data:{plans:result.data}}
+      : (Array.isArray(result?.data?.data)
+        ? {...result,data:{...result.data,plans:result.data.data}}
+        : result);
+    const plans=normalizePlans(cablePayload);
     if(!plans.length){
-      let reason="GSUBZ returned no usable plans for "+provider+".";
-      const apiMessage=result?.error||result?.message||result?.description||result?.detail||result?.data?.message;
-      if(!result){
-        reason="GSUBZ returned an empty response. The Sparkle GSUBZ Edge Function may not be forwarding the plans response.";
-      }else if(apiMessage){
-        reason="GSUBZ says: "+String(apiMessage);
-      }else if(!rawPlans.length){
-        reason="The response did not contain a plans list. Returned fields: "+Object.keys(result).join(", ")+". Check the GSUBZ Edge Function response format.";
-      }else{
-        const missingCode=rawPlans.filter(p=>!(p?.value??p?.plan??p?.variation_code)).length;
-        const badPrice=rawPlans.filter(p=>!Number.isFinite(Number(p?.api_price??p?.price))||Number(p?.api_price??p?.price)<=0).length;
-        reason="GSUBZ returned "+rawPlans.length+" plan record(s), but Sparkle could not use them. Missing package code: "+missingCode+"; missing/invalid price: "+badPrice+". Expected value and api_price (or price).";
-      }
-      console.error("[Sparkle cable plans] No usable plans",{provider,service,response:result,rawPlans,reason});
-      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(reason)+'</strong><p>Please try again later. If this continues, the GSUBZ Edge Function/API response needs checking.</p></div>';
+      console.error("[Sparkle cable plans] No usable plans",{provider,service,response:result});
+      const reason=!result ? "GSUBZ returned an empty response."
+        : (result?.error||result?.message||result?.data?.message||"GSUBZ returned data, but no usable cable plan records were found. The Edge Function may be returning a different plan format.");
+      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(String(reason))+'</strong><p>Please try again later. If this continues, the GSUBZ Edge Function/API response needs checking.</p></div>';
       box._plans=[];return;
     }
     box._plans=plans;
@@ -3980,14 +3974,7 @@ async function loadCablePlans(){
       });
     });
   }catch(e){
-    console.error("[Sparkle cable plans] Request failed",e,e?.responseBody);
-    const status=e?.status;
-    let reason=e?.message||"Unable to load cable plans.";
-    if(status===401||status===403) reason="Authorization error (HTTP "+status+"). Please sign in again; if it continues, check the Supabase/GSUBZ Edge Function permissions.";
-    else if(status>=500) reason="Server/GSUBZ error (HTTP "+status+"): "+reason;
-    else if(!status&&/fetch|network|failed to fetch/i.test(reason)) reason="Network request failed. Check your internet connection and whether the Supabase GSUBZ Edge Function is available.";
-    box.innerHTML='<div class="gsubz-error">'+escapeHtml(reason)+'</div>';
-    box._plans=[];
+    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
   }
 }
 function selectCablePlan(index,value,price,name){
