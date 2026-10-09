@@ -1,0 +1,5217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sparkle — Bill Payments</title>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+<style>
+:root{
+  --blue:#0b5cff;
+  --deep:#071b4d;
+  --ink:#14213d;
+  --muted:#64748b;
+  --bg:#f7faff;
+  --white:#fff;
+  --line:#e7edf7;
+  --green:#10b981;
+  --red:#ef4444;
+}
+
+*{box-sizing:border-box}
+
+body{
+  margin:0;
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  color:var(--ink);
+  background:#fff
+}
+
+button,input{font:inherit}
+button{cursor:pointer}
+a{text-decoration:none;color:inherit}
+
+.wrap{
+  max-width:1180px;
+  margin:auto;
+  padding:0 24px
+}
+
+.nav{
+  height:76px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#fff
+}
+
+.brand{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  font-weight:900;
+  font-size:24px;
+  color:var(--blue)
+}
+
+.logo{
+  width:38px;
+  height:38px;
+  border-radius:12px;
+  background:var(--blue);
+  display:grid;
+  place-items:center;
+  color:#fff;
+  font-weight:900
+}
+
+.links{
+  display:flex;
+  gap:28px;
+  color:#475569;
+  font-weight:600;
+  font-size:14px
+}
+
+.actions{
+  display:flex;
+  gap:10px
+}
+
+.btn{
+  padding:12px 18px;
+  border-radius:9px;
+  font-weight:800;
+  border:1px solid var(--line);
+  font-size:14px;
+  background:#fff
+}
+
+.primary{
+  background:var(--blue);
+  color:#fff;
+  border-color:var(--blue)
+}
+
+.hero{
+  background:linear-gradient(135deg,#f4f8ff,#fff);
+  padding:76px 0 92px
+}
+
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.05fr .95fr;
+  gap:55px;
+  align-items:center
+}
+
+.eyebrow{
+  display:inline-flex;
+  color:var(--blue);
+  font-weight:800;
+  font-size:13px;
+  background:#eaf1ff;
+  padding:9px 13px;
+  border-radius:99px
+}
+
+.hero h1{
+  font-size:54px;
+  line-height:1.05;
+  letter-spacing:-2px;
+  margin:20px 0 18px
+}
+
+.hero p{
+  font-size:18px;
+  line-height:1.7;
+  color:var(--muted);
+  max-width:600px
+}
+
+.hero-buttons{
+  display:flex;
+  gap:12px;
+  margin-top:28px
+}
+
+.mock{
+  background:#fff;
+  border:1px solid #e4ebf6;
+  border-radius:26px;
+  padding:18px;
+  box-shadow:0 30px 70px #183b7d1c
+}
+
+.mocktop{
+  background:var(--blue);
+  color:#fff;
+  border-radius:19px;
+  padding:25px
+}
+
+.balance{
+  font-size:30px;
+  font-weight:900;
+  margin:8px 0 24px
+}
+
+.quick{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:10px
+}
+
+.q{
+  background:#fff;
+  color:var(--ink);
+  border-radius:13px;
+  padding:12px;
+  text-align:center;
+  font-size:11px;
+  font-weight:800
+}
+
+.q i{
+  display:block;
+  font-style:normal;
+  font-size:20px;
+  margin-bottom:6px
+}
+
+.strip{
+  background:#f6f9ff;
+  padding:20px 0
+}
+
+.brands{
+  display:flex;
+  justify-content:space-around;
+  flex-wrap:wrap;
+  gap:20px;
+  color:#71809b;
+  font-weight:900
+}
+
+.section{
+  padding:90px 0
+}
+
+.center{
+  text-align:center
+}
+
+.center h2{
+  font-size:38px;
+  margin:10px 0
+}
+
+.center p{
+  color:var(--muted);
+  max-width:680px;
+  margin:auto;
+  line-height:1.7
+}
+
+.cards{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:22px;
+  margin-top:45px
+}
+
+.card{
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:27px;
+  background:#fff
+}
+
+.icon{
+  width:54px;
+  height:54px;
+  border-radius:15px;
+  background:#edf3ff;
+  color:var(--blue);
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  margin-bottom:18px
+}
+
+.card h3{
+  margin:0 0 9px;
+  font-size:19px
+}
+
+.card p{
+  margin:0;
+  color:var(--muted);
+  line-height:1.6;
+  font-size:14px
+}
+
+.dashboard{
+  display:none;
+  min-height:100vh;
+  background:var(--bg)
+}
+
+.dashboard.active{
+  display:block
+}
+
+.homepage.hidden{
+  display:none
+}
+
+.dashnav{
+  background:#fff;
+  border-bottom:1px solid var(--line);
+  padding:15px 0
+}
+
+.dashnav-inner{
+  display:flex;
+  align-items:center;
+  justify-content:space-between
+}
+
+.userbox{
+  display:flex;
+  align-items:center;
+  gap:12px
+}
+
+.avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#eaf1ff;
+  color:var(--blue);
+  display:grid;
+  place-items:center;
+  font-weight:900
+}
+
+.dashbody{
+  padding:30px 0
+}
+
+.wallet-card{
+  position:relative;overflow:hidden;
+  background:linear-gradient(120deg,#071b4d 0%,#0b5cff 62%,#477cff 100%);
+  color:#fff;border:1px solid rgba(255,255,255,.16);
+  border-radius:24px;padding:28px 30px;margin-bottom:25px;
+  box-shadow:0 16px 34px rgba(11,92,255,.18);
+}
+.wallet-card:after{
+  content:"";position:absolute;width:220px;height:220px;border-radius:50%;
+  right:-55px;top:-100px;background:rgba(255,255,255,.08);pointer-events:none;
+}
+.wallet-card-top{display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;z-index:1}
+.wallet-card-label{display:flex;align-items:center;gap:10px;font-size:12px;font-weight:800;letter-spacing:1.1px;opacity:.92}
+.wallet-card-icon{width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:rgba(255,255,255,.15);font-size:21px}
+.wallet-card-caption{margin:13px 0 0;color:rgba(255,255,255,.78);font-size:13px;position:relative;z-index:1}
+.wallet-balance{font-size:clamp(30px,4vw,42px);line-height:1.15;letter-spacing:-.8px;font-weight:900;margin:10px 0 22px;position:relative;z-index:1}
+.wallet-card .fund-wallet-btn{background:#fff;color:#0b4fd4;border:1px solid #fff;border-radius:12px;padding:12px 18px;font-weight:900;box-shadow:0 6px 15px rgba(0,0,0,.12);position:relative;z-index:1}
+.wallet-card .fund-wallet-btn:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(0,0,0,.16)}
+@media(max-width:600px){.wallet-card{padding:23px 20px;border-radius:20px}.wallet-balance{margin-bottom:19px}}
+
+.service-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:15px
+}
+
+.service{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:17px;
+  padding:20px;
+  text-align:center;
+  font-weight:800
+}
+
+.service span{
+  display:block;
+  font-size:28px;
+  margin-bottom:8px
+}
+
+.txbox{
+  margin-top:25px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:22px
+}
+
+.tx{
+  display:flex;
+  justify-content:space-between;
+  padding:14px 0;
+  border-bottom:1px solid var(--line);
+  font-size:14px
+}
+
+.tx:last-child{
+  border:0
+}
+
+.credit{
+  color:var(--green)
+}
+
+.debit{
+  color:var(--red)
+}
+
+/* PROFILE */
+
+.profile-section{
+  margin-top:25px;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:25px
+}
+
+.profile-header{
+  display:flex;
+  align-items:center;
+  gap:15px;
+  margin-bottom:25px
+}
+
+.profile-avatar{
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background:#eaf1ff;
+  color:var(--blue);
+  display:grid;
+  place-items:center;
+  font-size:25px;
+  font-weight:900
+}
+
+.profile-header h2{
+  margin:0 0 4px
+}
+
+.profile-header p{
+  margin:0;
+  color:var(--muted);
+  font-size:14px
+}
+
+.profile-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:18px
+}
+
+.profile-item{
+  border:1px solid var(--line);
+  border-radius:13px;
+  padding:16px
+}
+
+.profile-item label{
+  display:block;
+  color:var(--muted);
+  font-size:12px;
+  font-weight:800;
+  margin-bottom:6px
+}
+
+.profile-item strong{
+  font-size:15px;
+  word-break:break-word
+}
+
+.profile-actions{
+  margin-top:22px;
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px
+}
+
+.profile-message{
+  display:none;
+  padding:11px;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:13px
+}
+
+.profile-message.show{
+  display:block
+}
+
+.profile-message.success{
+  background:#dcfce7;
+  color:#166534
+}
+
+.profile-message.error{
+  background:#fee2e2;
+  color:#991b1b
+}
+
+.settings-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:15px;
+  margin-top:25px
+}
+
+.setting-card{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:17px;
+  padding:20px
+}
+
+.setting-card .setting-icon{
+  font-size:25px;
+  margin-bottom:10px
+}
+
+.setting-card h3{
+  margin:0 0 7px;
+  font-size:16px
+}
+
+.setting-card p{
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
+  margin:0 0 15px
+}
+
+
+/* Professional wallet funding modal */
+.fund-modal-box{max-width:470px;padding:0;overflow:hidden;border:1px solid rgba(148,163,184,.22);box-shadow:0 28px 80px rgba(3,18,55,.28)}
+.fund-modal-hero{padding:25px 26px 22px;background:linear-gradient(135deg,#071b4d,#0b5cff);color:#fff;position:relative;overflow:hidden}
+.fund-modal-hero:after{content:"";position:absolute;width:170px;height:170px;right:-48px;top:-75px;border-radius:50%;background:rgba(255,255,255,.09)}
+.fund-modal-hero .modal-head{position:relative;z-index:1;margin:0 0 9px;align-items:flex-start}
+.fund-modal-hero .modal-head h2{font-size:21px;color:#fff}
+.fund-modal-hero .close{background:rgba(255,255,255,.15);color:#fff;font-size:22px}
+.fund-modal-hero p{position:relative;z-index:1;margin:0;color:rgba(255,255,255,.82);font-size:13px;line-height:1.55}
+.fund-modal-content{padding:22px 26px 26px}
+.fund-modal-status{display:inline-flex;align-items:center;gap:7px;background:#eff6ff;color:#1746a2;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;margin-bottom:16px}
+.fund-modal-status:before{content:"";width:7px;height:7px;border-radius:50%;background:#16a34a}
+.fund-detail{padding:13px 14px;border:1px solid #e2e8f0;border-radius:13px;margin-bottom:10px;background:#f8fafc}
+.fund-detail label{display:block;color:#64748b;font-size:10px;letter-spacing:.8px;font-weight:800;margin-bottom:6px}
+.fund-detail strong{display:block;color:#0f172a;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.fund-detail.account-number{background:#f0f5ff;border-color:#cbdcff}
+.fund-detail.account-number strong{font-size:22px;letter-spacing:.6px;color:#123b91}
+.fund-modal-note{display:flex;gap:10px;align-items:flex-start;color:#64748b;font-size:12px;line-height:1.55;margin:15px 0 18px}
+.fund-modal-note span{font-size:17px;line-height:1.2}
+.fund-modal-actions{display:flex;gap:10px}
+.fund-modal-actions .btn{flex:1;min-height:45px}
+@media(max-width:480px){.fund-modal-box{border-radius:19px}.fund-modal-hero{padding:22px 20px 19px}.fund-modal-content{padding:19px 20px 22px}.fund-detail.account-number strong{font-size:20px}}
+
+/* MODAL */
+
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:#071b4db5;
+  z-index:1000;
+  align-items:center;
+  justify-content:center;
+  padding:20px
+}
+
+.modal.show{
+  display:flex
+}
+
+.modal-box{
+  width:100%;
+  max-width:430px;
+  max-height:90vh;
+  overflow:auto;
+  background:#fff;
+  border-radius:22px;
+  padding:30px
+}
+
+.modal-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:20px
+}
+
+.modal-head h2{
+  margin:0
+}
+
+.close{
+  border:0;
+  background:#f1f5f9;
+  width:36px;
+  height:36px;
+  border-radius:50%
+}
+
+.field{
+  margin-bottom:15px
+}
+
+.field label{
+  display:block;
+  font-size:13px;
+  font-weight:800;
+  margin-bottom:7px
+}
+
+.field input{
+  width:100%;
+  padding:13px;
+  border:1px solid var(--line);
+  border-radius:9px;
+  outline:none
+}
+
+.field input:focus{
+  border-color:var(--blue)
+}
+
+.full{
+  width:100%
+}
+
+.message{
+  display:none;
+  padding:11px;
+  border-radius:8px;
+  margin-bottom:15px;
+  font-size:13px
+}
+
+.message.show{
+  display:block
+}
+
+.message.error{
+  background:#fee2e2;
+  color:#991b1b
+}
+
+.message.success{
+  background:#dcfce7;
+  color:#166534
+}
+
+/* API */
+
+.api{
+  background:var(--deep);
+  color:#fff;
+  border-radius:28px;
+  padding:60px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:50px;
+  align-items:center
+}
+
+.api p{
+  color:#c8d4ee;
+  line-height:1.7
+}
+
+.code{
+  background:#0c285f;
+  border:1px solid #27447c;
+  border-radius:17px;
+  padding:24px;
+  color:#b9d2ff;
+  font-family:ui-monospace,monospace;
+  font-size:13px;
+  line-height:1.8
+}
+
+.faq{
+  max-width:850px;
+  margin:40px auto
+}
+
+.faq details{
+  border-bottom:1px solid var(--line);
+  padding:20px 0
+}
+
+.faq summary{
+  font-weight:800;
+  cursor:pointer
+}
+
+.download{
+  background:linear-gradient(135deg,#edf4ff,#fff);
+  border-radius:28px;
+  padding:55px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  align-items:center;
+  gap:35px
+}
+
+.download h2{
+  font-size:38px
+}
+
+.store{
+  display:inline-block;
+  margin:8px 8px 0 0;
+  padding:13px 18px;
+  background:#111;
+  color:#fff;
+  border-radius:10px;
+  font-weight:800
+}
+
+.footer{
+  background:#06183f;
+  color:#d6e0f4;
+  padding:65px 0 25px
+}
+
+.footgrid{
+  display:grid;
+  grid-template-columns:1.5fr 1fr 1fr 1fr;
+  gap:40px
+}
+
+.footer h4{
+  color:#fff
+}
+
+.footer a,
+.footer p{
+  color:#9eb0cf;
+  font-size:14px;
+  line-height:1.8;
+  display:block
+}
+
+.copy{
+  border-top:1px solid #17315d;
+  margin-top:35px;
+  padding-top:20px;
+  color:#8194b5;
+  font-size:13px
+}
+
+@media(max-width:800px){
+
+.links{
+  display:none
+}
+
+.hero{
+  padding:50px 0
+}
+
+.hero-grid,
+.api,
+.download{
+  grid-template-columns:1fr
+}
+
+.hero h1{
+  font-size:42px
+}
+
+.cards{
+  grid-template-columns:1fr
+}
+
+.api,
+.download{
+  padding:30px
+}
+
+.footgrid{
+  grid-template-columns:1fr 1fr
+}
+
+.service-grid{
+  grid-template-columns:repeat(2,1fr)
+}
+
+.profile-grid{
+  grid-template-columns:1fr
+}
+
+.settings-grid{
+  grid-template-columns:1fr
+}
+
+}
+
+@media(max-width:480px){
+
+.wrap{
+  padding:0 16px
+}
+
+.hero h1{
+  font-size:36px
+}
+
+.hero p{
+  font-size:16px
+}
+
+.hero-buttons{
+  flex-direction:column
+}
+
+.section{
+  padding:60px 0
+}
+
+.center h2,
+.download h2{
+  font-size:30px
+}
+
+.quick{
+  grid-template-columns:repeat(2,1fr)
+}
+
+.footgrid{
+  grid-template-columns:1fr
+}
+
+.userbox > div:nth-child(2){
+  display:none
+}
+
+}
+
+/* =====================================================
+   SPARKLE DASHBOARD UPGRADE
+   ===================================================== */
+:root{
+  --panel:#ffffff;
+  --soft:#f1f5ff;
+  --shadow:0 12px 35px rgba(15,35,80,.08);
+}
+body.dark-mode{
+  --bg:#07111f;
+  --panel:#0e1b2d;
+  --white:#0e1b2d;
+  --ink:#eef4ff;
+  --muted:#9fb0c8;
+  --line:#213149;
+  background:#07111f;
+  color:#eef4ff;
+}
+body.dark-mode .dashnav,
+body.dark-mode .service,
+body.dark-mode .txbox,
+body.dark-mode .profile-section,
+body.dark-mode .setting-card,
+body.dark-mode .market-card,
+body.dark-mode .earn-card,
+body.dark-mode .dva-card,
+body.dark-mode .service-page,
+body.dark-mode .summary-card,
+body.dark-mode .receipt-card{
+  background:#0e1b2d;
+  border-color:#213149;
+  color:#eef4ff;
+}
+body.dark-mode .btn:not(.primary),
+body.dark-mode .icon-btn,
+body.dark-mode .nav-item{
+  background:#122238;
+  color:#eef4ff;
+  border-color:#243852;
+}
+body.dark-mode .field input,
+body.dark-mode .field select,
+body.dark-mode .bulk-row input,
+body.dark-mode .bulk-row select{
+  background:#0b1727;
+  color:#eef4ff;
+  border-color:#2a405d;
+}
+.dashboard-shell{display:flex;min-height:100vh}
+.dash-sidebar{
+  width:235px;position:fixed;left:0;top:0;bottom:0;background:#fff;
+  border-right:1px solid var(--line);padding:22px 14px;z-index:900;
+}
+.sidebar-brand{padding:0 10px 25px}
+.sidebar-nav{display:flex;flex-direction:column;gap:6px}
+.nav-item{
+  border:0;background:#fff;border-radius:12px;padding:12px 13px;text-align:left;
+  font-weight:800;color:#475569;display:flex;align-items:center;gap:11px
+}
+.nav-item:hover,.nav-item.active{background:#edf3ff;color:var(--blue)}
+.nav-item .nav-icon{width:22px;text-align:center;font-size:18px}
+.sidebar-bottom{position:absolute;left:14px;right:14px;bottom:18px}
+.dash-main{margin-left:235px;width:calc(100% - 235px)}
+.dashnav{position:sticky;top:0;z-index:800}
+.dash-actions{display:flex;align-items:center;gap:8px}
+.dash-actions .userbox{display:none!important}
+.icon-btn{
+  width:40px;height:40px;border:1px solid var(--line);background:#fff;border-radius:11px;
+  display:grid;place-items:center;font-size:18px;position:relative
+}
+.notification-dot{position:absolute;right:8px;top:7px;width:7px;height:7px;border-radius:50%;background:#ef4444}
+.page{display:none}
+.page.active{display:block}
+.dashboard-title{font-size:28px;margin:0 0 6px}
+.dashboard-subtitle{color:var(--muted);margin:0 0 22px}
+.service-grid .service{cursor:pointer;transition:.2s}
+.service-grid .service:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.service span{font-size:23px!important;margin-bottom:7px!important}
+.service small{display:block;color:var(--muted);font-weight:600;margin-top:4px}
+.dva-card{
+  margin:0 0 25px;background:#fff;border:1px solid var(--line);border-radius:20px;
+  padding:22px;box-shadow:var(--shadow)
+}
+.dva-head{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.dva-title{margin:0 0 5px}.dva-sub{margin:0;color:var(--muted);font-size:13px}
+.dva-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px}
+.dva-item{background:#f7faff;border:1px solid var(--line);border-radius:12px;padding:13px}
+body.dark-mode .dva-item{background:#0b1727}
+.dva-item label{display:block;color:var(--muted);font-size:11px;font-weight:800;margin-bottom:6px}
+.dva-item strong{font-size:15px;word-break:break-word}
+.copy-account{margin-top:12px}
+.market-card,.earn-card{
+  background:#fff;border:1px solid var(--line);border-radius:22px;padding:40px;
+  box-shadow:var(--shadow);text-align:center
+}
+.market-icon{font-size:52px;margin-bottom:12px}
+.earn-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:18px}
+.earn-stat{background:#f7faff;border:1px solid var(--line);border-radius:15px;padding:20px;text-align:left}
+body.dark-mode .earn-stat{background:#0b1727}
+.earn-stat small{display:block;color:var(--muted);font-weight:800;margin-bottom:7px}
+.earn-stat strong{font-size:26px}
+.referral-box{display:flex;gap:10px;margin-top:18px}
+.referral-box input{flex:1;padding:13px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+.service-page{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px}
+.service-tabs{display:flex;gap:8px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:12px}
+.service-tab{border:0;background:#f1f5f9;border-radius:9px;padding:10px 15px;font-weight:800}
+.service-tab.active{background:var(--blue);color:#fff}
+.service-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+.form-select,.form-input{
+ width:100%;padding:13px;border:1px solid var(--line);border-radius:10px;background:#fff;color:inherit;outline:none
+}
+.form-field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}
+.form-field{margin-bottom:15px}
+.summary-card{display:none;margin-top:20px;border:1px solid var(--line);border-radius:17px;padding:20px;background:#fff}
+#dataSummary,#airtimeSummary,#cableSummary{display:none!important}
+.summary-card.show{display:block}
+.summary-line{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid var(--line)}
+.summary-line:last-child{border-bottom:0;font-weight:900;font-size:18px}
+.bulk-list{display:flex;flex-direction:column;gap:10px}
+.bulk-row{display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px}
+.bulk-remove{border:0;background:#fee2e2;color:#991b1b;border-radius:9px;width:42px}
+.bulk-add{margin-top:10px}
+.bulk-total{margin-top:18px;font-weight:900}
+.pin-modal .modal-box{max-width:390px;text-align:center}
+.pin-boxes{display:flex;justify-content:center;gap:9px;margin:22px 0}
+.pin-box{width:48px;height:56px;border:1px solid var(--line);border-radius:12px;text-align:center;font-size:23px;font-weight:900}
+.processing-overlay{display:none;position:fixed;inset:0;background:rgba(5,16,35,.88);z-index:3000;align-items:center;justify-content:center;color:#fff;text-align:center}
+.processing-overlay.show{display:flex}
+.sparkle-spinner{
+ width:82px;height:82px;border-radius:50%;background:linear-gradient(135deg,#0b5cff,#6fa0ff);
+ display:grid;place-items:center;font-weight:900;font-size:34px;margin:0 auto 18px;
+ animation:sparkleRoll 1s linear infinite;box-shadow:0 0 0 8px rgba(11,92,255,.16)
+}
+@keyframes sparkleRoll{to{transform:rotate(360deg)}}
+.receipt-modal .modal-box{max-width:560px}
+.receipt-card{position:relative;overflow:hidden;background:#fff;border:1px solid #e5ebf4;border-radius:18px;padding:25px}
+.receipt-card:after{
+ content:"SPARKLE";position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-25deg);
+ font-size:68px;font-weight:900;letter-spacing:8px;color:#0b5cff0d;pointer-events:none;white-space:nowrap
+}
+.receipt-content{position:relative;z-index:1}
+.receipt-brand{text-align:center;color:var(--blue);font-size:25px;font-weight:900}
+.receipt-status{text-align:center;margin:8px 0 20px;color:#10b981;font-weight:900}
+.receipt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed #dbe4f1;font-size:14px}
+.receipt-actions{display:flex;justify-content:space-between;margin-top:15px}
+.mobile-bottom-nav{display:none}
+@media(max-width:900px){
+ .dash-sidebar{display:none}.dash-main{margin-left:0;width:100%;padding-bottom:74px}
+ .mobile-bottom-nav{display:flex;position:fixed;bottom:0;left:0;right:0;height:66px;background:#fff;border-top:1px solid var(--line);z-index:1200;justify-content:space-around;padding:6px}
+ .mobile-bottom-nav button{border:0;background:none;font-size:10px;font-weight:800;color:#64748b}
+ .mobile-bottom-nav button span{display:block;font-size:19px;margin-bottom:2px}
+ .dva-grid,.earn-grid,.service-form-grid{grid-template-columns:1fr}
+ .bulk-row{grid-template-columns:1fr 1fr}
+ .bulk-remove{width:100%;height:42px}
+ .dva-head{flex-direction:column}
+}
+
+
+/* =====================================================
+   SPARKLE FINTECH DATA / AIRTIME UI
+   Compact, mobile-first and GSUBZ driven.
+   ===================================================== */
+.data-page-shell,.service-page{background:#f7f8fb;border-radius:20px;padding:0;overflow:hidden}
+.network-picker-title{font-size:28px;line-height:1.2;font-weight:950;color:#111827;margin:4px 0 12px}
+.network-picker-subtitle{font-size:12px;color:#667085;margin:0 0 14px;font-weight:650}
+.network-picker{display:flex;flex-wrap:nowrap;gap:10px;margin-bottom:18px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none}.network-picker::-webkit-scrollbar{display:none}
+.network-card{position:relative;flex:1 0 0;min-width:78px;border:2px solid #e1e6ee;background:#fff;border-radius:16px;min-height:92px;padding:9px 6px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;color:#374151;font-size:12px;font-weight:900;transition:.18s;box-shadow:0 2px 8px rgba(15,23,42,.025)}
+.network-card:hover{transform:translateY(-1px);border-color:#cbd5e1}
+.network-card.active{border-color:#0b5cff;box-shadow:0 0 0 3px rgba(11,92,255,.10)}
+.network-card-logo{width:42px;height:42px;border-radius:50%;display:grid;place-items:center;font-size:14px;font-weight:950;text-transform:lowercase;color:#fff}
+.network-card-logo.mtn{background:#ffd400;color:#111827}
+.network-card-logo.airtel{background:#e60012}
+.network-card-logo.glo{background:#18a900}
+.network-card-logo.nine{background:#00a651}
+.network-card-check{position:absolute;right:6px;top:6px;width:18px;height:18px;border-radius:50%;background:#0b5cff;color:#fff;display:none;place-items:center;font-size:12px;font-weight:950}
+.network-card.active .network-card-check{display:grid}
+.data-network-hidden{display:none}
+.data-phone-section{margin-top:4px;width:100%}
+@media(max-width:700px){
+  .network-picker{gap:8px;overflow-x:auto}
+  .network-card{flex:0 0 78px;min-width:78px;min-height:88px;border-radius:15px}
+  .network-card-logo{width:40px;height:40px;font-size:13px}
+  .network-picker-title{font-size:27px}
+  .network-picker-subtitle{font-size:12px}
+  .data-phone-row{gap:9px}
+}
+.data-topbar{display:flex;align-items:center;gap:12px;padding:12px 2px 14px}
+.data-back{width:38px;height:38px;border:1px solid #e7eaf0;border-radius:50%;background:#fff;display:grid;place-items:center;font-size:23px;color:#111827}
+.data-topbar h1{font-size:22px;margin:0;font-weight:900;color:#111827}
+.data-purchase-tabs{display:grid;grid-template-columns:1fr 1fr;background:#eef0f4;border-radius:16px;padding:3px;margin-bottom:14px}
+.data-purchase-tab{border:0;background:transparent;border-radius:13px;padding:10px 8px;font-weight:800;font-size:13px;color:#5b6472}
+.data-purchase-tab.active{background:#fff;color:#0b5cff;box-shadow:0 1px 5px rgba(15,23,42,.08)}
+.data-beneficiary-card{background:#fff;border:1px solid #e5e9f0;border-radius:16px;padding:14px;margin-bottom:13px;box-shadow:0 3px 12px rgba(15,23,42,.035)}
+.data-phone-row{display:flex;align-items:center;gap:10px}
+.data-network-select-wrap{display:flex;align-items:center;gap:7px;border-right:1px solid #e2e5ea;padding-right:9px}
+.network-badge{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;color:#fff;font-weight:900;font-size:13px;text-transform:lowercase;flex:0 0 auto}
+.network-badge.glo{background:#18a900}.network-badge.mtn{background:#ffd400;color:#111}.network-badge.airtel{background:#e60012}.network-badge.nine{background:#00a651}.network-badge.neutral{background:#d9dee7;color:#667085}
+.data-network-select{display:none}
+.data-phone-input{border:0;outline:0;font-size:16px;font-weight:800;min-width:0;width:100%;background:transparent;color:#111827;height:42px}
+.data-phone-input::placeholder{color:#9ca3af;font-weight:600}.phone-field-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;color:#344054;font-size:12px;font-weight:850}.phone-field-head small{font-size:10px;color:#98a2b3;font-weight:700}.phone-prefix{font-size:13px;font-weight:850;color:#344054;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:9px 8px;flex:0 0 auto}
+.contact-btn{width:38px;height:38px;border:1px solid #e3e7ee;background:#f8fafc;border-radius:11px;font-size:17px;color:#667085;display:grid;place-items:center;flex:0 0 auto}
+.data-divider{height:1px;background:#edf0f3;margin-top:12px}
+.beneficiary-actions{display:flex;align-items:center;justify-content:space-between;padding-top:11px}
+.save-beneficiary{display:flex;align-items:center;gap:9px;font-weight:750;font-size:13px;color:#505967}
+.save-toggle{width:45px;height:27px;border:0;border-radius:20px;background:#e5e7eb;padding:2px;position:relative}
+.save-toggle span{display:block;width:23px;height:23px;border-radius:50%;background:#fff;box-shadow:0 1px 3px #0002;transition:.2s}
+.save-toggle.on{background:#0b5cff}.save-toggle.on span{transform:translateX(18px)}
+.beneficiary-link{border:0;background:transparent;color:#0b5cff;font-weight:800;font-size:13px}
+.data-service-row{display:flex;align-items:center;gap:8px;margin:0 0 12px}
+.data-service-label{font-size:12px;font-weight:800;color:#667085;white-space:nowrap}
+.data-service-select{width:100%;border:1px solid #e0e5ec;background:#fff;border-radius:11px;padding:9px 11px;font-weight:800;color:#1f2937;outline:none}
+.data-categories{display:flex;gap:7px;overflow:auto;padding:1px 0 10px;margin-bottom:2px;scrollbar-width:none}
+.data-categories::-webkit-scrollbar{display:none}
+.data-category{border:1px solid #dfe3e9;background:#fff;border-radius:20px;padding:8px 15px;white-space:nowrap;font-size:12px;font-weight:800;color:#566071}
+.data-category.active{background:#111827;color:#fff;border-color:#111827}
+.data-plan-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.education-service-grid,.electricity-service-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:18px 0}.education-service-card,.electricity-service-card{border:1px solid #e3e6ec;background:#fff;border-radius:16px;padding:15px;text-align:left;cursor:pointer;transition:.16s;box-shadow:0 2px 8px rgba(15,23,42,.035)}.education-service-card:hover,.electricity-service-card:hover{transform:translateY(-1px)}.education-service-card.active,.electricity-service-card.active{border-color:#0b5cff;box-shadow:0 0 0 2px rgba(11,92,255,.10)}.education-service-card h3,.electricity-service-card h3{margin:0 0 5px;font-size:14px;color:#111827}.education-service-card p,.electricity-service-card p{margin:0;color:#667085;font-size:12px;font-weight:650}.education-price{margin-top:12px;font-size:20px;font-weight:950;color:#0b5cff}.education-loading{padding:18px;text-align:center;background:#fff;border:1px solid #e7eaf0;border-radius:14px;color:#667085}.electricity-note{font-size:12px;color:#667085;margin-top:8px}.service-page .section-title{font-size:20px;font-weight:950;color:#111827;margin:18px 0 8px}.electricity-amount{font-size:20px!important;font-weight:900!important}.service-page .data-plan-card:focus,.education-service-card:focus,.electricity-service-card:focus{outline:3px solid rgba(11,92,255,.12);outline-offset:1px}@media(max-width:700px){.education-service-grid,.electricity-service-grid{grid-template-columns:1fr}.education-service-card,.electricity-service-card{padding:14px}.data-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.data-plan-card{border:1px solid #e3e6ec;background:#fff;border-radius:14px;padding:14px 10px 11px;text-align:left;min-height:132px;display:flex;flex-direction:column;cursor:pointer;box-shadow:0 2px 8px rgba(15,23,42,.035);transition:.15s}
+.data-plan-card:hover{transform:translateY(-1px)}
+.data-plan-card.selected{border-color:#0b5cff;box-shadow:0 0 0 2px rgba(11,92,255,.12)}
+.data-plan-size{font-size:18px;font-weight:900;color:#111827;line-height:1.15}
+.data-plan-validity{font-size:11px;color:#667085;margin-top:4px}
+.data-plan-price{font-size:15px;font-weight:900;color:#0b5cff;margin-top:auto;padding-top:9px}
+.data-plan-buy{margin-top:8px;border:0;border-radius:8px;background:#0b5cff;color:#fff;font-size:11px;font-weight:850;padding:7px 8px;cursor:pointer}
+.data-plan-buy:active{transform:scale(.98)}
+.data-plan-service{font-size:10px;color:#7b8492;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.data-loading{grid-column:1/-1;padding:28px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
+.data-loading::before{display:none}
+.sparkle-plan-loader{grid-column:1/-1;min-height:150px;padding:28px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#fff;border:1px solid #e7eaf0;border-radius:14px;color:#667085;font-size:13px}
+.sparkle-loader-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#0b5cff,#1648b8);color:#fff;font-size:23px;font-weight:950;box-shadow:0 8px 22px rgba(11,92,255,.18);animation:sparkleLogoPulse 1.35s ease-in-out infinite}
+.sparkle-loader-text{margin-top:10px;font-weight:800;color:#475467}
+@keyframes sparkleLogoPulse{0%,100%{transform:rotate(-4deg) scale(1);opacity:.92}50%{transform:rotate(4deg) scale(1.06);opacity:1}}
+@keyframes dataSpin{to{transform:rotate(360deg)}}
+.data-empty{grid-column:1/-1;padding:25px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}.data-empty-title{display:block;font-size:24px;line-height:1.25;color:#111827;font-weight:950;margin-bottom:7px}.data-empty-sub{display:block;color:#667085;font-size:13px;font-weight:650}
+.data-bottom-action{position:sticky;bottom:0;background:linear-gradient(transparent,#f7f8fb 14%);padding:12px 0 2px;margin-top:5px}
+.data-bottom-action .btn{border-radius:11px}
+.gsubz-error{grid-column:1/-1;background:#fff4f4;color:#a40000;border:1px solid #ffd6d6;padding:11px;border-radius:11px;margin:7px 0;font-size:12px}
+.gsubz-customer{background:#effcf5;border:1px solid #bcebd1;color:#166534;border-radius:11px;padding:11px;margin:10px 0;font-size:12px}
+@media(max-width:700px){
+ .data-page-shell,.service-page{margin:0 -2px;border-radius:16px}
+ .data-phone-row{grid-template-columns:105px 1fr 27px}
+ .data-network-select-wrap{gap:5px;padding-right:7px}
+ .network-badge{width:35px;height:35px;font-size:12px}
+ .data-network-select{width:58px;font-size:11px}
+ .data-plan-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+ .data-plan-card{min-height:128px;padding:12px 9px 10px}
+ .data-plan-size{font-size:17px}
+ .data-plan-price{font-size:14px}
+}
+
+</style>
+
+<style id="sparkle-support-widget-styles">
+#sparkle-support-widget{position:fixed;right:24px;bottom:92px;z-index:99999;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#071b4d}
+#sparkle-support-toggle{width:76px;height:76px;border:0;border-radius:50%;background:linear-gradient(145deg,#1764df,#0842a5);color:#fff;display:grid;place-items:center;box-shadow:0 12px 30px rgba(10,66,165,.28);cursor:pointer;transition:transform .18s,box-shadow .18s}
+#sparkle-support-toggle:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(10,66,165,.34)}
+#sparkle-support-toggle svg{width:38px;height:38px}
+#sparkle-support-panel{position:absolute;right:0;bottom:96px;width:min(710px,calc(100vw - 32px));padding:28px 30px 30px;background:rgba(255,255,255,.98);border:1px solid #e1eaf7;border-radius:25px;box-shadow:0 18px 55px rgba(17,50,100,.16);display:none;transform-origin:bottom right;animation:sparkleSupportIn .18s ease-out}
+#sparkle-support-panel.is-open{display:block}
+@keyframes sparkleSupportIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.sparkle-support-head{display:flex;align-items:flex-start;gap:22px;padding:8px 32px 26px 4px;position:relative}
+.sparkle-support-head-icon{width:88px;height:88px;flex:0 0 88px;border-radius:50%;background:#edf5ff;color:#1453b4;display:grid;place-items:center}
+.sparkle-support-head-icon svg{width:48px;height:48px}
+.sparkle-support-title{font-size:30px;font-weight:850;letter-spacing:-.5px;margin:4px 0 8px;color:#071b4d}
+.sparkle-support-subtitle{font-size:18px;line-height:1.6;color:#61738f;margin:0}
+#sparkle-support-close{position:absolute;right:0;top:0;border:0;background:transparent;color:#64748b;font-size:32px;line-height:1;padding:0 0 8px 8px;cursor:pointer}
+.sparkle-support-option{width:100%;min-height:104px;display:flex;align-items:center;gap:24px;text-align:left;padding:17px 24px;margin-top:14px;border:1px solid transparent;border-radius:20px;cursor:pointer;color:#071b4d;transition:transform .15s,filter .15s}
+.sparkle-support-option:hover{transform:translateY(-1px);filter:saturate(1.05)}
+.sparkle-support-option.whatsapp-chat{background:linear-gradient(105deg,#effbf6,#f4fcf9)}
+.sparkle-support-option.whatsapp-channel{background:linear-gradient(105deg,#eef6ff,#f4f8ff)}
+.sparkle-support-option.email-option{background:linear-gradient(105deg,#f4f2ff,#f8f7ff)}
+.sparkle-support-option-icon{width:64px;height:64px;flex:0 0 64px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#17c66a}
+.sparkle-support-option-icon svg{width:37px;height:37px}
+.email-option .sparkle-support-option-icon{background:#1768ed}
+.sparkle-support-option-copy{min-width:0;flex:1}
+.sparkle-support-option-title{font-size:21px;font-weight:850;margin:0 0 7px;display:block}
+.sparkle-support-option-desc{font-size:16px;color:#617a9b;line-height:1.35;display:block}
+.sparkle-support-arrow{font-size:29px;color:#637895;margin-left:8px}
+@media(max-width:600px){
+ #sparkle-support-widget{right:16px;bottom:88px}
+ #sparkle-support-toggle{width:62px;height:62px}
+ #sparkle-support-toggle svg{width:32px;height:32px}
+ #sparkle-support-panel{right:-4px;bottom:78px;width:calc(100vw - 24px);padding:18px 16px 18px;border-radius:20px;max-height:calc(100dvh - 110px);overflow:auto}
+ .sparkle-support-head{gap:13px;padding:4px 25px 14px 0}
+ .sparkle-support-head-icon{width:56px;height:56px;flex-basis:56px}
+ .sparkle-support-head-icon svg{width:34px;height:34px}
+ .sparkle-support-title{font-size:22px;margin:1px 0 5px}
+ .sparkle-support-subtitle{font-size:13px;line-height:1.45}
+ .sparkle-support-option{min-height:76px;gap:13px;padding:12px;margin-top:10px;border-radius:15px}
+ .sparkle-support-option-icon{width:46px;height:46px;flex-basis:46px}
+ .sparkle-support-option-icon svg{width:28px;height:28px}
+ .sparkle-support-option-title{font-size:15px;margin-bottom:4px}
+ .sparkle-support-option-desc{font-size:12px}
+ .sparkle-support-arrow{font-size:22px;margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){#sparkle-support-panel{animation:none}#sparkle-support-toggle,.sparkle-support-option{transition:none}}
+</style>
+
+<style id="sparkle-purchase-summary-screen-styles">
+#sparkle-purchase-summary-screen{position:fixed;inset:0;z-index:100000;background:#f5f7fb;display:none;overflow-y:auto;padding:env(safe-area-inset-top,12px) 16px env(safe-area-inset-bottom,20px)}
+/* Keep the transaction PIN dialog above the dedicated purchase-summary screen. */
+#pinModal{z-index:100002}
+#sparkle-purchase-summary-screen.is-open{display:block}
+#sparkle-continue-roll{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(255,255,255,.97);color:#0b5cff}
+#sparkle-continue-roll.is-visible{display:flex}
+#sparkle-continue-roll .sparkle-roll-mark{width:62px;height:62px;border-radius:18px;display:grid;place-items:center;background:linear-gradient(145deg,#0b5cff,#1648b8);color:#fff;font-size:30px;font-weight:950;box-shadow:0 10px 28px rgba(11,92,255,.22);animation:sparkleRollOnce .85s cubic-bezier(.2,.75,.25,1) both}
+#sparkle-continue-roll .sparkle-roll-caption{font-size:13px;font-weight:800;color:#475467}
+@keyframes sparkleRollOnce{from{transform:rotate(0deg) scale(.88)}70%{transform:rotate(330deg) scale(1.06)}to{transform:rotate(360deg) scale(1)}}
+@media(prefers-reduced-motion:reduce){#sparkle-continue-roll .sparkle-roll-mark{animation-duration:.01ms}}
+
+.sparkle-summary-page{width:min(520px,100%);margin:0 auto;padding:12px 0 28px;color:#101828;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.sparkle-summary-top{display:flex;align-items:center;gap:12px;margin:6px 0 24px}
+.sparkle-summary-back{border:0;border-radius:12px;width:42px;height:42px;background:#fff;box-shadow:0 2px 8px #1018280d;font-size:25px;color:#344054;cursor:pointer}
+.sparkle-summary-top h2{font-size:21px;margin:0;font-weight:850}
+.sparkle-summary-card{background:#fff;border:1px solid #e7eaf0;border-radius:20px;padding:22px;box-shadow:0 8px 24px rgba(16,24,40,.04)}
+.sparkle-summary-network{display:flex;align-items:center;gap:13px;padding-bottom:20px;border-bottom:1px solid #eaecf0;margin-bottom:8px}
+.sparkle-summary-network .network-card-logo{width:54px;height:54px;min-width:54px;font-size:16px}
+.sparkle-summary-network-name{font-size:17px;font-weight:850}
+.sparkle-summary-network-label{font-size:12px;color:#667085;margin-top:4px}
+.sparkle-summary-card .summary-line{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #f0f1f4;font-size:14px}
+.sparkle-summary-card .summary-line span{color:#667085}
+.sparkle-summary-card .summary-line strong{text-align:right;overflow-wrap:anywhere}
+.sparkle-summary-total{display:flex;justify-content:space-between;align-items:center;margin:20px 0 4px;font-weight:800}
+.sparkle-summary-total strong{font-size:23px;color:#0b5cff}
+.sparkle-summary-confirm{margin-top:20px}
+@media(max-width:600px){#sparkle-support-widget{bottom:88px}.sparkle-summary-card{padding:18px}.sparkle-summary-page{padding-top:6px}}
+</style>
+
+</head>
+
+<body>
+
+<!-- ================= LANDING PAGE ================= -->
+
+<div class="homepage" id="homepage">
+
+<header class="nav wrap">
+
+<a class="brand" href="#">
+<span class="logo">S</span> Sparkle
+</a>
+
+<nav class="links">
+<a href="#services">Services</a>
+<a href="#api">API</a>
+<a href="#faq">FAQ</a>
+<a href="#download">App</a>
+</nav>
+
+<div class="actions">
+<button class="btn" onclick="openAuth('login')">Log In</button>
+<button class="btn primary" onclick="openAuth('signup')">Sign Up</button>
+</div>
+
+</header>
+
+
+<section class="hero">
+
+<div class="wrap hero-grid">
+
+<div>
+
+<span class="eyebrow">✦ Simple. Fast. Reliable.</span>
+
+<h1>Pay your bills faster, easier and smarter.</h1>
+
+<p>
+Buy affordable data, airtime and pay utility bills instantly.
+Sparkle brings everyday Nigerian bill payments together in one simple platform.
+</p>
+
+<div class="hero-buttons">
+
+<button class="btn primary"
+onclick="openAuth('signup')">
+Get Started
+</button>
+
+<a class="btn" href="#services">
+Explore Services
+</a>
+
+</div>
+
+</div>
+
+
+<div class="mock">
+
+<div class="mocktop">
+
+<small>SPARKLE WALLET</small>
+
+<div class="balance">₦0.00</div>
+
+<div class="quick">
+
+<div class="q">
+<i>📱</i>Airtime
+</div>
+
+<div class="q">
+<i>🌐</i>Data
+</div>
+
+<div class="q">
+<i>📺</i>Cable
+</div>
+
+<div class="q">
+<i>⚡</i>Electricity
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<div class="strip">
+
+<div class="wrap brands">
+
+<span>MTN</span>
+<span>AIRTEL</span>
+<span>GLO</span>
+<span>9MOBILE</span>
+<span>DSTV</span>
+<span>GOTV</span>
+<span>STARTIMES</span>
+
+</div>
+
+</div>
+
+
+<section class="section" id="services">
+
+<div class="wrap">
+
+<div class="center">
+
+<h2>Comprehensive Services Tailored for You</h2>
+
+<p>
+Everything you need for instant recharge, subscriptions and everyday utility payments in one place.
+</p>
+
+</div>
+
+
+<div class="cards">
+
+<div class="card">
+<div class="icon">🌐</div>
+<h3>Mobile Data</h3>
+<p>Access affordable data plans across all major networks in Nigeria.</p>
+</div>
+
+<div class="card">
+<div class="icon">🎟️</div>
+<h3>Exam Pins</h3>
+<p>Buy WAEC and NECO examination pins and scratch cards.</p>
+</div>
+
+<div class="card">
+<div class="icon">📺</div>
+<h3>Cable TV</h3>
+<p>Activate DSTV, GOtv and Startimes subscriptions with ease.</p>
+</div>
+
+<div class="card">
+<div class="icon">📱</div>
+<h3>Airtime</h3>
+<p>Recharge any Nigerian network instantly from your wallet.</p>
+</div>
+
+<div class="card">
+<div class="icon">💳</div>
+<h3>Virtual Cards</h3>
+<p>Access convenient virtual cards for online payments.</p>
+</div>
+
+<div class="card">
+<div class="icon">⚡</div>
+<h3>Utility Bills</h3>
+<p>Pay electricity and other supported utility bills.</p>
+</div>
+
+<div class="card">
+<div class="icon">🪪</div>
+<h3>Recharge Pin Printing</h3>
+<p>Buy and print recharge cards for supported networks.</p>
+</div>
+
+<div class="card">
+<div class="icon">👥</div>
+<h3>Referral & Reseller</h3>
+<p>Earn through referrals and reseller activity.</p>
+</div>
+
+<div class="card">
+<div class="icon">🔔</div>
+<h3>Notifications</h3>
+<p>Receive updates for wallet funding and transactions.</p>
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="section" id="api">
+
+<div class="wrap">
+
+<div class="api">
+
+<div>
+
+<h2>Integrate Our API</h2>
+
+<p>
+Build powerful bill-payment products with Sparkle's developer-ready API.
+</p>
+
+<button class="btn primary">
+View Documentation
+</button>
+
+</div>
+
+
+<div class="code">
+
+POST /api/v1/airtime
+
+<br><br>
+
+{
+<br>
+&nbsp;&nbsp;"network": "MTN",
+<br>
+&nbsp;&nbsp;"phone": "080********",
+<br>
+&nbsp;&nbsp;"amount": 500
+<br>
+}
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="section" id="faq">
+
+<div class="wrap">
+
+<div class="center">
+
+<h2>Frequently Asked Questions</h2>
+
+<p>Quick answers about using Sparkle.</p>
+
+</div>
+
+
+<div class="faq">
+
+<details open>
+
+<summary>
+What can I pay for on Sparkle?
+</summary>
+
+<p>
+Airtime, data, cable TV, electricity, exam pins and other supported services.
+</p>
+
+</details>
+
+
+<details>
+
+<summary>
+How do I fund my wallet?
+</summary>
+
+<p>
+Wallet funding will be connected to our verified payment provider.
+</p>
+
+</details>
+
+
+<details>
+
+<summary>
+Can I become a reseller?
+</summary>
+
+<p>
+Yes. Sparkle is designed to support referrals, resellers and API access.
+</p>
+
+</details>
+
+
+<details>
+
+<summary>
+Are my transactions secure?
+</summary>
+
+<p>
+Wallet balances are controlled by the secure backend rather than the browser.
+</p>
+
+</details>
+
+</div>
+
+</div>
+
+</section>
+
+
+<section class="section" id="download">
+
+<div class="wrap">
+
+<div class="download">
+
+<div>
+
+<h2>Download the Sparkle App</h2>
+
+<p>
+Manage your everyday payments from your phone.
+</p>
+
+<a class="store" href="#">Android</a>
+<a class="store" href="#">iOS</a>
+
+</div>
+
+
+<div class="mock">
+
+<div class="mocktop">
+
+<small>SPARKLE</small>
+
+<div class="balance">
+Everything in one place.
+</div>
+
+<div class="quick">
+
+<div class="q">
+<i>📱</i>Airtime
+</div>
+
+<div class="q">
+<i>🌐</i>Data
+</div>
+
+<div class="q">
+<i>📺</i>Cable
+</div>
+
+<div class="q">
+<i>⚡</i>Power
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</section>
+
+
+<footer class="footer">
+
+<div class="wrap">
+
+<div class="footgrid">
+
+<div>
+
+<div class="brand">
+<span class="logo">S</span> Sparkle
+</div>
+
+<p>
+Simple, secure and convenient bill payments.
+</p>
+
+</div>
+
+
+<div>
+
+<h4>Quick Links</h4>
+
+<a href="#services">Services</a>
+<a href="#api">API</a>
+<a href="#faq">FAQ</a>
+
+</div>
+
+
+<div>
+
+<h4>Services</h4>
+
+<a href="#services">Buy Data</a>
+<a href="#services">Buy Airtime</a>
+<a href="#services">Cable TV</a>
+<a href="#services">Electricity</a>
+
+</div>
+
+
+<div>
+
+<h4>Support</h4>
+
+<a href="mailto:support@sparkle.com">
+support@sparkle.com
+</a>
+
+<a href="#"
+onclick="openLegal('terms');return false">
+Terms & Conditions
+</a>
+
+<a href="#"
+onclick="openLegal('privacy');return false">
+Privacy Policy
+</a>
+
+</div>
+
+</div>
+
+
+<div class="copy">
+© 2026 Sparkle. All Rights Reserved.
+</div>
+
+</div>
+
+</footer>
+
+</div>
+
+
+<!-- ================= DASHBOARD ================= -->
+
+<div class="dashboard" id="dashboard">
+
+  <aside class="dash-sidebar">
+    <div class="sidebar-brand">
+      <div class="brand"><span class="logo">S</span> Sparkle</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" onclick="showDashPage('home',this)"><span class="nav-icon">⌂</span>Home</button>
+      <button class="nav-item" onclick="showDashPage('transactionsPage',this)"><span class="nav-icon">↔</span>Transactions</button>
+      <button class="nav-item" onclick="showDashPage('marketPage',this)"><span class="nav-icon">🛍</span>Market</button>
+      <button class="nav-item" onclick="showDashPage('earnPage',this)"><span class="nav-icon">₦</span>Earn</button>
+      <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
+    </nav>
+
+  </aside>
+
+  <div class="dash-main">
+
+    <header class="dashnav">
+      <div class="wrap dashnav-inner">
+        <div class="brand">
+          <span class="logo">S</span> Sparkle
+        </div>
+
+        <div class="dash-actions">
+          <button class="icon-btn" title="Notifications" onclick="toggleNotifications()">🔔<span class="notification-dot" id="notificationDot"></span></button>
+          <button class="icon-btn" title="Toggle theme" onclick="toggleTheme()" id="themeButton">🌙</button>
+
+          <div class="userbox">
+            <div class="avatar" id="avatar">S</div>
+            <div>
+              <strong id="userName">User</strong><br>
+              <small id="userEmail"></small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="dashbody">
+      <div class="wrap">
+
+        <!-- HOME -->
+        <section class="page active" id="home">
+          <h1 class="dashboard-title">Welcome to Sparkle 👋</h1>
+          <p class="dashboard-subtitle">Manage your bills, wallet and everyday payments in one place.</p>
+
+          <div class="wallet-card">
+            <div class="wallet-card-top">
+              <div class="wallet-card-label"><span class="wallet-card-icon">₦</span> AVAILABLE WALLET BALANCE</div>
+              <span aria-hidden="true" style="font-size:22px;opacity:.75">✦</span>
+            </div>
+            <p class="wallet-card-caption">Your Sparkle balance, ready for everyday payments.</p>
+            <div class="wallet-balance" id="walletBalance">₦0.00</div>
+            <button class="btn fund-wallet-btn" onclick="showFundWallet()">＋ &nbsp; Fund Wallet</button>
+          </div>
+
+          <div class="dva-card">
+            <div class="dva-head">
+              <div>
+                <h3 class="dva-title">Your Sparkle Funding Account</h3>
+                <p class="dva-sub">Fund your wallet by transferring to this dedicated account.</p>
+              </div>
+              <span class="eyebrow" id="dvaStatus">Loading…</span>
+            </div>
+            <div class="dva-grid">
+              <div class="dva-item"><label>ACCOUNT NAME</label><strong id="dvaAccountName">Loading…</strong></div>
+              <div class="dva-item"><label>ACCOUNT NUMBER</label><strong id="dvaAccountNumber">Loading…</strong></div>
+              <div class="dva-item"><label>BANK</label><strong id="dvaBankName">Loading…</strong></div>
+            </div>
+            <button class="btn copy-account" onclick="copyDVA()">Copy Account Number</button>
+          </div>
+
+          <h2>Quick Services</h2>
+          <div class="service-grid">
+            <div class="service" onclick="openServicePage('airtime')"><span>📱</span>Airtime<small>Recharge</small></div>
+            <div class="service" onclick="openServicePage('data')"><span>🌐</span>Data<small>Bundles</small></div>
+            <div class="service" onclick="openServicePage('cable')"><span>📺</span>Cable TV<small>Subscriptions</small></div>
+            <div class="service" onclick="openServicePage('electricity')"><span>⚡</span>Electricity<small>Power Bills</small></div>
+            <div class="service" onclick="openServicePage('education')"><span>🎟️</span>Education Pins<small>WAEC • NECO • NABTEB</small></div>
+            <div class="service" onclick="openServicePage('rechargepin')"><span>🪪</span>Recharge Pin Printing<small>Print recharge cards</small></div>
+          </div>
+
+          <div class="txbox">
+            <h3>Recent Transactions</h3>
+            <div id="transactions"><p style="color:#64748b">Loading transactions...</p></div>
+          </div>
+        </section>
+
+        <!-- TRANSACTIONS -->
+        <section class="page" id="transactionsPage">
+          <h1 class="dashboard-title">Transaction History</h1>
+          <p class="dashboard-subtitle">View your wallet funding and service transactions.</p>
+          <div class="txbox"><div id="allTransactions"><p style="color:#64748b">Loading transactions...</p></div></div>
+        </section>
+
+        <!-- MARKET -->
+        <section class="page" id="marketPage">
+          <h1 class="dashboard-title">Sparkle Market</h1>
+          <p class="dashboard-subtitle">A new way to shop is coming to Sparkle.</p>
+          <div class="market-card">
+            <div class="market-icon">🛍️</div>
+            <h2>Coming Soon</h2>
+            <p style="color:var(--muted);max-width:600px;margin:auto;line-height:1.7">
+              We are preparing Sparkle Market — a future marketplace where you can buy gadgets,
+              accessories and other useful products directly through Sparkle.
+            </p>
+            <p style="font-weight:800;margin-top:18px">Stay tuned. Something exciting is coming.</p>
+          </div>
+        </section>
+
+        <!-- EARN -->
+        <section class="page" id="earnPage">
+          <h1 class="dashboard-title">Earn with Sparkle</h1>
+          <p class="dashboard-subtitle">Invite people to Sparkle and track your referral rewards.</p>
+          <div class="earn-card">
+            <div class="earn-grid">
+              <div class="earn-stat"><small>TOTAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong></div>
+              <div class="earn-stat"><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong></div>
+            </div>
+            <h3>Your Referral Link</h3>
+            <p style="color:var(--muted)">Share your personal link and let people join Sparkle through you.</p>
+            <div class="referral-box">
+              <input id="referralLink" readonly value="Generating your referral link…">
+              <button class="btn primary" onclick="shareReferral()">Share</button>
+            </div>
+          </div>
+        </section>
+
+        <!-- PROFILE -->
+        <section class="page" id="profilePage">
+          <h1 class="dashboard-title">Profile</h1>
+          <p class="dashboard-subtitle">Manage your Sparkle account and security settings.</p>
+
+          <section class="profile-section" id="profileSection">
+            <div class="profile-header">
+              <div class="profile-avatar" id="profileAvatar">S</div>
+              <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
+            </div>
+
+            <div class="profile-message" id="profileMessage"></div>
+
+            <div class="profile-grid">
+              <div class="profile-item"><label>FIRST NAME</label><strong id="profileFirstName">Loading...</strong></div>
+              <div class="profile-item"><label>LAST NAME</label><strong id="profileLastName">Loading...</strong></div>
+              <div class="profile-item"><label>USERNAME</label><strong id="profileUsername">Loading...</strong></div>
+              <div class="profile-item"><label>PHONE NUMBER</label><strong id="profilePhone">Not added</strong></div>
+              <div class="profile-item"><label>EMAIL ADDRESS</label><strong id="profileEmail">Loading...</strong></div>
+              <div class="profile-item"><label>REFERRAL CODE</label><strong id="profileReferral">Not added</strong></div>
+            </div>
+
+            <div class="profile-actions">
+              <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
+              <button class="btn" onclick="openPasswordModal()">Change Password</button>
+              <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
+              <button class="btn" onclick="openLegal('privacy')">Privacy Policy</button>
+              <button class="btn" onclick="logout()">↪ Logout</button>
+              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
+            </div>
+          </section>
+
+          <div class="settings-grid">
+            <div class="setting-card"><div class="setting-icon">🔒</div><h3>Transaction PIN</h3><p>Protect purchases with your private transaction PIN.</p><button class="btn" onclick="openPinModal()">Manage PIN</button></div>
+            <div class="setting-card"><div class="setting-icon">🔔</div><h3>Notifications</h3><p>Receive important updates about your account and transactions.</p><button class="btn" onclick="toggleNotifications()">View</button></div>
+            <div class="setting-card"><div class="setting-icon">🛡️</div><h3>Security</h3><p>Keep your Sparkle account secure with a strong password.</p><button class="btn" onclick="openPasswordModal()">Change Password</button></div>
+          </div>
+        </section>
+
+        <!-- SERVICE PAGES -->
+        <section class="page" id="dataPage">
+  <div class="data-page-shell">
+    <div class="data-topbar">
+      <button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button>
+      <h1>Data</h1>
+    </div>
+
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" id="dataSingleTab" onclick="switchServiceMode('data','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" id="dataBulkTab" onclick="switchServiceMode('data','bulk',this)">Bulk Recharge</button>
+    </div>
+
+    <div id="dataSingle">
+      <div class="network-picker-title">1. Select a network</div>
+      <p class="network-picker-subtitle">Choose the network you want to buy data for.</p>
+      <div class="network-picker" id="dataNetworkPicker" role="group" aria-label="Select data network">
+        <button type="button" class="network-card" data-network="MTN" onclick="selectNetworkCard('data','MTN')">
+          <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Airtel" onclick="selectNetworkCard('data','Airtel')">
+          <span class="network-card-logo airtel">at</span><span>Airtel</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Glo" onclick="selectNetworkCard('data','Glo')">
+          <span class="network-card-logo glo">glo</span><span>Glo</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="9mobile" onclick="selectNetworkCard('data','9mobile')">
+          <span class="network-card-logo nine">9m</span><span>9mobile</span><span class="network-card-check">✓</span>
+        </button>
+      </div>
+
+      <select class="data-network-select data-network-hidden" id="dataNetwork" onchange="onDataNetworkChange()" aria-hidden="true">
+        <option value="" selected>Select</option>
+        <option value="MTN">MTN</option>
+        <option value="Airtel">Airtel</option>
+        <option value="Glo">Glo</option>
+        <option value="9mobile">9mobile</option>
+      </select>
+
+      <div class="data-beneficiary-card">
+        <div class="phone-field-head"><span>Recipient phone number</span><small>11 digits</small></div>
+        <div class="data-phone-row data-phone-section">
+          <span class="phone-prefix">+234</span>
+          <input class="data-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="08012345678" autocomplete="tel">
+          <button class="contact-btn" onclick="chooseDataBeneficiary()" title="Choose beneficiary" aria-label="Choose beneficiary">♙</button>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <div class="save-beneficiary">
+            <button class="save-toggle" id="saveBeneficiaryToggle" onclick="toggleSaveBeneficiary()" aria-label="Save beneficiary"><span></span></button>
+            <span>Save Beneficiary</span>
+          </div>
+          <button class="beneficiary-link" onclick="chooseDataBeneficiary()">Choose Beneficiary</button>
+        </div>
+      </div>
+
+      <div class="network-picker-title" style="font-size:20px;margin-top:20px">2. Select a service</div>
+      <div class="data-service-row">
+        <span class="data-service-label">Plan type</span>
+        <select class="data-service-select" id="dataService" onchange="onDataServiceChange()" disabled>
+          <option value="">Select a network first</option>
+        </select>
+      </div>
+
+      <div class="data-categories" id="dataCategories"></div>
+
+      <div id="dataPlanError"></div>
+      <div id="dataPlans" class="data-plan-grid">
+        <div class="data-empty"><strong class="data-empty-title">Select a network first</strong><span class="data-empty-sub">Choose a network above to continue.</span></div>
+      </div>
+
+      <div class="data-bottom-action">
+        <button class="btn primary full" onclick="showPurchaseSummary('data')">Continue</button>
+      </div>
+    </div>
+
+    <div id="dataBulk" style="display:none">
+      <div class="bulk-list" id="dataBulkList"></div>
+      <button class="btn bulk-add" onclick="addBulkRow('data')">+ Add another</button>
+      <div class="bulk-total" id="dataBulkTotal">Total: ₦0.00</div>
+      <button class="btn primary" onclick="showBulkSummary('data')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="airtimePage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Airtime</h1></div>
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" onclick="switchServiceMode('airtime','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" onclick="switchServiceMode('airtime','bulk',this)">Bulk Recharge</button>
+    </div>
+    <div id="airtimeSingle">
+      <div class="network-picker-title">1. Select a network</div>
+      <p class="network-picker-subtitle">Choose the network you want to recharge.</p>
+      <div class="network-picker" id="airtimeNetworkPicker" role="group" aria-label="Select airtime network">
+        <button type="button" class="network-card active" data-network="MTN" onclick="selectNetworkCard('airtime','MTN')">
+          <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Airtel" onclick="selectNetworkCard('airtime','Airtel')">
+          <span class="network-card-logo airtel">at</span><span>Airtel</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="Glo" onclick="selectNetworkCard('airtime','Glo')">
+          <span class="network-card-logo glo">glo</span><span>Glo</span><span class="network-card-check">✓</span>
+        </button>
+        <button type="button" class="network-card" data-network="9mobile" onclick="selectNetworkCard('airtime','9mobile')">
+          <span class="network-card-logo nine">9m</span><span>9mobile</span><span class="network-card-check">✓</span>
+        </button>
+      </div>
+
+      <select class="data-network-select data-network-hidden" id="airtimeNetwork" onchange="updateNetworkBadge('airtime')" aria-hidden="true">
+        <option value="MTN" selected>MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
+      </select>
+
+      <div class="data-beneficiary-card">
+        <div class="phone-field-head"><span>Recipient phone number</span><small>11 digits</small></div>
+        <div class="data-phone-row">
+          <span class="phone-prefix">+234</span>
+          <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="08012345678" autocomplete="tel">
+          <button class="contact-btn" onclick="chooseGenericBeneficiary('airtime')" aria-label="Choose beneficiary">♙</button>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <div class="save-beneficiary"><button class="save-toggle" id="airtimeSaveToggle" onclick="toggleGenericSave('airtime')"><span></span></button><span>Save Beneficiary</span></div>
+          <button class="beneficiary-link" onclick="chooseGenericBeneficiary('airtime')">Choose Beneficiary</button>
+        </div>
+      </div>
+      <div class="service-form-grid">
+        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" min="100" placeholder="500"></div>
+      </div>
+      <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
+    </div>
+    <div id="airtimeBulk" style="display:none">
+      <div class="bulk-list" id="airtimeBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
+      <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="cablePage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Cable TV</h1></div>
+    <div class="data-purchase-tabs">
+      <button class="data-purchase-tab active" onclick="switchServiceMode('cable','single',this)">Single Recharge</button>
+      <button class="data-purchase-tab" onclick="switchServiceMode('cable','bulk',this)">Bulk Recharge</button>
+    </div>
+    <div id="cableSingle">
+      <div class="data-beneficiary-card">
+        <div class="service-form-grid">
+          <div class="form-field"><label>PROVIDER</label><select class="form-select" id="cableProvider" onchange="loadCablePlans()"><option value="DSTV">DSTV</option><option value="GOtv">GOtv</option><option value="Startimes">Startimes</option></select></div>
+          <div class="form-field"><label>SMARTCARD / IUC NUMBER</label><input class="form-input" id="cableNumber" inputmode="numeric" placeholder="Enter decoder number"></div>
+        </div>
+        <div class="data-divider"></div>
+        <div class="beneficiary-actions">
+          <button class="btn" onclick="verifyCable()">Verify Subscriber</button>
+          <button class="beneficiary-link" onclick="chooseGenericBeneficiary('cable')">Choose Beneficiary</button>
+        </div>
+        <div id="cableVerify" style="margin-top:12px"></div>
+      </div>
+      <div id="cablePlans" class="data-plan-grid"><div class="data-loading">Loading cable plans…</div></div>
+      <div class="data-bottom-action"><button class="btn primary full" onclick="showPurchaseSummary('cable')">Continue</button></div>
+    </div>
+    <div id="cableBulk" style="display:none">
+      <div class="bulk-list" id="cableBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('cable')">+ Add another</button>
+      <div class="bulk-total" id="cableBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('cable')">Continue to Payment</button>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="educationPage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Education Pins</h1></div>
+    <div class="network-picker-title">1. Select result pin</div>
+    <p class="network-picker-subtitle">Choose the examination result checker you want to purchase.</p>
+    <div class="education-service-grid" id="educationServices">
+      <button type="button" class="education-service-card" data-service="waec" onclick="selectEducationService('waec')"><h3>WAEC RESULTS PIN</h3><p>WAEC result checker</p><div class="education-price" data-price-for="waec">Loading…</div></button>
+      <button type="button" class="education-service-card" data-service="neco" onclick="selectEducationService('neco')"><h3>NECO RESULTS PIN</h3><p>NECO result checker</p><div class="education-price" data-price-for="neco">Loading…</div></button>
+      <button type="button" class="education-service-card" data-service="nabteb" onclick="selectEducationService('nabteb')"><h3>NABTEB RESULTS PIN</h3><p>NABTEB result checker</p><div class="education-price" data-price-for="nabteb">Loading…</div></button>
+    </div>
+    <div class="data-beneficiary-card">
+      <div class="phone-field-head"><span>Recipient phone number</span><small>11 digits</small></div>
+      <div class="data-phone-row"><span class="phone-prefix">+234</span><input class="data-phone-input" id="educationPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="08012345678" autocomplete="tel"></div>
+      <div class="data-divider"></div>
+      <div id="educationSelection" class="electricity-note">Select a result pin above.</div>
+    </div>
+    <div id="educationError"></div>
+    <div class="data-bottom-action"><button class="btn primary full" onclick="showEducationSummary()">Continue</button></div>
+    <div class="summary-card" id="educationSummary"></div>
+  </div>
+</section>
+
+
+<section class="page" id="rechargepinPage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Recharge Pin Printing</h1></div>
+    <p class="network-picker-subtitle">Choose the network, recharge amount, and number of cards you want to print.</p>
+    <div class="data-beneficiary-card">
+      <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
+      <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="400">₦400</option><option value="500">₦500</option></select></div>
+      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="100" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
+      <div class="summary-line" style="margin-top:12px"><span>Card value total</span><strong id="rechargePinTotal">₦100.00</strong></div>
+    </div>
+    <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, the minimum order is 10 cards. Your Sparkle wallet is checked before an order is sent.</p>
+    <div class="data-bottom-action"><button class="btn primary full" onclick="showRechargePinSummary()">Continue</button></div>
+  </div>
+</section>
+
+<section class="page" id="electricityPage">
+  <div class="service-page">
+    <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Electricity</h1></div>
+    <div class="network-picker-title">1. Select electricity provider</div>
+    <p class="network-picker-subtitle">Choose your distribution company, then select prepaid or postpaid.</p>
+    <div class="electricity-service-grid" id="electricityServices">
+      <button type="button" class="electricity-service-card" data-service="ibadan-electric" onclick="selectElectricityService('ibadan-electric','Ibadan (IBEDC)')"><h3>Ibadan (IBEDC)</h3><p>Ibadan Electricity Distribution</p></button>
+      <button type="button" class="electricity-service-card" data-service="eko-electric" onclick="selectElectricityService('eko-electric','Eko (EKEDC)')"><h3>Eko (EKEDC)</h3><p>Lagos distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="ikeja-electric" onclick="selectElectricityService('ikeja-electric','Ikeja (IKEDC)')"><h3>Ikeja (IKEDC)</h3><p>Lagos distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="abuja-electric" onclick="selectElectricityService('abuja-electric','Abuja (AEDC)')"><h3>Abuja (AEDC)</h3><p>Abuja distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="aba-electric" onclick="selectElectricityService('aba-electric','Aba (ABEDC)')"><h3>Aba (ABEDC)</h3><p>Aba distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="benin-electric" onclick="selectElectricityService('benin-electric','Benin (BEDC)')"><h3>Benin (BEDC)</h3><p>Benin distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="enugu-electric" onclick="selectElectricityService('enugu-electric','Enugu (EEDC)')"><h3>Enugu (EEDC)</h3><p>Enugu distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="jos-electric" onclick="selectElectricityService('jos-electric','Jos (JEDC)')"><h3>Jos (JEDC)</h3><p>Jos distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="kaduna-electric" onclick="selectElectricityService('kaduna-electric','Kaduna (KAEDCO)')"><h3>Kaduna (KAEDCO)</h3><p>Kaduna distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="kano-electric" onclick="selectElectricityService('kano-electric','Kano (KEDCO)')"><h3>Kano (KEDCO)</h3><p>Kano distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="portharcourt-electric" onclick="selectElectricityService('portharcourt-electric','Port Harcourt (PHED)')"><h3>Port Harcourt (PHED)</h3><p>Port Harcourt distribution area</p></button>
+      <button type="button" class="electricity-service-card" data-service="yola-electric" onclick="selectElectricityService('yola-electric','Yola (YEDC)')"><h3>Yola (YEDC)</h3><p>Yola distribution area</p></button>
+    </div>
+    <div class="data-beneficiary-card">
+      <div class="service-form-grid">
+        <div class="form-field"><label>BILL TYPE</label><select class="form-select" id="electricityType"><option value="prepaid">Prepaid</option><option value="postpaid">Postpaid</option></select></div>
+        <div class="form-field"><label>METER NUMBER</label><input class="form-input" id="electricityMeter" inputmode="numeric" placeholder="Enter meter number"></div>
+        <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="electricityPhone" inputmode="numeric" maxlength="11" placeholder="08012345678"></div>
+        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input electricity-amount" id="electricityAmount" type="number" min="100" placeholder="Enter amount"></div>
+      </div>
+      <p class="electricity-note">Electricity does not use a fixed plan price like data or exam pins. The amount is the electricity purchase value you choose; prepaid/postpaid determines the bill type.</p>
+    </div>
+    <div id="electricitySelection" class="electricity-note">Select an electricity provider above.</div>
+    <div class="data-bottom-action"><button class="btn primary full" onclick="showElectricitySummary()">Continue</button></div>
+    <div class="summary-card" id="electricitySummary"></div>
+  </div>
+</section>
+
+      </div>
+    </main>
+  </div>
+
+  <div class="mobile-bottom-nav">
+    <button onclick="showDashPage('home',this)"><span>⌂</span>Home</button>
+    <button onclick="showDashPage('transactionsPage',this)"><span>↔</span>Transactions</button>
+    <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
+    <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
+    <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
+  </div>
+</div>
+
+<!-- FUND WALLET MODAL -->
+<div class="modal" id="fundWalletModal" onclick="if(event.target===this)closeFundWallet()">
+  <div class="modal-box fund-modal-box" role="dialog" aria-modal="true" aria-labelledby="fundWalletTitle">
+    <div class="fund-modal-hero">
+      <div class="modal-head"><h2 id="fundWalletTitle">Fund your Sparkle wallet</h2><button class="close" onclick="closeFundWallet()" aria-label="Close">×</button></div>
+      <p>Transfer from your bank app to the dedicated account below. Keep these details safe and confirm the account name before sending.</p>
+    </div>
+    <div class="fund-modal-content">
+      <div class="fund-modal-status" id="fundModalStatus">Account details loading</div>
+      <div class="fund-detail"><label>ACCOUNT NAME</label><strong id="fundModalAccountName">Loading…</strong></div>
+      <div class="fund-detail account-number"><label>ACCOUNT NUMBER</label><strong id="fundModalAccountNumber">Loading…</strong></div>
+      <div class="fund-detail"><label>BANK</label><strong id="fundModalBankName">Loading…</strong></div>
+      <div class="fund-modal-note"><span>ⓘ</span><div>Use this dedicated account to fund your wallet. Your balance should update after the payment provider confirms the transfer.</div></div>
+      <div class="fund-modal-actions"><button class="btn primary" id="fundCopyButton" onclick="copyFundAccountNumber()">Copy account number</button><button class="btn" onclick="closeFundWallet()">Close</button></div>
+    </div>
+  </div>
+</div>
+
+<!-- SERVICE PIN -->
+<div class="modal pin-modal" id="pinModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
+    <p style="color:var(--muted)">Enter your PIN to authorize this transaction.</p>
+    <div class="pin-boxes">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric">
+    </div>
+    <p id="pinMessage" style="color:#ef4444;font-size:13px"></p>
+    <button class="btn primary full" onclick="confirmTransactionPIN()">MAKE PAYMENT</button>
+  </div>
+</div>
+
+<!-- PROCESSING -->
+<div class="processing-overlay" id="processingOverlay">
+  <div>
+    <div class="sparkle-spinner">S</div>
+    <h2>Processing payment</h2>
+    <p>Please don't close this page.</p>
+    <p id="processingProgress"></p>
+  </div>
+</div>
+
+<!-- RECEIPT -->
+<div class="modal receipt-modal" id="receiptModal">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Payment Receipt</h2><button class="close" onclick="closeReceipt()">×</button></div>
+    <div class="receipt-card" id="receiptCard">
+      <div class="receipt-content">
+        <div class="receipt-brand">✦ SPARKLE</div>
+        <div class="receipt-status">✓ TRANSACTION SUCCESSFUL</div>
+        <div id="receiptDetails"></div>
+        <p style="text-align:center;color:#64748b;font-size:11px;margin-top:20px">Thank you for using Sparkle.</p>
+      </div>
+    </div>
+    <div class="receipt-actions">
+      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
+      <button class="btn primary" onclick="downloadReceiptPDF()">⬇ PDF</button>
+    </div>
+  </div>
+</div>
+
+<!-- ================= AUTH MODAL ================= -->
+
+<div class="modal" id="authModal">
+
+<div class="modal-box">
+
+<div class="modal-head">
+
+<h2 id="authTitle">
+Login to Sparkle
+</h2>
+
+<button class="close"
+onclick="closeAuth()">
+×
+</button>
+
+</div>
+
+
+<div class="message"
+id="authMessage">
+</div>
+
+
+<form id="authForm">
+
+
+<div class="field"
+id="firstNameField"
+style="display:none">
+
+<label>
+First Name
+</label>
+
+<input
+type="text"
+id="firstName"
+placeholder="Enter your first name">
+
+</div>
+
+
+<div class="field"
+id="lastNameField"
+style="display:none">
+
+<label>
+Last Name
+</label>
+
+<input
+type="text"
+id="lastName"
+placeholder="Enter your last name">
+
+</div>
+
+
+<div class="field"
+id="phoneField"
+style="display:none">
+
+<label>
+Phone Number
+</label>
+
+<input
+type="tel"
+id="signupPhone"
+placeholder="08012345678">
+
+</div>
+
+
+<div class="field"
+id="usernameField"
+style="display:none">
+
+<label>
+Username
+</label>
+
+<input
+type="text"
+id="username"
+placeholder="Choose a username"
+autocomplete="username">
+
+</div>
+
+
+<div class="field">
+
+<label>
+Email
+</label>
+
+<input
+type="email"
+id="email"
+placeholder="you@example.com"
+required
+autocomplete="email">
+
+</div>
+
+
+<div class="field">
+
+<label>
+Password
+</label>
+
+<input
+type="password"
+id="password"
+placeholder="Minimum 6 characters"
+required
+autocomplete="new-password">
+
+</div>
+
+
+<div class="field"
+id="referralField"
+style="display:none">
+
+<label>
+Referral Code
+<span style="color:#64748b">
+(Optional)
+</span>
+</label>
+
+<input
+type="text"
+id="referralCode"
+placeholder="Enter referral code">
+
+</div>
+
+
+<button
+class="btn primary full"
+id="authButton">
+Login
+</button>
+
+</form>
+
+
+<p style="text-align:center;font-size:14px;color:#64748b;margin-top:18px">
+
+<span id="switchText">
+Don't have an account?
+</span>
+
+<button
+type="button"
+style="border:0;background:none;color:#0b5cff;font-weight:800"
+onclick="switchAuth()"
+id="switchButton">
+Sign Up
+</button>
+
+</p>
+
+</div>
+
+</div>
+
+
+<!-- ================= EDIT PROFILE ================= -->
+
+<div class="modal"
+id="profileModal">
+
+<div class="modal-box">
+
+<div class="modal-head">
+
+<h2>
+Edit Profile
+</h2>
+
+<button class="close"
+onclick="closeProfileModal()">
+×
+</button>
+
+</div>
+
+
+<div class="message"
+id="profileEditMessage">
+</div>
+
+
+<form id="profileForm">
+
+
+<div class="field">
+
+<label>
+First Name
+</label>
+
+<input
+type="text"
+id="editFirstName"
+required>
+
+</div>
+
+
+<div class="field">
+
+<label>
+Last Name
+</label>
+
+<input
+type="text"
+id="editLastName"
+required>
+
+</div>
+
+
+<div class="field">
+
+<label>
+Phone Number
+</label>
+
+<input
+type="tel"
+id="editPhone"
+placeholder="08012345678">
+
+</div>
+
+
+<div class="field">
+
+<label>
+Username
+</label>
+
+<input
+type="text"
+id="editUsername"
+required>
+
+</div>
+
+
+<div class="field">
+
+<label>
+Referral Code
+</label>
+
+<input
+type="text"
+id="editReferralCode"
+placeholder="Optional">
+
+</div>
+
+
+<button
+class="btn primary full"
+id="saveProfileButton">
+Save Changes
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<!-- ================= PASSWORD MODAL ================= -->
+
+<div class="modal"
+id="passwordModal">
+
+<div class="modal-box">
+
+<div class="modal-head">
+
+<h2>
+Change Password
+</h2>
+
+<button class="close"
+onclick="closePasswordModal()">
+×
+</button>
+
+</div>
+
+
+<div class="message"
+id="passwordMessage">
+</div>
+
+
+<form id="passwordForm">
+
+
+<div class="field">
+
+<label>
+New Password
+</label>
+
+<input
+type="password"
+id="newPassword"
+minlength="6"
+required
+autocomplete="new-password">
+
+</div>
+
+
+<div class="field">
+
+<label>
+Confirm New Password
+</label>
+
+<input
+type="password"
+id="confirmPassword"
+minlength="6"
+required
+autocomplete="new-password">
+
+</div>
+
+
+<button
+class="btn primary full"
+id="passwordButton">
+Update Password
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+
+<!-- ================= LEGAL MODAL ================= -->
+
+<div class="modal"
+id="legalModal">
+
+<div class="modal-box"
+style="max-width:700px">
+
+<div class="modal-head">
+
+<h2 id="legalTitle">
+Sparkle
+</h2>
+
+<button class="close"
+onclick="closeLegal()">
+×
+</button>
+
+</div>
+
+
+<div
+id="legalContent"
+style="color:#475569;line-height:1.7;font-size:14px">
+</div>
+
+</div>
+
+</div>
+
+
+<script>
+
+/* =====================================================
+   SUPABASE
+   ===================================================== */
+
+const SUPABASE_URL =
+"https://dcuvhtpqwyljsudzirxg.supabase.co";
+
+const SUPABASE_KEY =
+"sb_publishable_KB_zAb08gAt8b5jOfmZU1g_vTMF0AxL";
+
+const supabaseClient =
+window.supabase.createClient(
+SUPABASE_URL,
+SUPABASE_KEY
+);
+
+
+/* =====================================================
+   AUTH MODE
+   ===================================================== */
+
+let authMode = "login";
+
+
+function openAuth(mode){
+
+authMode = mode;
+
+document
+.getElementById("authModal")
+.classList.add("show");
+
+const signup = mode === "signup";
+
+
+document.getElementById("authTitle").textContent =
+signup
+? "Create Sparkle Account"
+: "Login to Sparkle";
+
+
+document.getElementById("authButton").textContent =
+signup
+? "Create Account"
+: "Login";
+
+
+document.getElementById("firstNameField")
+.style.display =
+signup ? "block" : "none";
+
+
+document.getElementById("lastNameField")
+.style.display =
+signup ? "block" : "none";
+
+
+document.getElementById("phoneField")
+.style.display =
+signup ? "block" : "none";
+
+
+document.getElementById("usernameField")
+.style.display =
+signup ? "block" : "none";
+
+
+document.getElementById("referralField")
+.style.display =
+signup ? "block" : "none";
+
+
+document.getElementById("switchText").textContent =
+signup
+? "Already have an account?"
+: "Don't have an account?";
+
+
+document.getElementById("switchButton").textContent =
+signup
+? "Login"
+: "Sign Up";
+
+
+clearMessage();
+
+}
+
+
+function closeAuth(){
+
+document
+.getElementById("authModal")
+.classList.remove("show");
+
+clearMessage();
+
+}
+
+
+function switchAuth(){
+
+openAuth(
+authMode === "login"
+? "signup"
+: "login"
+);
+
+}
+
+
+function showMessage(message,type){
+
+const box =
+document.getElementById("authMessage");
+
+box.textContent = message;
+
+box.className =
+"message show " + type;
+
+}
+
+
+function clearMessage(){
+
+const box =
+document.getElementById("authMessage");
+
+box.textContent = "";
+
+box.className = "message";
+
+}
+
+
+/* =====================================================
+   SIGNUP / LOGIN
+   ===================================================== */
+
+document
+.getElementById("authForm")
+.addEventListener("submit",async function(e){
+
+e.preventDefault();
+
+clearMessage();
+
+
+const email =
+document
+.getElementById("email")
+.value
+.trim();
+
+
+const password =
+document
+.getElementById("password")
+.value;
+
+
+const button =
+document.getElementById("authButton");
+
+
+button.disabled = true;
+
+button.textContent =
+authMode === "signup"
+? "Creating account..."
+: "Logging in...";
+
+
+try{
+
+
+/* ================= LOGIN ================= */
+
+if(authMode === "login"){
+
+const {data,error} =
+await supabaseClient.auth.signInWithPassword({
+
+email:email,
+
+password:password
+
+});
+
+
+if(error) throw error;
+
+
+showMessage(
+"Login successful.",
+"success"
+);
+
+
+setTimeout(()=>{
+
+closeAuth();
+
+loadUser();
+
+},500);
+
+
+return;
+
+}
+
+
+/* ================= SIGNUP ================= */
+
+const firstName =
+document
+.getElementById("firstName")
+.value
+.trim();
+
+
+const lastName =
+document
+.getElementById("lastName")
+.value
+.trim();
+
+
+const phone =
+document
+.getElementById("signupPhone")
+.value
+.trim();
+
+
+const username =
+document
+.getElementById("username")
+.value
+.trim()
+.toLowerCase();
+
+
+const referralCode =
+document
+.getElementById("referralCode")
+.value
+.trim();
+
+
+/* VALIDATION */
+
+if(!firstName){
+
+throw new Error(
+"Please enter your first name."
+);
+
+}
+
+
+if(!lastName){
+
+throw new Error(
+"Please enter your last name."
+);
+
+}
+
+
+if(!phone){
+
+throw new Error(
+"Please enter your phone number."
+);
+
+}
+
+
+if(!username){
+
+throw new Error(
+"Please choose a username."
+);
+
+}
+
+
+if(username.length < 3){
+
+throw new Error(
+"Username must be at least 3 characters."
+);
+
+}
+
+
+if(password.length < 6){
+
+throw new Error(
+"Password must be at least 6 characters."
+);
+
+}
+
+
+/* CREATE AUTH ACCOUNT */
+
+const {data,error} =
+await supabaseClient.auth.signUp({
+
+email:email,
+
+password:password,
+
+options:{
+
+data:{
+
+first_name:firstName,
+
+last_name:lastName,
+
+username:username,
+
+phone:phone
+
+}
+
+}
+
+});
+
+
+if(error) throw error;
+
+
+/*
+Save profile information.
+
+full_name is also populated for
+compatibility with the existing
+Sparkle system.
+*/
+
+if(data.user){
+
+const {error:profileError} =
+await supabaseClient
+.from("profiles")
+.update({
+
+first_name:firstName,
+
+last_name:lastName,
+
+full_name:
+firstName + " " + lastName,
+
+phone:phone,
+
+username:username,
+
+referral_code:
+referralCode || null,
+
+email:email
+
+})
+.eq("id",data.user.id);
+
+
+if(profileError){
+
+console.error(
+"Profile update error:",
+profileError
+);
+
+}
+
+}
+
+
+/* SESSION */
+
+if(data.session){
+
+showMessage(
+"Account created successfully.",
+"success"
+);
+
+
+setTimeout(()=>{
+
+closeAuth();
+
+loadUser();
+
+},700);
+
+
+}else{
+
+showMessage(
+"Account created. Check your email to verify your account.",
+"success"
+);
+
+}
+
+}catch(error){
+
+showMessage(
+error.message ||
+"Something went wrong.",
+"error"
+);
+
+}finally{
+
+button.disabled = false;
+
+button.textContent =
+authMode === "signup"
+? "Create Account"
+: "Login";
+
+}
+
+});
+
+
+/* =====================================================
+   LOAD USER
+   ===================================================== */
+
+async function loadUser(){
+
+const {data,error} =
+await supabaseClient.auth.getUser();
+
+
+if(error || !data.user){
+
+showHomepage();
+
+return;
+
+}
+
+
+showDashboard(data.user);
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+   ===================================================== */
+
+async function showDashboard(user){
+
+document
+.getElementById("homepage")
+.classList.add("hidden");
+
+
+document
+.getElementById("dashboard")
+.classList.add("active");
+window.currentSparkleUser=user;
+showDashPage("home",document.querySelector('.sidebar-nav .nav-item'));
+
+
+const {data:profile} =
+await supabaseClient
+.from("profiles")
+.select(
+"first_name,last_name,full_name,username,phone,email,referral_code"
+)
+.eq("id",user.id)
+.single();
+
+
+let name;
+
+
+if(profile?.first_name){
+
+name =
+profile.first_name +
+(profile.last_name
+? " " + profile.last_name
+: "");
+
+}else{
+
+name =
+profile?.full_name ||
+user.user_metadata?.full_name ||
+user.email?.split("@")[0] ||
+"User";
+
+}
+
+
+document.getElementById("userName")
+.textContent = name;
+
+
+document.getElementById("userEmail")
+.textContent = user.email || "";
+
+
+document.getElementById("avatar")
+.textContent =
+name.charAt(0).toUpperCase();
+
+
+await loadProfile(user.id);
+
+await loadWallet(user.id);
+
+await loadTransactions(user.id);
+
+await createDedicatedAccount();
+
+await loadReferralStats();
+
+}
+
+
+/* =====================================================
+   PROFILE
+   ===================================================== */
+
+async function loadProfile(userId){
+
+const {data,error} =
+await supabaseClient
+.from("profiles")
+.select(
+"first_name,last_name,full_name,username,phone,email,referral_code"
+)
+.eq("id",userId)
+.single();
+
+
+if(error){
+
+console.error(
+"Profile error:",
+error
+);
+
+return;
+
+}
+
+
+const firstName =
+data?.first_name || "";
+
+
+const lastName =
+data?.last_name || "";
+
+
+const fullName =
+data?.full_name ||
+(firstName + " " + lastName).trim() ||
+"User";
+
+
+document.getElementById("profileFirstName")
+.textContent =
+firstName || "Not added";
+
+
+document.getElementById("profileLastName")
+.textContent =
+lastName || "Not added";
+
+
+document.getElementById("profileUsername")
+.textContent =
+data?.username || "Not added";
+
+
+document.getElementById("profilePhone")
+.textContent =
+data?.phone || "Not added";
+
+
+document.getElementById("profileEmail")
+.textContent =
+data?.email || "";
+
+
+document.getElementById("profileReferral")
+.textContent =
+data?.referral_code || "Not added";
+
+
+document.getElementById("profileAvatar")
+.textContent =
+(firstName || fullName)
+.charAt(0)
+.toUpperCase();
+
+}
+
+
+/* =====================================================
+   OPEN PROFILE
+   ===================================================== */
+
+function openProfile(){
+
+document
+.getElementById("profileSection")
+.scrollIntoView({
+
+behavior:"smooth",
+
+block:"start"
+
+});
+
+}
+
+
+/* =====================================================
+   EDIT PROFILE
+   ===================================================== */
+
+async function openEditProfile(){
+
+const {data:userData} =
+await supabaseClient.auth.getUser();
+
+
+if(!userData?.user) return;
+
+
+const user =
+userData.user;
+
+
+const {data:profile} =
+await supabaseClient
+.from("profiles")
+.select(
+"first_name,last_name,username,phone,referral_code"
+)
+.eq("id",user.id)
+.single();
+
+
+document.getElementById("editFirstName")
+.value =
+profile?.first_name || "";
+
+
+document.getElementById("editLastName")
+.value =
+profile?.last_name || "";
+
+
+document.getElementById("editPhone")
+.value =
+profile?.phone || "";
+
+
+document.getElementById("editUsername")
+.value =
+profile?.username || "";
+
+
+document.getElementById("editReferralCode")
+.value =
+profile?.referral_code || "";
+
+
+document
+.getElementById("profileModal")
+.classList.add("show");
+
+}
+
+
+function closeProfileModal(){
+
+document
+.getElementById("profileModal")
+.classList.remove("show");
+
+}
+
+
+/* =====================================================
+   SAVE PROFILE
+   ===================================================== */
+
+document
+.getElementById("profileForm")
+.addEventListener("submit",async function(e){
+
+e.preventDefault();
+
+
+const message =
+document.getElementById("profileEditMessage");
+
+
+const button =
+document.getElementById("saveProfileButton");
+
+
+const firstName =
+document
+.getElementById("editFirstName")
+.value
+.trim();
+
+
+const lastName =
+document
+.getElementById("editLastName")
+.value
+.trim();
+
+
+const phone =
+document
+.getElementById("editPhone")
+.value
+.trim();
+
+
+const username =
+document
+.getElementById("editUsername")
+.value
+.trim()
+.toLowerCase();
+
+
+const referralCode =
+document
+.getElementById("editReferralCode")
+.value
+.trim();
+
+
+if(!firstName ||
+!lastName ||
+!username){
+
+message.textContent =
+"First name, last name and username are required.";
+
+message.className =
+"message show error";
+
+return;
+
+}
+
+
+button.disabled=true;
+
+button.textContent="Saving...";
+
+
+try{
+
+const {data:userData,error:userError} =
+await supabaseClient.auth.getUser();
+
+
+if(userError || !userData.user){
+
+throw new Error(
+"You are not logged in."
+);
+
+}
+
+
+const user =
+userData.user;
+
+
+const {error} =
+await supabaseClient
+.from("profiles")
+.update({
+
+first_name:firstName,
+
+last_name:lastName,
+
+full_name:
+firstName + " " + lastName,
+
+phone:phone || null,
+
+username:username,
+
+referral_code:
+referralCode || null
+
+})
+.eq("id",user.id);
+
+
+if(error) throw error;
+
+
+/* Keep auth metadata updated */
+
+await supabaseClient.auth.updateUser({
+
+data:{
+
+first_name:firstName,
+
+last_name:lastName,
+
+username:username,
+
+phone:phone
+
+}
+
+});
+
+
+await loadProfile(user.id);
+
+
+const displayName =
+firstName + " " + lastName;
+
+
+document.getElementById("userName")
+.textContent = displayName;
+
+
+document.getElementById("avatar")
+.textContent =
+firstName.charAt(0).toUpperCase();
+
+
+message.textContent =
+"Profile updated successfully.";
+
+message.className =
+"message show success";
+
+
+setTimeout(()=>{
+
+closeProfileModal();
+
+},900);
+
+
+}catch(error){
+
+message.textContent =
+error.message ||
+"Unable to update profile.";
+
+message.className =
+"message show error";
+
+}finally{
+
+button.disabled=false;
+
+button.textContent="Save Changes";
+
+}
+
+});
+
+
+/* =====================================================
+   PASSWORD
+   ===================================================== */
+
+function openPasswordModal(){
+
+document
+.getElementById("passwordModal")
+.classList.add("show");
+
+document.getElementById("newPassword").value="";
+
+document.getElementById("confirmPassword").value="";
+
+}
+
+
+function closePasswordModal(){
+
+document
+.getElementById("passwordModal")
+.classList.remove("show");
+
+}
+
+
+document
+.getElementById("passwordForm")
+.addEventListener("submit",async function(e){
+
+e.preventDefault();
+
+
+const message =
+document.getElementById("passwordMessage");
+
+
+const button =
+document.getElementById("passwordButton");
+
+
+const newPassword =
+document
+.getElementById("newPassword")
+.value;
+
+
+const confirmPassword =
+document
+.getElementById("confirmPassword")
+.value;
+
+
+if(newPassword.length < 6){
+
+message.textContent =
+"Password must be at least 6 characters.";
+
+message.className =
+"message show error";
+
+return;
+
+}
+
+
+if(newPassword !== confirmPassword){
+
+message.textContent =
+"Passwords do not match.";
+
+message.className =
+"message show error";
+
+return;
+
+}
+
+
+button.disabled=true;
+
+button.textContent="Updating...";
+
+
+try{
+
+const {error} =
+await supabaseClient.auth.updateUser({
+
+password:newPassword
+
+});
+
+
+if(error) throw error;
+
+
+message.textContent =
+"Password updated successfully.";
+
+message.className =
+"message show success";
+
+
+setTimeout(()=>{
+
+closePasswordModal();
+
+},1000);
+
+
+}catch(error){
+
+message.textContent =
+error.message ||
+"Unable to update password.";
+
+message.className =
+"message show error";
+
+}finally{
+
+button.disabled=false;
+
+button.textContent="Update Password";
+
+}
+
+});
+
+
+
+/* =====================================================
+   DASHBOARD NAVIGATION / THEME / NOTIFICATIONS
+   ===================================================== */
+
+let currentService = null;
+let pendingPurchase = null;
+let bulkRows = {data:[], airtime:[], cable:[], education:[], electricity:[]};
+
+function showDashPage(pageId, button){
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  const page = document.getElementById(pageId);
+  if(page) page.classList.add("active");
+  document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
+  if(button && button.classList.contains("nav-item")) button.classList.add("active");
+  if(pageId==="transactionsPage") loadAllTransactions();
+  if(pageId==="earnPage") loadReferralStats();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+function openServicePage(service){
+  const id = service + "Page";
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo({top:0,behavior:"smooth"});
+  if(bulkRows[service] && !bulkRows[service].length && document.getElementById(service+'Bulk')) addBulkRow(service);
+  if(service==="education") loadEducationPlans();
+}
+
+function switchServiceMode(service, mode, button){
+  document.querySelectorAll("#"+service+"Page .data-purchase-tab").forEach(b=>b.classList.remove("active"));
+  button.classList.add("active");
+  document.getElementById(service+"Single").style.display = mode==="single" ? "block" : "none";
+  document.getElementById(service+"Bulk").style.display = mode==="bulk" ? "block" : "none";
+  if(mode==="bulk" && !bulkRows[service].length) addBulkRow(service);
+}
+
+function toggleTheme(){
+  document.body.classList.toggle("dark-mode");
+  const dark = document.body.classList.contains("dark-mode");
+  localStorage.setItem("sparkle_theme", dark ? "dark" : "light");
+  document.getElementById("themeButton").textContent = dark ? "☀️" : "🌙";
+}
+(function(){
+  const dark = localStorage.getItem("sparkle_theme")==="dark";
+  if(dark){
+    document.body.classList.add("dark-mode");
+    setTimeout(()=>{const b=document.getElementById("themeButton"); if(b)b.textContent="☀️";},0);
+  }
+})();
+
+function toggleNotifications(){
+  const dot=document.getElementById("notificationDot");
+  if(dot) dot.style.display="none";
+  alert("Notifications are being prepared. Your important wallet and transaction updates will appear here.");
+}
+
+/* =====================================================
+   PAYSTACK DEDICATED VIRTUAL ACCOUNT
+   ===================================================== */
+
+async function createDedicatedAccount(){
+  try{
+    const {data:userData,error:userError}=await supabaseClient.auth.getUser();
+    if(userError || !userData?.user) return;
+
+    const user=userData.user;
+    let profile=null;
+    try{
+      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).single();
+      profile=result.data || null;
+    }catch(e){ console.warn("Profile lookup skipped:",e); }
+
+    const firstName=profile?.first_name || user.user_metadata?.first_name || "";
+    const lastName=profile?.last_name || user.user_metadata?.last_name || "";
+    const name=(profile?.full_name || `${firstName} ${lastName}`.trim() || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
+    const email=(profile?.email || user.email || "").trim();
+    const phone=(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
+
+    if(!email || !name){
+      const status=document.getElementById("dvaStatus");
+      if(status) status.textContent="Account details missing";
+      return;
+    }
+
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{
+      body:{email,name,phone}
+    });
+
+    if(error){
+      console.error("Virtual account error:",error);
+      document.getElementById("dvaStatus").textContent="Unable to create";
+      return;
+    }
+
+    if(data?.success && data.account_number){
+      document.getElementById("dvaAccountName").textContent=data.account_name || name;
+      document.getElementById("dvaAccountNumber").textContent=data.account_number;
+      document.getElementById("dvaBankName").textContent=data.bank_name || "—";
+      document.getElementById("dvaStatus").textContent="Ready";
+    }else{
+      document.getElementById("dvaStatus").textContent=data?.paystack_error || data?.error || "Unable to create";
+      console.error("Virtual account creation failed:",data);
+    }
+  }catch(error){
+    console.error("Virtual account function error:",error);
+    const status=document.getElementById("dvaStatus");
+    if(status) status.textContent="Unable to create";
+  }
+}
+
+function copyDVA(){
+  const value=document.getElementById("dvaAccountNumber").textContent.trim();
+  if(!value || value==="—" || value==="Loading…") return;
+  navigator.clipboard?.writeText(value).then(()=>alert("Account number copied."));
+}
+
+/* =====================================================
+   REFERRALS
+   ===================================================== */
+
+async function loadReferralStats(){
+  const {data:userData}=await supabaseClient.auth.getUser();
+  if(!userData?.user) return;
+  const user=userData.user;
+
+  const {data:profile}=await supabaseClient
+    .from("profiles")
+    .select("username,referral_code")
+    .eq("id",user.id)
+    .single();
+
+  const code=profile?.referral_code || profile?.username || user.id.slice(0,8);
+  const link=window.location.origin + "/?ref=" + encodeURIComponent(code);
+  document.getElementById("referralLink").value=link;
+
+  // These totals are intentionally read only from tables when they exist.
+  // No fake earnings are displayed if the referral tables have not yet been created.
+  let count=0, earnings=0;
+  try{
+    const r=await supabaseClient.from("referrals").select("id",{count:"exact",head:true}).eq("referrer_id",user.id);
+    if(!r.error) count=r.count || 0;
+  }catch(e){}
+  try{
+    const r=await supabaseClient.from("referral_earnings").select("amount").eq("user_id",user.id);
+    if(!r.error && r.data) earnings=r.data.reduce((s,x)=>s+Number(x.amount||0),0);
+  }catch(e){}
+  document.getElementById("referralCount").textContent=count.toLocaleString("en-NG");
+  document.getElementById("referralEarnings").textContent="₦"+earnings.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+async function shareReferral(){
+  const link=document.getElementById("referralLink").value;
+  if(navigator.share){
+    try{ await navigator.share({title:"Join Sparkle",text:"Join me on Sparkle for fast bill payments.",url:link}); }catch(e){}
+  }else{
+    await navigator.clipboard?.writeText(link);
+    alert("Your referral link has been copied.");
+  }
+}
+
+
+/* =====================================================
+   GSUBZ LIVE DATA INTEGRATION
+   Network → Service → Sparkle loader → Live GSUBZ plans
+   ===================================================== */
+const GSUBZ_FUNCTION_NAME = "gsubz"; // existing Supabase Edge Function
+
+// Exact GSUBZ data service IDs supplied for Sparkle.
+// Do not add or invent service IDs here.
+const DATA_SERVICE_OPTIONS = {
+  MTN: [
+    {id:"mtn_gifting", label:"MTN Gifting"},
+    {id:"mtn_sme", label:"MTN SME"},
+    {id:"mtn_fibrex", label:"MTN Fibre X"}
+  ],
+  Airtel: [
+    {id:"airtel_gifting", label:"Airtel Gifting"},
+    {id:"airtel_sme", label:"Airtel SME"}
+  ],
+  Glo: [
+    {id:"glo_data", label:"Glo Corporate Gifting"},
+    {id:"glo_sme", label:"Glo SME"}
+  ],
+  "9mobile": [
+    {id:"etisalat_data", label:"9mobile Data"}
+  ]
+};
+
+const airtimeServiceMap = {MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"};
+let selectedDataPlan = null;
+let selectedDataCategory = "All";
+let selectedDataService = null;
+let selectedServiceID = null;
+let selectedNetwork = "";
+let selectedDataServiceLabel = "";
+let dataPlansCache = {};
+let dataServiceLoadToken = 0;
+let selectedCablePlan = null;
+
+async function gsubzRequest(path, method="GET", data=null){
+  const upperMethod=String(method||"GET").toUpperCase();
+  if(upperMethod==="GET"){
+    const sessionResult=await supabaseClient.auth.getSession();
+    const accessToken=sessionResult?.data?.session?.access_token;
+    if(!accessToken)throw new Error("You are not logged in or your session has expired.");
+    const incoming=new URL(path,window.location.origin);
+    const url=new URL(SUPABASE_URL+"/functions/v1/"+GSUBZ_FUNCTION_NAME);
+    incoming.searchParams.forEach((value,key)=>url.searchParams.set(key,value));
+    // The existing gsubz Edge Function expects plan lookups as
+    // GET ?action=plans&service=<serviceID>.
+    if(incoming.pathname==="/api/plans/"||incoming.pathname==="/api/plans")url.searchParams.set("action","plans");
+    console.groupCollapsed("[Sparkle → GSUBZ] GET request");
+    console.log("Edge Function:",GSUBZ_FUNCTION_NAME);console.log("Request URL:",url.toString());console.log("Method:",upperMethod);console.log("Query:",Object.fromEntries(url.searchParams.entries()));
+    let response,rawBody="";
+    try{response=await fetch(url.toString(),{method:"GET",headers:{"Authorization":"Bearer "+accessToken,"apikey":SUPABASE_KEY,"Accept":"application/json"}});rawBody=await response.text();}catch(fetchError){console.error("Network/fetch error:",fetchError);console.groupEnd();throw fetchError;}
+    console.log("Response status:",response.status,response.statusText);console.log("Response body (raw):",rawBody);
+    let result=null;try{result=rawBody?JSON.parse(rawBody):null;}catch(parseError){console.error("Response JSON parse error:",parseError);}console.log("Response body (parsed):",result);console.groupEnd();
+    if(!response.ok){const detail=result?.error||result?.message||result?.api_response||rawBody||response.statusText;const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);err.status=response.status;err.responseBody=result??rawBody;throw err;}
+    if(result&&result.error){const err=new Error(String(result.error));err.status=response.status;err.responseBody=result;throw err;}return result;
+  }
+  const directServiceIDs=["mtn","airtel","glo","etisalat","airtel_gifting","airtel_sme","etisalat_data","glo_data","glo_sme","mtn_fibrex","mtn_gifting","mtn_sme"];
+  const requestBody=path==="/api/pay/"&&directServiceIDs.includes(String(data?.serviceID||""))?data:{path,method:upperMethod,data};
+  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:requestBody});
+  console.groupCollapsed("[Sparkle → GSUBZ] POST request");console.log("Edge Function:",GSUBZ_FUNCTION_NAME);console.log("Path:",path);console.log("Method:",upperMethod);console.log("Request body:",data);console.log("Supabase invoke response body:",result);console.log("Supabase invoke error:",error);console.groupEnd();
+  if(error){console.error("GSUBZ Edge Function POST error:",error);throw new Error(error.message||"Unable to reach Gsubz.");}
+  if(result&&result.error){const err=new Error(String(result.error));err.responseBody=result;throw err;}return result;
+}
+
+function renderNetworkPicker(service,network){
+  const picker=document.getElementById(service+"NetworkPicker");
+  if(!picker)return;
+  picker.querySelectorAll(".network-card").forEach(card=>{
+    const active=card.dataset.network===network;
+    card.classList.toggle("active",active);
+    card.setAttribute("aria-pressed",active?"true":"false");
+  });
+}
+function selectNetworkCard(service,network){
+  const select=document.getElementById(service+"Network");
+  if(!select)return;
+  select.value=network;
+  renderNetworkPicker(service,network);
+  if(service==="data"){
+    onDataNetworkChange();
+  }else{
+    updateNetworkBadge(service);
+  }
+}
+function networkBadgeClass(network){
+  if(network==="MTN") return "mtn";
+  if(network==="Airtel") return "airtel";
+  if(network==="Glo") return "glo";
+  if(network==="9mobile") return "nine";
+  return "neutral";
+}
+function updateNetworkBadge(service){
+  const el=document.getElementById(service+"Network");
+  const badge=document.getElementById(service+"NetworkBadge");
+  if(!el||!badge)return;
+  const network=el.value;
+  renderNetworkPicker(service,network);
+  badge.className="network-badge "+networkBadgeClass(network);
+  badge.textContent=network==="9mobile"?"9m":(network?network.toLowerCase():"—");
+}
+
+function sparklePlanLoader(text="Loading plans…"){
+  return `<div class="sparkle-plan-loader" role="status" aria-live="polite">
+    <div class="sparkle-loader-logo" aria-hidden="true">S</div>
+    <div class="sparkle-loader-text">${escapeHtml(text)}</div>
+  </div>`;
+}
+
+function clearDataPlans(message="Select a network, then select a service to view live plans."){
+  const box=document.getElementById("dataPlans");
+  if(box){
+    const networkSelected=!!(document.getElementById("dataNetwork")?.value);
+    const isNetworkPrompt=!networkSelected || String(message).toLowerCase().includes("select a network");
+    box.innerHTML=isNetworkPrompt
+      ? '<div class="data-empty"><strong class="data-empty-title">Select a network first</strong><span class="data-empty-sub">Choose a network above to continue.</span></div>'
+      : `<div class="data-empty">${escapeHtml(message)}</div>`;
+    box._shownPlans=[];
+  }
+  selectedDataPlan=null;
+  const error=document.getElementById("dataPlanError");
+  if(error) error.innerHTML="";
+}
+
+function renderDataServiceOptions(network){
+  const select=document.getElementById("dataService");
+  if(!select)return;
+  const options=DATA_SERVICE_OPTIONS[network]||[];
+  selectedDataService=null;
+  selectedDataServiceLabel="";
+  select.disabled=!network || !options.length;
+  if(!network){
+    select.innerHTML='<option value="">Select a network first</option>';
+    return;
+  }
+  if(!options.length){
+    select.innerHTML='<option value="">No service available</option>';
+    return;
+  }
+  select.innerHTML='<option value="">Select a service</option>'+options.map(o=>`<option value="${escapeHtml(o.id)}">${escapeHtml(o.label)}</option>`).join("");
+}
+
+function onDataNetworkChange(){
+  updateNetworkBadge("data");
+  const network=document.getElementById("dataNetwork")?.value||"";
+  const token=++dataServiceLoadToken;
+  selectedNetwork=network;
+  selectedDataPlan=null;
+  selectedDataService=null;
+  selectedServiceID=null;
+  selectedDataServiceLabel="";
+  dataPlansCache={};
+  renderDataServiceOptions(network);
+  clearDataPlans(network ? "Select a service to load live GSUBZ plans." : "Select a network, then select a service to view live plans.");
+  if(token!==dataServiceLoadToken)return;
+}
+
+function onDataServiceChange(){
+  const select=document.getElementById("dataService");
+  const serviceID=String(select?.value||"").trim();
+  const option=select?.selectedOptions?.[0];
+  selectedNetwork=document.getElementById("dataNetwork")?.value||"";
+  selectedDataService=serviceID||null;
+  selectedServiceID=serviceID||null;
+  selectedDataServiceLabel=option?.textContent||"";
+  selectedDataPlan=null;
+
+  console.log("Selected network:", selectedNetwork);
+  console.log("Selected serviceID:", selectedServiceID);
+
+  if(!serviceID){
+    clearDataPlans("Select a service to load live GSUBZ plans.");
+    return;
+  }
+
+  clearDataPlans();
+  loadDataPlans(serviceID);
+}
+
+async function loadDataPlans(serviceID){
+  const requestedServiceID=String(serviceID||selectedServiceID||selectedDataService||document.getElementById("dataService")?.value||"").trim();
+  selectedNetwork=document.getElementById("dataNetwork")?.value||selectedNetwork||"";
+  selectedServiceID=requestedServiceID||null;
+  selectedDataService=requestedServiceID||null;
+
+  console.log("Selected network:", selectedNetwork);
+  console.log("Selected serviceID:", selectedServiceID);
+  console.log("ServiceID immediately before Supabase function call:", requestedServiceID);
+
+  const box=document.getElementById("dataPlans");
+  if(!requestedServiceID){
+    clearDataPlans("Select a service to load live GSUBZ plans.");
+    return;
+  }
+
+  if(box) box.innerHTML=sparklePlanLoader("Loading plans…");
+  const error=document.getElementById("dataPlanError");
+  if(error) error.innerHTML="";
+
+  try{
+    if(!dataPlansCache[requestedServiceID]){
+      console.log("[Sparkle DATA] Calling GSUBZ with serviceID:",requestedServiceID);
+      dataPlansCache[requestedServiceID]=normalizePlans(
+        await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET")
+      );
+    }
+    let plans=dataPlansCache[requestedServiceID]||[];
+    // MTN has multiple live services. If one has no plans, automatically try
+    // the next MTN service without changing the other networks.
+    if(!plans.length && selectedNetwork==="MTN"){
+      const mtnFallbacks=["mtn_sme","mtn_gifting","mtn_fibrex"].filter(id=>id!==requestedServiceID);
+      for(const fallback of mtnFallbacks){
+        try{
+          if(!dataPlansCache[fallback]){
+            dataPlansCache[fallback]=normalizePlans(
+              await gsubzRequest("/api/plans/?service="+encodeURIComponent(fallback),"GET")
+            );
+          }
+          if(dataPlansCache[fallback]?.length){
+            selectedDataService=fallback;
+            selectedServiceID=fallback;
+            const select=document.getElementById("dataService");
+            if(select){select.value=fallback;}
+            const opt=select?.selectedOptions?.[0];
+            selectedDataServiceLabel=opt?.textContent||fallback;
+            plans=dataPlansCache[fallback];
+            break;
+          }
+        }catch(fallbackError){
+          console.warn("MTN fallback unavailable:",fallback,fallbackError);
+        }
+      }
+    }
+    renderDataPlans(plans);
+  }catch(e){
+    console.error("[Sparkle DATA] Plans request failed for serviceID:",requestedServiceID,e);
+    if(box) box.innerHTML="";
+    if(error) error.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load live GSUBZ plans.")+'</div>';
+  }
+}
+
+function renderDataPlans(plans){
+  const box=document.getElementById("dataPlans");
+  if(!box)return;
+  const safePlans=Array.isArray(plans)?plans:[];
+
+  // GSUBZ is the source of truth. Do not require HOT/DAILY/WEEKLY/MONTHLY
+  // (or any other category) before showing returned plans.
+  renderDataCategoryTabs(safePlans);
+
+  let filtered=safePlans;
+  if(selectedDataCategory && selectedDataCategory!=="All"){
+    if(String(selectedDataCategory).startsWith("duration:")){
+      const requestedDays=Number(String(selectedDataCategory).split(":")[1]);
+      filtered=safePlans.filter(p=>Number.isFinite(p._days)&&p._days===requestedDays);
+    }
+  }
+
+  if(!filtered.length){
+    // A selected optional filter may have no plans. Never block the service
+    // with a fake "HOT plans unavailable" message. Return to All instead.
+    if(selectedDataCategory!=="All"){
+      selectedDataCategory="All";
+      renderDataCategoryTabs(safePlans);
+      filtered=safePlans;
+    }
+  }
+
+  if(!filtered.length){
+    box.innerHTML='<div class="data-empty">No valid live plans were returned by GSUBZ for this service.</div>';
+    box._shownPlans=[];
+    return;
+  }
+
+  box._shownPlans=filtered;
+  box.innerHTML=filtered.map((p,i)=>`
+    <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}">
+      <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
+      <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
+      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
+      <span class="data-plan-buy">Buy</span>
+      <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
+    </button>`).join("");
+  box.querySelectorAll(".data-plan-card").forEach(card=>{
+    card.addEventListener("click",e=>{
+      e.preventDefault();
+      const i=Number(card.dataset.planIndex);
+      const p=box._shownPlans?.[i];
+      if(p)selectDataPlan(i,p._value,p._price,p._name,p._duration);
+    });
+  });
+}
+function selectDataPlan(index,value,price,name,duration){
+  const box=document.getElementById("dataPlans");
+  const plans=Array.isArray(box?._shownPlans)?box._shownPlans:[];
+  const found=plans.find(p=>String(p._value)===String(value));
+  selectedDataPlan=found||{
+    _value:String(value||""),
+    _price:Number(price||0),
+    _name:String(name||""),
+    _duration:String(duration||"")
+  };
+  if(box){
+    box.querySelectorAll(".data-plan-card").forEach(card=>card.classList.remove("selected"));
+    const cards=box.querySelectorAll(".data-plan-card");
+    if(cards[index]) cards[index].classList.add("selected");
+  }
+  console.log("Selected data plan:",selectedDataPlan);
+}
+
+function extractPlanDuration(plan){
+  const candidates=[];
+  if(plan&&typeof plan==="object"){
+    [plan.duration,plan.validity,plan.validityPeriod,plan.validity_period,plan.days,plan.durationDays,plan.validityDays,plan.validity_days,plan.displayName,plan.name,plan.PlanName].forEach(v=>{if(v!==undefined&&v!==null&&String(v).trim()!=="")candidates.push(String(v));});
+  }else if(plan!==undefined&&plan!==null)candidates.push(String(plan));
+  for(const rawValue of candidates){
+    const raw=String(rawValue).trim().toLowerCase();if(!raw)continue;
+    if(/^\d+(?:\.\d+)?$/.test(raw)){const n=Number(raw);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
+    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:day|days|d)\b/);if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:week|weeks|wk|wks)\b/);if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return {days:n,label:n===7?"7 days":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:month|months|mo|mos)\b/);if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return {days:n,label:n===30?"30 days":n+" days"};}
+    if(/\bmonthly\b/.test(raw))return {days:30,label:"30 days"};if(/\bweekly\b/.test(raw))return {days:7,label:"7 days"};if(/\bdaily\b/.test(raw))return {days:1,label:"1 day"};
+  }return {days:null,label:""};
+}
+function planDuration(plan){return extractPlanDuration(plan).label;}
+function planDays(plan){return extractPlanDuration(plan).days;}
+function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";return "Other";}
+function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
+function splitPlanName(plan){const raw=String(plan?.displayName||plan?.name||"").trim();const duration=planDuration(plan);const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
+function normalizePlans(result){
+  // GSUBZ wraps live data plans inside data.plans.
+  // Do not read result.plans: that property does not exist in the live response.
+  const plans=Array.isArray(result?.data?.plans)?result.data.plans:
+    (Array.isArray(result?.plans)?result.plans:
+    (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:[]));
+  console.groupCollapsed("[Sparkle DATA] GSUBZ plan response inspection");
+  console.log("Raw GSUBZ response:",result);
+  console.log("Raw GSUBZ plans:",plans);
+  if(plans[0]){
+    const f=plans[0];
+    console.log("First raw plan:",f);
+    console.log("Mapped fields:",{
+      planName:f.displayName,
+      validity:planDuration(f)||"not separately returned",
+      price:f.api_price ?? f.price,
+      planIdentifier:f.value
+    });
+  }
+  console.groupEnd();
+  return plans.map((p,i)=>{
+    const name=p.displayName||p.display_name||p.name||(p.value?String(p.value):(p.PlanName||("Plan "+(i+1))));
+    const d=splitPlanName(p);
+    return {
+      ...p,
+      _name:name,
+      _value:p.value??p.plan??p.variation_code??"",
+      _price:Number(p.api_price??p.price??0),
+      _category:planCategory(p),
+      _categoryLabel:planCategoryLabel(p),
+      _duration:d.duration,
+      _days:planDays(p),
+      _size:d.size
+    };
+  }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>=0);
+}
+function categoryTabsForPlans(plans){
+  const tabs=[{key:"All",label:"All"}];
+  const durations=[...new Set((Array.isArray(plans)?plans:[])
+    .map(p=>p?._days)
+    .filter(d=>Number.isFinite(d)&&d>0))]
+    .sort((a,b)=>a-b);
+  durations.forEach(d=>tabs.push({key:"duration:"+d,label:d===1?"1 day":d+" days"}));
+  return tabs;
+}
+function renderDataCategoryTabs(plans){
+  const c=document.getElementById("dataCategories");
+  if(!c)return;
+  const tabs=categoryTabsForPlans(plans);
+  if(!tabs.some(t=>t.key===selectedDataCategory))selectedDataCategory="All";
+  c.innerHTML=tabs.map(t=>`<button type="button" class="data-category ${t.key===selectedDataCategory?"active":""}" onclick="selectDataCategory(${JSON.stringify(t.key)},this)">${escapeHtml(t.label)}</button>`).join("");
+}
+function selectDataCategory(category,button){
+  selectedDataCategory=category||"All";
+  document.querySelectorAll("#dataPage .data-category").forEach(b=>b.classList.remove("active"));
+  button?.classList.add("active");
+  if(selectedServiceID)renderDataPlans(dataPlansCache[selectedServiceID]||[]);
+  else clearDataPlans("Select a service to load live GSUBZ plans.");
+}
+function escapeHtml(v){return String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]));}
+
+function beneficiaryKey(type){
+  const userId=window.currentSparkleUser?.id || "guest";
+  return "sparkle_beneficiaries_"+userId+"_"+type;
+}
+function getBeneficiaries(type){
+  try{return JSON.parse(localStorage.getItem(beneficiaryKey(type))||"[]");}catch(e){return [];}
+}
+function saveBeneficiary(type,number,label){
+  const list=getBeneficiaries(type).filter(x=>x.number!==number);
+  list.unshift({number,label:label||number});
+  localStorage.setItem(beneficiaryKey(type),JSON.stringify(list.slice(0,30)));
+}
+function toggleSaveBeneficiary(){
+  const b=document.getElementById("saveBeneficiaryToggle");
+  b.classList.toggle("on");
+}
+function toggleGenericSave(type){
+  document.getElementById(type+"SaveToggle")?.classList.toggle("on");
+}
+function chooseDataBeneficiary(){ chooseGenericBeneficiary("data"); }
+function chooseGenericBeneficiary(type){
+  const list=getBeneficiaries(type);
+  if(!list.length){alert("No saved beneficiaries yet.");return;}
+  const lines=list.map((x,i)=>`${i+1}. ${x.label||x.number}`).join("\n");
+  const answer=prompt("Choose beneficiary by number:\n\n"+lines);
+  const i=Number(answer)-1;
+  if(!Number.isInteger(i)||!list[i]) return;
+  const number=list[i].number;
+  if(type==="data") document.getElementById("dataPhone").value=number;
+  if(type==="airtime") document.getElementById("airtimePhone").value=number;
+  if(type==="cable") document.getElementById("cableNumber").value=number;
+}
+
+function extractCablePlanArray(payload){
+  // Walk only the returned response object and choose the array that looks
+  // most like a list of priced plans; do not alter the shared data-plan parser.
+  const queue=[{value:payload,depth:0,path:"response"}];
+  const seen=new Set();
+  const arrays=[];
+  while(queue.length){
+    const current=queue.shift();
+    const value=current.value;
+    if(!value || typeof value!=="object" || seen.has(value) || current.depth>6)continue;
+    seen.add(value);
+    if(Array.isArray(value)){
+      const objects=value.filter(x=>x&&typeof x==="object"&&!Array.isArray(x));
+      if(objects.length)arrays.push({items:objects,path:current.path});
+      continue;
+    }
+    for(const [key,child] of Object.entries(value)){
+      if(child&&typeof child==="object")queue.push({value:child,depth:current.depth+1,path:current.path+"."+key});
+    }
+  }
+  const priceKeys=["api_price","price","amount","selling_price","sellingPrice","cost","plan_price","planPrice"];
+  const valueKeys=["value","variation_code","variationCode","plan","plan_id","planId","code","id","package_id","packageId"];
+  const nameKeys=["displayName","display_name","name","PlanName","plan_name","planName","package_name","packageName","title","description","label"];
+  const score=arr=>arr.items.reduce((total,item)=>{
+    const hasPrice=priceKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!==""&&Number.isFinite(Number(item[k])));
+    const hasValue=valueKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!=="");
+    const hasName=nameKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!=="");
+    return total+(hasPrice?2:0)+(hasValue?2:0)+(hasName?1:0);
+  },0);
+  arrays.sort((a,b)=>score(b)-score(a)||b.items.length-a.items.length);
+  return arrays[0]?.items||[];
+}
+function normalizeCablePlans(result){
+  const source=extractCablePlanArray(result);
+  const get=(obj,keys)=>{for(const key of keys){const value=obj?.[key];if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;}return "";};
+  return source.map((item,index)=>{
+    const value=get(item,["value","variation_code","variationCode","plan","plan_id","planId","code","id","package_id","packageId"]);
+    const rawName=get(item,["displayName","display_name","name","PlanName","plan_name","planName","package_name","packageName","title","description","label"]);
+    const rawPrice=get(item,["api_price","price","amount","selling_price","sellingPrice","cost","plan_price","planPrice"]);
+    const price=Number(rawPrice);
+    const name=String(rawName||value||("Plan "+(index+1)));
+    const duration=planDuration(item)||"";
+    return {...item,_name:name,_value:String(value),_price:price,_duration:duration};
+  }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
+}
+async function loadCablePlans(){
+  const provider=document.getElementById("cableProvider")?.value||"DSTV";
+  const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
+  const box=document.getElementById("cablePlans");
+  if(!box)return;
+  box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
+  try{
+    const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
+    const plans=normalizeCablePlans(result);
+    if(!plans.length){
+      const shape=result&&typeof result==="object"?Object.keys(result).join(", "):typeof result;
+      console.error("[Sparkle cable plans] No usable plans",{provider,service,responseKeys:shape,response:result});
+      const reason=!result ? "GSUBZ returned an empty response."
+        : (result?.error||result?.message||result?.data?.message||"GSUBZ responded, but its cable-plan records did not include a usable plan code and price. Response fields: "+(shape||"none")+".");
+      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(String(reason))+'</strong><p>Please check the GSUBZ plan response.</p></div>';
+      box._plans=[];return;
+    }
+    box._plans=plans;
+    box.innerHTML=plans.map((p,i)=>`
+      <button type="button" class="data-plan-card ${selectedCablePlan?._value===p._value?"selected":""}" data-plan-index="${i}">
+        <div class="data-plan-size">${escapeHtml(p._name)}</div>
+        <div class="data-plan-validity">${escapeHtml(p._duration||"Package")}</div>
+        <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:2})}</div>
+        <span class="data-plan-buy">Buy</span>
+      </button>`).join("");
+    box.querySelectorAll(".data-plan-card").forEach(card=>{
+      card.addEventListener("click",e=>{
+        e.preventDefault();
+        const i=Number(card.dataset.planIndex);
+        const p=box._plans?.[i];
+        if(p)selectCablePlan(i,p._value,p._price,p._name);
+      });
+    });
+  }catch(e){
+    box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load cable plans.")+'</div>';
+  }
+}
+function selectCablePlan(index,value,price,name){
+  const box=document.getElementById("cablePlans");
+  const p=(box?._plans||[]).find(x=>String(x._value)===String(value));
+  selectedCablePlan=p||{_value:value,_price:price,_name:name};
+  box?.querySelectorAll(".data-plan-card").forEach((card,i)=>card.classList.toggle("selected",i===index));
+}
+async function verifyCable(){
+  const provider={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[document.getElementById("cableProvider").value];
+  const number=document.getElementById("cableNumber").value.trim();
+  const box=document.getElementById("cableVerify");
+  if(!number){box.innerHTML='<div class="gsubz-error">Enter your smartcard/IUC number first.</div>';return;}
+  box.textContent="Verifying subscriber…";
+  try{
+    const result=await gsubzRequest("/api/verify-customer/","POST",{serviceID:provider,billersCode:number});
+    if(result?.status==="successful"){
+      box.innerHTML='<div class="gsubz-customer">✓ '+escapeHtml(result.content?.customerName||"Subscriber verified")+'</div>';
+    }else throw new Error(result?.api_response||result?.description||"Subscriber verification failed.");
+  }catch(e){box.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to verify subscriber.")+'</div>';}
+}
+
+/* =====================================================
+   EDUCATION + ELECTRICITY
+   ===================================================== */
+let selectedEducationService=null;
+let educationPlansCache={};
+let selectedElectricityService=null;
+
+async function loadEducationPlans(){
+  const ids=["waec","neco","nabteb"];
+  await Promise.all(ids.map(async id=>{
+    const priceEl=document.querySelector(`[data-price-for="${id}"]`);
+    try{
+      const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(id),"GET");
+      const plans=Array.isArray(result?.data?.plans)?result.data.plans:(Array.isArray(result?.plans)?result.plans:[]);
+      const p=plans[0];
+      if(p){
+        educationPlansCache[id]={...p,_value:p.value??p.plan??p.variation_code??"",_price:Number(p.api_price??p.price??0),_name:p.displayName||p.display_name||id.toUpperCase()+" RESULTS PIN"};
+        if(priceEl)priceEl.textContent=money(educationPlansCache[id]._price);
+      }else if(priceEl)priceEl.textContent="Unavailable";
+    }catch(e){if(priceEl)priceEl.textContent="Unavailable";console.error("Education plan error",id,e);}
+  }));
+}
+function selectEducationService(id){
+  selectedEducationService=id;
+  document.querySelectorAll("#educationServices .education-service-card").forEach(b=>b.classList.toggle("active",b.dataset.service===id));
+  const p=educationPlansCache[id];
+  const box=document.getElementById("educationSelection");
+  if(box)box.textContent=p?`${p._name} • ${money(p._price)}`:"Loading live price…";
+}
+function showEducationSummary(){
+  const phone=(document.getElementById("educationPhone")?.value||"").trim();
+  const p=educationPlansCache[selectedEducationService];
+  const box=document.getElementById("educationSummary");
+  if(!selectedEducationService||!p){alert("Select a result pin first.");return;}
+  if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
+  const item={service:"Education Pin",network:selectedEducationService.toUpperCase(),phone,plan:p._name,planValue:p._value,serviceID:selectedEducationService,amount:Number(p._price||0)};
+  currentService="education";
+  pendingPurchase={type:"single",items:[item],total:item.amount};
+  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(p._name)}</strong><span>${escapeHtml(phone)}</span><b>${money(p._price)}</b><small>Ready for confirmation.</small><button class="btn primary full" style="margin-top:12px" onclick="openPinForPurchase()">Confirm & Buy</button></div>`;
+}
+function selectElectricityService(id,label){
+  selectedElectricityService=id;
+  document.querySelectorAll("#electricityServices .electricity-service-card").forEach(b=>b.classList.toggle("active",b.dataset.service===id));
+  const box=document.getElementById("electricitySelection");
+  if(box)box.textContent=`${label} • ${document.getElementById("electricityType")?.value||"prepaid"}`;
+}
+function showElectricitySummary(){
+  const meter=(document.getElementById("electricityMeter")?.value||"").trim();
+  const phone=(document.getElementById("electricityPhone")?.value||"").trim();
+  const type=document.getElementById("electricityType")?.value||"prepaid";
+  const amount=Number(document.getElementById("electricityAmount")?.value||0);
+  const box=document.getElementById("electricitySummary");
+  if(!selectedElectricityService){alert("Select an electricity provider first.");return;}
+  if(!meter){alert("Enter the meter number.");return;}
+  if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
+  if(!Number.isFinite(amount)||amount<100){alert("Enter a valid electricity amount of at least ₦100.");return;}
+  const label=document.querySelector(`#electricityServices [data-service="${CSS.escape(selectedElectricityService)}"] h3`)?.textContent||selectedElectricityService;
+  const item={service:"Electricity",network:selectedElectricityService,phone,plan:type,planValue:type,serviceID:selectedElectricityService,customerID:meter,variationCode:type,amount};
+  currentService="electricity";
+  pendingPurchase={type:"single",items:[item],total:item.amount};
+  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(type)} • Meter ${escapeHtml(meter)} • ${escapeHtml(phone)}</span><b>${money(amount)}</b><small>Ready for confirmation.</small><button class="btn primary full" style="margin-top:12px" onclick="openPinForPurchase()">Confirm & Pay</button></div>`;
+}
+
+/* =====================================================
+   SERVICE PURCHASE UI
+   ===================================================== */
+
+function money(n){
+  return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+}
+
+function normalizeRechargePinQuantity(){
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const qtyInput=document.getElementById("rechargePinQuantity");
+  if(!qtyInput)return;
+  const minimum=denomination<500?10:1;
+  let quantity=Number(qtyInput.value||0);
+  if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
+  if(quantity>100)quantity=100;
+  qtyInput.min=String(minimum);
+  qtyInput.value=String(Math.floor(quantity));
+}
+function updateRechargePinTotal(){
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const qtyInput=document.getElementById("rechargePinQuantity");
+  const minimum=denomination<500?10:1;
+  let quantity=Number(qtyInput?.value||0);
+  if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
+  if(quantity>100)quantity=100;
+  if(qtyInput)qtyInput.min=String(minimum);
+  // Do not rewrite the field during typing: otherwise entering 12 can become 10, then 100.
+  const total=denomination*quantity;
+  const box=document.getElementById("rechargePinTotal");
+  if(box)box.textContent=money(Number.isFinite(total)?total:0);
+}
+document.addEventListener("DOMContentLoaded",()=>updateRechargePinTotal());
+function showRechargePinSummary(){
+  const network=document.getElementById("rechargePinNetwork")?.value||"";
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const quantityInput=document.getElementById("rechargePinQuantity");
+  let quantity=Number(quantityInput?.value||0);
+  const minimum=denomination<500?10:1;
+  if(!Number.isFinite(quantity)||quantity<minimum) quantity=minimum;
+  if(quantity>100) quantity=100;
+  if(quantityInput) quantityInput.value=String(quantity);
+  updateRechargePinTotal();
+  quantity=Number(quantityInput?.value||quantity);
+  if(!network||![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<minimum||quantity>100){alert("Choose a network and denomination, then enter a valid quantity.");return;}
+  const total=denomination*quantity;
+  currentService="rechargepin";
+  pendingPurchase={type:"single",items:[{service:"Recharge Pin Printing",network,phone:"Recharge card printing",plan:`${money(denomination)} × ${quantity} card(s)`,amount:total,quantity,denomination}],total};
+  window.sparkleRechargePinPending=true;
+  try{sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:"rechargepin",purchase:pendingPurchase}));}catch(e){}
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
+  window.sparkleSummaryReturnScroll=window.scrollY||0;
+  const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
+  const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
+  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Continue</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
+  screen.scrollTop=0;
+  window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+  try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
+  const roll=document.getElementById("sparkle-continue-roll");
+  if(roll){const markEl=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(markEl){markEl.style.animation="none";void markEl.offsetWidth;markEl.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},900);}else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
+}
+
+async function confirmRechargePinPurchase(){
+  const button=document.getElementById("sparkle-recharge-pin-confirm");
+  const resultBox=document.getElementById("sparkle-recharge-pin-result");
+  const network=document.getElementById("rechargePinNetwork")?.value||"";
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
+  const total=denomination*quantity;
+  if(!button||!resultBox)return;
+  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100||(denomination<500&&quantity<10)){
+    resultBox.innerHTML='<div class="gsubz-error">Invalid quantity. For denominations below ₦500, order at least 10 cards.</div>';return;
+  }
+  button.disabled=true;button.textContent="Checking wallet…";
+  resultBox.innerHTML='<p>Checking your Sparkle wallet…</p>';
+  let userId=null, before=null, charged=false;
+  try{
+    const userResult=await supabaseClient.auth.getUser();
+    userId=userResult?.data?.user?.id;
+    if(!userId)throw new Error("Please log in again before purchasing.");
+    const walletResult=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).single();
+    if(walletResult.error||!walletResult.data)throw new Error("Sparkle wallet could not be loaded.");
+    before=Number(walletResult.data.balance||0);
+    if(!Number.isFinite(before)||before<total)throw new Error("Insufficient Sparkle wallet balance. You need "+money(total)+".");
+    button.textContent="Generating PINs…";
+    resultBox.innerHTML='<p>Sending your order to GSubz. Please keep this page open and do not retry.</p>';
+    const {data,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:{action:"recharge_pins",network:network.toLowerCase(),value:denomination,number:quantity}});
+    if(error){button.disabled=true;button.textContent="Order status must be checked";resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz response was not confirmed.</strong><p>Do not tap again yet. Check the provider/order status first to avoid duplicate PIN generation.</p></div>';throw new Error("The request could not be confirmed. Check the GSubz order status before trying again. "+(error.message||""));}
+    if(!data||data.success!==true||String(data.data?.status||"").toLowerCase()!=="success"){
+      throw new Error(data?.message||data?.data?.message||data?.error||"GSubz did not confirm the PIN order. No wallet charge was made.");
+    }
+    const after=before-total;
+    const debit=await supabaseClient.from("wallets").update({balance:after,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",before).select("balance");
+    if(debit.error||!debit.data||debit.data.length===0){
+      resultBox.innerHTML='<div class="gsubz-error"><strong>GSubz reports the PIN order succeeded, but Sparkle could not deduct your wallet.</strong><p>Do not submit again. Contact support with the PIN order details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
+      throw new Error("PIN order succeeded but wallet deduction failed. Do not retry; contact support.");
+    }
+    charged=true;
+    const tx=await supabaseClient.from("wallet_transactions").insert({user_id:userId,type:"debit",amount:total,service:"Recharge Pin Printing",status:"success"});
+    if(tx.error){
+      resultBox.innerHTML='<div class="gsubz-error"><strong>PINs were generated and the wallet was charged, but transaction history could not be saved.</strong><p>Keep these order details and contact support.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre></div>';
+      throw new Error("PIN order succeeded. Wallet was charged, but history could not be saved; contact support.");
+    }
+    resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charged: '+money(total)+'</p><p>Save or screenshot the PIN and serial details below.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.data,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(\'home\',document.querySelector(\'.nav-item\'));loadWallet(\''+userId+'\');loadTransactions(\''+userId+'\')">Done</button></div>';
+    button.style.display="none";
+    await loadWallet(userId);await loadTransactions(userId);
+  }catch(e){
+    console.error("Recharge PIN purchase:",e);
+    if(resultBox&&!charged&&!resultBox.innerHTML.includes("Do not retry"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
+    if(button&&button.style.display!=="none"&&button.textContent!=="Order status must be checked"){button.disabled=false;button.textContent="Try again only after checking order status";}
+  }
+}
+
+function getSinglePurchase(service){
+  if(service==="airtime"){
+    return {
+      service:"Airtime",
+      network:document.getElementById("airtimeNetwork").value,
+      phone:document.getElementById("airtimePhone").value.trim(),
+      plan:"Airtime recharge",
+      amount:Number(document.getElementById("airtimeAmount").value||0)
+    };
+  }
+  if(service==="data"){
+    return {
+      service:"Data",
+      network:document.getElementById("dataNetwork").value,
+      phone:document.getElementById("dataPhone").value.trim(),
+      plan:selectedDataPlan?._name || "",
+      planValue:selectedDataPlan?._value || "",
+      serviceID:selectedDataService || document.getElementById("dataService")?.value || "",
+      serviceLabel:selectedDataServiceLabel || document.getElementById("dataService")?.selectedOptions?.[0]?.textContent || "",
+      validity:selectedDataPlan?._duration || "",
+      amount:Number(selectedDataPlan?._price || 0)
+    };
+  }
+  if(service==="education"){
+    const p=educationPlansCache[selectedEducationService];
+    return {service:"Education Pin",network:selectedEducationService||"",phone:document.getElementById("educationPhone")?.value.trim()||"",plan:p?._name||"",planValue:p?._value||"",serviceID:selectedEducationService||"",amount:Number(p?._price||0)};
+  }
+  if(service==="electricity"){
+    const type=document.getElementById("electricityType")?.value||"prepaid";
+    return {service:"Electricity",network:selectedElectricityService||"",phone:document.getElementById("electricityPhone")?.value.trim()||"",customerID:document.getElementById("electricityMeter")?.value.trim()||"",plan:type,planValue:type,variationCode:type,serviceID:selectedElectricityService||"",amount:Number(document.getElementById("electricityAmount")?.value||0)};
+  }
+  return {
+    service:"Cable TV",
+    network:document.getElementById("cableProvider").value,
+    phone:document.getElementById("cableNumber").value.trim(),
+    plan:selectedCablePlan?._name || "",
+    planValue:selectedCablePlan?._value || "",
+    amount:Number(selectedCablePlan?._price || 0)
+  };
+}
+
+function showPurchaseSummary(service){
+  const p=getSinglePurchase(service);
+  if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue) || (service==="education"&&(!p.serviceID||!p.planValue)) || (service==="electricity"&&(!p.serviceID||!p.customerID))){
+    alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : service==="education" ? "Select an exam pin and enter a valid phone number." : service==="electricity" ? "Complete the electricity details first." : "Enter a phone number and valid amount.");
+    return;
+  }
+  if(service==="data" && document.getElementById("saveBeneficiaryToggle")?.classList.contains("on")){
+    saveBeneficiary("data",p.phone,p.phone);
+  }
+  if(service==="airtime" && document.getElementById("airtimeSaveToggle")?.classList.contains("on")){
+    saveBeneficiary("airtime",p.phone,p.phone);
+  }
+  currentService=service;
+  pendingPurchase={type:"single",items:[p],total:p.amount};
+  try { sessionStorage.setItem("sparklePendingPurchase", JSON.stringify({service, purchase:pendingPurchase})); } catch(e) {}
+  const networkName=String(p.network||p.service);
+  const networkKey=service==="cable"?"cable":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
+  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV"}[networkKey];
+  const summaryLabel=service==="data"?"Data purchase":service==="airtime"?"Airtime purchase":"Cable TV subscription";
+  const summaryMarkup=`
+    <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${summaryLabel}</div></div></div>
+    <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"TV provider":"Network"}</span><strong>${escapeHtml(p.network)}</strong></div>
+    ${service==="data"?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
+    ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>`}
+    <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
+    ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
+    <div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(p.amount)}</strong></div>
+    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="cable"?"Confirm & Pay":service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
+  window.sparkleSummaryReturnScroll=window.scrollY||0;
+  content.innerHTML=summaryMarkup;
+  screen.scrollTop=0;
+  // Give the review screen its own URL, like a dedicated confirmation link.
+  // The screen remains a full-page view so the purchase form is not visible underneath.
+  window.sparkleSummaryBaseUrl = window.location.pathname + window.location.hash;
+  try {
+    if (!new URLSearchParams(window.location.search).has("page") || new URLSearchParams(window.location.search).get("page") !== "confirm") {
+      window.history.pushState({sparklePurchaseReview:true}, "", window.location.pathname + "?page=confirm" + window.location.hash);
+    }
+  } catch (e) {}
+  screen.scrollTop=0;
+  const roll=document.getElementById("sparkle-continue-roll");
+  if(roll){
+    const mark=roll.querySelector(".sparkle-roll-mark");
+    roll.classList.add("is-visible");
+    roll.setAttribute("aria-hidden","false");
+    if(mark){mark.style.animation="none";void mark.offsetWidth;mark.style.animation="";}
+    window.setTimeout(()=>{
+      roll.classList.remove("is-visible");
+      roll.setAttribute("aria-hidden","true");
+      screen.classList.add("is-open");
+      screen.setAttribute("aria-hidden","false");
+    },900);
+  }else{
+    screen.classList.add("is-open");
+    screen.setAttribute("aria-hidden","false");
+  }
+}
+
+function addBulkRow(service){
+  const index=bulkRows[service].length;
+  bulkRows[service].push({index});
+  renderBulkRows(service);
+}
+
+function removeBulkRow(service,index){
+  bulkRows[service]=bulkRows[service].filter(x=>x.index!==index);
+  renderBulkRows(service);
+}
+
+function renderBulkRows(service){
+  const box=document.getElementById(service+"BulkList");
+  box.innerHTML=bulkRows[service].map((r,i)=>{
+    if(service==="data") return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
+      <select class="form-select" data-field="plan"><option>100MB</option><option>500MB</option><option>1GB</option><option>2GB</option></select>
+      <input class="form-input" data-field="phone" placeholder="Phone number">
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+    if(service==="airtime") return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
+      <input class="form-input" data-field="phone" placeholder="Phone number">
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+    return `<div class="bulk-row">
+      <select class="form-select" data-field="network"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select>
+      <input class="form-input" data-field="phone" placeholder="Smartcard/IUC">
+      <select class="form-select" data-field="plan"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select>
+      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
+      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
+    </div>`;
+  }).join("");
+  updateBulkTotal(service);
+}
+
+function collectBulk(service){
+  const rows=[...document.querySelectorAll("#"+service+"BulkList .bulk-row")];
+  return rows.map(row=>{
+    const get=f=>row.querySelector(`[data-field="${f}"]`)?.value.trim();
+    return {
+      service:service==="data"?"Data":service==="airtime"?"Airtime":"Cable TV",
+      network:get("network"),phone:get("phone"),plan:get("plan")||"Recharge",amount:Number(get("amount")||0)
+    };
+  }).filter(x=>x.phone || x.amount);
+}
+
+function updateBulkTotal(service){
+  const items=collectBulk(service);
+  const total=items.reduce((s,x)=>s+Number(x.amount||0),0);
+  document.getElementById(service+"BulkTotal").textContent="Total: "+money(total)+" · "+items.length+" transaction(s)";
+}
+
+function showBulkSummary(service){
+  const items=collectBulk(service);
+  if(!items.length || items.some(x=>!x.phone || !x.amount || x.amount<=0)){
+    alert("Please complete every bulk row with a valid number and amount.");
+    return;
+  }
+  currentService=service;
+  pendingPurchase={type:"bulk",items,total:items.reduce((s,x)=>s+x.amount,0)};
+  alert(`${items.length} transaction(s) selected. Total: ${money(pendingPurchase.total)}. Your PIN will be requested next.`);
+  openPinForPurchase();
+}
+
+function openPinForPurchase(){
+  document.getElementById("pinModal").classList.add("show");
+  document.querySelectorAll(".pin-box").forEach(x=>x.value="");
+  document.getElementById("pinMessage").textContent="";
+  setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);
+}
+
+function openPinModal(){
+  alert("Transaction PIN setup requires a secure server-side PIN table/function. The purchase PIN screen is ready, but no PIN is stored in the browser.");
+}
+
+function closePinModal(){document.getElementById("pinModal").classList.remove("show");}
+
+document.addEventListener("input",e=>{
+  if(e.target.closest(".bulk-row")){ const page=e.target.closest(".page"); if(page){ const service=page.id.replace("Page",""); if(bulkRows[service]) updateBulkTotal(service); } }
+  if(e.target.classList.contains("pin-box")){
+    e.target.value=e.target.value.replace(/\D/g,"").slice(0,1);
+    if(e.target.value) e.target.nextElementSibling?.focus();
+  }
+});
+
+async function confirmTransactionPIN(){
+  const pin=[...document.querySelectorAll(".pin-box")].map(x=>x.value).join("");
+  if(pin.length!==4){
+    document.getElementById("pinMessage").textContent="Enter your 4-digit transaction PIN.";
+    return;
+  }
+  if(window.sparkleRechargePinPending){
+    document.getElementById("pinMessage").textContent="Secure transaction PIN verification is not configured yet. No order was sent.";
+    return;
+  }
+  closePinModal();
+  await processPendingPurchase();
+}
+
+async function processPendingPurchase(){
+  if(!pendingPurchase) return;
+  const overlay=document.getElementById("processingOverlay");
+  overlay.classList.add("show");
+  document.getElementById("processingProgress").textContent =
+    pendingPurchase.type==="bulk" ? `Processing ${pendingPurchase.items.length} transaction(s)…` : "Processing your purchase…";
+
+  try{
+    for(let i=0;i<pendingPurchase.items.length;i++){
+      const p=pendingPurchase.items[i];
+      document.getElementById("processingProgress").textContent =
+        pendingPurchase.type==="bulk" ? `Processing ${i+1}/${pendingPurchase.items.length}…` : "Processing your purchase…";
+      const requestID="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
+
+      let data;
+      if(p.service==="Airtime"){
+        const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
+        data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
+      }else if(p.service==="Data"){
+        const serviceID=p.serviceID || selectedDataService;
+        data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
+      }else if(p.service==="Cable TV"){
+        const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
+        data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:"",customerID:p.phone,requestID};
+      }else if(p.service==="Education Pin"){
+        data={serviceID:String(p.serviceID),plan:String(p.planValue),amount:"",phone:p.phone,requestID};
+      }else if(p.service==="Electricity"){
+        data={serviceID:String(p.serviceID),phone:p.phone,customerID:String(p.customerID),amount:String(p.amount),variation_code:String(p.variationCode||p.planValue||"prepaid"),requestID};
+      }else{
+        throw new Error("Unsupported service.");
+      }
+
+      // Check Sparkle wallet before sending a cable purchase to GSUBZ.
+      // This prevents an unfunded DSTV/GOtv/Startimes request from reaching the provider.
+      if(p.service==="Cable TV"){
+        const preflightUser=await supabaseClient.auth.getUser();
+        const preflightUserId=preflightUser?.data?.user?.id;
+        if(!preflightUserId) throw new Error("Your session has expired. Please log in again.");
+        const preflightWallet=await supabaseClient.from("wallets").select("balance").eq("user_id",preflightUserId).single();
+        if(preflightWallet.error||!preflightWallet.data) throw new Error("Sparkle wallet could not be loaded.");
+        const availableBalance=Number(preflightWallet.data.balance||0);
+        const requiredAmount=Number(p.amount||0);
+        if(!Number.isFinite(requiredAmount)||requiredAmount<=0) throw new Error("Invalid cable plan amount.");
+        if(availableBalance<requiredAmount) throw new Error("Insufficient Sparkle wallet balance.");
+      }
+
+      const result=await gsubzRequest("/api/pay/","POST",data);
+      if(result?.status!=="successful"){
+        throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
+      }
+
+      const chargedAmount=Number(result?.amountPaid ?? result?.amount ?? p.amount);
+      if(!Number.isFinite(chargedAmount)||chargedAmount<=0) throw new Error("Invalid transaction amount returned by Gsubz.");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(!userId) throw new Error("Your session has expired. Please log in again.");
+      const walletResult=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).single();
+      if(walletResult.error||!walletResult.data) throw new Error("Sparkle wallet could not be loaded.");
+      const before=Number(walletResult.data.balance||0);
+      if(before < chargedAmount) throw new Error("Insufficient Sparkle wallet balance.");
+      const after=before-chargedAmount;
+      const debitResult=await supabaseClient.from("wallets").update({balance:after,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",before);
+      if(debitResult.error||debitResult.count===0){
+        throw new Error("Wallet changed before this purchase was recorded. Please check your balance before retrying.");
+      }
+      const txResult=await supabaseClient.from("wallet_transactions").insert({user_id:userId,type:"debit",amount:chargedAmount,service:p.service,status:"success"});
+      if(txResult.error){
+        // Best-effort rollback so a history failure does not leave the wallet debited.
+        await supabaseClient.from("wallets").update({balance:before,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",after);
+        throw new Error("Purchase completed but Sparkle could not record the wallet transaction. Your balance was restored; please check before retrying.");
+      }
+
+      if(i===pendingPurchase.items.length-1){
+        showReceipt({
+          service:p.service,
+          reference:result.transactionID || requestID,
+          customer:p.phone,
+          amount:Number(result.amountPaid ?? result.amount ?? p.amount)
+        });
+      }
+    }
+    overlay.classList.remove("show");
+    pendingPurchase=null;
+    await loadWallet((await supabaseClient.auth.getUser()).data.user?.id);
+    await loadTransactions((await supabaseClient.auth.getUser()).data.user?.id);
+  }catch(error){
+    console.error("Gsubz purchase:",error);
+    overlay.classList.remove("show");
+    alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
+  }
+}
+
+/* =====================================================
+   RECEIPTS
+   ===================================================== */
+
+function showReceipt(result){
+  const d=result||{};
+  document.getElementById("receiptDetails").innerHTML=`
+    <div class="receipt-row"><span>Service</span><strong>${d.service||"Sparkle Payment"}</strong></div>
+    <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
+    <div class="receipt-row"><span>Customer</span><strong>${d.customer||"—"}</strong></div>
+    <div class="receipt-row"><span>Amount</span><strong>${money(d.amount||0)}</strong></div>
+    <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
+    <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
+  document.getElementById("receiptModal").classList.add("show");
+}
+function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
+async function downloadReceiptImage(){
+  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
+  const a=document.createElement("a");a.download="sparkle-receipt.png";a.href=canvas.toDataURL("image/png");a.click();
+}
+async function downloadReceiptPDF(){
+  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
+  const {jsPDF}=window.jspdf;
+  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+  const img=canvas.toDataURL("image/png");
+  const width=180, height=canvas.height*width/canvas.width;
+  pdf.addImage(img,"PNG",15,15,width,height);
+  pdf.save("sparkle-receipt.pdf");
+}
+
+async function loadAllTransactions(){
+  const box=document.getElementById("allTransactions");
+  if(!box) return;
+  const {data,error}=await supabaseClient.from("wallet_transactions")
+    .select("id,type,amount,service,status,created_at")
+    .eq("user_id",(await supabaseClient.auth.getUser()).data.user.id)
+    .order("created_at",{ascending:false}).limit(100);
+  if(error){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
+  if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
+  box.innerHTML=data.map(tx=>{
+    const amount=Number(tx.amount||0);
+    const cls=tx.type==="credit"?"credit":"debit";
+    const sign=tx.type==="credit"?"+":"-";
+    return `<div class="tx"><div><strong>${tx.service||"Wallet transaction"}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${tx.status||""}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
+  }).join("");
+}
+
+
+/* =====================================================
+   WALLET
+   ===================================================== */
+
+async function loadWallet(userId){
+
+const {data,error} =
+await supabaseClient
+.from("wallets")
+.select("balance")
+.eq("user_id",userId)
+.single();
+
+
+if(error){
+
+console.error(
+"Wallet error:",
+error
+);
+
+document.getElementById("walletBalance")
+.textContent="₦0.00";
+
+return;
+
+}
+
+
+const balance =
+Number(data?.balance || 0);
+
+
+document.getElementById("walletBalance")
+.textContent =
+"₦" +
+balance.toLocaleString(
+"en-NG",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+);
+
+}
+
+
+/* =====================================================
+   TRANSACTIONS
+   ===================================================== */
+
+async function loadTransactions(userId){
+
+const box =
+document.getElementById("transactions");
+
+
+const {data,error} =
+await supabaseClient
+.from("wallet_transactions")
+.select(
+"id,type,amount,service,status,created_at"
+)
+.eq("user_id",userId)
+.order(
+"created_at",
+{ascending:false}
+)
+.limit(10);
+
+
+if(error){
+
+console.error(error);
+
+box.innerHTML =
+"<p style='color:#ef4444'>Unable to load transactions.</p>";
+
+return;
+
+}
+
+
+if(!data || data.length===0){
+
+box.innerHTML =
+"<p style='color:#64748b'>No transactions yet.</p>";
+
+return;
+
+}
+
+
+box.innerHTML =
+data.map(tx=>{
+
+const amount =
+Number(tx.amount || 0);
+
+
+const sign =
+tx.type === "credit"
+? "+"
+: "-";
+
+
+const cls =
+tx.type === "credit"
+? "credit"
+: "debit";
+
+
+const date =
+new Date(
+tx.created_at
+).toLocaleString("en-NG");
+
+
+return `
+
+<div class="tx">
+
+<div>
+
+<strong>
+${tx.service || "Wallet transaction"}
+</strong>
+
+<br>
+
+<small>
+${date} · ${tx.status || ""}
+</small>
+
+</div>
+
+
+<strong class="${cls}">
+
+${sign}₦${amount.toLocaleString(
+"en-NG",
+{
+minimumFractionDigits:2,
+maximumFractionDigits:2
+}
+)}
+
+</strong>
+
+</div>
+
+`;
+
+}).join("");
+
+}
+
+
+/* =====================================================
+   LEGAL
+   ===================================================== */
+
+function openLegal(type){
+
+const title =
+document.getElementById("legalTitle");
+
+
+const content =
+document.getElementById("legalContent");
+
+
+if(type==="terms"){
+
+title.textContent =
+"Sparkle Terms & Conditions";
+
+
+content.innerHTML = `
+
+<h3>1. Acceptance of Terms</h3>
+
+<p>
+By creating or using a Sparkle account, you agree to these Terms & Conditions and to use the platform lawfully.
+</p>
+
+
+<h3>2. Sparkle Services</h3>
+
+<p>
+Sparkle provides access to supported digital services including airtime, data, cable subscriptions, electricity payments and examination pins.
+</p>
+
+
+<h3>3. User Account</h3>
+
+<p>
+You are responsible for keeping your login credentials secure and for all activity carried out through your account.
+</p>
+
+
+<h3>4. Wallet</h3>
+
+<p>
+Wallet balances are intended for purchasing supported Sparkle services. Funding, debits, refunds and adjustments may be subject to verification.
+</p>
+
+
+<h3>5. Transactions</h3>
+
+<p>
+Users must provide accurate information when purchasing services. Sparkle may be unable to reverse a transaction where incorrect customer information was supplied.
+</p>
+
+
+<h3>6. Prohibited Use</h3>
+
+<p>
+You must not use Sparkle for fraud, unlawful transactions, abuse of the platform or any activity that violates applicable laws.
+</p>
+
+
+<h3>7. Service Availability</h3>
+
+<p>
+We aim to provide reliable services, but third-party network, payment and service-provider outages may affect availability.
+</p>
+
+
+<h3>8. Changes</h3>
+
+<p>
+Sparkle may update these terms when necessary.
+</p>
+
+<p>
+<strong>Last updated: October 2026</strong>
+</p>
+
+`;
+
+}else{
+
+title.textContent =
+"Sparkle Privacy Policy";
+
+
+content.innerHTML = `
+
+<h3>1. Information We Collect</h3>
+
+<p>
+Sparkle may collect information such as your name, email address, phone number, account information and transaction records.
+</p>
+
+
+<h3>2. How We Use Information</h3>
+
+<p>
+We use information to create and manage accounts, process transactions, provide customer support, maintain security and improve Sparkle services.
+</p>
+
+
+<h3>3. Payment Information</h3>
+
+<p>
+Payment processing may be handled by third-party payment providers.
+</p>
+
+
+<h3>4. Transaction Information</h3>
+
+<p>
+We retain appropriate transaction information to provide receipts, resolve disputes, prevent fraud and maintain accurate account records.
+</p>
+
+
+<h3>5. Security</h3>
+
+<p>
+We use reasonable technical and organizational measures to protect account and transaction information.
+</p>
+
+
+<h3>6. Third-Party Providers</h3>
+
+<p>
+Sparkle may use trusted providers for payment processing, bill-payment services, hosting and authentication.
+</p>
+
+
+<h3>7. Your Rights</h3>
+
+<p>
+Subject to applicable law, you may request access to or correction of your personal information.
+</p>
+
+
+<h3>8. Policy Updates</h3>
+
+<p>
+This Privacy Policy may be updated when Sparkle's services or legal requirements change.
+</p>
+
+
+<p>
+<strong>Last updated: October 2026</strong>
+</p>
+
+`;
+
+}
+
+
+document
+.getElementById("legalModal")
+.classList.add("show");
+
+}
+
+
+function closeLegal(){
+
+document
+.getElementById("legalModal")
+.classList.remove("show");
+
+}
+
+
+/* =====================================================
+   LOGOUT
+   ===================================================== */
+
+async function showFundWallet(){
+  const name=document.getElementById("dvaAccountName")?.textContent?.trim()||"Loading…";
+  const number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
+  const bank=document.getElementById("dvaBankName")?.textContent?.trim()||"Loading…";
+  document.getElementById("fundModalAccountName").textContent=name;
+  document.getElementById("fundModalAccountNumber").textContent=number;
+  document.getElementById("fundModalBankName").textContent=bank;
+  const status=document.getElementById("dvaStatus")?.textContent?.trim()||"";
+  document.getElementById("fundModalStatus").textContent=(status==="Ready"||number!=="Loading…"&&number!=="—")?"Dedicated account":"Account details loading";
+  document.getElementById("fundWalletModal").classList.add("show");
+}
+function closeFundWallet(){document.getElementById("fundWalletModal")?.classList.remove("show");}
+async function copyFundAccountNumber(){
+  const value=document.getElementById("fundModalAccountNumber")?.textContent?.trim()||"";
+  if(!value||value==="Loading…"||value==="—"){alert("Your account number is not available yet. Please try again shortly.");return;}
+  try{await navigator.clipboard.writeText(value);const b=document.getElementById("fundCopyButton");if(b){b.textContent="✓ Copied";setTimeout(()=>b.textContent="Copy account number",1600);}}
+  catch(e){alert("Please copy the account number manually: "+value);}
+}
+
+async function logout(){
+
+await supabaseClient.auth.signOut();
+
+showHomepage();
+
+}
+
+
+function showHomepage(){
+
+document
+.getElementById("dashboard")
+.classList.remove("active");
+
+document
+.getElementById("homepage")
+.classList.remove("hidden");
+
+}
+
+
+/* =====================================================
+   AUTH STATE
+   ===================================================== */
+
+supabaseClient.auth.onAuthStateChange(
+(event,session)=>{
+
+if(session){
+
+showDashboard(
+session.user
+);
+
+}else{
+
+showHomepage();
+
+}
+
+});
+
+
+/* =====================================================
+   INITIAL LOAD
+   ===================================================== */
+
+loadUser();
+
+
+/* Initialize live Gsubz plan screens */
+document.addEventListener("DOMContentLoaded",()=>{
+  setTimeout(()=>{
+    loadCablePlans();
+    updateNetworkBadge("data");
+  },300);
+});
+</script>
+
+
+<!-- Sparkle customer support widget -->
+<div id="sparkle-continue-roll" aria-hidden="true"><div class="sparkle-roll-mark">S</div><div class="sparkle-roll-caption">Preparing your purchase summary…</div></div>
+
+<div id="sparkle-purchase-summary-screen" aria-hidden="true">
+  <main class="sparkle-summary-page">
+    <header class="sparkle-summary-top"><button type="button" class="sparkle-summary-back" id="sparkle-summary-back" aria-label="Back to purchase">‹</button><h2>Review your purchase</h2></header>
+    <section class="sparkle-summary-card" id="sparkle-summary-screen-content"></section>
+  </main>
+</div>
+
+<div id="sparkle-support-widget">
+  <section id="sparkle-support-panel" role="dialog" aria-label="Sparkle customer support" aria-modal="false" aria-hidden="true">
+    <div class="sparkle-support-head">
+      <div class="sparkle-support-head-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><path d="M35 35c-2 5-7 6-13 6" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="currentColor"/></svg>
+      </div>
+      <div><h2 class="sparkle-support-title">Need Help?</h2><p class="sparkle-support-subtitle">Our support team is here for you.<br>Choose how you’d like to reach us.</p></div>
+      <button type="button" id="sparkle-support-close" aria-label="Close customer support">×</button>
+    </div>
+    <button type="button" class="sparkle-support-option whatsapp-chat" id="sparkle-support-chat">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 5.5A14 14 0 0 0 8 26.7L6.3 34l7.5-1.9A14 14 0 1 0 20 5.5Z" stroke="white" stroke-width="2.8" stroke-linejoin="round"/><path d="M15.2 13.1c-.6-1.1-1.2-1.1-1.8-1.1-.5 0-1.1.1-1.5.7-.5.5-1.9 1.8-1.9 4.4s1.9 5.1 2.2 5.5c.3.4 3.7 5.9 9 8 4.5 1.8 5.4 1.4 6.4 1.3 1-.1 3.2-1.3 3.7-2.6.4-1.3.4-2.4.3-2.6-.2-.2-.6-.4-1.3-.7-.7-.4-3.2-1.6-3.7-1.8-.5-.2-.9-.3-1.3.4-.4.7-1.4 1.8-1.7 2.2-.3.4-.6.5-1.2.2-.7-.4-2.7-1-5.1-3.2-1.9-1.7-3.2-3.8-3.6-4.5-.4-.7 0-1 .3-1.3.3-.3.7-.8 1-1.1.3-.4.4-.7.7-1.1.2-.4.1-.8 0-1.1-.2-.3-1.4-3.4-1.9-4.6Z" fill="white" transform="translate(1 0) scale(.85)"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">WhatsApp Chat</span><span class="sparkle-support-option-desc">Chat with us directly</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+    <button type="button" class="sparkle-support-option whatsapp-channel" id="sparkle-support-channel">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M18.5 5.5A13 13 0 0 0 7.4 25.3L6 31.8l6.7-1.7A13 13 0 1 0 18.5 5.5Z" stroke="white" stroke-width="2.5" stroke-linejoin="round"/><path d="M13 13c-.5-1-1.2-1-1.7-1-.5 0-1 .1-1.4.6-.4.5-1.7 1.7-1.7 4s1.7 4.7 2 5c.3.4 3.4 5.4 8.3 7.3 4.1 1.6 5 .9 5.9.8.9-.1 2.9-1.2 3.3-2.4.4-1.2.4-2.2.3-2.4-.1-.2-.5-.4-1.2-.7-.6-.3-2.9-1.4-3.4-1.6-.4-.2-.8-.3-1.2.4-.4.6-1.3 1.6-1.6 2-.3.3-.5.4-1.1.1-.6-.3-2.5-.9-4.7-2.9-1.7-1.5-2.9-3.5-3.2-4.1-.3-.6 0-.9.3-1.2.2-.2.6-.7.9-1 .3-.3.4-.6.6-1 .2-.4.1-.7 0-1-.2-.3-1.3-3.1-1.7-4.2Z" fill="white" transform="translate(2 0) scale(.8)"/><circle cx="29.5" cy="27.5" r="7.5" fill="#fff"/><path d="M29.5 23v9m-3-6h6m-6 3h6" stroke="#17c66a" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">WhatsApp Channel</span><span class="sparkle-support-option-desc">Get updates and latest news</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+    <button type="button" class="sparkle-support-option email-option" id="sparkle-support-email">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><rect x="5.5" y="9" width="29" height="22" rx="3" stroke="white" stroke-width="2.8"/><path d="m7 12 13 10 13-10" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">Email Us</span><span class="sparkle-support-option-desc">Send us a message</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+  </section>
+  <button type="button" id="sparkle-support-toggle" aria-label="Open customer support" aria-expanded="false" aria-controls="sparkle-support-panel">
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><path d="M35 35c-2 5-7 6-13 6" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="white"/></svg>
+  </button>
+</div>
+<script id="sparkle-purchase-summary-screen-script">
+(function(){
+ const screen=document.getElementById('sparkle-purchase-summary-screen');
+ function closeReview(restoreScroll){
+   if(!screen)return;
+   screen.classList.remove('is-open');
+   screen.setAttribute('aria-hidden','true');
+   screen.scrollTop=0;
+   const content=document.getElementById('sparkle-summary-screen-content');
+   if(content) content.innerHTML='';
+   try { sessionStorage.removeItem('sparklePendingPurchase'); } catch(e) {}
+   // Remove the dedicated confirmation URL when leaving the review page.
+   try {
+     const params=new URLSearchParams(window.location.search);
+     if(params.get('page')==='confirm') window.history.replaceState({},'',(window.sparkleSummaryBaseUrl||window.location.pathname));
+   } catch(e) {}
+   if(restoreScroll) window.scrollTo({top:Number(window.sparkleSummaryReturnScroll||0),behavior:'auto'});
+ }
+ window.sparkleConfirmPurchase=function(){closeReview(false);openPinForPurchase();};
+ document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
+ window.addEventListener('popstate',()=>{if(screen?.classList.contains('is-open'))closeReview(true);});
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&screen?.classList.contains('is-open'))closeReview(true);});
+ // A confirmation URL should reopen the dedicated summary if refreshed in the same session.
+ try {
+   const params=new URLSearchParams(window.location.search);
+   const saved=sessionStorage.getItem('sparklePendingPurchase');
+   if(params.get('page')==='confirm' && saved){
+     const parsed=JSON.parse(saved);
+     if(parsed && parsed.purchase && Array.isArray(parsed.purchase.items) && parsed.purchase.items.length){
+       pendingPurchase=parsed.purchase;
+       currentService=parsed.service || String(parsed.purchase.items[0].service||'').toLowerCase();
+       const p=parsed.purchase.items[0];
+       const service=currentService;
+       const networkName=String(p.network||p.service||'');
+       const networkKey=service==='cable'?'cable':networkName.toLowerCase()==='airtel'?'airtel':networkName.toLowerCase()==='mtn'?'mtn':networkName.toLowerCase()==='glo'?'glo':'nine';
+       const networkMark={mtn:'mtn',airtel:'at',glo:'glo',nine:'9m',cable:'TV'}[networkKey];
+       const label=service==='data'?'Data purchase':service==='airtime'?'Airtime purchase':'Cable TV subscription';
+       const markup=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${label}</div></div></div><div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service||'')}</strong></div><div class="summary-line"><span>${service==='cable'?'TV provider':'Network'}</span><strong>${escapeHtml(p.network||'')}</strong></div>${service==='data'?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||'')}</strong></div>`:''}<div class="summary-line"><span>${service==='cable'?'Decoder / IUC number':'Recipient Phone'}</span><strong>${escapeHtml(p.phone||'')}</strong></div><div class="summary-line"><span>${service==='data'?'Data plan':service==='cable'?'Subscription plan':'Airtime amount'}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(parsed.purchase.total||p.amount)}</strong></div><button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==='cable'?'Confirm & Pay':service==='data'?'Confirm & Buy':'Confirm & Buy Airtime'}</button>`;
+       const content=document.getElementById('sparkle-summary-screen-content');
+       if(content){content.innerHTML=markup;screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');}
+     }
+   }
+ } catch(e) {}
+})();
+</script>
+<script id="sparkle-support-widget-script">
+(function(){
+  // Add the real WhatsApp URLs here when Sparkle's support links are ready.
+  const SPARKLE_SUPPORT_WHATSAPP_CHAT = "";
+  const SPARKLE_SUPPORT_WHATSAPP_CHANNEL = "";
+  const SPARKLE_SUPPORT_EMAIL = "support@sparkle.com";
+  const toggle=document.getElementById('sparkle-support-toggle');
+  const panel=document.getElementById('sparkle-support-panel');
+  const close=document.getElementById('sparkle-support-close');
+  if(!toggle||!panel||!close)return;
+  function setOpen(open){panel.classList.toggle('is-open',open);panel.setAttribute('aria-hidden',String(!open));toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close customer support':'Open customer support');}
+  toggle.addEventListener('click',()=>setOpen(!panel.classList.contains('is-open')));
+  close.addEventListener('click',()=>setOpen(false));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false)});
+  document.addEventListener('click',e=>{if(panel.classList.contains('is-open')&&!document.getElementById('sparkle-support-widget').contains(e.target))setOpen(false)});
+  function openSupportLink(url,label){if(!url){alert(label+' link has not been configured yet. Sparkle can connect this option once the official link is added.');return;}window.open(url,'_blank','noopener,noreferrer');}
+  document.getElementById('sparkle-support-chat')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHAT,'WhatsApp Chat'));
+  document.getElementById('sparkle-support-channel')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHANNEL,'WhatsApp Channel'));
+  document.getElementById('sparkle-support-email')?.addEventListener('click',()=>{if(!SPARKLE_SUPPORT_EMAIL){alert('Sparkle support email has not been configured yet.');return;}window.location.href='mailto:'+SPARKLE_SUPPORT_EMAIL;});
+})();
+</script>
+
+</body>
+</html>
