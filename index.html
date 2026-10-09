@@ -4356,7 +4356,7 @@ async function confirmRechargePinPurchase(pin){
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const quantity=Number(document.getElementById("rechargePinQuantity")?.value||0);
   if(!button||!resultBox)return;
-  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>20||(denomination<500&&quantity<10)){
+  if(![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<1||quantity>100000||(denomination<500&&quantity<10)){
     resultBox.innerHTML='<div class="gsubz-error">Invalid quantity. For denominations below ₦500, order at least 10 cards.</div>';return;
   }
   let unitPrice=getRechargePinPrice(network,denomination);
@@ -4380,7 +4380,7 @@ async function confirmRechargePinPurchase(pin){
         resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p></div>';
         return;
       }
-      throw new Error(errorData?.message||error.message||"Purchase could not be completed.");
+      throw new Error(errorData?.error||errorData?.message||error.message||"Purchase could not be completed.");
     }
     if(data?.status==="unknown"){
       button.textContent="Order status needs checking";
