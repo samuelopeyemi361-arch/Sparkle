@@ -1052,6 +1052,74 @@ body.dark-mode .earn-stat{background:#0b1727}
 }
 
 </style>
+
+<style id="sparkle-support-widget-styles">
+#sparkle-support-widget{position:fixed;right:24px;bottom:92px;z-index:99999;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#071b4d}
+#sparkle-support-toggle{width:76px;height:76px;border:0;border-radius:50%;background:linear-gradient(145deg,#1764df,#0842a5);color:#fff;display:grid;place-items:center;box-shadow:0 12px 30px rgba(10,66,165,.28);cursor:pointer;transition:transform .18s,box-shadow .18s}
+#sparkle-support-toggle:hover{transform:translateY(-2px);box-shadow:0 16px 34px rgba(10,66,165,.34)}
+#sparkle-support-toggle svg{width:38px;height:38px}
+#sparkle-support-panel{position:absolute;right:0;bottom:96px;width:min(710px,calc(100vw - 32px));padding:28px 30px 30px;background:rgba(255,255,255,.98);border:1px solid #e1eaf7;border-radius:25px;box-shadow:0 18px 55px rgba(17,50,100,.16);display:none;transform-origin:bottom right;animation:sparkleSupportIn .18s ease-out}
+#sparkle-support-panel.is-open{display:block}
+@keyframes sparkleSupportIn{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.sparkle-support-head{display:flex;align-items:flex-start;gap:22px;padding:8px 32px 26px 4px;position:relative}
+.sparkle-support-head-icon{width:88px;height:88px;flex:0 0 88px;border-radius:50%;background:#edf5ff;color:#1453b4;display:grid;place-items:center}
+.sparkle-support-head-icon svg{width:48px;height:48px}
+.sparkle-support-title{font-size:30px;font-weight:850;letter-spacing:-.5px;margin:4px 0 8px;color:#071b4d}
+.sparkle-support-subtitle{font-size:18px;line-height:1.6;color:#61738f;margin:0}
+#sparkle-support-close{position:absolute;right:0;top:0;border:0;background:transparent;color:#64748b;font-size:32px;line-height:1;padding:0 0 8px 8px;cursor:pointer}
+.sparkle-support-option{width:100%;min-height:104px;display:flex;align-items:center;gap:24px;text-align:left;padding:17px 24px;margin-top:14px;border:1px solid transparent;border-radius:20px;cursor:pointer;color:#071b4d;transition:transform .15s,filter .15s}
+.sparkle-support-option:hover{transform:translateY(-1px);filter:saturate(1.05)}
+.sparkle-support-option.whatsapp-chat{background:linear-gradient(105deg,#effbf6,#f4fcf9)}
+.sparkle-support-option.whatsapp-channel{background:linear-gradient(105deg,#eef6ff,#f4f8ff)}
+.sparkle-support-option.email-option{background:linear-gradient(105deg,#f4f2ff,#f8f7ff)}
+.sparkle-support-option-icon{width:64px;height:64px;flex:0 0 64px;border-radius:50%;display:grid;place-items:center;color:#fff;background:#17c66a}
+.sparkle-support-option-icon svg{width:37px;height:37px}
+.email-option .sparkle-support-option-icon{background:#1768ed}
+.sparkle-support-option-copy{min-width:0;flex:1}
+.sparkle-support-option-title{font-size:21px;font-weight:850;margin:0 0 7px;display:block}
+.sparkle-support-option-desc{font-size:16px;color:#617a9b;line-height:1.35;display:block}
+.sparkle-support-arrow{font-size:29px;color:#637895;margin-left:8px}
+@media(max-width:600px){
+ #sparkle-support-widget{right:16px;bottom:88px}
+ #sparkle-support-toggle{width:62px;height:62px}
+ #sparkle-support-toggle svg{width:32px;height:32px}
+ #sparkle-support-panel{right:-4px;bottom:78px;width:calc(100vw - 24px);padding:18px 16px 18px;border-radius:20px;max-height:calc(100dvh - 110px);overflow:auto}
+ .sparkle-support-head{gap:13px;padding:4px 25px 14px 0}
+ .sparkle-support-head-icon{width:56px;height:56px;flex-basis:56px}
+ .sparkle-support-head-icon svg{width:34px;height:34px}
+ .sparkle-support-title{font-size:22px;margin:1px 0 5px}
+ .sparkle-support-subtitle{font-size:13px;line-height:1.45}
+ .sparkle-support-option{min-height:76px;gap:13px;padding:12px;margin-top:10px;border-radius:15px}
+ .sparkle-support-option-icon{width:46px;height:46px;flex-basis:46px}
+ .sparkle-support-option-icon svg{width:28px;height:28px}
+ .sparkle-support-option-title{font-size:15px;margin-bottom:4px}
+ .sparkle-support-option-desc{font-size:12px}
+ .sparkle-support-arrow{font-size:22px;margin-left:0}
+}
+@media(prefers-reduced-motion:reduce){#sparkle-support-panel{animation:none}#sparkle-support-toggle,.sparkle-support-option{transition:none}}
+
+<style id="sparkle-purchase-summary-screen-styles">
+#sparkle-purchase-summary-screen{position:fixed;inset:0;z-index:100000;background:#f5f7fb;display:none;overflow-y:auto;padding:env(safe-area-inset-top,12px) 16px env(safe-area-inset-bottom,20px)}
+#sparkle-purchase-summary-screen.is-open{display:block}
+.sparkle-summary-page{width:min(520px,100%);margin:0 auto;padding:12px 0 28px;color:#101828;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+.sparkle-summary-top{display:flex;align-items:center;gap:12px;margin:6px 0 24px}
+.sparkle-summary-back{border:0;border-radius:12px;width:42px;height:42px;background:#fff;box-shadow:0 2px 8px #1018280d;font-size:25px;color:#344054;cursor:pointer}
+.sparkle-summary-top h2{font-size:21px;margin:0;font-weight:850}
+.sparkle-summary-card{background:#fff;border:1px solid #e7eaf0;border-radius:20px;padding:22px;box-shadow:0 8px 24px rgba(16,24,40,.04)}
+.sparkle-summary-network{display:flex;align-items:center;gap:13px;padding-bottom:20px;border-bottom:1px solid #eaecf0;margin-bottom:8px}
+.sparkle-summary-network .network-card-logo{width:54px;height:54px;min-width:54px;font-size:16px}
+.sparkle-summary-network-name{font-size:17px;font-weight:850}
+.sparkle-summary-network-label{font-size:12px;color:#667085;margin-top:4px}
+.sparkle-summary-card .summary-line{display:flex;justify-content:space-between;gap:16px;padding:13px 0;border-bottom:1px solid #f0f1f4;font-size:14px}
+.sparkle-summary-card .summary-line span{color:#667085}
+.sparkle-summary-card .summary-line strong{text-align:right;overflow-wrap:anywhere}
+.sparkle-summary-total{display:flex;justify-content:space-between;align-items:center;margin:20px 0 4px;font-weight:800}
+.sparkle-summary-total strong{font-size:23px;color:#0b5cff}
+.sparkle-summary-confirm{margin-top:20px}
+@media(max-width:600px){#sparkle-support-widget{bottom:88px}.sparkle-summary-card{padding:18px}.sparkle-summary-page{padding-top:6px}}
+</style>
+</style>
+
 </head>
 
 <body>
@@ -4208,18 +4276,27 @@ function showPurchaseSummary(service){
   }
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
-  const box=document.getElementById(service+"Summary");
-  box.innerHTML=`
-    <h3>Purchase Summary</h3>
+  const networkKey=String(p.network||"").toLowerCase()==="airtel"?"airtel":String(p.network||"").toLowerCase()==="mtn"?"mtn":String(p.network||"").toLowerCase()==="glo"?"glo":"nine";
+  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
+  const summaryMarkup=`
+    <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${service==="data"?"Data purchase":"Airtime purchase"}</div></div></div>
     <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
     <div class="summary-line"><span>Network</span><strong>${escapeHtml(p.network)}</strong></div>
-    ${service==="data"?`<div class="summary-line"><span>Service</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
-    <div class="summary-line"><span>${service==="cable"?"Smartcard/IUC":service==="electricity"?"Meter Number":"Recipient Phone"}</span><strong>${escapeHtml(service==="electricity"?p.customerID:p.phone)}</strong></div>
-    <div class="summary-line"><span>${service==="cable"?"Package":service==="electricity"?"Bill Type":service==="education"?"Exam Pin":"Data plan"}</span><strong>${escapeHtml(p.plan)}</strong></div>
+    ${service==="data"?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
+    <div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>
+    <div class="summary-line"><span>${service==="data"?"Data plan":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
-    <div class="summary-line"><span>Current Price</span><strong>${money(p.amount)}</strong></div>
-    <button class="btn primary full" style="margin-top:14px" onclick="openPinForPurchase()">${service==="data"?"Confirm & Buy":"MAKE PAYMENT"}</button>`;
-  box.classList.add("show");
+    <div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(p.amount)}</strong></div>
+    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
+  if(service==="data"||service==="airtime"){
+    const screen=document.getElementById("sparkle-purchase-summary-screen");
+    document.getElementById("sparkle-summary-screen-content").innerHTML=summaryMarkup;
+    screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
+  }else{
+    const box=document.getElementById(service+"Summary");
+    box.innerHTML=`<h3>Purchase Summary</h3>${summaryMarkup}`;
+    box.classList.add("show");
+  }
 }
 
 function addBulkRow(service){
@@ -4871,6 +4948,70 @@ document.addEventListener("DOMContentLoaded",()=>{
     updateNetworkBadge("data");
   },300);
 });
+</script>
+
+
+<!-- Sparkle customer support widget -->
+<div id="sparkle-purchase-summary-screen" aria-hidden="true">
+  <main class="sparkle-summary-page">
+    <header class="sparkle-summary-top"><button type="button" class="sparkle-summary-back" id="sparkle-summary-back" aria-label="Back to purchase">‹</button><h2>Review your purchase</h2></header>
+    <section class="sparkle-summary-card" id="sparkle-summary-screen-content"></section>
+  </main>
+</div>
+
+<div id="sparkle-support-widget">
+  <section id="sparkle-support-panel" role="dialog" aria-label="Sparkle customer support" aria-modal="false" aria-hidden="true">
+    <div class="sparkle-support-head">
+      <div class="sparkle-support-head-icon" aria-hidden="true">
+        <svg viewBox="0 0 48 48" fill="none"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><path d="M35 35c-2 5-7 6-13 6" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="currentColor"/></svg>
+      </div>
+      <div><h2 class="sparkle-support-title">Need Help?</h2><p class="sparkle-support-subtitle">Our support team is here for you.<br>Choose how you’d like to reach us.</p></div>
+      <button type="button" id="sparkle-support-close" aria-label="Close customer support">×</button>
+    </div>
+    <button type="button" class="sparkle-support-option whatsapp-chat" id="sparkle-support-chat">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 5.5A14 14 0 0 0 8 26.7L6.3 34l7.5-1.9A14 14 0 1 0 20 5.5Z" stroke="white" stroke-width="2.8" stroke-linejoin="round"/><path d="M15.2 13.1c-.6-1.1-1.2-1.1-1.8-1.1-.5 0-1.1.1-1.5.7-.5.5-1.9 1.8-1.9 4.4s1.9 5.1 2.2 5.5c.3.4 3.7 5.9 9 8 4.5 1.8 5.4 1.4 6.4 1.3 1-.1 3.2-1.3 3.7-2.6.4-1.3.4-2.4.3-2.6-.2-.2-.6-.4-1.3-.7-.7-.4-3.2-1.6-3.7-1.8-.5-.2-.9-.3-1.3.4-.4.7-1.4 1.8-1.7 2.2-.3.4-.6.5-1.2.2-.7-.4-2.7-1-5.1-3.2-1.9-1.7-3.2-3.8-3.6-4.5-.4-.7 0-1 .3-1.3.3-.3.7-.8 1-1.1.3-.4.4-.7.7-1.1.2-.4.1-.8 0-1.1-.2-.3-1.4-3.4-1.9-4.6Z" fill="white" transform="translate(1 0) scale(.85)"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">WhatsApp Chat</span><span class="sparkle-support-option-desc">Chat with us directly</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+    <button type="button" class="sparkle-support-option whatsapp-channel" id="sparkle-support-channel">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M18.5 5.5A13 13 0 0 0 7.4 25.3L6 31.8l6.7-1.7A13 13 0 1 0 18.5 5.5Z" stroke="white" stroke-width="2.5" stroke-linejoin="round"/><path d="M13 13c-.5-1-1.2-1-1.7-1-.5 0-1 .1-1.4.6-.4.5-1.7 1.7-1.7 4s1.7 4.7 2 5c.3.4 3.4 5.4 8.3 7.3 4.1 1.6 5 .9 5.9.8.9-.1 2.9-1.2 3.3-2.4.4-1.2.4-2.2.3-2.4-.1-.2-.5-.4-1.2-.7-.6-.3-2.9-1.4-3.4-1.6-.4-.2-.8-.3-1.2.4-.4.6-1.3 1.6-1.6 2-.3.3-.5.4-1.1.1-.6-.3-2.5-.9-4.7-2.9-1.7-1.5-2.9-3.5-3.2-4.1-.3-.6 0-.9.3-1.2.2-.2.6-.7.9-1 .3-.3.4-.6.6-1 .2-.4.1-.7 0-1-.2-.3-1.3-3.1-1.7-4.2Z" fill="white" transform="translate(2 0) scale(.8)"/><circle cx="29.5" cy="27.5" r="7.5" fill="#fff"/><path d="M29.5 23v9m-3-6h6m-6 3h6" stroke="#17c66a" stroke-width="1.8" stroke-linecap="round"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">WhatsApp Channel</span><span class="sparkle-support-option-desc">Get updates and latest news</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+    <button type="button" class="sparkle-support-option email-option" id="sparkle-support-email">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><rect x="5.5" y="9" width="29" height="22" rx="3" stroke="white" stroke-width="2.8"/><path d="m7 12 13 10 13-10" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">Email Us</span><span class="sparkle-support-option-desc">Send us a message</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
+  </section>
+  <button type="button" id="sparkle-support-toggle" aria-label="Open customer support" aria-expanded="false" aria-controls="sparkle-support-panel">
+    <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><path d="M35 35c-2 5-7 6-13 6" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="white"/></svg>
+  </button>
+</div>
+<script id="sparkle-purchase-summary-screen-script">
+(function(){
+ const screen=document.getElementById('sparkle-purchase-summary-screen');
+ window.sparkleConfirmPurchase=function(){screen?.classList.remove('is-open');screen?.setAttribute('aria-hidden','true');document.body.style.overflow='';openPinForPurchase();};
+ document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>{screen?.classList.remove('is-open');screen?.setAttribute('aria-hidden','true');document.body.style.overflow='';});
+})();
+</script>
+<script id="sparkle-support-widget-script">
+(function(){
+  // Add the real WhatsApp URLs here when Sparkle's support links are ready.
+  const SPARKLE_SUPPORT_WHATSAPP_CHAT = "";
+  const SPARKLE_SUPPORT_WHATSAPP_CHANNEL = "";
+  const SPARKLE_SUPPORT_EMAIL = "support@sparkle.com";
+  const toggle=document.getElementById('sparkle-support-toggle');
+  const panel=document.getElementById('sparkle-support-panel');
+  const close=document.getElementById('sparkle-support-close');
+  if(!toggle||!panel||!close)return;
+  function setOpen(open){panel.classList.toggle('is-open',open);panel.setAttribute('aria-hidden',String(!open));toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close customer support':'Open customer support');}
+  toggle.addEventListener('click',()=>setOpen(!panel.classList.contains('is-open')));
+  close.addEventListener('click',()=>setOpen(false));
+  document.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false)});
+  document.addEventListener('click',e=>{if(panel.classList.contains('is-open')&&!document.getElementById('sparkle-support-widget').contains(e.target))setOpen(false)});
+  function openSupportLink(url,label){if(!url){alert(label+' link has not been configured yet. Sparkle can connect this option once the official link is added.');return;}window.open(url,'_blank','noopener,noreferrer');}
+  document.getElementById('sparkle-support-chat')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHAT,'WhatsApp Chat'));
+  document.getElementById('sparkle-support-channel')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHANNEL,'WhatsApp Channel'));
+  document.getElementById('sparkle-support-email')?.addEventListener('click',()=>{if(!SPARKLE_SUPPORT_EMAIL){alert('Sparkle support email has not been configured yet.');return;}window.location.href='mailto:'+SPARKLE_SUPPORT_EMAIL;});
+})();
 </script>
 
 </body>
