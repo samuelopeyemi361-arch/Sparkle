@@ -495,6 +495,29 @@ a{text-decoration:none;color:inherit}
   margin:0 0 15px
 }
 
+
+/* Professional wallet funding modal */
+.fund-modal-box{max-width:470px;padding:0;overflow:hidden;border:1px solid rgba(148,163,184,.22);box-shadow:0 28px 80px rgba(3,18,55,.28)}
+.fund-modal-hero{padding:25px 26px 22px;background:linear-gradient(135deg,#071b4d,#0b5cff);color:#fff;position:relative;overflow:hidden}
+.fund-modal-hero:after{content:"";position:absolute;width:170px;height:170px;right:-48px;top:-75px;border-radius:50%;background:rgba(255,255,255,.09)}
+.fund-modal-hero .modal-head{position:relative;z-index:1;margin:0 0 9px;align-items:flex-start}
+.fund-modal-hero .modal-head h2{font-size:21px;color:#fff}
+.fund-modal-hero .close{background:rgba(255,255,255,.15);color:#fff;font-size:22px}
+.fund-modal-hero p{position:relative;z-index:1;margin:0;color:rgba(255,255,255,.82);font-size:13px;line-height:1.55}
+.fund-modal-content{padding:22px 26px 26px}
+.fund-modal-status{display:inline-flex;align-items:center;gap:7px;background:#eff6ff;color:#1746a2;border-radius:999px;padding:7px 10px;font-size:11px;font-weight:800;margin-bottom:16px}
+.fund-modal-status:before{content:"";width:7px;height:7px;border-radius:50%;background:#16a34a}
+.fund-detail{padding:13px 14px;border:1px solid #e2e8f0;border-radius:13px;margin-bottom:10px;background:#f8fafc}
+.fund-detail label{display:block;color:#64748b;font-size:10px;letter-spacing:.8px;font-weight:800;margin-bottom:6px}
+.fund-detail strong{display:block;color:#0f172a;font-size:14px;line-height:1.45;overflow-wrap:anywhere}
+.fund-detail.account-number{background:#f0f5ff;border-color:#cbdcff}
+.fund-detail.account-number strong{font-size:22px;letter-spacing:.6px;color:#123b91}
+.fund-modal-note{display:flex;gap:10px;align-items:flex-start;color:#64748b;font-size:12px;line-height:1.55;margin:15px 0 18px}
+.fund-modal-note span{font-size:17px;line-height:1.2}
+.fund-modal-actions{display:flex;gap:10px}
+.fund-modal-actions .btn{flex:1;min-height:45px}
+@media(max-width:480px){.fund-modal-box{border-radius:19px}.fund-modal-hero{padding:22px 20px 19px}.fund-modal-content{padding:19px 20px 22px}.fund-detail.account-number strong{font-size:20px}}
+
 /* MODAL */
 
 .modal{
@@ -1886,6 +1909,24 @@ Privacy Policy
     <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
     <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
     <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
+  </div>
+</div>
+
+<!-- FUND WALLET MODAL -->
+<div class="modal" id="fundWalletModal" onclick="if(event.target===this)closeFundWallet()">
+  <div class="modal-box fund-modal-box" role="dialog" aria-modal="true" aria-labelledby="fundWalletTitle">
+    <div class="fund-modal-hero">
+      <div class="modal-head"><h2 id="fundWalletTitle">Fund your Sparkle wallet</h2><button class="close" onclick="closeFundWallet()" aria-label="Close">×</button></div>
+      <p>Transfer from your bank app to the dedicated account below. Keep these details safe and confirm the account name before sending.</p>
+    </div>
+    <div class="fund-modal-content">
+      <div class="fund-modal-status" id="fundModalStatus">Account details loading</div>
+      <div class="fund-detail"><label>ACCOUNT NAME</label><strong id="fundModalAccountName">Loading…</strong></div>
+      <div class="fund-detail account-number"><label>ACCOUNT NUMBER</label><strong id="fundModalAccountNumber">Loading…</strong></div>
+      <div class="fund-detail"><label>BANK</label><strong id="fundModalBankName">Loading…</strong></div>
+      <div class="fund-modal-note"><span>ⓘ</span><div>Use this dedicated account to fund your wallet. Your balance should update after the payment provider confirms the transfer.</div></div>
+      <div class="fund-modal-actions"><button class="btn primary" id="fundCopyButton" onclick="copyFundAccountNumber()">Copy account number</button><button class="btn" onclick="closeFundWallet()">Close</button></div>
+    </div>
   </div>
 </div>
 
@@ -4752,16 +4793,22 @@ document
    ===================================================== */
 
 async function showFundWallet(){
-  const card=document.querySelector(".dva-card");
-  if(card){
-    card.scrollIntoView({behavior:"smooth",block:"center"});
-    card.style.boxShadow="0 0 0 3px rgba(11,92,255,.18)";
-    setTimeout(()=>card.style.boxShadow="",1800);
-  }
-  const name=document.getElementById("dvaAccountName")?.textContent||"Loading…";
-  const number=document.getElementById("dvaAccountNumber")?.textContent||"Loading…";
-  const bank=document.getElementById("dvaBankName")?.textContent||"Loading…";
-  alert("Fund your Sparkle wallet\n\nAccount Name: "+name+"\nAccount Number: "+number+"\nBank: "+bank+"\n\nTransfer to this dedicated account. Your wallet will be credited after Paystack confirms the transfer.");
+  const name=document.getElementById("dvaAccountName")?.textContent?.trim()||"Loading…";
+  const number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
+  const bank=document.getElementById("dvaBankName")?.textContent?.trim()||"Loading…";
+  document.getElementById("fundModalAccountName").textContent=name;
+  document.getElementById("fundModalAccountNumber").textContent=number;
+  document.getElementById("fundModalBankName").textContent=bank;
+  const status=document.getElementById("dvaStatus")?.textContent?.trim()||"";
+  document.getElementById("fundModalStatus").textContent=(status==="Ready"||number!=="Loading…"&&number!=="—")?"Dedicated account":"Account details loading";
+  document.getElementById("fundWalletModal").classList.add("show");
+}
+function closeFundWallet(){document.getElementById("fundWalletModal")?.classList.remove("show");}
+async function copyFundAccountNumber(){
+  const value=document.getElementById("fundModalAccountNumber")?.textContent?.trim()||"";
+  if(!value||value==="Loading…"||value==="—"){alert("Your account number is not available yet. Please try again shortly.");return;}
+  try{await navigator.clipboard.writeText(value);const b=document.getElementById("fundCopyButton");if(b){b.textContent="✓ Copied";setTimeout(()=>b.textContent="Copy account number",1600);}}
+  catch(e){alert("Please copy the account number manually: "+value);}
 }
 
 async function logout(){
