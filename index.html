@@ -3614,7 +3614,9 @@ async function gsubzRequest(path, method="GET", data=null){
     if(!response.ok){const detail=result?.error||result?.message||result?.api_response||rawBody||response.statusText;const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);err.status=response.status;err.responseBody=result??rawBody;throw err;}
     if(result&&result.error){const err=new Error(String(result.error));err.status=response.status;err.responseBody=result;throw err;}return result;
   }
-  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:{path,method:upperMethod,data}});
+  const directServiceIDs=["mtn","airtel","glo","etisalat","airtel_gifting","airtel_sme","etisalat_data","glo_data","glo_sme","mtn_fibrex","mtn_gifting","mtn_sme"];
+  const requestBody=path==="/api/pay/"&&directServiceIDs.includes(String(data?.serviceID||""))?data:{path,method:upperMethod,data};
+  const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:requestBody});
   console.groupCollapsed("[Sparkle → GSUBZ] POST request");console.log("Edge Function:",GSUBZ_FUNCTION_NAME);console.log("Path:",path);console.log("Method:",upperMethod);console.log("Request body:",data);console.log("Supabase invoke response body:",result);console.log("Supabase invoke error:",error);console.groupEnd();
   if(error){console.error("GSUBZ Edge Function POST error:",error);throw new Error(error.message||"Unable to reach Gsubz.");}
   if(result&&result.error){const err=new Error(String(result.error));err.responseBody=result;throw err;}return result;
