@@ -3933,6 +3933,51 @@ function chooseGenericBeneficiary(type){
   if(type==="cable") document.getElementById("cableNumber").value=number;
 }
 
+function extractCablePlanArray(payload){
+  // Walk only the returned response object and choose the array that looks
+  // most like a list of priced plans; do not alter the shared data-plan parser.
+  const queue=[{value:payload,depth:0,path:"response"}];
+  const seen=new Set();
+  const arrays=[];
+  while(queue.length){
+    const current=queue.shift();
+    const value=current.value;
+    if(!value || typeof value!=="object" || seen.has(value) || current.depth>6)continue;
+    seen.add(value);
+    if(Array.isArray(value)){
+      const objects=value.filter(x=>x&&typeof x==="object"&&!Array.isArray(x));
+      if(objects.length)arrays.push({items:objects,path:current.path});
+      continue;
+    }
+    for(const [key,child] of Object.entries(value)){
+      if(child&&typeof child==="object")queue.push({value:child,depth:current.depth+1,path:current.path+"."+key});
+    }
+  }
+  const priceKeys=["api_price","price","amount","selling_price","sellingPrice","cost","plan_price","planPrice"];
+  const valueKeys=["value","variation_code","variationCode","plan","plan_id","planId","code","id","package_id","packageId"];
+  const nameKeys=["displayName","display_name","name","PlanName","plan_name","planName","package_name","packageName","title","description","label"];
+  const score=arr=>arr.items.reduce((total,item)=>{
+    const hasPrice=priceKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!==""&&Number.isFinite(Number(item[k])));
+    const hasValue=valueKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!=="");
+    const hasName=nameKeys.some(k=>item[k]!==undefined&&item[k]!==null&&String(item[k]).trim()!=="");
+    return total+(hasPrice?2:0)+(hasValue?2:0)+(hasName?1:0);
+  },0);
+  arrays.sort((a,b)=>score(b)-score(a)||b.items.length-a.items.length);
+  return arrays[0]?.items||[];
+}
+function normalizeCablePlans(result){
+  const source=extractCablePlanArray(result);
+  const get=(obj,keys)=>{for(const key of keys){const value=obj?.[key];if(value!==undefined&&value!==null&&String(value).trim()!=="")return value;}return "";};
+  return source.map((item,index)=>{
+    const value=get(item,["value","variation_code","variationCode","plan","plan_id","planId","code","id","package_id","packageId"]);
+    const rawName=get(item,["displayName","display_name","name","PlanName","plan_name","planName","package_name","packageName","title","description","label"]);
+    const rawPrice=get(item,["api_price","price","amount","selling_price","sellingPrice","cost","plan_price","planPrice"]);
+    const price=Number(rawPrice);
+    const name=String(rawName||value||("Plan "+(index+1)));
+    const duration=planDuration(item)||"";
+    return {...item,_name:name,_value:String(value),_price:price,_duration:duration};
+  }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
+}
 async function loadCablePlans(){
   const provider=document.getElementById("cableProvider")?.value||"DSTV";
   const service={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[provider];
@@ -3940,21 +3985,14 @@ async function loadCablePlans(){
   if(!box)return;
   box.innerHTML='<div class="data-loading">Loading '+escapeHtml(provider)+' plans…</div>';
   try{
-    const result=await gsubzRequest("/api/plans/?service="+service,"GET");
-    // Cable response from the existing GSUBZ Edge Function may wrap the plan
-    // array directly in `data` (response fields: success, service, data).
-    // Normalize only the cable response so data-plan handling stays untouched.
-    const cablePayload=Array.isArray(result?.data)
-      ? {...result,data:{plans:result.data}}
-      : (Array.isArray(result?.data?.data)
-        ? {...result,data:{...result.data,plans:result.data.data}}
-        : result);
-    const plans=normalizePlans(cablePayload);
+    const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
+    const plans=normalizeCablePlans(result);
     if(!plans.length){
-      console.error("[Sparkle cable plans] No usable plans",{provider,service,response:result});
+      const shape=result&&typeof result==="object"?Object.keys(result).join(", "):typeof result;
+      console.error("[Sparkle cable plans] No usable plans",{provider,service,responseKeys:shape,response:result});
       const reason=!result ? "GSUBZ returned an empty response."
-        : (result?.error||result?.message||result?.data?.message||"GSUBZ returned data, but no usable cable plan records were found. The Edge Function may be returning a different plan format.");
-      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(String(reason))+'</strong><p>Please try again later. If this continues, the GSUBZ Edge Function/API response needs checking.</p></div>';
+        : (result?.error||result?.message||result?.data?.message||"GSUBZ responded, but its cable-plan records did not include a usable plan code and price. Response fields: "+(shape||"none")+".");
+      box.innerHTML='<div class="gsubz-error"><strong>'+escapeHtml(String(reason))+'</strong><p>Please check the GSUBZ plan response.</p></div>';
       box._plans=[];return;
     }
     box._plans=plans;
@@ -3970,7 +4008,7 @@ async function loadCablePlans(){
         e.preventDefault();
         const i=Number(card.dataset.planIndex);
         const p=box._plans?.[i];
-        if(p) selectCablePlan(i,p._value,p._price,p._name);
+        if(p)selectCablePlan(i,p._value,p._price,p._name);
       });
     });
   }catch(e){
