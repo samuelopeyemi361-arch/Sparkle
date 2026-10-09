@@ -915,6 +915,7 @@ body.dark-mode .earn-stat{background:#0b1727}
 .form-field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px}
 .form-field{margin-bottom:15px}
 .summary-card{display:none;margin-top:20px;border:1px solid var(--line);border-radius:17px;padding:20px;background:#fff}
+#dataSummary,#airtimeSummary,#cableSummary{display:none!important}
 .summary-card.show{display:block}
 .summary-line{display:flex;justify-content:space-between;gap:15px;padding:9px 0;border-bottom:1px solid var(--line)}
 .summary-line:last-child{border-bottom:0;font-weight:900;font-size:18px}
@@ -1813,7 +1814,6 @@ Privacy Policy
       <div class="data-bottom-action">
         <button class="btn primary full" onclick="showPurchaseSummary('data')">Continue</button>
       </div>
-      <div class="summary-card" id="dataSummary"></div>
     </div>
 
     <div id="dataBulk" style="display:none">
@@ -1871,7 +1871,6 @@ Privacy Policy
         <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input" id="airtimeAmount" type="number" min="100" placeholder="500"></div>
       </div>
       <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
-      <div class="summary-card" id="airtimeSummary"></div>
     </div>
     <div id="airtimeBulk" style="display:none">
       <div class="bulk-list" id="airtimeBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
@@ -1901,7 +1900,6 @@ Privacy Policy
         <div id="cableVerify" style="margin-top:12px"></div>
       </div>
       <div id="cablePlans" class="data-plan-grid"><div class="data-loading">Loading cable plans…</div></div>
-      <div class="summary-card" id="cableSummary"></div>
       <div class="data-bottom-action"><button class="btn primary full" onclick="showPurchaseSummary('cable')">Continue</button></div>
     </div>
     <div id="cableBulk" style="display:none">
@@ -4276,27 +4274,28 @@ function showPurchaseSummary(service){
   }
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
-  const networkKey=String(p.network||"").toLowerCase()==="airtel"?"airtel":String(p.network||"").toLowerCase()==="mtn"?"mtn":String(p.network||"").toLowerCase()==="glo"?"glo":"nine";
-  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
+  const networkName=String(p.network||p.service);
+  const networkKey=service==="cable"?"cable":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
+  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV"}[networkKey];
+  const summaryLabel=service==="data"?"Data purchase":service==="airtime"?"Airtime purchase":"Cable TV subscription";
   const summaryMarkup=`
-    <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${service==="data"?"Data purchase":"Airtime purchase"}</div></div></div>
+    <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${summaryLabel}</div></div></div>
     <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
-    <div class="summary-line"><span>Network</span><strong>${escapeHtml(p.network)}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"TV provider":"Network"}</span><strong>${escapeHtml(p.network)}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
-    <div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>
-    <div class="summary-line"><span>${service==="data"?"Data plan":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
+    ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>`}
+    <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
     <div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(p.amount)}</strong></div>
-    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
-  if(service==="data"||service==="airtime"){
-    const screen=document.getElementById("sparkle-purchase-summary-screen");
-    document.getElementById("sparkle-summary-screen-content").innerHTML=summaryMarkup;
-    screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");document.body.style.overflow="hidden";
-  }else{
-    const box=document.getElementById(service+"Summary");
-    box.innerHTML=`<h3>Purchase Summary</h3>${summaryMarkup}`;
-    box.classList.add("show");
-  }
+    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="cable"?"Confirm & Pay":service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
+  window.sparkleSummaryReturnScroll=window.scrollY||0;
+  content.innerHTML=summaryMarkup;
+  screen.scrollTop=0;
+  screen.classList.add("is-open");
+  screen.setAttribute("aria-hidden","false");
 }
 
 function addBulkRow(service){
@@ -4988,8 +4987,18 @@ document.addEventListener("DOMContentLoaded",()=>{
 <script id="sparkle-purchase-summary-screen-script">
 (function(){
  const screen=document.getElementById('sparkle-purchase-summary-screen');
- window.sparkleConfirmPurchase=function(){screen?.classList.remove('is-open');screen?.setAttribute('aria-hidden','true');document.body.style.overflow='';openPinForPurchase();};
- document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>{screen?.classList.remove('is-open');screen?.setAttribute('aria-hidden','true');document.body.style.overflow='';});
+ function closeReview(restoreScroll){
+   if(!screen)return;
+   screen.classList.remove('is-open');
+   screen.setAttribute('aria-hidden','true');
+   screen.scrollTop=0;
+   const content=document.getElementById('sparkle-summary-screen-content');
+   if(content) content.innerHTML='';
+   if(restoreScroll) window.scrollTo({top:Number(window.sparkleSummaryReturnScroll||0),behavior:'auto'});
+ }
+ window.sparkleConfirmPurchase=function(){closeReview(false);openPinForPurchase();};
+ document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&screen?.classList.contains('is-open'))closeReview(true);});
 })();
 </script>
 <script id="sparkle-support-widget-script">
