@@ -1,4 +1,3 @@
-
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
@@ -25,9 +24,13 @@ Deno.serve(async (req) => {
   if (!url || !anon || !service) {
     return reply({ error: "Server not configured" }, 503);
   }
-  if (!gsubzKey) return reply({ error: "Provider not configured" }, 503);
+
+  if (!gsubzKey) {
+    return reply({ error: "Provider not configured" }, 503);
+  }
 
   const auth = req.headers.get("Authorization");
+
   if (!auth?.startsWith("Bearer ")) {
     return reply({ error: "Sign in required" }, 401);
   }
@@ -37,8 +40,14 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  const { data: { user }, error: authError } = await userClient.auth.getUser();
-  if (authError || !user) return reply({ error: "Invalid session" }, 401);
+  const {
+    data: { user },
+    error: authError,
+  } = await userClient.auth.getUser();
+
+  if (authError || !user) {
+    return reply({ error: "Invalid session" }, 401);
+  }
 
   let body: {
     network?: string;
@@ -54,7 +63,8 @@ Deno.serve(async (req) => {
     return reply({ error: "Invalid JSON" }, 400);
   }
 
-  // Verify transaction PIN using the existing function.
+  // Verify the transaction PIN using the existing function.
+  // Do not modify sparkle-transaction-pin.
   if (typeof body.pin !== "string" || !/^\d{4}$/.test(body.pin)) {
     return reply({ error: "Enter your 4-digit transaction PIN" }, 400);
   }
@@ -69,21 +79,30 @@ Deno.serve(async (req) => {
           apikey: anon,
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ action: "verify", pin: body.pin }),
+        body: JSON.stringify({
+          action: "verify",
+          pin: body.pin,
+        }),
       },
     );
 
     const pinResult = await pinResponse.json().catch(() => null);
 
     if (!pinResponse.ok || pinResult?.success !== true) {
-      return reply({
-        error: pinResult?.message || "Transaction PIN verification failed",
-      }, 401);
+      return reply(
+        {
+          error:
+            pinResult?.message ||
+            "Transaction PIN verification failed",
+        },
+        401,
+      );
     }
   } catch {
-    return reply({
-      error: "Could not verify transaction PIN. Please try again",
-    }, 503);
+    return reply(
+      { error: "Could not verify transaction PIN. Please try again" },
+      503,
+    );
   }
 
   const networks: Record<string, string> = {
@@ -93,9 +112,10 @@ Deno.serve(async (req) => {
     "9MOBILE": "9mobile",
   };
 
-  const network = typeof body.network === "string"
-    ? networks[body.network.trim().toUpperCase()]
-    : undefined;
+  const network =
+    typeof body.network === "string"
+      ? networks[body.network.trim().toUpperCase()]
+      : undefined;
 
   const value = body.denomination;
   const quantity = body.quantity;
@@ -116,25 +136,34 @@ Deno.serve(async (req) => {
   const minimum = value === 500 ? 1 : 10;
 
   if (quantity! < minimum) {
-    return reply({ error: `Minimum quantity is ${minimum}` }, 400);
+    return reply(
+      { error: `Minimum quantity is ${minimum}` },
+      400,
+    );
   }
 
   const admin = createClient(url, service, {
     auth: { persistSession: false },
   });
 
-  const dbNetwork = network === "mtn"
-    ? "MTN"
-    : network === "airtel"
-    ? "Airtel"
-    : network === "glo"
-    ? "Glo"
-    : "9mobile";
+  const dbNetwork =
+    network === "mtn"
+      ? "MTN"
+      : network === "airtel"
+        ? "Airtel"
+        : network === "glo"
+          ? "Glo"
+          : "9mobile";
 
-  // Prices come from Supabase, never from the browser.
-  const { data: pricing, error: priceError } = await admin
+  // Read the selling price from the database.
+  const {
+    data: pricing,
+    error: priceError,
+  } = await admin
     .from("sparkle_recharge_pin_prices")
-    .select("selling_price_per_pin, provider_cost_per_pin, min_quantity")
+    .select(
+      "selling_price_per_pin, provider_cost_per_pin, min_quantity",
+    )
     .eq("network", dbNetwork)
     .eq("denomination", value)
     .maybeSingle();
@@ -149,34 +178,59 @@ Deno.serve(async (req) => {
   }
 
   if (quantity! < pricing.min_quantity) {
-    return reply({ error: "Quantity below configured minimum" }, 400);
+    return reply(
+      { error: "Quantity below configured minimum" },
+      400,
+    );
   }
 
   const amount = Number(
-    (Number(pricing.selling_price_per_pin) * quantity!).toFixed(2),
+    (
+      Number(pricing.selling_price_per_pin) * quantity!
+    ).toFixed(2),
   );
 
-  const { data: reservation, error: reserveError } = await admin.rpc(
-    "sparkle_reserve_recharge_pin",
-    {
-      p_user_id: user.id,
-      p_request_id: requestId,
-      p_network: dbNetwork,
-      p_denomination: value,
-      p_quantity: quantity,
-      p_amount: amount,
-    },
-  );
+  // Reserve the wallet balance before requesting PINs.
+  const {
+    data: reservation,
+    error: reserveError,
+  } = await admin.rpc("sparkle_reserve_recharge_pin", {
+    p_user_id: user.id,
+    p_request_id: requestId,
+    p_network: dbNetwork,
+    p_denomination: value,
+    p_quantity: quantity,
+    p_amount: amount,
+  });
 
+  // Return a clear insufficient-funds message.
   if (reserveError) {
-    return reply({ error: "Could not reserve order" }, 400);
+    const message = String(reserveError.message || "");
+
+    if (message.toLowerCase().includes("insufficient")) {
+      return reply({ error: "Insufficient funds" }, 400);
+    }
+
+    return reply(
+      { error: message || "Could not reserve order" },
+      400,
+    );
   }
 
   if (!reservation?.success) {
-    return reply({
-      error: reservation?.message ?? "Order already exists",
-      status: reservation?.status,
-    }, 409);
+    const message = String(reservation?.message ?? "");
+
+    if (message.toLowerCase().includes("insufficient")) {
+      return reply({ error: "Insufficient funds" }, 400);
+    }
+
+    return reply(
+      {
+        error: message || "Order already exists",
+        status: reservation?.status,
+      },
+      409,
+    );
   }
 
   const finish = async (
@@ -203,6 +257,7 @@ Deno.serve(async (req) => {
 
   try {
     const form = new FormData();
+
     form.append("network", network);
     form.append("value", String(value));
     form.append("number", String(quantity));
@@ -211,22 +266,33 @@ Deno.serve(async (req) => {
       "https://api.gsubz.com/apiV2/generate/",
       {
         method: "POST",
-        headers: { Authorization: `Bearer ${gsubzKey}` },
+        headers: {
+          Authorization: `Bearer ${gsubzKey}`,
+        },
         body: form,
         signal: controller.signal,
       },
     );
 
-    const provider = await response.json().catch(() => null) as
-      Record<string, unknown> | null;
+    const provider = await response
+      .json()
+      .catch(() => null) as Record<string, unknown> | null;
 
     if (!provider) {
-      await finish("unknown", null, "Provider response was not valid JSON");
-      return reply({
-        status: "unknown",
-        message: "Check order status before retrying",
-        request_id: requestId,
-      }, 202);
+      await finish(
+        "unknown",
+        null,
+        "Provider response was not valid JSON",
+      );
+
+      return reply(
+        {
+          status: "unknown",
+          message: "Check order status before retrying",
+          request_id: requestId,
+        },
+        202,
+      );
     }
 
     if (provider.status === "failed") {
@@ -236,15 +302,21 @@ Deno.serve(async (req) => {
         "Provider confirmed failure",
       );
 
-      return reply({
-        error: ok
-          ? "Purchase failed; refund processed"
-          : "Failure received; refund needs reconciliation",
-        status: "failed",
-      }, 502);
+      return reply(
+        {
+          error: ok
+            ? "Purchase failed; refund processed"
+            : "Failure received; refund needs reconciliation",
+          status: "failed",
+        },
+        502,
+      );
     }
 
-    const pins = Array.isArray(provider.pins) ? provider.pins : [];
+    const pins = Array.isArray(provider.pins)
+      ? provider.pins
+      : [];
+
     const delivered = Number(provider.delivered ?? 0);
 
     if (
@@ -261,11 +333,14 @@ Deno.serve(async (req) => {
       const ok = await finish("success", provider);
 
       if (!ok) {
-        return reply({
-          error: "PINs issued; order status needs reconciliation",
-          status: "unknown",
-          request_id: requestId,
-        }, 202);
+        return reply(
+          {
+            error: "PINs issued; order status needs reconciliation",
+            status: "unknown",
+            request_id: requestId,
+          },
+          202,
+        );
       }
 
       return reply({
@@ -276,29 +351,37 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Never automatically refund an ambiguous provider result.
     await finish(
       "unknown",
       provider,
       "Provider result requires reconciliation",
     );
 
-    return reply({
-      status: "unknown",
-      message: "Order needs checking before retrying",
-      request_id: requestId,
-    }, 202);
+    return reply(
+      {
+        status: "unknown",
+        message: "Order needs checking before retrying",
+        request_id: requestId,
+      },
+      202,
+    );
   } catch {
+    // Avoid a duplicate charge if the provider result is uncertain.
     await finish(
       "unknown",
       null,
       "Provider response could not be confirmed",
     );
 
-    return reply({
-      status: "unknown",
-      message: "Check order status before retrying",
-      request_id: requestId,
-    }, 202);
+    return reply(
+      {
+        status: "unknown",
+        message: "Check order status before retrying",
+        request_id: requestId,
+      },
+      202,
+    );
   } finally {
     clearTimeout(timer);
   }
