@@ -1948,7 +1948,7 @@ Privacy Policy
     <div class="data-beneficiary-card">
       <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork" onchange="updateRechargePinTotal()"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
       <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="400">₦400</option><option value="500">₦500</option></select></div>
-      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="20" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
+      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="100000" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
       <div class="summary-line" style="margin-top:12px"><span>Wallet total</span><strong id="rechargePinTotal">Loading price…</strong></div>
     </div>
     <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, the minimum order is 10 cards. Your Sparkle wallet is checked before an order is sent.</p>
@@ -4273,7 +4273,7 @@ async function loadRechargePinPrices(force=false){
     const prices={};
     (data||[]).forEach(row=>{
       const price=Number(row.selling_price_per_pin);
-      if(Number.isFinite(price)&&price>0) prices[String(row.network)+":"+Number(row.denomination)]={price,min:Number(row.min_quantity||1)};
+      if(Number.isFinite(price)&&price>0) prices[String(row.network).trim().toLowerCase()+":"+Number(row.denomination)]={price,min:Number(row.min_quantity||1)};
     });
     sparkleRechargePinPrices=prices;
     sparkleRechargePinPricesLoaded=true;
@@ -4283,7 +4283,7 @@ async function loadRechargePinPrices(force=false){
   finally{sparkleRechargePinPriceLoadPromise=null;}
 }
 function getRechargePinPrice(network,denomination){
-  return sparkleRechargePinPrices[String(network)+":"+Number(denomination)]?.price||null;
+  return sparkleRechargePinPrices[String(network).trim().toLowerCase()+":"+Number(denomination)]?.price||null;
 }
 function normalizeRechargePinQuantity(){
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
@@ -4292,8 +4292,8 @@ function normalizeRechargePinQuantity(){
   const minimum=denomination<500?10:1;
   let quantity=Number(qtyInput.value||0);
   if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
-  if(quantity>20)quantity=20;
-  qtyInput.min=String(minimum);qtyInput.max="20";
+  if(quantity>100000)quantity=100000;
+  qtyInput.min=String(minimum);qtyInput.max="100000";
   qtyInput.value=String(Math.floor(quantity));
 }
 async function updateRechargePinTotal(){
@@ -4303,8 +4303,8 @@ async function updateRechargePinTotal(){
   const minimum=denomination<500?10:1;
   let quantity=Number(qtyInput?.value||0);
   if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
-  if(quantity>20)quantity=20;
-  if(qtyInput){qtyInput.min=String(minimum);qtyInput.max="20";}
+  if(quantity>100000)quantity=100000;
+  if(qtyInput){qtyInput.min=String(minimum);qtyInput.max="100000";}
   const box=document.getElementById("rechargePinTotal");
   if(box)box.textContent="Loading price…";
   try{
@@ -4322,11 +4322,11 @@ async function showRechargePinSummary(){
   let quantity=Number(quantityInput?.value||0);
   const minimum=denomination<500?10:1;
   if(!Number.isFinite(quantity)||quantity<minimum) quantity=minimum;
-  if(quantity>100) quantity=100;
+  if(quantity>100000) quantity=100000;
   if(quantityInput) quantityInput.value=String(quantity);
   updateRechargePinTotal();
   quantity=Number(quantityInput?.value||quantity);
-  if(!network||![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<minimum||quantity>100){alert("Choose a network and denomination, then enter a valid quantity.");return;}
+  if(!network||![100,200,400,500].includes(denomination)||!Number.isInteger(quantity)||quantity<minimum||quantity>100000){alert("Choose a network and denomination, then enter a valid quantity.");return;}
   let unitPrice=getRechargePinPrice(network,denomination);
   try{if(unitPrice===null){await loadRechargePinPrices(true);unitPrice=getRechargePinPrice(network,denomination);}}catch(e){alert("Recharge PIN prices could not be loaded. Please try again later.");return;}
   if(unitPrice===null){alert("The selling price for this Recharge PIN is not configured yet.");return;}
