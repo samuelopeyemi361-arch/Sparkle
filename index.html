@@ -4305,6 +4305,20 @@ async function processPendingPurchase(){
         throw new Error("Unsupported service.");
       }
 
+      // Check Sparkle wallet before sending a cable purchase to GSUBZ.
+      // This prevents an unfunded DSTV/GOtv/Startimes request from reaching the provider.
+      if(p.service==="Cable TV"){
+        const preflightUser=await supabaseClient.auth.getUser();
+        const preflightUserId=preflightUser?.data?.user?.id;
+        if(!preflightUserId) throw new Error("Your session has expired. Please log in again.");
+        const preflightWallet=await supabaseClient.from("wallets").select("balance").eq("user_id",preflightUserId).single();
+        if(preflightWallet.error||!preflightWallet.data) throw new Error("Sparkle wallet could not be loaded.");
+        const availableBalance=Number(preflightWallet.data.balance||0);
+        const requiredAmount=Number(p.amount||0);
+        if(!Number.isFinite(requiredAmount)||requiredAmount<=0) throw new Error("Invalid cable plan amount.");
+        if(availableBalance<requiredAmount) throw new Error("Insufficient Sparkle wallet balance.");
+      }
+
       const result=await gsubzRequest("/api/pay/","POST",data);
       if(result?.status!=="successful"){
         throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
