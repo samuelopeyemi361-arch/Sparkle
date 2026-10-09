@@ -3355,6 +3355,7 @@ button.textContent="Update Password";
 
 let currentService = null;
 let pendingPurchase = null;
+let purchaseInProgress = false;
 let bulkRows = {data:[], airtime:[], cable:[], education:[], electricity:[]};
 
 function showDashPage(pageId, button){
@@ -4274,7 +4275,8 @@ async function confirmTransactionPIN(){
 }
 
 async function processPendingPurchase(){
-  if(!pendingPurchase) return;
+  if(!pendingPurchase || purchaseInProgress) return;
+  purchaseInProgress = true;
   const overlay=document.getElementById("processingOverlay");
   overlay.classList.add("show");
   document.getElementById("processingProgress").textContent =
@@ -4362,6 +4364,8 @@ async function processPendingPurchase(){
     console.error("Gsubz purchase:",error);
     overlay.classList.remove("show");
     alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
+  }finally{
+    purchaseInProgress = false;
   }
 }
 
