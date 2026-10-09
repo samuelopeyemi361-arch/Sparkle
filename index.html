@@ -1102,6 +1102,8 @@ body.dark-mode .earn-stat{background:#0b1727}
 
 <style id="sparkle-purchase-summary-screen-styles">
 #sparkle-purchase-summary-screen{position:fixed;inset:0;z-index:100000;background:#f5f7fb;display:none;overflow-y:auto;padding:env(safe-area-inset-top,12px) 16px env(safe-area-inset-bottom,20px)}
+/* Keep the transaction PIN dialog above the dedicated purchase-summary screen. */
+#pinModal{z-index:100002}
 #sparkle-purchase-summary-screen.is-open{display:block}
 #sparkle-continue-roll{position:fixed;inset:0;z-index:100001;display:none;align-items:center;justify-content:center;flex-direction:column;gap:12px;background:rgba(255,255,255,.97);color:#0b5cff}
 #sparkle-continue-roll.is-visible{display:flex}
@@ -1946,7 +1948,7 @@ Privacy Policy
     <div class="data-beneficiary-card">
       <div class="form-field"><label>NETWORK</label><select class="form-select" id="rechargePinNetwork"><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option></select></div>
       <div class="form-field" style="margin-top:16px"><label>RECHARGE AMOUNT PER CARD</label><select class="form-select" id="rechargePinDenomination" onchange="updateRechargePinTotal()"><option value="100">₦100</option><option value="200">₦200</option><option value="400">₦400</option><option value="500">₦500</option></select></div>
-      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="100" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()"></div>
+      <div class="form-field" style="margin-top:16px"><label>QUANTITY</label><input class="form-input" id="rechargePinQuantity" type="number" inputmode="numeric" min="10" max="100" step="1" value="10" placeholder="Number of cards" oninput="updateRechargePinTotal()" onchange="normalizeRechargePinQuantity();updateRechargePinTotal()" onblur="normalizeRechargePinQuantity();updateRechargePinTotal()"></div>
       <div class="summary-line" style="margin-top:12px"><span>Card value total</span><strong id="rechargePinTotal">₦100.00</strong></div>
     </div>
     <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, the minimum order is 10 cards. Your Sparkle wallet is checked before an order is sent.</p>
@@ -4242,17 +4244,26 @@ function money(n){
   return "₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 }
 
+function normalizeRechargePinQuantity(){
+  const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
+  const qtyInput=document.getElementById("rechargePinQuantity");
+  if(!qtyInput)return;
+  const minimum=denomination<500?10:1;
+  let quantity=Number(qtyInput.value||0);
+  if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
+  if(quantity>100)quantity=100;
+  qtyInput.min=String(minimum);
+  qtyInput.value=String(Math.floor(quantity));
+}
 function updateRechargePinTotal(){
   const denomination=Number(document.getElementById("rechargePinDenomination")?.value||0);
   const qtyInput=document.getElementById("rechargePinQuantity");
   const minimum=denomination<500?10:1;
   let quantity=Number(qtyInput?.value||0);
-  if(qtyInput){
-    qtyInput.min=String(minimum);
-    if(!Number.isFinite(quantity)||quantity<minimum) quantity=minimum;
-    if(quantity>100) quantity=100;
-    qtyInput.value=String(quantity);
-  }
+  if(!Number.isFinite(quantity)||quantity<minimum)quantity=minimum;
+  if(quantity>100)quantity=100;
+  if(qtyInput)qtyInput.min=String(minimum);
+  // Do not rewrite the field during typing: otherwise entering 12 can become 10, then 100.
   const total=denomination*quantity;
   const box=document.getElementById("rechargePinTotal");
   if(box)box.textContent=money(Number.isFinite(total)?total:0);
