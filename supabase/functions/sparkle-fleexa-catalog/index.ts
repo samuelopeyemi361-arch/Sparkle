@@ -5,7 +5,7 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -13,9 +13,9 @@ serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
-  if (req.method !== "GET") {
+  if (req.method !== "GET" && req.method !== "POST") {
     return Response.json(
-      { error: "GET requests only" },
+      { error: "Method not allowed" },
       { status: 405, headers: corsHeaders }
     );
   }
@@ -24,38 +24,50 @@ serve(async (req) => {
 
   if (!apiKey) {
     return Response.json(
-      { error: "Fleexa API key is missing" },
+      { error: "FLEEXA_API_KEY secret missing" },
       { status: 500, headers: corsHeaders }
     );
   }
 
-  const url = new URL(req.url);
-  const action = url.searchParams.get("action") || "countries";
+  let action = "countries";
+  let serviceName = "";
 
-  const endpoints: Record<string, string> = {
-    countries: "/sms4/countries",
-    apps: "/sms4/apps",
-  };
+  if (req.method === "GET") {
+    const url = new URL(req.url);
+    action = url.searchParams.get("action") || "countries";
+    serviceName = url.searchParams.get("serviceName") || "";
+  } else {
+    try {
+      const body = await req.json();
+      action = body.action || "countries";
+      serviceName = body.serviceName || "";
+    } catch {
+      return Response.json(
+        { error: "Invalid JSON request body" },
+        { status: 400, headers: corsHeaders }
+      );
+    }
+  }
 
-  let endpoint = endpoints[action];
+  let endpoint: string;
 
-  if (action === "price") {
-    const serviceName = url.searchParams.get("serviceName") || "";
-
+  if (action === "countries") {
+    endpoint = "/sms4/countries";
+  } else if (action === "apps") {
+    endpoint = "/sms4/apps";
+  } else if (action === "price") {
     if (!/^[a-zA-Z0-9_-]{1,60}$/.test(serviceName)) {
       return Response.json(
-        { error: "Invalid service name" },
+        { error: "Invalid serviceName" },
         { status: 400, headers: corsHeaders }
       );
     }
 
     endpoint =
       "/sms4/prices?serviceName=" + encodeURIComponent(serviceName);
-  }
-
-  if (!endpoint) {
+  } else {
     return Response.json(
-      { error: "Use action=countries, apps, or price" },
+      { error: "Action must be countries, apps, or price" },
       { status: 400, headers: corsHeaders }
     );
   }
@@ -64,6 +76,7 @@ serve(async (req) => {
     const response = await fetch(
       "https://fleexa.com.ng/developer" + endpoint,
       {
+        method: "GET",
         headers: {
           Authorization: `Bearer ${apiKey}`,
           Accept: "application/json",
@@ -72,9 +85,9 @@ serve(async (req) => {
       }
     );
 
-    const body = await response.text();
+    const result = await response.text();
 
-    return new Response(body, {
+    return new Response(result, {
       status: response.status,
       headers: {
         ...corsHeaders,
@@ -84,7 +97,7 @@ serve(async (req) => {
     });
   } catch {
     return Response.json(
-      { error: "Fleexa API is temporarily unavailable" },
+      { error: "Could not reach Fleexa API" },
       { status: 502, headers: corsHeaders }
     );
   }
