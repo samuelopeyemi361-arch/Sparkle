@@ -3589,8 +3589,28 @@ async function callFleexaCatalog(payload){
 }
 async function callFleexaOrderFunction(name,payload){
   const { data, error } = await supabaseClient.functions.invoke(name,{body:payload});
-  if(error) throw new Error(error.message || "Could not contact the SMS OTP service");
-  if(data && data.success === false) throw new Error(data.message || data.error || "SMS OTP request failed");
+  const isLowFunds=(value)=>/insufficient\s+(funds|balance)|not enough\s+(funds|balance)|wallet.{0,30}(low|insufficient|not enough)|balance.{0,30}(low|insufficient)|insufficient_wallet_balance/i.test(String(value||""));
+  const friendlyFundsError=()=>{const e=new Error("Insufficient funds. Please fund your Sparkle wallet and try again.");e.code="INSUFFICIENT_FUNDS";return e;};
+  if(error){
+    let detail="", raw="";
+    try{
+      const context=error.context;
+      if(context && typeof context.clone==="function"){
+        const response=context.clone();
+        raw=await response.text();
+        try{const body=JSON.parse(raw);detail=String(body?.message||body?.error||body?.details||body?.hint||body?.code||"");}
+        catch(_){detail=raw;}
+      }
+    }catch(_){/* Fall back to the SDK message when no response body is available. */}
+    const combined=[detail,raw,error.message].filter(Boolean).join(" ");
+    if(isLowFunds(combined)||/INSUFFICIENT_FUNDS/i.test(combined)) throw friendlyFundsError();
+    throw new Error(detail||error.message||"Could not contact the SMS OTP service");
+  }
+  if(data && data.success === false){
+    const reason=String(data.message||data.error||data.details||data.code||"SMS OTP request failed");
+    if(data.code==="INSUFFICIENT_FUNDS"||isLowFunds(reason)) throw friendlyFundsError();
+    throw new Error(reason);
+  }
   return data || {};
 }
 function normalizeFleexaApps(data){
@@ -3697,7 +3717,7 @@ function confirmFleexaReviewPurchase(){
   fleexaAwaitingPin=true;
   openPinForPurchase();
 }
-async function executeFleexaPurchase(){
+async function executeFleexaPurchase(pin){
   if(fleexaPurchaseInProgress) return;
   if(!fleexaCurrentQuote){alert("Please check the SMS OTP price again.");return;}
   fleexaPurchaseInProgress=true;
@@ -3707,11 +3727,13 @@ async function executeFleexaPurchase(){
   if(message) message.textContent="Submitting your order once. Please do not close this page or tap again.";
   try{
     const serviceName=fleexaCurrentQuote.serviceName;
-    const data=await callFleexaOrderFunction("sparkle-fleexa-buy",{serviceName});
+    if(!/^\d{4}$/.test(String(pin||""))) throw new Error("Enter your 4-digit transaction PIN before buying.");
+    // Create one stable reference for this attempt so the backend can reserve and reconcile safely.
+    const requestId="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+    const data=await callFleexaOrderFunction("sparkle-fleexa-buy",{serviceName,request_id:requestId,pin:String(pin)});
     const d=data.data||data;
-    const requestId=String(d.requestId||d.request_id||d.id||"");
-    if(!requestId) throw new Error("No order reference was returned. Check SMS OTP order status before trying another purchase.");
-    showFleexaOrder({requestId,serviceName,phoneNumber:d.phoneNumber||d.phone||"",status:d.status||"pending",message:d.message||"Number reserved. Check again for the OTP."});
+    const returnedRequestId=String(d.requestId||d.request_id||d.id||requestId);
+    showFleexaOrder({requestId:returnedRequestId,serviceName,phoneNumber:d.phoneNumber||d.phone||"",status:d.status||"pending",message:d.message||"Number reserved. Check again for the OTP."});
     document.getElementById("fleexaReviewPanel").style.display="none";
     document.getElementById("fleexaCatalogPanel").style.display="block";
     document.getElementById("fleexaBuyButton").disabled=true;
@@ -3719,8 +3741,15 @@ async function executeFleexaPurchase(){
     document.getElementById("fleexaBuyButton").style.opacity=".55";
     document.getElementById("fleexaSafetyNote").textContent="An order has been started. Check its status before making another purchase.";
   }catch(e){
-    if(message) message.textContent="Purchase could not be confirmed: "+e.message+" Do not retry until you check whether an order was created.";
-    alert("SMS OTP purchase: "+e.message+"\nCheck order status before trying again to avoid paying twice.");
+    const isInsufficientFunds=e?.code==="INSUFFICIENT_FUNDS"||/insufficient\s+(funds|balance)|not enough (funds|balance)|wallet balance too low/i.test(String(e?.message||""));
+    if(isInsufficientFunds){
+      const friendly="Insufficient funds. Please fund your Sparkle wallet and try again.";
+      if(message) message.textContent=friendly;
+      alert(friendly);
+    }else{
+      if(message) message.textContent="Purchase could not be confirmed: "+e.message+" Check order status before trying again.";
+      alert("SMS OTP purchase: "+e.message+"\nCheck order status before trying again to avoid paying twice.");
+    }
   }finally{
     fleexaPurchaseInProgress=false;
     if(button){button.disabled=false;button.textContent="Buy Number";}
@@ -4850,7 +4879,7 @@ async function confirmTransactionPIN(){
     }
     if(currentService==="smsotp" && fleexaAwaitingPin){
       fleexaAwaitingPin=false;
-      await executeFleexaPurchase();
+      await executeFleexaPurchase(pin);
       return;
     }
     alert("Your PIN is correct. This service's secure purchase processing is not connected yet, so your wallet has not been charged.");
