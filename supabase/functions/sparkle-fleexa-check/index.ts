@@ -1,173 +1,218 @@
 
-import { createClient } from "npm:@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const cors = {
+const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const BASE = "https://fleexa.com.ng/developer";
-
-const reply = (data: unknown, status = 200) =>
-  new Response(JSON.stringify(data), {
-    status,
-    headers: { ...cors, "Content-Type": "application/json" },
-  });
-
-Deno.serve(async (req) => {
-  if (req.method === "OPTIONS")
-    return new Response("ok", { headers: cors });
-
-  if (req.method !== "POST")
-    return reply({ success: false, message: "POST required." }, 405);
-
-  const url = Deno.env.get("SUPABASE_URL");
-  const anon = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const fleexaKey = Deno.env.get("FLEEXA_API_KEY");
-
-  if (!url || !anon || !serviceKey || !fleexaKey)
-    return reply({ success: false, message: "Server secrets are missing." }, 503);
-
-  const auth = req.headers.get("Authorization");
-  if (!auth?.startsWith("Bearer "))
-    return reply({ success: false, message: "Please sign in." }, 401);
-
-  const userClient = createClient(url, anon, {
-    global: { headers: { Authorization: auth } },
-    auth: { persistSession: false },
-  });
-
-  const { data: { user }, error: authError } = await userClient.auth.getUser();
-
-  if (authError || !user)
-    return reply({ success: false, message: "Session expired. Sign in again." }, 401);
-
-  let body: Record<string, unknown>;
-
-  try {
-    body = await req.json();
-  } catch {
-    return reply({ success: false, message: "Invalid request." }, 400);
+Deno.serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
   }
 
-  const requestId =
-    typeof body.request_id === "string" ? body.request_id.trim() : "";
-
-  if (!/^[a-zA-Z0-9_-]{8,120}$/.test(requestId))
-    return reply({ success: false, message: "Invalid order reference." }, 400);
-
-  const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false },
-  });
-
-  const { data: order, error: orderError } = await admin
-    .from("sparkle_fleexa_smsotp_orders")
-    .select("request_id, provider_request_id, service_name, status, phone_number, sms_code")
-    .eq("user_id", user.id)
-    .eq("request_id", requestId)
-    .maybeSingle();
-
-  if (orderError)
-    return reply({ success: false, message: "Could not read the order." }, 500);
-
-  if (!order)
-    return reply({ success: false, message: "Order not found." }, 404);
-
-  if (!order.provider_request_id)
-    return reply({
-      success: false,
-      status: order.status,
-      message: "The provider order ID is not available yet. Do not buy again.",
-    }, 409);
+  const respond = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), {
+      status,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
 
   try {
-    const response = await fetch(
-      `${BASE}/sms4/check/${encodeURIComponent(order.provider_request_id)}`,
+    if (req.method !== "POST") {
+      return respond({ success: false, error: "POST required" }, 405);
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const apiKey = Deno.env.get("FLEEXA_API_KEY");
+
+    if (!supabaseUrl || !anonKey || !serviceKey || !apiKey) {
+      return respond({
+        success: false,
+        error: "Required server configuration is missing.",
+      }, 500);
+    }
+
+    const authorization = req.headers.get("Authorization");
+    if (!authorization) {
+      return respond({ success: false, error: "Please sign in." }, 401);
+    }
+
+    const userClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authorization } },
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const { data: userData, error: authError } =
+      await userClient.auth.getUser();
+
+    if (authError || !userData.user) {
+      return respond({ success: false, error: "Invalid session." }, 401);
+    }
+
+    const user = userData.user;
+    const admin = createClient(supabaseUrl, serviceKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    const body = await req.json().catch(() => ({}));
+    const requestId = String(body.request_id ?? "").trim();
+
+    if (!requestId) {
+      return respond({
+        success: false,
+        error: "Missing request_id.",
+      }, 400);
+    }
+
+    const { data: order, error: orderError } = await admin
+      .from("sparkle_fleexa_smsotp_orders")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("request_id", requestId)
+      .maybeSingle();
+
+    if (orderError) {
+      return respond({
+        success: false,
+        error: "Could not load the order.",
+      }, 500);
+    }
+
+    if (!order) {
+      return respond({ success: false, error: "Order not found." }, 404);
+    }
+
+    if (String(order.status).toLowerCase() === "success") {
+      return respond({
+        success: true,
+        status: "success",
+        phone: order.phone_number ?? order.phone ?? null,
+        sms_code: order.sms_code ?? null,
+        message: "This order is already completed.",
+      });
+    }
+
+    if (!order.provider_request_id) {
+      return respond({
+        success: false,
+        error: "The provider order ID is missing. Please contact support.",
+      }, 409);
+    }
+
+    const providerResponse = await fetch(
+      `https://fleexa.com.ng/developer/sms4/check/${encodeURIComponent(
+        String(order.provider_request_id),
+      )}`,
       {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${fleexaKey}`,
-          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json",
         },
         signal: AbortSignal.timeout(20000),
-      }
+      },
     );
 
-    const result = await response.json().catch(() => null);
+    const result = await providerResponse.json().catch(() => null);
 
-    if (!response.ok || !result || result.success === false)
-      return reply({
+    if (!providerResponse.ok || !result || result.success === false) {
+      return respond({
         success: false,
-        status: order.status,
-        message: "Fleexa could not confirm the order status. Try checking again later.",
+        error: "Fleexa could not confirm the SMS status. Please try again.",
       }, 502);
-
-    const data = result.data ?? result;
-    const providerStatus = String(
-      data.status ?? data.code ?? "pending"
-    ).toUpperCase();
-
-    const smsCode =
-      data.sms_code ?? data.smsCode ?? data.code_value ?? null;
-
-    const phone =
-      data.phone ?? data.number ?? data.phoneNumber ?? order.phone_number;
-
-    const received =
-      providerStatus === "RECEIVED" ||
-      providerStatus === "COMPLETED" ||
-      providerStatus === "SUCCESS";
-
-    if (received && smsCode != null) {
-      const { error: updateError } = await admin
-        .from("sparkle_fleexa_smsotp_orders")
-        .update({
-          sms_code: String(smsCode),
-          phone_number: phone == null ? null : String(phone),
-          provider_response: result,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .eq("request_id", requestId);
-
-      if (updateError)
-        return reply({
-          success: false,
-          status: "unknown",
-          message: "Code received, but Sparkle could not save it. Please check again.",
-        }, 500);
-    } else {
-      // Do not refund automatically from an unverified status response.
-      const { error: updateError } = await admin
-        .from("sparkle_fleexa_smsotp_orders")
-        .update({
-          provider_response: result,
-          phone_number: phone == null ? null : String(phone),
-          updated_at: new Date().toISOString(),
-        })
-        .eq("user_id", user.id)
-        .eq("request_id", requestId);
-
-      if (updateError)
-        return reply({ success: false, message: "Could not save provider status." }, 500);
     }
 
-    return reply({
+    const data = result.data ?? result;
+    const status = String(
+      data.status ?? data.code ?? "pending",
+    ).toLowerCase();
+
+    const smsCode =
+      data.sms_code ??
+      data.smsCode ??
+      data.code_value ??
+      null;
+
+    const phone =
+      data.phone ??
+      data.phone_number ??
+      data.number ??
+      order.phone_number ??
+      order.phone ??
+      null;
+
+    const received =
+      status === "received" ||
+      status === "completed" ||
+      status === "complete" ||
+      status === "success" ||
+      status === "successful";
+
+    if (received && smsCode != null && String(smsCode).trim() !== "") {
+      const { data: finished, error: finishError } = await admin.rpc(
+        "sparkle_finish_fleexa_smsotp",
+        {
+          p_user_id: user.id,
+          p_request_id: requestId,
+          p_status: "success",
+          p_provider_response: result,
+          p_error: null,
+          p_provider_request_id: String(order.provider_request_id),
+          p_phone_number: phone ? String(phone) : null,
+          p_sms_code: String(smsCode),
+        },
+      );
+
+      if (finishError || !finished?.success) {
+        return respond({
+          success: false,
+          error:
+            "The SMS was received, but Sparkle could not finalize the order. Do not cancel or buy again. Contact support for review.",
+          needs_review: true,
+        }, 500);
+      }
+
+      return respond({
+        success: true,
+        status: "success",
+        phone,
+        sms_code: String(smsCode),
+        message: "SMS code received and order completed.",
+      });
+    }
+
+    // Save the latest provider response without issuing a refund.
+    const { error: updateError } = await admin
+      .from("sparkle_fleexa_smsotp_orders")
+      .update({
+        provider_response: result,
+        phone_number: phone ? String(phone) : order.phone_number,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("user_id", user.id)
+      .eq("request_id", requestId);
+
+    if (updateError) {
+      return respond({
+        success: false,
+        error: "Could not save the latest SMS status.",
+      }, 500);
+    }
+
+    return respond({
       success: true,
-      request_id: requestId,
-      status: providerStatus,
-      phoneNumber: phone == null ? null : String(phone),
-      smsCode: received && smsCode != null ? String(smsCode) : null,
-      message: received && smsCode != null
-        ? "SMS code received."
-        : "No SMS code confirmed yet. Check again later.",
+      status: "pending",
+      phone,
+      message: "No SMS code confirmed yet. Check again later.",
     });
-  } catch {
-    return reply({
+  } catch (_error) {
+    return respond({
       success: false,
-      message: "Could not contact Fleexa. Try checking again later.",
-    }, 503);
+      error: "A temporary error occurred. Please try again.",
+    }, 500);
   }
 });
