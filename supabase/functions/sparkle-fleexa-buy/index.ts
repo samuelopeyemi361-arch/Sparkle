@@ -1,296 +1,287 @@
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
 
-const BASE = "https://fleexa.com.ng/developer";
-
-const corsHeaders = {
+const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-function reply(body: unknown, status = 200) {
-  return new Response(JSON.stringify(body), {
+const BASE = "https://fleexa.com.ng/developer";
+type Obj = Record<string, any>;
+
+const reply = (data: unknown, status = 200) =>
+  new Response(JSON.stringify(data), {
     status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
+    headers: { ...cors, "Content-Type": "application/json" },
   });
+
+function findPriceObject(payload: any): Obj | null {
+  const root = payload?.data ?? payload?.result ?? payload;
+  if (Array.isArray(root)) return root.find((x) => x && typeof x === "object") ?? null;
+  if (root && typeof root === "object") {
+    if (root.price_usd != null || root.price_ngn != null) return root;
+    if (Array.isArray(root.prices)) return root.prices.find((x: any) => x && typeof x === "object") ?? null;
+    const match = Object.values(root).find(
+      (x: any) => x && typeof x === "object" && (x.price_usd != null || x.price_ngn != null)
+    );
+    if (match) return match as Obj;
+  }
+  return null;
+}
+
+function getProviderId(d: Obj): string | null {
+  const raw = d.requestId ?? d.request_id ?? d.activationId ?? d.activation_id ?? d.orderId ?? d.order_id ?? d.id;
+  return raw == null || String(raw).trim() === "" ? null : String(raw);
+}
+
+function getPhone(d: Obj): string | null {
+  const raw = d.phoneNumber ?? d.phone_number ?? d.phone ?? d.number ?? d.mobile;
+  return raw == null ? null : String(raw);
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
-  if (req.method !== "POST") {
-    return reply({ success: false, message: "POST required" }, 405);
-  }
+  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
+  if (req.method !== "POST") return reply({ success: false, message: "POST required." }, 405);
 
   const url = Deno.env.get("SUPABASE_URL");
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  const anon = Deno.env.get("SUPABASE_ANON_KEY");
+  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
   const fleexaKey = Deno.env.get("FLEEXA_API_KEY");
 
-  if (!url || !anonKey || !serviceKey || !fleexaKey) {
-    return reply({ success: false, message: "Server configuration incomplete" }, 500);
-  }
+  if (!url || !anon || !service || !fleexaKey)
+    return reply({ success: false, message: "Server secrets are not configured." }, 503);
 
-  const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return reply({ success: false, message: "Please sign in" }, 401);
-  }
+  const auth = req.headers.get("Authorization");
+  if (!auth?.startsWith("Bearer "))
+    return reply({ success: false, message: "Sign in required." }, 401);
 
-  const authClient = createClient(url, anonKey, {
+  const userClient = createClient(url, anon, {
+    global: { headers: { Authorization: auth } },
     auth: { persistSession: false },
   });
 
-  const { data: authData, error: authError } =
-    await authClient.auth.getUser(authHeader.slice(7));
+  const { data: { user }, error: authError } = await userClient.auth.getUser();
+  if (authError || !user)
+    return reply({ success: false, message: "Your session has expired. Sign in again." }, 401);
 
-  if (authError || !authData.user) {
-    return reply({ success: false, message: "Invalid session" }, 401);
-  }
-
-  const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false },
-  });
-
-  let serviceName: string;
-
+  let body: Obj;
   try {
-    const body = await req.json();
-    serviceName = String(body.serviceName ?? "").trim();
-
-    if (
-      !serviceName ||
-      serviceName.length > 100 ||
-      !/^[a-zA-Z0-9 _.-]+$/.test(serviceName)
-    ) {
-      return reply({ success: false, message: "Invalid service name" }, 400);
-    }
+    body = await req.json();
   } catch {
-    return reply({ success: false, message: "Invalid request body" }, 400);
+    return reply({ success: false, message: "Invalid JSON." }, 400);
   }
 
-  // Always fetch the price from Fleexa; never trust a browser-supplied price.
-  let priceData: any;
+  const serviceName = typeof body.serviceName === "string" ? body.serviceName.trim() : "";
+  const requestId = typeof body.request_id === "string" ? body.request_id.trim() : "";
+  const pin = typeof body.pin === "string" ? body.pin.trim() : "";
 
+  if (!serviceName || serviceName.length > 100 || !/^[a-zA-Z0-9_-]{8,120}$/.test(requestId))
+    return reply({ success: false, message: "Select a service and use a valid order reference." }, 400);
+
+  if (!/^\d{4}$/.test(pin))
+    return reply({ success: false, message: "Enter your 4-digit transaction PIN." }, 400);
+
+  // Verify the existing Sparkle transaction PIN; do not modify that function.
   try {
-    const response = await fetch(
-      `${BASE}/sms4/prices?serviceName=${encodeURIComponent(serviceName)}`,
-      { headers: { Authorization: `Bearer ${fleexaKey}` } },
-    );
-
-    priceData = await response.json();
-
-    if (!response.ok || priceData?.success !== true) {
-      return reply({
-        success: false,
-        message: "Fleexa could not confirm this service price",
-      }, 502);
-    }
-  } catch {
-    return reply({
-      success: false,
-      message: "Price service unavailable. Please try again.",
-    }, 502);
-  }
-
-  const rows = Array.isArray(priceData.data)
-    ? priceData.data
-    : priceData.data
-      ? [priceData.data]
-      : [];
-
-  const exactMatch = rows.find((item: any) =>
-    String(item?.name ?? item?.serviceName ?? "").toLowerCase() ===
-    serviceName.toLowerCase()
-  );
-
-  const priceItem =
-    exactMatch ??
-    (rows.length === 1 &&
-      !rows[0]?.name &&
-      !rows[0]?.serviceName
-      ? rows[0]
-      : null);
-
-  const providerCost = Number(priceItem?.price_ngn);
-  const maxPriceUsd = Number(priceItem?.price_usd);
-
-  if (
-    !Number.isFinite(providerCost) ||
-    providerCost <= 0 ||
-    !Number.isFinite(maxPriceUsd) ||
-    maxPriceUsd <= 0
-  ) {
-    return reply({
-      success: false,
-      message:
-        "Price format is not verified. No purchase was made and no wallet money was deducted.",
-    }, 502);
-  }
-
-  const requestId = crypto.randomUUID();
-
-  // Atomically reserve the wallet amount using the protected SQL function.
-  const { data: reservation, error: reserveError } = await admin.rpc(
-    "sparkle_reserve_sms_otp",
-    {
-      p_user_id: authData.user.id,
-      p_request_id: requestId,
-      p_service_name: serviceName,
-      p_country: "US",
-      p_provider_cost: providerCost,
-    },
-  );
-
-  if (reserveError || !reservation?.success) {
-    return reply({
-      success: false,
-      message: reserveError?.message ??
-        reservation?.message ??
-        "Wallet reservation failed",
-    }, 400);
-  }
-
-  let buyData: any;
-
-  try {
-    const response = await fetch(`${BASE}/sms4/buy`, {
+    const pinRes = await fetch(`${url}/functions/v1/sparkle-transaction-pin`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${fleexaKey}`,
+        Authorization: auth,
+        apikey: anon,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        serviceName,
-        maxPrice: maxPriceUsd.toFixed(2),
-      }),
+      body: JSON.stringify({ action: "verify", pin }),
     });
 
-    buyData = await response.json();
-
-    if (!response.ok && buyData?.success !== false) {
-      // An HTTP error may not prove the provider rejected the order.
-      await admin.from("sparkle_sms_otp_orders").update({
-        status: "unknown",
-        provider_response: buyData,
-        error_message: "Ambiguous provider response; reconciliation required",
-      }).eq("request_id", requestId);
-
-      return reply({
-        success: false,
-        status: "unknown",
-        requestId,
-        message: "Order needs checking. Do not buy again yet.",
-      }, 202);
-    }
+    const pinData = await pinRes.json().catch(() => null);
+    if (!pinRes.ok || pinData?.success !== true)
+      return reply({ success: false, message: pinData?.message || "Transaction PIN verification failed." }, 401);
   } catch {
-    await admin.from("sparkle_sms_otp_orders").update({
-      status: "unknown",
-      error_message: "Connection lost; provider order needs reconciliation",
-    }).eq("request_id", requestId);
-
-    return reply({
-      success: false,
-      status: "unknown",
-      requestId,
-      message: "Order status is uncertain. Do not purchase again yet.",
-    }, 202);
+    return reply({ success: false, message: "Could not verify transaction PIN. Please try again." }, 503);
   }
 
-  const data = buyData?.data ?? {};
+  const admin = createClient(url, service, { auth: { persistSession: false } });
+  const headers = {
+    Authorization: `Bearer ${fleexaKey}`,
+    "X-API-Key": fleexaKey,
+    "Content-Type": "application/json",
+  };
 
-  if (buyData?.success === true) {
-    const providerRequestId =
-      data.requestId ?? data.activation_id ?? data.id ?? null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000);
 
-    const phoneNumber = data.number ?? data.phone ?? null;
+  try {
+    // Get current provider prices from Fleexa.
+    const priceRes = await fetch(
+      `${BASE}/sms4/prices?serviceName=${encodeURIComponent(serviceName)}`,
+      { headers, signal: controller.signal }
+    );
+    const priceJson = await priceRes.json().catch(() => null);
 
-    if (!providerRequestId || !phoneNumber) {
-      await admin.from("sparkle_sms_otp_orders").update({
-        status: "unknown",
-        provider_response: buyData,
-        error_message: "Provider reference or phone number missing",
-      }).eq("request_id", requestId);
+    if (!priceRes.ok || !priceJson || priceJson.success === false)
+      return reply({ success: false, message: "Fleexa could not provide a current price. Your wallet was not charged." }, 502);
+
+    const price = findPriceObject(priceJson);
+    const priceUsd = Number(price?.price_usd ?? price?.api_rate_usd ?? price?.rate_usd);
+    const costNgn = Number(price?.price_ngn ?? price?.rate ?? price?.price);
+
+    if (!Number.isFinite(priceUsd) || priceUsd <= 0 || !Number.isFinite(costNgn) || costNgn <= 0)
+      return reply({ success: false, message: "Fleexa price response was not in the expected USD/NGN format. Wallet unchanged." }, 502);
+
+    const sellingNgn = Number((costNgn * 1.75).toFixed(2));
+
+    const { data: reservation, error: reserveError } = await admin.rpc(
+      "sparkle_reserve_fleexa_smsotp",
+      {
+        p_user_id: user.id,
+        p_request_id: requestId,
+        p_service_name: serviceName,
+        p_provider_price_usd: priceUsd,
+        p_provider_cost_ngn: costNgn,
+        p_selling_price_ngn: sellingNgn,
+      }
+    );
+
+    if (reserveError)
+      return reply({ success: false, message: "Could not safely reserve the wallet purchase. No provider order was sent." }, 500);
+
+    if (!reservation?.success)
+      return reply({
+        success: false,
+        message: reservation?.message || "Purchase could not be reserved.",
+        status: reservation?.status,
+        duplicate: !!reservation?.duplicate,
+      }, 409);
+
+    // maxPrice is USD. Do not automatically exceed the current provider price.
+    let buyRes: Response;
+    let buyJson: any;
+
+    try {
+      buyRes = await fetch(`${BASE}/sms4/buy`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({
+          serviceName,
+          maxPrice: priceUsd.toFixed(4).replace(/0+$/, "").replace(/\.$/, ""),
+        }),
+        signal: controller.signal,
+      });
+      buyJson = await buyRes.json().catch(() => null);
+    } catch {
+      await admin.rpc("sparkle_finish_fleexa_smsotp", {
+        p_user_id: user.id,
+        p_request_id: requestId,
+        p_status: "unknown",
+        p_provider_response: null,
+        p_error: "Network/timeout after purchase request; provider result uncertain.",
+        p_provider_request_id: null,
+        p_phone_number: null,
+        p_sms_code: null,
+      });
 
       return reply({
         success: false,
         status: "unknown",
-        requestId,
-        message: "Provider response needs reconciliation before reuse.",
+        request_id: requestId,
+        message: "Fleexa's response could not be confirmed. Funds remain reserved while the order is checked; do not retry yet.",
       }, 202);
     }
 
-    const { error: saveError } = await admin
-      .from("sparkle_sms_otp_orders")
-      .update({
-        provider_request_id: String(providerRequestId),
-        phone_number: String(phoneNumber),
-        provider_response: buyData,
-        status: "pending",
-        error_message: null,
-      })
-      .eq("request_id", requestId);
+    const data = buyJson?.data && typeof buyJson.data === "object" ? buyJson.data : (buyJson ?? {});
+    const providerId = getProviderId(data);
+    const phone = getPhone(data);
+    const smsCode = data.sms_code ?? data.smsCode ?? data.code ?? null;
 
-    if (saveError) {
-      // Never refund automatically after the provider may have issued a number.
+    const providerAccepted = buyRes.ok && buyJson && buyJson.success !== false &&
+      (providerId !== null || data.status === "pending" || data.status === "success" || data.status === "active");
+
+    if (!providerAccepted) {
+      const explicitReject = !!buyJson &&
+        (buyJson.success === false || buyJson.status === "failed" || buyJson.status === "error") &&
+        !providerId;
+
+      if (explicitReject) {
+        const finish = await admin.rpc("sparkle_finish_fleexa_smsotp", {
+          p_user_id: user.id,
+          p_request_id: requestId,
+          p_status: "failed",
+          p_provider_response: buyJson,
+          p_error: String(buyJson.message ?? buyJson.error ?? "Fleexa rejected the purchase."),
+          p_provider_request_id: null,
+          p_phone_number: null,
+          p_sms_code: null,
+        });
+
+        return reply({
+          success: false,
+          status: "failed",
+          refunded: !!finish.data?.refunded,
+          message: "Fleexa rejected the order. Sparkle processed the refund if the database confirmed it.",
+        }, 502);
+      }
+
+      await admin.rpc("sparkle_finish_fleexa_smsotp", {
+        p_user_id: user.id,
+        p_request_id: requestId,
+        p_status: "unknown",
+        p_provider_response: buyJson,
+        p_error: "Provider response did not clearly confirm success or failure.",
+        p_provider_request_id: providerId,
+        p_phone_number: phone,
+        p_sms_code: smsCode == null ? null : String(smsCode),
+      });
+
       return reply({
         success: false,
         status: "unknown",
-        requestId,
-        message: "Provider accepted the order; support reconciliation is required.",
+        request_id: requestId,
+        provider_request_id: providerId,
+        message: "Fleexa's response is unclear. Funds remain reserved until the order is checked; do not retry yet.",
       }, 202);
     }
+
+    const finish = await admin.rpc("sparkle_finish_fleexa_smsotp", {
+      p_user_id: user.id,
+      p_request_id: requestId,
+      p_status: "success",
+      p_provider_response: buyJson,
+      p_error: null,
+      p_provider_request_id: providerId,
+      p_phone_number: phone,
+      p_sms_code: smsCode == null ? null : String(smsCode),
+    });
+
+    if (finish.error || !finish.data?.success)
+      return reply({
+        success: false,
+        status: "unknown",
+        request_id: requestId,
+        provider_request_id: providerId,
+        message: "Fleexa accepted the order but Sparkle could not finalize the order record. Do not retry; order needs reconciliation.",
+      }, 202);
 
     return reply({
       success: true,
-      status: "pending",
-      requestId,
-      phoneNumber,
-      amount: reservation.amount,
-      message: "Number purchased. OTP retrieval is not connected yet.",
+      status: data.status || "pending",
+      request_id: requestId,
+      provider_request_id: providerId,
+      serviceName,
+      phoneNumber: phone,
+      smsCode: smsCode == null ? null : String(smsCode),
+      provider_cost_ngn: costNgn,
+      selling_price_ngn: sellingNgn,
+      message: "SMS OTP order created.",
     });
-  }
-
-  if (buyData?.success === false) {
-    const { error: refundError } = await admin.rpc(
-      "sparkle_finish_sms_otp",
-      {
-        p_request_id: requestId,
-        p_status: "failed",
-        p_provider_response: buyData,
-        p_error: String(buyData?.message ?? "Provider rejected purchase"),
-      },
-    );
-
-    if (refundError) {
-      return reply({
-        success: false,
-        status: "unknown",
-        requestId,
-        message: "Provider rejected the order; refund needs reconciliation.",
-      }, 202);
-    }
-
+  } catch (e) {
     return reply({
       success: false,
-      status: "failed",
-      message: "Provider rejected the purchase. Refund processed.",
-    }, 502);
+      message: e instanceof Error && e.name === "AbortError"
+        ? "Fleexa request timed out. Check the order before retrying."
+        : "Purchase could not be completed safely. Check the order before retrying.",
+    }, 503);
+  } finally {
+    clearTimeout(timer);
   }
-
-  await admin.from("sparkle_sms_otp_orders").update({
-    status: "unknown",
-    provider_response: buyData,
-    error_message: "Unrecognized provider response",
-  }).eq("request_id", requestId);
-
-  return reply({
-    success: false,
-    status: "unknown",
-    requestId,
-    message: "Order needs reconciliation before another purchase.",
-  }, 202);
 });
