@@ -1,14 +1,14 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const BASE = "https://fleexa.com.ng/developer";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
     "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-const BASE = "https://fleexa.com.ng/developer";
 
 function reply(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
@@ -32,25 +32,20 @@ Deno.serve(async (req) => {
   const fleexaKey = Deno.env.get("FLEEXA_API_KEY");
 
   if (!url || !anonKey || !serviceKey || !fleexaKey) {
-    return reply({
-      success: false,
-      message: "Server configuration is incomplete",
-    }, 500);
+    return reply({ success: false, message: "Server configuration incomplete" }, 500);
   }
 
-  const authorization = req.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader?.startsWith("Bearer ")) {
     return reply({ success: false, message: "Please sign in" }, 401);
   }
-
-  const token = authorization.slice(7);
 
   const authClient = createClient(url, anonKey, {
     auth: { persistSession: false },
   });
 
   const { data: authData, error: authError } =
-    await authClient.auth.getUser(token);
+    await authClient.auth.getUser(authHeader.slice(7));
 
   if (authError || !authData.user) {
     return reply({ success: false, message: "Invalid session" }, 401);
@@ -77,41 +72,51 @@ Deno.serve(async (req) => {
     return reply({ success: false, message: "Invalid request body" }, 400);
   }
 
-  // Get the current provider price. Never trust a price sent by the browser.
-  let priceResponse: Response;
+  // Always fetch the price from Fleexa; never trust a browser-supplied price.
   let priceData: any;
 
   try {
-    priceResponse = await fetch(
+    const response = await fetch(
       `${BASE}/sms4/prices?serviceName=${encodeURIComponent(serviceName)}`,
       { headers: { Authorization: `Bearer ${fleexaKey}` } },
     );
-    priceData = await priceResponse.json();
+
+    priceData = await response.json();
+
+    if (!response.ok || priceData?.success !== true) {
+      return reply({
+        success: false,
+        message: "Fleexa could not confirm this service price",
+      }, 502);
+    }
   } catch {
     return reply({
       success: false,
-      message: "Could not verify provider price. Please try again.",
+      message: "Price service unavailable. Please try again.",
     }, 502);
   }
 
-  if (!priceResponse.ok || priceData?.success !== true) {
-    return reply({
-      success: false,
-      message: "Could not retrieve the provider price",
-    }, 502);
-  }
-
-  const priceRows = Array.isArray(priceData.data)
+  const rows = Array.isArray(priceData.data)
     ? priceData.data
-    : [priceData.data];
+    : priceData.data
+      ? [priceData.data]
+      : [];
 
-  const price = priceRows.find((item: any) =>
+  const exactMatch = rows.find((item: any) =>
     String(item?.name ?? item?.serviceName ?? "").toLowerCase() ===
     serviceName.toLowerCase()
-  ) ?? priceRows[0];
+  );
 
-  const providerCost = Number(price?.price_ngn);
-  const maxPriceUsd = Number(price?.price_usd);
+  const priceItem =
+    exactMatch ??
+    (rows.length === 1 &&
+      !rows[0]?.name &&
+      !rows[0]?.serviceName
+      ? rows[0]
+      : null);
+
+  const providerCost = Number(priceItem?.price_ngn);
+  const maxPriceUsd = Number(priceItem?.price_usd);
 
   if (
     !Number.isFinite(providerCost) ||
@@ -121,13 +126,14 @@ Deno.serve(async (req) => {
   ) {
     return reply({
       success: false,
-      message: "A valid price is unavailable for this service",
+      message:
+        "Price format is not verified. No purchase was made and no wallet money was deducted.",
     }, 502);
   }
 
   const requestId = crypto.randomUUID();
 
-  // Reserve the customer's wallet using the protected SQL function.
+  // Atomically reserve the wallet amount using the protected SQL function.
   const { data: reservation, error: reserveError } = await admin.rpc(
     "sparkle_reserve_sms_otp",
     {
@@ -142,17 +148,16 @@ Deno.serve(async (req) => {
   if (reserveError || !reservation?.success) {
     return reply({
       success: false,
-      message: reserveError?.message ?? reservation?.message ??
-        "Could not reserve this purchase",
+      message: reserveError?.message ??
+        reservation?.message ??
+        "Wallet reservation failed",
     }, 400);
   }
 
-  // Call Fleexa only after the wallet reservation succeeds.
-  let buyResponse: Response;
   let buyData: any;
 
   try {
-    buyResponse = await fetch(`${BASE}/sms4/buy`, {
+    const response = await fetch(`${BASE}/sms4/buy`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${fleexaKey}`,
@@ -164,52 +169,78 @@ Deno.serve(async (req) => {
       }),
     });
 
-    buyData = await buyResponse.json();
+    buyData = await response.json();
+
+    if (!response.ok && buyData?.success !== false) {
+      // An HTTP error may not prove the provider rejected the order.
+      await admin.from("sparkle_sms_otp_orders").update({
+        status: "unknown",
+        provider_response: buyData,
+        error_message: "Ambiguous provider response; reconciliation required",
+      }).eq("request_id", requestId);
+
+      return reply({
+        success: false,
+        status: "unknown",
+        requestId,
+        message: "Order needs checking. Do not buy again yet.",
+      }, 202);
+    }
   } catch {
-    // The provider may have accepted the order before the connection failed.
-    // Keep the reservation until the provider status is checked.
     await admin.from("sparkle_sms_otp_orders").update({
       status: "unknown",
-      error_message: "Provider response unavailable; reconciliation required",
+      error_message: "Connection lost; provider order needs reconciliation",
     }).eq("request_id", requestId);
 
     return reply({
       success: false,
       status: "unknown",
       requestId,
-      message:
-        "The provider response is uncertain. Your order is being checked; do not purchase again yet.",
+      message: "Order status is uncertain. Do not purchase again yet.",
     }, 202);
   }
 
-  const providerOrder = buyData?.data ?? {};
-  const providerRequestId =
-    providerOrder.requestId ?? providerOrder.activation_id ??
-    providerOrder.id ?? null;
+  const data = buyData?.data ?? {};
 
-  if (
-    buyResponse.ok &&
-    buyData?.success === true &&
-    providerRequestId
-  ) {
+  if (buyData?.success === true) {
+    const providerRequestId =
+      data.requestId ?? data.activation_id ?? data.id ?? null;
+
+    const phoneNumber = data.number ?? data.phone ?? null;
+
+    if (!providerRequestId || !phoneNumber) {
+      await admin.from("sparkle_sms_otp_orders").update({
+        status: "unknown",
+        provider_response: buyData,
+        error_message: "Provider reference or phone number missing",
+      }).eq("request_id", requestId);
+
+      return reply({
+        success: false,
+        status: "unknown",
+        requestId,
+        message: "Provider response needs reconciliation before reuse.",
+      }, 202);
+    }
+
     const { error: saveError } = await admin
       .from("sparkle_sms_otp_orders")
       .update({
-        status: "pending",
-        phone_number: providerOrder.number ?? providerOrder.phone ?? null,
+        provider_request_id: String(providerRequestId),
+        phone_number: String(phoneNumber),
         provider_response: buyData,
+        status: "pending",
         error_message: null,
       })
       .eq("request_id", requestId);
 
     if (saveError) {
-      // Do not refund: the provider may already have issued the number.
+      // Never refund automatically after the provider may have issued a number.
       return reply({
         success: false,
         status: "unknown",
         requestId,
-        message:
-          "The provider accepted the order, but Sparkle could not save its details. Support reconciliation is required.",
+        message: "Provider accepted the order; support reconciliation is required.",
       }, 202);
     }
 
@@ -217,15 +248,14 @@ Deno.serve(async (req) => {
       success: true,
       status: "pending",
       requestId,
-      phoneNumber: providerOrder.number ?? providerOrder.phone ?? null,
+      phoneNumber,
       amount: reservation.amount,
-      message: "Number purchased. OTP retrieval must be checked separately.",
+      message: "Number purchased. OTP retrieval is not connected yet.",
     });
   }
 
-  // Refund only when the provider explicitly confirms the purchase failed.
   if (buyData?.success === false) {
-    const { error: finishError } = await admin.rpc(
+    const { error: refundError } = await admin.rpc(
       "sparkle_finish_sms_otp",
       {
         p_request_id: requestId,
@@ -235,35 +265,32 @@ Deno.serve(async (req) => {
       },
     );
 
-    if (finishError) {
+    if (refundError) {
       return reply({
         success: false,
         status: "unknown",
         requestId,
-        message:
-          "Purchase failed at the provider, but the refund needs reconciliation.",
+        message: "Provider rejected the order; refund needs reconciliation.",
       }, 202);
     }
 
     return reply({
       success: false,
       status: "failed",
-      message: "Provider rejected the purchase. Wallet refund processed.",
+      message: "Provider rejected the purchase. Refund processed.",
     }, 502);
   }
 
-  // Ambiguous provider responses must never trigger an automatic refund.
   await admin.from("sparkle_sms_otp_orders").update({
     status: "unknown",
     provider_response: buyData,
-    error_message: "Unrecognized provider response; reconciliation required",
+    error_message: "Unrecognized provider response",
   }).eq("request_id", requestId);
 
   return reply({
     success: false,
     status: "unknown",
     requestId,
-    message:
-      "The provider response needs checking before another purchase is attempted.",
+    message: "Order needs reconciliation before another purchase.",
   }, 202);
 });
