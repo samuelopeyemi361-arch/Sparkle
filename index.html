@@ -1679,7 +1679,7 @@ Privacy Policy
         <section class="page" id="smsotpPage">
           <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>SMS OTP</h1></div>
           <p class="dashboard-subtitle">Choose a service, review the selling price, then manage your activation here.</p>
-          <div class="service-page" style="padding:18px;margin-top:14px">
+          <div id="fleexaCatalogPanel" class="service-page" style="padding:18px;margin-top:14px">
             <label for="fleexaAppSearch" style="display:block;font-weight:800;margin-bottom:8px">Search services</label>
             <input id="fleexaAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterFleexaApps()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;margin-bottom:14px">
             <label for="fleexaAppSelect" style="display:block;font-weight:800;margin-bottom:8px">Select service</label>
@@ -1688,6 +1688,17 @@ Privacy Policy
             <div id="fleexaPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
             <button id="fleexaBuyButton" class="btn primary full" type="button" onclick="buyFleexaNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
             <p id="fleexaSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are enabled for testing. Check the price in naira before buying; real wallet funds may be deducted.</p>
+          </div>
+          <div id="fleexaReviewPanel" class="service-page" style="display:none;padding:18px;margin-top:14px">
+            <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromFleexaReview()">‹</button><h2 style="margin:0">Review SMS OTP</h2></div>
+            <p style="color:var(--muted);margin-top:0">Check your order and total carefully. You will not be charged until you confirm with your Transaction PIN.</p>
+            <div class="summary-line"><span>Service</span><strong id="fleexaReviewService">—</strong></div>
+            <div class="summary-line"><span>Wallet charge</span><strong id="fleexaReviewTotal">—</strong></div>
+            <div class="sparkle-summary-total"><span>Total</span><strong id="fleexaReviewGrandTotal">—</strong></div>
+            <p style="font-size:12px;color:var(--muted)">SMS OTP numbers depend on provider availability. Tap Buy Number once; if the request is pending, check its status instead of buying again.</p>
+            <button id="fleexaReviewConfirm" class="btn primary full" type="button" onclick="confirmFleexaReviewPurchase()">Buy Number</button>
+            <button class="btn full" type="button" style="margin-top:8px" onclick="backFromFleexaReview()">Go back and edit</button>
+            <div id="fleexaReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
           </div>
           <div id="fleexaOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <h3 style="margin:0 0 12px">Your SMS OTP order</h3>
@@ -3565,7 +3576,9 @@ function openServicePage(service){
 let fleexaAppsCache = [];
 let fleexaCurrentQuote = null;
 let fleexaCurrentOrder = null;
-// Live Fleexa purchases enabled at the user's request for manual testing.
+let fleexaPurchaseInProgress = false;
+let fleexaAwaitingPin = false;
+// Live purchase is available, but purchase execution starts only after review and PIN verification.
 const FLEEXA_LIVE_PURCHASES_ENABLED = true;
 
 async function callFleexaCatalog(payload){
@@ -3638,9 +3651,9 @@ async function checkFleexaPrice(){
     if(!Number.isFinite(amount)||amount<=0){result.textContent="Price response received, but the NGN price format could not be verified.";buy.disabled=true;buy.textContent="Check price first";return;}
     const selling=Number((amount*1.75).toFixed(2));
     fleexaCurrentQuote={serviceName,providerCost:amount,sellingPrice:selling};
-    buy.disabled=false; buy.textContent="Buy number"; buy.style.opacity="1";
-    result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Provider price · '+escapeHtml(String(d.serviceName||serviceName))+'</div><div style="font-size:18px;font-weight:800;color:#475569;margin-top:4px">₦'+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#475569;margin-top:12px">Sparkle price (75% markup)</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+selling.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">Live testing enabled. Confirm the displayed price before buying; real wallet funds may be deducted.</div></div>';
-    document.getElementById("fleexaSafetyNote").textContent="Live purchases are enabled for testing. Check the NGN price carefully before buying; this uses real wallet funds.";
+    buy.disabled=false; buy.textContent="Review purchase"; buy.style.opacity="1";
+    result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+selling.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the total price you will pay on Sparkle.</div></div>';
+    document.getElementById("fleexaSafetyNote").textContent="Live purchases are enabled for testing. Check your Sparkle price carefully before buying; this uses real wallet funds.";
   }catch(e){result.textContent="Could not check price: "+e.message;buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
   finally{if(!fleexaCurrentQuote){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}}
 }
@@ -3656,24 +3669,62 @@ function showFleexaOrder(order){
   document.getElementById("fleexaOrderMessage").textContent=order.message||"Check again in 20–30 seconds for the OTP.";
 }
 async function buyFleexaNumber(){
-  if(!FLEEXA_LIVE_PURCHASES_ENABLED){
-    document.getElementById("fleexaSafetyNote").textContent="Live testing is enabled. A purchase may deduct real wallet funds. Confirm the NGN price before continuing.";
-    return;
-  }
   const serviceName=document.getElementById("fleexaAppSelect")?.value||"";
+  if(!FLEEXA_LIVE_PURCHASES_ENABLED){alert("SMS OTP purchases are temporarily unavailable.");return;}
   if(!serviceName){alert("Select a service first.");return;}
   if(!fleexaCurrentQuote||fleexaCurrentQuote.serviceName!==serviceName){alert("Check the current price first.");return;}
-  if(!confirm("Buy this SMS OTP number for the displayed Sparkle price?")) return;
-  const button=document.getElementById("fleexaBuyButton");
-  button.disabled=true; button.textContent="Processing…";
+  document.getElementById("fleexaReviewService").textContent=serviceName;
+  const total="₦"+fleexaCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById("fleexaReviewTotal").textContent=total;
+  document.getElementById("fleexaReviewGrandTotal").textContent=total;
+  document.getElementById("fleexaReviewMessage").textContent="";
+  document.getElementById("fleexaCatalogPanel").style.display="none";
+  document.getElementById("fleexaReviewPanel").style.display="block";
+  document.getElementById("fleexaOrderCard").style.display="none";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function backFromFleexaReview(){
+  if(fleexaPurchaseInProgress) return;
+  document.getElementById("fleexaReviewPanel").style.display="none";
+  document.getElementById("fleexaCatalogPanel").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function confirmFleexaReviewPurchase(){
+  if(fleexaPurchaseInProgress) return;
+  const serviceName=document.getElementById("fleexaAppSelect")?.value||"";
+  if(!fleexaCurrentQuote||fleexaCurrentQuote.serviceName!==serviceName){alert("The price quote has changed or expired. Go back and check the price again.");return;}
+  currentService="smsotp";
+  fleexaAwaitingPin=true;
+  openPinForPurchase();
+}
+async function executeFleexaPurchase(){
+  if(fleexaPurchaseInProgress) return;
+  if(!fleexaCurrentQuote){alert("Please check the SMS OTP price again.");return;}
+  fleexaPurchaseInProgress=true;
+  const button=document.getElementById("fleexaReviewConfirm");
+  const message=document.getElementById("fleexaReviewMessage");
+  if(button){button.disabled=true;button.textContent="Processing purchase…";}
+  if(message) message.textContent="Submitting your order once. Please do not close this page or tap again.";
   try{
+    const serviceName=fleexaCurrentQuote.serviceName;
     const data=await callFleexaOrderFunction("sparkle-fleexa-buy",{serviceName});
     const d=data.data||data;
     const requestId=String(d.requestId||d.request_id||d.id||"");
-    if(!requestId) throw new Error("The purchase response did not include an order reference. Check order status before trying again.");
+    if(!requestId) throw new Error("No order reference was returned. Check SMS OTP order status before trying another purchase.");
     showFleexaOrder({requestId,serviceName,phoneNumber:d.phoneNumber||d.phone||"",status:d.status||"pending",message:d.message||"Number reserved. Check again for the OTP."});
-  }catch(e){alert("SMS OTP purchase: "+e.message);}
-  finally{button.disabled=!FLEEXA_LIVE_PURCHASES_ENABLED;button.textContent=FLEEXA_LIVE_PURCHASES_ENABLED?"Buy number":"Buy number (temporarily locked)";}
+    document.getElementById("fleexaReviewPanel").style.display="none";
+    document.getElementById("fleexaCatalogPanel").style.display="block";
+    document.getElementById("fleexaBuyButton").disabled=true;
+    document.getElementById("fleexaBuyButton").textContent="Order started — check status";
+    document.getElementById("fleexaBuyButton").style.opacity=".55";
+    document.getElementById("fleexaSafetyNote").textContent="An order has been started. Check its status before making another purchase.";
+  }catch(e){
+    if(message) message.textContent="Purchase could not be confirmed: "+e.message+" Do not retry until you check whether an order was created.";
+    alert("SMS OTP purchase: "+e.message+"\nCheck order status before trying again to avoid paying twice.");
+  }finally{
+    fleexaPurchaseInProgress=false;
+    if(button){button.disabled=false;button.textContent="Buy Number";}
+  }
 }
 async function checkFleexaOrder(){
   if(!fleexaCurrentOrder?.requestId){alert("No active SMS OTP order to check.");return;}
@@ -4795,6 +4846,11 @@ async function confirmTransactionPIN(){
     closePinModal();
     if(currentService==="rechargepin" && window.sparkleRechargePinPending){
       await confirmRechargePinPurchase(pin);
+      return;
+    }
+    if(currentService==="smsotp" && fleexaAwaitingPin){
+      fleexaAwaitingPin=false;
+      await executeFleexaPurchase();
       return;
     }
     alert("Your PIN is correct. This service's secure purchase processing is not connected yet, so your wallet has not been charged.");
