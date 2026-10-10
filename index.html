@@ -1675,7 +1675,7 @@ Privacy Policy
           </div>
         </section>
 
-        <!-- SMS OTP: connected to secure Edge Functions; live buying remains locked until provider pricing is verified. -->
+        <!-- SMS OTP: connected to secure Edge Functions; live buying is enabled for user testing. -->
         <section class="page" id="smsotpPage">
           <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>SMS OTP</h1></div>
           <p class="dashboard-subtitle">Choose a service, review the selling price, then manage your activation here.</p>
@@ -1686,8 +1686,8 @@ Privacy Policy
             <select id="fleexaAppSelect" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="">Loading services…</option></select>
             <button class="btn primary full" type="button" onclick="checkFleexaPrice()">Check price</button>
             <div id="fleexaPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
-            <button id="fleexaBuyButton" class="btn primary full" type="button" onclick="buyFleexaNumber()" disabled style="margin-top:12px;opacity:.55">Buy number (temporarily locked)</button>
-            <p id="fleexaSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are temporarily locked while we verify Fleexa's price cap and exact NGN charge. No wallet money will be deducted from this page.</p>
+            <button id="fleexaBuyButton" class="btn primary full" type="button" onclick="buyFleexaNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
+            <p id="fleexaSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are enabled for testing. Check the price in naira before buying; real wallet funds may be deducted.</p>
           </div>
           <div id="fleexaOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <h3 style="margin:0 0 12px">Your SMS OTP order</h3>
@@ -3629,18 +3629,20 @@ async function checkFleexaPrice(){
   const buy=document.getElementById("fleexaBuyButton");
   if(!serviceName){result.textContent="Select a service first.";return;}
   result.textContent="Checking current price…";
-  buy.disabled=true; buy.style.opacity=".55";
+  buy.disabled=true; buy.textContent="Checking price…"; buy.style.opacity=".55";
   fleexaCurrentQuote=null;
   try{
     const data=await callFleexaCatalog({action:"price",serviceName});
     const d=data?.data||{};
     const amount=Number(d.price_ngn ?? d.rate ?? d.price);
-    if(!Number.isFinite(amount)||amount<=0){result.textContent="Price response received, but the NGN price format could not be verified.";return;}
+    if(!Number.isFinite(amount)||amount<=0){result.textContent="Price response received, but the NGN price format could not be verified.";buy.disabled=true;buy.textContent="Check price first";return;}
     const selling=Number((amount*1.75).toFixed(2));
     fleexaCurrentQuote={serviceName,providerCost:amount,sellingPrice:selling};
+    buy.disabled=false; buy.textContent="Buy number"; buy.style.opacity="1";
     result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Provider price · '+escapeHtml(String(d.serviceName||serviceName))+'</div><div style="font-size:18px;font-weight:800;color:#475569;margin-top:4px">₦'+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#475569;margin-top:12px">Sparkle price (75% markup)</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+selling.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">Live testing enabled. Confirm the displayed price before buying; real wallet funds may be deducted.</div></div>';
     document.getElementById("fleexaSafetyNote").textContent="Live purchases are enabled for testing. Check the NGN price carefully before buying; this uses real wallet funds.";
-  }catch(e){result.textContent="Could not check price: "+e.message;}
+  }catch(e){result.textContent="Could not check price: "+e.message;buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  finally{if(!fleexaCurrentQuote){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}}
 }
 function showFleexaOrder(order){
   fleexaCurrentOrder=order;
