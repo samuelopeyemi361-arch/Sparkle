@@ -83,16 +83,15 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: order.status,
-      message: "Provider order reference is not available yet. Please contact support.",
+      message: "Provider reference is missing. Please contact support.",
     }, 409);
   }
 
-  if (["success", "failed", "cancelled"].includes(order.status)) {
+  if (["failed", "cancelled"].includes(order.status)) {
     return reply({
       success: true,
       status: order.status,
-      phoneNumber: order.phone_number,
-      message: "Order is already finalized.",
+      message: "This order is no longer active.",
     });
   }
 
@@ -106,28 +105,97 @@ Deno.serve(async (req) => {
 
     providerData = await response.json();
 
-    if (!response.ok) {
+    if (!response.ok || providerData?.success !== true) {
       return reply({
         success: false,
         status: order.status,
-        message: "Fleexa status check failed. Please try again later.",
+        message: "Fleexa could not confirm the order status. Try again later.",
       }, 502);
     }
   } catch {
     return reply({
       success: false,
       status: order.status,
-      message: "Could not contact Fleexa. Please try again later.",
+      message: "Could not contact Fleexa. Try again later.",
     }, 502);
   }
 
-  // Return provider data for now; do not finalize or refund until
-  // the exact status and OTP fields are verified against Fleexa's response.
+  const data = providerData.data ?? {};
+  const providerStatus = String(data.status ?? data.code ?? "").toUpperCase();
+  const received = providerStatus === "RECEIVED" ||
+    (providerStatus === "COMPLETED" && Boolean(data.sms_code));
+
+  if (received && data.sms_code) {
+    const { error: saveError } = await admin
+      .from("sparkle_sms_otp_orders")
+      .update({
+        status: "success",
+        provider_response: providerData,
+        phone_number: data.phone ?? order.phone_number,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("request_id", requestId)
+      .eq("user_id", authData.user.id);
+
+    if (saveError) {
+      return reply({
+        success: false,
+        status: "unknown",
+        message: "OTP arrived but could not be saved. Please contact support.",
+      }, 500);
+    }
+
+    await admin
+      .from("wallet_transactions")
+      .update({ status: "success" })
+      .eq("reference", requestId)
+      .eq("user_id", authData.user.id);
+
+    return reply({
+      success: true,
+      status: "received",
+      phoneNumber: data.phone ?? order.phone_number,
+      serviceName: order.service_name,
+      otp: String(data.sms_code),
+      message: "OTP received.",
+    });
+  }
+
+  // Do not automatically refund based only on an unverified terminal status.
+  // Keep the order traceable until cancellation/refund handling is implemented.
+  if (["CANCELED", "CANCELLED", "EXPIRED", "FINISHED"].includes(providerStatus)) {
+    await admin
+      .from("sparkle_sms_otp_orders")
+      .update({
+        status: "unknown",
+        provider_response: providerData,
+        error_message: `Provider terminal status: ${providerStatus}; refund review required`,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("request_id", requestId)
+      .eq("user_id", authData.user.id);
+
+    return reply({
+      success: true,
+      status: providerStatus.toLowerCase(),
+      phoneNumber: order.phone_number,
+      message: "The provider order has ended. Any refund requires reconciliation.",
+    });
+  }
+
+  await admin
+    .from("sparkle_sms_otp_orders")
+    .update({
+      provider_response: providerData,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("request_id", requestId)
+    .eq("user_id", authData.user.id);
+
   return reply({
     success: true,
-    status: order.status,
+    status: "pending",
     phoneNumber: order.phone_number,
-    provider: providerData,
-    message: "Provider status retrieved. Final status processing is not enabled yet.",
+    message: "OTP not received yet. Check again in 20–30 seconds.",
   });
 });
