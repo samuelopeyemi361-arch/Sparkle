@@ -13,11 +13,11 @@ serve(async () => {
 
   try {
     const response = await fetch(
-      "https://fleexa.com.ng/developer/sms4/prices?serviceName=WhatsApp",
+      "https://fleexa.com.ng/developer/sms4/prices?serviceName=telegram",
       {
         headers: {
-          "Authorization": `Bearer ${apiKey}`,
-          "Accept": "application/json"
+          Authorization: `Bearer ${apiKey}`,
+          Accept: "application/json"
         }
       }
     );
