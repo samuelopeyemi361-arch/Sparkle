@@ -5,15 +5,15 @@ serve(async () => {
   const apiKey = Deno.env.get("FLEEXA_API_KEY");
 
   if (!apiKey) {
-    return new Response(
-      JSON.stringify({ error: "FLEEXA_API_KEY secret missing" }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "FLEEXA_API_KEY secret missing" },
+      { status: 500 }
     );
   }
 
   try {
     const response = await fetch(
-      "https://fleexa.com.ng/developer/sms4/countries",
+      "https://fleexa.com.ng/developer/sms4/apps",
       {
         method: "GET",
         headers: {
@@ -30,9 +30,9 @@ serve(async () => {
       headers: { "Content-Type": "application/json" }
     });
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Could not reach Fleexa API" }),
-      { status: 502, headers: { "Content-Type": "application/json" } }
+    return Response.json(
+      { error: "Could not reach Fleexa API" },
+      { status: 502 }
     );
   }
 });
