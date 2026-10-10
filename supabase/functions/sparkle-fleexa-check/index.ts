@@ -9,19 +9,19 @@ const corsHeaders = {
 };
 
 Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
-
   const respond = (body: unknown, status = 200) =>
     new Response(JSON.stringify(body), {
       status,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
 
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
+
   try {
     if (req.method !== "POST") {
-      return respond({ success: false, error: "POST required" }, 405);
+      return respond({ success: false, error: "POST required." }, 405);
     }
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -32,7 +32,7 @@ Deno.serve(async (req: Request) => {
     if (!supabaseUrl || !anonKey || !serviceKey || !apiKey) {
       return respond({
         success: false,
-        error: "Required server configuration is missing.",
+        error: "Server configuration is missing.",
       }, 500);
     }
 
@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const user = userData.user;
+
     const admin = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
@@ -76,37 +77,47 @@ Deno.serve(async (req: Request) => {
       .maybeSingle();
 
     if (orderError) {
-      return respond({
-        success: false,
-        error: "Could not load the order.",
-      }, 500);
+      return respond({ success: false, error: "Could not load order." }, 500);
     }
 
     if (!order) {
       return respond({ success: false, error: "Order not found." }, 404);
     }
 
-    if (String(order.status).toLowerCase() === "success") {
+    const currentStatus = String(order.status ?? "").toLowerCase();
+
+    if (currentStatus === "success") {
       return respond({
         success: true,
         status: "success",
-        phone: order.phone_number ?? order.phone ?? null,
+        phone: order.phone ?? null,
         sms_code: order.sms_code ?? null,
-        message: "This order is already completed.",
+        message: "Order already completed.",
+      });
+    }
+
+    if (
+      currentStatus === "failed" ||
+      currentStatus === "cancelled" ||
+      currentStatus === "canceled"
+    ) {
+      return respond({
+        success: false,
+        status: currentStatus,
+        message: "This order is no longer active.",
       });
     }
 
     if (!order.provider_request_id) {
       return respond({
         success: false,
-        error: "The provider order ID is missing. Please contact support.",
+        error: "Provider order ID is missing. Contact support.",
       }, 409);
     }
 
     const providerResponse = await fetch(
-      `https://fleexa.com.ng/developer/sms4/check/${encodeURIComponent(
-        String(order.provider_request_id),
-      )}`,
+      "https://fleexa.com.ng/developer/sms4/check/" +
+        encodeURIComponent(String(order.provider_request_id)),
       {
         method: "GET",
         headers: {
@@ -122,12 +133,13 @@ Deno.serve(async (req: Request) => {
     if (!providerResponse.ok || !result || result.success === false) {
       return respond({
         success: false,
-        error: "Fleexa could not confirm the SMS status. Please try again.",
+        error: "Fleexa could not confirm the SMS status. Try again later.",
       }, 502);
     }
 
     const data = result.data ?? result;
-    const status = String(
+
+    const providerStatus = String(
       data.status ?? data.code ?? "pending",
     ).toLowerCase();
 
@@ -141,16 +153,15 @@ Deno.serve(async (req: Request) => {
       data.phone ??
       data.phone_number ??
       data.number ??
-      order.phone_number ??
       order.phone ??
       null;
 
     const received =
-      status === "received" ||
-      status === "completed" ||
-      status === "complete" ||
-      status === "success" ||
-      status === "successful";
+      providerStatus === "received" ||
+      providerStatus === "completed" ||
+      providerStatus === "complete" ||
+      providerStatus === "success" ||
+      providerStatus === "successful";
 
     if (received && smsCode != null && String(smsCode).trim() !== "") {
       const { data: finished, error: finishError } = await admin.rpc(
@@ -170,9 +181,9 @@ Deno.serve(async (req: Request) => {
       if (finishError || !finished?.success) {
         return respond({
           success: false,
-          error:
-            "The SMS was received, but Sparkle could not finalize the order. Do not cancel or buy again. Contact support for review.",
           needs_review: true,
+          error:
+            "The provider reports an SMS code, but Sparkle could not finalize the order. Do not buy again or cancel this order. Contact support.",
         }, 500);
       }
 
@@ -185,12 +196,12 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    // Save the latest provider response without issuing a refund.
+    // Save the latest response without refunding the user.
     const { error: updateError } = await admin
       .from("sparkle_fleexa_smsotp_orders")
       .update({
         provider_response: result,
-        phone_number: phone ? String(phone) : order.phone_number,
+        phone: phone ? String(phone) : order.phone,
         updated_at: new Date().toISOString(),
       })
       .eq("user_id", user.id)
@@ -212,7 +223,7 @@ Deno.serve(async (req: Request) => {
   } catch (_error) {
     return respond({
       success: false,
-      error: "A temporary error occurred. Please try again.",
+      error: "Temporary error. Please try again.",
     }, 500);
   }
 });
