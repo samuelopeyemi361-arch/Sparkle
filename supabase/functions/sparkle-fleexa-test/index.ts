@@ -13,8 +13,9 @@ serve(async () => {
 
   try {
     const response = await fetch(
-      "https://fleexa.com.ng/developer/balance",
+      "https://fleexa.com.ng/developer/sms4/countries",
       {
+        method: "GET",
         headers: {
           "Authorization": `Bearer ${apiKey}`,
           "Accept": "application/json"
