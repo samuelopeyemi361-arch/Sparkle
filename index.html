@@ -4882,7 +4882,11 @@ async function confirmTransactionPIN(){
       await executeFleexaPurchase(pin);
       return;
     }
-    alert("Your PIN is correct. This service's secure purchase processing is not connected yet, so your wallet has not been charged.");
+    if(pendingPurchase){
+      await processPendingPurchase();
+      return;
+    }
+    alert("Your PIN is correct, but no purchase was queued. Your wallet has not been charged.");
   }catch(e){
     msg.textContent=e.message||"Could not verify your PIN.";
   }finally{
@@ -4891,96 +4895,59 @@ async function confirmTransactionPIN(){
 }
 
 async function processPendingPurchase(){
-  alert("Purchases are temporarily paused while Sparkle secure server-side wallet debit and provider processing are completed. Your wallet has not been charged.");
-  return;
-  if(!pendingPurchase) return;
+  if(!pendingPurchase || !Array.isArray(pendingPurchase.items) || !pendingPurchase.items.length) {
+    alert("No purchase is waiting for confirmation.");
+    return;
+  }
+  // Only airtime is enabled through the secure server-side purchase path for now.
+  // Other services remain paused rather than risking an incorrect wallet debit.
+  if(pendingPurchase.items.length!==1 || pendingPurchase.items[0]?.service!=="Airtime") {
+    alert("This service is still being connected to secure wallet processing. Your wallet has not been charged.");
+    return;
+  }
+  const p=pendingPurchase.items[0];
   const overlay=document.getElementById("processingOverlay");
-  overlay.classList.add("show");
-  document.getElementById("processingProgress").textContent =
-    pendingPurchase.type==="bulk" ? `Processing ${pendingPurchase.items.length} transaction(s)…` : "Processing your purchase…";
-
+  if(overlay) overlay.classList.add("show");
+  const progress=document.getElementById("processingProgress");
+  if(progress) progress.textContent="Securely processing airtime…";
   try{
-    for(let i=0;i<pendingPurchase.items.length;i++){
-      const p=pendingPurchase.items[i];
-      document.getElementById("processingProgress").textContent =
-        pendingPurchase.type==="bulk" ? `Processing ${i+1}/${pendingPurchase.items.length}…` : "Processing your purchase…";
-      const requestID="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,9);
-
-      let data;
-      if(p.service==="Airtime"){
-        const serviceID={MTN:"mtn",Airtel:"airtel",Glo:"glo","9mobile":"etisalat"}[p.network];
-        data={serviceID,amount:String(p.amount),phone:p.phone,requestID};
-      }else if(p.service==="Data"){
-        const serviceID=p.serviceID || selectedDataService;
-        data={serviceID,plan:String(p.planValue),amount:"",phone:p.phone,requestID};
-      }else if(p.service==="Cable TV"){
-        const serviceID={DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network];
-        data={serviceID,variation_code:String(p.planValue),phone:p.phone,amount:"",customerID:p.phone,requestID};
-      }else if(p.service==="Education Pin"){
-        data={serviceID:String(p.serviceID),plan:String(p.planValue),amount:"",phone:p.phone,requestID};
-      }else if(p.service==="Electricity"){
-        data={serviceID:String(p.serviceID),phone:p.phone,customerID:String(p.customerID),amount:String(p.amount),variation_code:String(p.variationCode||p.planValue||"prepaid"),requestID};
-      }else{
-        throw new Error("Unsupported service.");
-      }
-
-      // Check Sparkle wallet before sending a cable purchase to GSUBZ.
-      // This prevents an unfunded DSTV/GOtv/Startimes request from reaching the provider.
-      if(p.service==="Cable TV"){
-        const preflightUser=await supabaseClient.auth.getUser();
-        const preflightUserId=preflightUser?.data?.user?.id;
-        if(!preflightUserId) throw new Error("Your session has expired. Please log in again.");
-        const preflightWallet=await supabaseClient.from("wallets").select("balance").eq("user_id",preflightUserId).single();
-        if(preflightWallet.error||!preflightWallet.data) throw new Error("Sparkle wallet could not be loaded.");
-        const availableBalance=Number(preflightWallet.data.balance||0);
-        const requiredAmount=Number(p.amount||0);
-        if(!Number.isFinite(requiredAmount)||requiredAmount<=0) throw new Error("Invalid cable plan amount.");
-        if(availableBalance<requiredAmount) throw new Error("Insufficient Sparkle wallet balance.");
-      }
-
-      const result=await gsubzRequest("/api/pay/","POST",data);
-      if(result?.status!=="successful"){
-        throw new Error(result?.api_response || result?.description || "Gsubz transaction failed.");
-      }
-
-      const chargedAmount=Number(result?.amountPaid ?? result?.amount ?? p.amount);
-      if(!Number.isFinite(chargedAmount)||chargedAmount<=0) throw new Error("Invalid transaction amount returned by Gsubz.");
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
+      body:{network:p.network,phone:p.phone,amount:Number(p.amount)}
+    });
+    if(error && !data) throw new Error(error.message||"Could not reach secure airtime processing.");
+    if(data?.success && data.status==="successful"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      showReceipt({service:"Airtime",reference:data.reference||"—",customer:p.phone,amount:Number(data.amount||p.amount)});
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
-      if(!userId) throw new Error("Your session has expired. Please log in again.");
-      const walletResult=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).single();
-      if(walletResult.error||!walletResult.data) throw new Error("Sparkle wallet could not be loaded.");
-      const before=Number(walletResult.data.balance||0);
-      if(before < chargedAmount) throw new Error("Insufficient Sparkle wallet balance.");
-      const after=before-chargedAmount;
-      const debitResult=await supabaseClient.from("wallets").update({balance:after,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",before);
-      if(debitResult.error||debitResult.count===0){
-        throw new Error("Wallet changed before this purchase was recorded. Please check your balance before retrying.");
-      }
-      const txResult=await supabaseClient.from("wallet_transactions").insert({user_id:userId,type:"debit",amount:chargedAmount,service:p.service,status:"success"});
-      if(txResult.error){
-        // Best-effort rollback so a history failure does not leave the wallet debited.
-        await supabaseClient.from("wallets").update({balance:before,updated_at:new Date().toISOString()}).eq("user_id",userId).eq("balance",after);
-        throw new Error("Purchase completed but Sparkle could not record the wallet transaction. Your balance was restored; please check before retrying.");
-      }
-
-      if(i===pendingPurchase.items.length-1){
-        showReceipt({
-          service:p.service,
-          reference:result.transactionID || requestID,
-          customer:p.phone,
-          amount:Number(result.amountPaid ?? result.amount ?? p.amount)
-        });
-      }
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
     }
-    overlay.classList.remove("show");
-    pendingPurchase=null;
-    await loadWallet((await supabaseClient.auth.getUser()).data.user?.id);
-    await loadTransactions((await supabaseClient.auth.getUser()).data.user?.id);
+    if(data?.status==="refunded"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||"Airtime purchase failed.")+" Reference: "+(data.reference||"not provided"));
+      return;
+    }
+    if(data?.status==="pending"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||"The provider has not confirmed the airtime order yet.")+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
+      return;
+    }
+    throw new Error(data?.error||"Airtime purchase was not completed.");
   }catch(error){
-    console.error("Gsubz purchase:",error);
-    overlay.classList.remove("show");
-    alert("Transaction failed: "+(error.message||"Unable to process the transaction."));
+    console.error("Secure Sparkle airtime purchase:",error);
+    alert("Airtime was not confirmed. Check your transaction history before trying again. "+(error.message||""));
+  }finally{
+    if(overlay) overlay.classList.remove("show");
   }
 }
 
