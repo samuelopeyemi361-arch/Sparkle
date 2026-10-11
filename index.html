@@ -4543,6 +4543,29 @@ document.querySelectorAll("#electricityServices .electricity-service-card").forE
     selectElectricityService(card.dataset.service,heading);
   },{passive:true});
 });
+async function sparkleFunctionErrorMessage(error, fallback="The request could not be completed."){
+  // Supabase FunctionsHttpError keeps the original HTTP Response in error.context.
+  try{
+    const context=error?.context;
+    if(context){
+      let payload=null;
+      if(typeof context.clone==="function"){
+        const response=context.clone();
+        try{payload=await response.json();}catch(e){
+          try{const raw=await context.clone().text();if(raw)payload={message:raw};}catch(_){}
+        }
+      }else if(typeof context==="object") payload=context;
+      const message=String(payload?.error||payload?.message||payload?.msg||payload?.api_response||"").trim();
+      if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
+      if(message) return message;
+    }
+  }catch(e){}
+  const message=String(error?.message||"").trim();
+  if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
+  if(message && !/edge function returned a non-2xx status code/i.test(message)) return message;
+  return fallback;
+}
+
 async function showElectricitySummary(){
   const meter=(document.getElementById("electricityMeter")?.value||"").trim();
   const phone=(document.getElementById("electricityPhone")?.value||"").trim();
@@ -4558,7 +4581,8 @@ async function showElectricitySummary(){
   if(progress)progress.textContent="Verifying electricity meter…";
   try{
     const {data,error}=await supabaseClient.functions.invoke("sparkle-electricity-purchase",{body:{action:"verify",serviceID:selectedElectricityService,customerID:meter,phone,type}});
-    if(error||!data?.success||data.status!=="verified")throw new Error(data?.error||error?.message||"Meter verification failed. No money has been deducted.");
+    if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Meter verification failed. Check the provider and meter number. No money has been deducted."));
+    if(!data?.success||data.status!=="verified") throw new Error(await sparkleFunctionErrorMessage({message:data?.error||data?.message},"Meter verification failed. Check the provider and meter number. No money has been deducted."));
     const electricityValue=Math.floor(amount*0.9);
     const sparkleProfit=amount-electricityValue;
     const label=document.querySelector(`#electricityServices [data-service="${CSS.escape(selectedElectricityService)}"] h3`)?.textContent||selectedElectricityService;
@@ -4585,7 +4609,7 @@ async function showElectricitySummary(){
     const roll=document.getElementById("sparkle-continue-roll");
     if(roll){const mark=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(mark){mark.style.animation="none";void mark.offsetWidth;mark.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},700);}
     else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
-  }catch(e){alert(e.message||"Could not verify the meter. No money has been deducted.");}
+  }catch(e){alert((e.message||"Could not verify the meter. No money has been deducted.")+"\n\nNo payment has been made.");}
   finally{if(overlay)overlay.classList.remove("show");}
 }
 
@@ -4997,7 +5021,7 @@ async function processPendingPurchase(transactionPin){
     if(progress)progress.textContent="Securely processing electricity payment…";
     try{
       const {data,error}=await supabaseClient.functions.invoke("sparkle-electricity-purchase",{body:{action:"purchase",serviceID:p.serviceID,customerID:p.customerID,phone:p.phone,type:p.type||p.plan,amount:Number(p.amount),pin:transactionPin}});
-      if(error&&!data)throw new Error(error.message||"Could not reach secure electricity processing.");
+      if(error&&!data) throw new Error(await sparkleFunctionErrorMessage(error,"Could not reach secure electricity processing. Please try again later."));
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(data?.success&&data.status==="successful"){
@@ -5016,8 +5040,8 @@ async function processPendingPurchase(transactionPin){
         pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
         alert((data.error||"The provider has not confirmed the electricity order.")+" Reference: "+(data.reference||"not provided")+". Do not retry; check the transaction status first.");return;
       }
-      throw new Error(data?.error||"Electricity purchase was not completed. Your wallet has not been charged.");
-    }catch(error){console.error("Secure Sparkle electricity purchase:",error);alert("Electricity was not confirmed. Check transaction history before trying again. "+(error.message||""));}
+      throw new Error(await sparkleFunctionErrorMessage({message:data?.error||data?.message},"Electricity purchase was not completed. Your wallet has not been charged."));
+    }catch(error){console.error("Secure Sparkle electricity purchase:",error);alert((error.message||"Electricity was not confirmed.")+"\n\nCheck transaction history before trying again. Do not retry if the status is pending.");}
     finally{if(overlay)overlay.classList.remove("show");}
     return;
   }
