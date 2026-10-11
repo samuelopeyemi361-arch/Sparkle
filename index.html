@@ -2117,10 +2117,12 @@ Privacy Policy
     <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
     <p style="color:var(--muted)">Enter your PIN to authorize this transaction.</p>
     <div class="pin-boxes">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 1">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 2">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 3">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 4">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 5">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 6">
     </div>
     <p id="pinMessage" style="color:#ef4444;font-size:13px"></p>
     <button class="btn primary full" onclick="confirmTransactionPIN()">MAKE PAYMENT</button>
@@ -2130,11 +2132,11 @@ Privacy Policy
 <div class="modal pin-modal" id="setPinModal" style="z-index:100003">
   <div class="modal-box">
     <div class="modal-head"><h2>Set Transaction PIN</h2><button class="close" onclick="closeSetPinModal()">×</button></div>
-    <p style="color:var(--muted)">Create a private 4-digit PIN to authorize Recharge PIN purchases.</p>
-    <label for="newTransactionPin">New 4-digit PIN</label>
-    <input id="newTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
+    <p style="color:var(--muted)">Create a private 4–6 digit PIN to authorize purchases.</p>
+    <label for="newTransactionPin">New 4–6 digit PIN</label>
+    <input id="newTransactionPin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="••••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
     <label for="confirmTransactionPin">Confirm PIN</label>
-    <input id="confirmTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
+    <input id="confirmTransactionPin" type="password" inputmode="numeric" maxlength="6" autocomplete="new-password" placeholder="••••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
     <p id="setPinMessage" style="color:#ef4444;font-size:13px"></p>
     <button id="saveTransactionPinButton" class="btn primary full" onclick="saveTransactionPIN()">Save Transaction PIN</button>
   </div>
@@ -4952,7 +4954,7 @@ async function saveTransactionPIN(){
   const confirm=document.getElementById("confirmTransactionPin").value.trim();
   const msg=document.getElementById("setPinMessage");
   const btn=document.getElementById("saveTransactionPinButton");
-  if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a 4-digit PIN.";return;}
+  if(!/^\d{4,6}$/.test(pin)){msg.textContent="Choose a PIN with 4–6 digits.";return;}
   if(pin!==confirm){msg.textContent="The PINs do not match.";return;}
   btn.disabled=true;btn.textContent="Saving securely…";msg.textContent="";
   try{
@@ -4977,8 +4979,8 @@ document.addEventListener("input",e=>{
 async function confirmTransactionPIN(){
   const pin=[...document.querySelectorAll(".pin-box")].map(x=>x.value).join("");
   const msg=document.getElementById("pinMessage");
-  if(pin.length!==4){
-    msg.textContent="Enter your 4-digit transaction PIN.";
+  if(!/^\d{4,6}$/.test(pin)){
+    msg.textContent="Enter your 4–6 digit transaction PIN.";
     return;
   }
   const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
@@ -5029,7 +5031,7 @@ async function processPendingPurchase(transactionPin){
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
         const providerText=String(data.providerResponse?.api_response||data.providerResponse?.content?.token||data.providerResponse?.token||"");
         const tokenMatch=providerText.match(/(?:token(?:\s*(?:number|no|is))?\s*[:#-]?\s*)([0-9 ]{12,24})/i);
-        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
+        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,provider:p.networkLabel||p.serviceID,meter:p.customerID,type:(p.type||p.plan||"").toUpperCase(),phone:p.phone,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
         return;
       }
       if(data?.status==="refunded"){
@@ -5105,8 +5107,13 @@ function showReceipt(result){
   document.getElementById("receiptDetails").innerHTML=`
     <div class="receipt-row"><span>Service</span><strong>${d.service||"Sparkle Payment"}</strong></div>
     <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
-    <div class="receipt-row"><span>Customer</span><strong>${d.customer||"—"}</strong></div>
-    <div class="receipt-row"><span>Amount</span><strong>${money(d.amount||0)}</strong></div>
+    <div class="receipt-row"><span>Customer</span><strong>${escapeHtml(d.customer||"—")}</strong></div>
+    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${escapeHtml(d.provider)}</strong></div>`:""}
+    ${d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${escapeHtml(d.meter)}</strong></div>`:""}
+    ${d.type?`<div class="receipt-row"><span>Meter type</span><strong>${escapeHtml(d.type)}</strong></div>`:""}
+    ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${escapeHtml(d.phone)}</strong></div>`:""}
+    <div class="receipt-row"><span>Amount paid</span><strong>${money(d.amount||0)}</strong></div>
+    ${d.service==="Electricity"&&Number.isFinite(Number(d.electricityValue))?`<div class="receipt-row"><span>Electricity value</span><strong>${money(d.electricityValue)}</strong></div>`:""}
     ${d.token?`<div class="receipt-row"><span>Electricity token</span><strong style="word-break:break-word">${escapeHtml(d.token)}</strong></div>`:""}
     <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
     <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
