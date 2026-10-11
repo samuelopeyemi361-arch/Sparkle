@@ -985,9 +985,6 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .receipt-brand{text-align:center;color:var(--blue);font-size:25px;font-weight:900}
 .receipt-status{text-align:center;margin:8px 0 20px;color:#10b981;font-weight:900}
 .receipt-row{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px dashed #dbe4f1;font-size:14px}
-.tx-row-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:7px}
-.tx-receipt-btn{border:1px solid #d8e5f4;background:#f5f9ff;color:#1459a8;border-radius:8px;padding:5px 9px;font-size:11px;font-weight:800;cursor:pointer}
-.tx-receipt-btn:active{transform:scale(.98)}
 .receipt-actions{display:flex;justify-content:space-between;margin-top:15px}
 .mobile-bottom-nav{display:none}
 @media(max-width:900px){
@@ -1094,6 +1091,13 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
  .data-plan-size{font-size:17px}
  .data-plan-price{font-size:14px}
 }
+
+
+/* Transaction rows open their receipt when tapped; no extra receipt button. */
+#transactions .tx[role="button"],#allTransactions .tx[role="button"]{cursor:pointer;transition:background .15s ease,transform .15s ease}
+#transactions .tx[role="button"]:hover,#allTransactions .tx[role="button"]:hover{background:rgba(11,92,255,.035)}
+#transactions .tx[role="button"]:focus-visible,#allTransactions .tx[role="button"]:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
+.receipt-actions button{min-width:112px}
 
 </style>
 
@@ -1202,6 +1206,113 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .sparkle-summary-total strong{font-size:23px;color:#0b5cff}
 .sparkle-summary-confirm{margin-top:20px}
 @media(max-width:600px){#sparkle-support-widget{bottom:88px}.sparkle-summary-card{padding:18px}.sparkle-summary-page{padding-top:6px}}
+</style>
+
+
+<style id="sparkle-profile-premium-preview">
+/* Scoped only to Profile: Earn & Referral and all other pages remain untouched. */
+
+/* Sparkle Legal Centre + Customer Care: scoped to these new pages */
+#legalPoliciesPage,#helpSupportPage{padding-bottom:28px;color:#222847}
+#legalPoliciesPage .lp-top,#helpSupportPage .lp-top{display:flex;align-items:center;gap:12px;margin:0 0 20px}
+#legalPoliciesPage .lp-back,#helpSupportPage .lp-back{width:39px;height:39px;flex:0 0 39px;border:1px solid #e8eaf4;border-radius:13px;background:#fff;color:#5547a6;font-size:23px;line-height:1}
+#legalPoliciesPage .lp-title,#helpSupportPage .lp-title{margin:0;font-size:21px;line-height:1.25;letter-spacing:-.45px;font-weight:780;color:#202747}
+#legalPoliciesPage .lp-sub,#helpSupportPage .lp-sub{margin:4px 0 0;color:#858ba3;font-size:12px;line-height:1.5}
+#legalPoliciesPage .lp-banner,#helpSupportPage .lp-banner{display:flex;align-items:center;gap:14px;padding:19px;border-radius:19px;background:radial-gradient(circle at 92% 8%,rgba(151,119,255,.25),transparent 34%),linear-gradient(120deg,#111b3b,#302d67 68%,#503a9e);color:#fff;margin-bottom:17px}
+#legalPoliciesPage .lp-banner-icon,#helpSupportPage .lp-banner-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:15px;background:rgba(255,255,255,.13);font-size:23px}
+#legalPoliciesPage .lp-banner strong,#helpSupportPage .lp-banner strong{display:block;font-size:14px;font-weight:750;letter-spacing:-.1px}
+#legalPoliciesPage .lp-banner small,#helpSupportPage .lp-banner small{display:block;margin-top:4px;color:#dedcf7;font-size:11px;line-height:1.45}
+#legalPoliciesPage .lp-docs,#helpSupportPage .lp-docs{background:#fff;border:1px solid #e8eaf4;border-radius:20px;overflow:hidden;box-shadow:0 12px 36px rgba(28,35,77,.045)}
+#legalPoliciesPage .lp-doc,#helpSupportPage .lp-doc{width:100%;display:flex;align-items:center;gap:12px;padding:15px 16px;border:0;border-bottom:1px solid #f0f0f7;background:#fff;text-align:left;color:#222847}
+#legalPoliciesPage .lp-doc:last-child,#helpSupportPage .lp-doc:last-child{border-bottom:0}
+#legalPoliciesPage .lp-doc:hover,#helpSupportPage .lp-doc:hover{background:#fbfaff}
+#legalPoliciesPage .lp-doc-icon,#helpSupportPage .lp-doc-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:13px;font-size:18px;background:#f0edff;color:#7155df}
+#legalPoliciesPage .lp-doc:nth-child(2) .lp-doc-icon{background:#eaf2ff;color:#3973dc}
+#legalPoliciesPage .lp-doc:nth-child(3) .lp-doc-icon{background:#fff5df;color:#bd8522}
+#legalPoliciesPage .lp-doc:nth-child(4) .lp-doc-icon{background:#e6f8f0;color:#21966b}
+#legalPoliciesPage .lp-doc:nth-child(5) .lp-doc-icon{background:#fcecf3;color:#bd4e7c}
+#legalPoliciesPage .lp-doc-copy,#helpSupportPage .lp-doc-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+#legalPoliciesPage .lp-doc-copy strong,#helpSupportPage .lp-doc-copy strong{font-size:12.5px;font-weight:750;line-height:1.35}
+#legalPoliciesPage .lp-doc-copy small,#helpSupportPage .lp-doc-copy small{font-size:10.5px;color:#858ba3;line-height:1.45}
+#legalPoliciesPage .lp-chevron,#helpSupportPage .lp-chevron{font-size:21px;color:#9b91d9;font-weight:400}
+#legalPoliciesPage .lp-footnote{margin:13px 3px 0;color:#8a91a8;font-size:10.5px;line-height:1.55}
+#helpSupportPage .lp-doc-icon.care{background:#e6f8f0;color:#21966b}
+#helpSupportPage .lp-doc-icon.chat{background:#e6f8f0;color:#169b65}
+#helpSupportPage .lp-doc-icon.issue{background:#fff5df;color:#bd8522}
+#helpSupportPage .lp-doc-icon.wallet{background:#eaf2ff;color:#3973dc}
+#helpSupportPage .lp-doc-icon.faq{background:#f0edff;color:#7155df}
+body.dark-mode #legalPoliciesPage,body.dark-mode #helpSupportPage{color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-title,body.dark-mode #helpSupportPage .lp-title{color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-back,body.dark-mode #helpSupportPage .lp-back,body.dark-mode #legalPoliciesPage .lp-docs,body.dark-mode #helpSupportPage .lp-docs,body.dark-mode #legalPoliciesPage .lp-doc,body.dark-mode #helpSupportPage .lp-doc{background:#0e1b2d;border-color:#213149;color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-doc-copy small,body.dark-mode #helpSupportPage .lp-doc-copy small,body.dark-mode #legalPoliciesPage .lp-sub,body.dark-mode #helpSupportPage .lp-sub{color:#9aabc4}
+@media(max-width:600px){#legalPoliciesPage .lp-title,#helpSupportPage .lp-title{font-size:19px}#legalPoliciesPage .lp-banner,#helpSupportPage .lp-banner{padding:16px}#legalPoliciesPage .lp-doc,#helpSupportPage .lp-doc{padding:13px 12px;gap:10px}#legalPoliciesPage .lp-doc-icon,#helpSupportPage .lp-doc-icon{width:36px;height:36px;flex-basis:36px}}
+
+#profilePage{--profile-navy:#101b3c;--profile-violet:#7656e8;--profile-line:#e8eaf4;--profile-muted:#77809a;padding-bottom:28px}
+#profilePage .profile-page-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}
+#profilePage .profile-page-heading .dashboard-title{margin:4px 0 5px;letter-spacing:-.7px;font-weight:850}
+#profilePage .profile-page-heading .dashboard-subtitle{margin:0;line-height:1.55}
+#profilePage .profile-eyebrow{display:block;font-size:10px;letter-spacing:1.6px;font-weight:900;color:#7b70c9}
+#profilePage .profile-heading-mark{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:15px;color:#fff;font-size:24px;background:linear-gradient(145deg,#17244b,#7957e9);box-shadow:0 9px 22px rgba(82,64,180,.22)}
+#profilePage .profile-section,#profilePage .profile-settings-panel{margin-top:18px;padding:0;background:#fff;border:1px solid var(--profile-line);border-radius:23px;overflow:hidden;box-shadow:0 12px 36px rgba(28,35,77,.055)}
+#profilePage .profile-premium-hero{position:relative;display:flex;align-items:center;gap:17px;padding:25px 25px 28px;color:#fff;background:radial-gradient(circle at 90% 10%,rgba(151,119,255,.4),transparent 32%),linear-gradient(120deg,#111b3b 0%,#222653 57%,#503a9e 100%);overflow:hidden}
+#profilePage .profile-premium-hero:after{content:"";position:absolute;width:190px;height:190px;right:-82px;bottom:-135px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 24px rgba(255,255,255,.035),0 0 0 48px rgba(255,255,255,.025);pointer-events:none}
+#profilePage .profile-avatar{width:68px;height:68px;flex:0 0 68px;border:2px solid rgba(255,255,255,.45);border-radius:21px;background:linear-gradient(145deg,#b7a7ff,#7855e8);color:#fff;box-shadow:0 7px 20px rgba(0,0,0,.18);font-size:26px}
+#profilePage .profile-identity{min-width:0;flex:1;position:relative;z-index:1}
+#profilePage .profile-eyebrow-light{color:#c7bcff}
+#profilePage .profile-identity h2{margin:5px 0 4px;color:#fff;font-size:22px;line-height:1.2;letter-spacing:-.4px;overflow-wrap:anywhere}
+#profilePage .profile-identity p{margin:0;color:#d4d8ef;font-size:13px;overflow-wrap:anywhere}
+#profilePage .profile-status-line{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:12px}
+#profilePage .profile-status-pill,#profilePage .profile-member-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.09);font-size:10px;font-weight:800;color:#f5f3ff}
+#profilePage .profile-status-dot{width:6px;height:6px;border-radius:50%;background:#fbbf24}
+#profilePage .profile-status-pill.is-verified .profile-status-dot{background:#4ade80}
+#profilePage .profile-status-pill.is-unverified .profile-status-dot{background:#fbbf24}
+#profilePage .profile-edit-hero{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:10px 12px;border:1px solid rgba(255,255,255,.24);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:800}
+#profilePage .profile-edit-hero:hover{background:rgba(255,255,255,.18)}
+#profilePage .profile-completion-panel{padding:19px 24px 21px;background:linear-gradient(180deg,#fbfaff,#fff);border-bottom:1px solid #f0eff8}
+#profilePage .profile-completion-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+#profilePage .profile-completion-top strong{display:block;margin-top:4px;font-size:19px;color:#202747;letter-spacing:-.4px}
+#profilePage .profile-completion-caption{font-size:11px;color:#858ba3;text-align:right}
+#profilePage .profile-progress-track{height:7px;background:#ece9fa;border-radius:99px;overflow:hidden}
+#profilePage .profile-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6b5ce7,#a58bff);transition:width .35s ease}
+#profilePage .profile-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:23px 24px 15px}
+#profilePage .profile-section-heading h3{margin:5px 0 0;color:#202747;font-size:17px;letter-spacing:-.3px}
+#profilePage .profile-section-heading p{margin:5px 0 0;color:#858ba3;font-size:12px;line-height:1.5}
+#profilePage .profile-section-icon{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:12px;background:#f0edff;color:#7056d9;font-size:20px}
+#profilePage .profile-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:0 24px 24px}
+#profilePage .profile-item{min-width:0;padding:14px 15px;border:1px solid #ececf5;border-radius:14px;background:#fcfcff;transition:border-color .18s,transform .18s}
+#profilePage .profile-item:hover{border-color:#d8d0ff;transform:translateY(-1px)}
+#profilePage .profile-item label{font-size:9px;letter-spacing:1.05px;color:#8b90a8;margin-bottom:7px}
+#profilePage .profile-item strong{display:block;color:#222847;font-size:13px;font-weight:800;line-height:1.45;overflow-wrap:anywhere}
+#profilePage .profile-settings-panel{padding-bottom:8px}
+#profilePage .profile-settings-panel .profile-section-heading{padding-bottom:17px}
+#profilePage .profile-setting-row{width:calc(100% - 32px);margin:0 16px;display:flex;align-items:center;gap:13px;padding:14px 8px;border:0;border-top:1px solid #f0f0f7;background:#fff;text-align:left;color:#202747}
+#profilePage .profile-setting-row:hover{background:#fbfaff}
+#profilePage .profile-setting-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;font-size:20px;font-weight:800}
+#profilePage .profile-setting-icon.violet{background:#f0edff;color:#7155df}#profilePage .profile-setting-icon.blue{background:#eaf2ff;color:#3973dc}#profilePage .profile-setting-icon.amber{background:#fff5df;color:#bd8522}#profilePage .profile-setting-icon.green{background:#e6f8f0;color:#21966b}
+#profilePage .profile-setting-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+#profilePage .profile-setting-copy strong{font-size:13px;font-weight:850}
+#profilePage .profile-setting-copy small{font-size:11px;line-height:1.45;color:#858ba3}
+#profilePage .profile-setting-action{display:inline-flex;align-items:center;gap:7px;color:#7056d9;font-size:11px;font-weight:850;white-space:nowrap}
+#profilePage .profile-setting-action b{font-size:20px;font-weight:500;color:#9b91d9}
+#profilePage .profile-legal-actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 24px 18px;border-top:1px solid #f0f0f7}
+#profilePage .profile-legal-actions button{padding:8px 0;border:0;background:transparent;color:#666f8b;font-size:11px;font-weight:750}
+#profilePage .profile-legal-actions button span{color:#8c7de0;margin-left:4px}
+#profilePage .profile-logout-row{width:calc(100% - 32px);margin:0 16px 14px;padding:14px 13px;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #f5dfe5;border-radius:14px;background:#fff8fa;color:#b93854}
+#profilePage .profile-logout-row>span:first-child{font-size:22px}
+#profilePage .profile-logout-row>span:nth-child(2){display:flex;flex-direction:column;gap:4px;flex:1}
+#profilePage .profile-logout-row strong{font-size:12px;font-weight:850}
+#profilePage .profile-logout-row small{font-size:10px;color:#a77b87}
+#profilePage .profile-logout-row>b{font-size:20px;font-weight:500}
+#profilePage .profile-message{margin:0 24px 18px}
+body.dark-mode #profilePage .profile-section,body.dark-mode #profilePage .profile-settings-panel{background:#0e1b2d;border-color:#213149}
+body.dark-mode #profilePage .profile-completion-panel{background:#111f34;border-color:#213149}
+body.dark-mode #profilePage .profile-completion-top strong,body.dark-mode #profilePage .profile-section-heading h3,body.dark-mode #profilePage .profile-item strong,body.dark-mode #profilePage .profile-setting-row{color:#eef4ff}
+body.dark-mode #profilePage .profile-item,body.dark-mode #profilePage .profile-setting-row{background:#0e1b2d;border-color:#213149}
+body.dark-mode #profilePage .profile-setting-row:hover{background:#13243b}
+body.dark-mode #profilePage .profile-legal-actions{border-color:#213149}
+body.dark-mode #profilePage .profile-logout-row{background:#2b1727;border-color:#513044}
+@media(max-width:600px){#profilePage .profile-premium-hero{padding:21px 17px;gap:12px;flex-wrap:wrap}#profilePage .profile-avatar{width:57px;height:57px;flex-basis:57px;border-radius:18px;font-size:23px}#profilePage .profile-identity h2{font-size:19px}#profilePage .profile-edit-hero{margin-left:auto;padding:9px 10px}#profilePage .profile-completion-panel{padding:17px}#profilePage .profile-section-heading{padding:20px 17px 14px}#profilePage .profile-grid{padding:0 17px 18px;gap:9px}#profilePage .profile-item{padding:12px 11px}#profilePage .profile-item strong{font-size:12px}#profilePage .profile-setting-row{width:calc(100% - 20px);margin:0 10px;gap:10px;padding:13px 5px}#profilePage .profile-setting-icon{width:37px;height:37px;flex-basis:37px;border-radius:12px}#profilePage .profile-setting-action{font-size:10px;gap:3px}#profilePage .profile-setting-copy small{font-size:10px}#profilePage .profile-legal-actions{padding:14px 17px}#profilePage .profile-logout-row{width:calc(100% - 20px);margin:0 10px 12px}#profilePage .profile-completion-caption{max-width:45%;line-height:1.4}}
+@media(max-width:380px){#profilePage .profile-grid{grid-template-columns:1fr}#profilePage .profile-edit-hero{font-size:11px}#profilePage .profile-status-pill,#profilePage .profile-member-pill{font-size:9px}}
 </style>
 
 </head>
@@ -1842,19 +1953,21 @@ Privacy Policy
           </div>
         </section>
 
-        <!-- PROFILE -->
+        <!-- PROFILE: premium redesign preview; existing actions retained -->
         <section class="page" id="profilePage">
-          <h1 class="dashboard-title">Profile</h1>
-          <p class="dashboard-subtitle">Manage your Sparkle account and security settings.</p>
+          <div class="profile-page-heading"><div><span class="profile-eyebrow">YOUR ACCOUNT</span><h1 class="dashboard-title">Profile & Settings</h1><p class="dashboard-subtitle">Your Sparkle identity, security and preferences in one place.</p></div><div class="profile-heading-mark" aria-hidden="true">✦</div></div>
 
           <section class="profile-section" id="profileSection">
-            <div class="profile-header">
+            <div class="profile-premium-hero">
               <div class="profile-avatar" id="profileAvatar">S</div>
-              <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
+              <div class="profile-identity"><span class="profile-eyebrow profile-eyebrow-light">SPARKLE MEMBER</span><h2 id="profileDisplayName">My Profile</h2><p id="profileDisplayUsername">Manage your Sparkle account information.</p><div class="profile-status-line"><span class="profile-status-pill" id="profileVerificationStatus"><span class="profile-status-dot"></span>Checking email status…</span><span class="profile-member-pill">Account profile</span></div></div>
+              <button class="profile-edit-hero" onclick="openEditProfile()" type="button"><span aria-hidden="true">✎</span> Edit profile</button>
             </div>
 
-            <div class="profile-message" id="profileMessage"></div>
+            <div class="profile-completion-panel"><div class="profile-completion-top"><div><span class="profile-eyebrow">PROFILE COMPLETION</span><strong id="profileCompletionPercent">Checking…</strong></div><span class="profile-completion-caption" id="profileCompletionCaption">Checking your account details</span></div><div class="profile-progress-track"><div class="profile-progress-fill" id="profileCompletionBar" style="width:0%"></div></div></div>
 
+            <div class="profile-message" id="profileMessage"></div>
+            <div class="profile-section-heading"><div><span class="profile-eyebrow">PERSONAL DETAILS</span><h3>Your information</h3></div><span class="profile-section-icon" aria-hidden="true">◎</span></div>
             <div class="profile-grid">
               <div class="profile-item"><label>FIRST NAME</label><strong id="profileFirstName">Loading...</strong></div>
               <div class="profile-item"><label>LAST NAME</label><strong id="profileLastName">Loading...</strong></div>
@@ -1863,21 +1976,43 @@ Privacy Policy
               <div class="profile-item"><label>EMAIL ADDRESS</label><strong id="profileEmail">Loading...</strong></div>
               <div class="profile-item"><label>REFERRAL CODE</label><strong id="profileReferral">Not added</strong></div>
             </div>
-
-            <div class="profile-actions">
-              <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
-              <button class="btn" onclick="openPasswordModal()">Change Password</button>
-              <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
-              <button class="btn" onclick="openLegal('privacy')">Privacy Policy</button>
-              <button class="btn" onclick="logout()">↪ Logout</button>
-              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
-            </div>
           </section>
 
-          <div class="settings-grid">
-            <div class="setting-card"><div class="setting-icon">🔒</div><h3>Transaction PIN</h3><p>Protect purchases with your private transaction PIN.</p><button class="btn" onclick="openPinModal()">Manage PIN</button></div>
-            <div class="setting-card"><div class="setting-icon">🔔</div><h3>Notifications</h3><p>Receive important updates about your account and transactions.</p><button class="btn" onclick="toggleNotifications()">View</button></div>
-            <div class="setting-card"><div class="setting-icon">🛡️</div><h3>Security</h3><p>Keep your Sparkle account secure with a strong password.</p><button class="btn" onclick="openPasswordModal()">Change Password</button></div>
+          <section class="profile-settings-panel"><div class="profile-section-heading"><div><span class="profile-eyebrow">ACCOUNT PREFERENCES</span><h3>Security & settings</h3><p>Manage access to your account and important information.</p></div><span class="profile-section-icon" aria-hidden="true">⚙</span></div>
+            <button class="profile-setting-row" type="button" onclick="openPinModal()"><span class="profile-setting-icon violet" aria-hidden="true">⌑</span><span class="profile-setting-copy"><strong>Transaction PIN</strong><small>Secure your purchases with your private PIN.</small></span><span class="profile-setting-action">Manage <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="openPasswordModal()"><span class="profile-setting-icon blue" aria-hidden="true">♙</span><span class="profile-setting-copy"><strong>Password & security</strong><small>Keep your account protected with a strong password.</small></span><span class="profile-setting-action">Change <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="toggleNotifications()"><span class="profile-setting-icon amber" aria-hidden="true">♧</span><span class="profile-setting-copy"><strong>Notifications</strong><small>View important wallet and transaction update information.</small></span><span class="profile-setting-action">View <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="showDashPage('legalPoliciesPage',null)"><span class="profile-setting-icon violet" aria-hidden="true">▤</span><span class="profile-setting-copy"><strong>Legal & Policies</strong><small>Terms, privacy, refunds, payments and rewards.</small></span><span class="profile-setting-action">Read <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="showDashPage('helpSupportPage',null)"><span class="profile-setting-icon green" aria-hidden="true">♡</span><span class="profile-setting-copy"><strong>Help & support</strong><small>Customer care and help with Sparkle services.</small></span><span class="profile-setting-action">Get help <b>›</b></span></button>
+            <button class="profile-logout-row" type="button" onclick="logout()"><span aria-hidden="true">↪</span><span><strong>Log out of Sparkle</strong><small>Sign out of this account on this device.</small></span><b>›</b></button>
+          </section>
+        </section>
+
+        <!-- LEGAL & POLICIES: separate page opened from Profile -->
+        <section class="page" id="legalPoliciesPage">
+          <div class="lp-top"><button class="lp-back" type="button" onclick="showDashPage('profilePage',null)" aria-label="Back to Profile">‹</button><div><h1 class="lp-title">Legal & Policies</h1><p class="lp-sub">Clear information about using Sparkle.</p></div></div>
+          <div class="lp-banner"><span class="lp-banner-icon" aria-hidden="true">♧</span><div><strong>Your Sparkle documents</strong><small>Take a moment to understand our policies and how they apply to your account.</small></div></div>
+          <div class="lp-docs">
+            <button class="lp-doc" type="button" onclick="openLegal('terms')"><span class="lp-doc-icon">▤</span><span class="lp-doc-copy"><strong>Terms & Conditions</strong><small>Rules for accounts, services and acceptable use.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('privacy')"><span class="lp-doc-icon">♧</span><span class="lp-doc-copy"><strong>Privacy Policy</strong><small>How personal information is collected and used.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('refunds')"><span class="lp-doc-icon">↻</span><span class="lp-doc-copy"><strong>Refund & Dispute Policy</strong><small>What to do when a purchase fails or is pending.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('wallet')"><span class="lp-doc-icon">₦</span><span class="lp-doc-copy"><strong>Wallet & Payment Policy</strong><small>Funding, deductions, verification and records.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('referrals')"><span class="lp-doc-icon">♙</span><span class="lp-doc-copy"><strong>Referral & Rewards Policy</strong><small>Eligibility, first-purchase rewards and reversals.</small></span><span class="lp-chevron">›</span></button>
+          </div>
+          <p class="lp-footnote">Policies should be reviewed periodically and updated to reflect Sparkle's actual services and applicable law.</p>
+        </section>
+
+        <!-- HELP & SUPPORT: Customer Care and service assistance -->
+        <section class="page" id="helpSupportPage">
+          <div class="lp-top"><button class="lp-back" type="button" onclick="showDashPage('profilePage',null)" aria-label="Back to Profile">‹</button><div><h1 class="lp-title">Help & Support</h1><p class="lp-sub">We're here to help with your Sparkle account.</p></div></div>
+          <div class="lp-banner"><span class="lp-banner-icon" aria-hidden="true">☏</span><div><strong>How can we help?</strong><small>Choose a support option and tell us what happened. Never share your transaction PIN or password.</small></div></div>
+          <div class="lp-docs">
+            <button class="lp-doc" type="button" onclick="openSparkleSupport()"><span class="lp-doc-icon care">☏</span><span class="lp-doc-copy"><strong>Customer Care</strong><small>Contact the Sparkle support team.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('chat')"><span class="lp-doc-icon chat">◉</span><span class="lp-doc-copy"><strong>WhatsApp Support</strong><small>Chat with customer care directly.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('transaction')"><span class="lp-doc-icon issue">↻</span><span class="lp-doc-copy"><strong>Transaction Issues</strong><small>Help with failed, pending or incorrect purchases.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('wallet')"><span class="lp-doc-icon wallet">₦</span><span class="lp-doc-copy"><strong>Wallet & Funding Help</strong><small>Missing deposits, wallet debits and balances.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('faq')"><span class="lp-doc-icon faq">?</span><span class="lp-doc-copy"><strong>Frequently Asked Questions</strong><small>Get help with common Sparkle questions.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('email')"><span class="lp-doc-icon" style="background:#eaf2ff;color:#3973dc">✉</span><span class="lp-doc-copy"><strong>Email Customer Care</strong><small>support@sparkle.com</small></span><span class="lp-chevron">›</span></button>
           </div>
         </section>
 
@@ -2229,9 +2364,9 @@ Privacy Policy
         <p style="text-align:center;color:#64748b;font-size:11px;margin-top:20px">Thank you for using Sparkle.</p>
       </div>
     </div>
-    <div class="receipt-actions">
-      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
-      <button class="btn primary" onclick="downloadReceiptPDF()">⬇ PDF</button>
+    <div class="receipt-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <button class="btn primary" onclick="downloadReceiptPDF()">PDF ↓</button>
+      <button class="btn" onclick="downloadReceiptImage()">Image ↓</button>
     </div>
   </div>
 </div>
@@ -3135,14 +3270,14 @@ window.currentSparkleUser=user;
 showDashPage("home",document.querySelector('.sidebar-nav .nav-item'));
 
 
-const {data:profile} =
-await supabaseClient
-.from("profiles")
-.select(
-"first_name,last_name,full_name,username,phone,email,referral_code"
-)
-.eq("id",user.id)
-.single();
+let profile=null;
+try {
+  const profileResult=await supabaseClient.from("profiles")
+    .select("first_name,last_name,full_name,username,phone,email,referral_code")
+    .eq("id",user.id).maybeSingle();
+  profile=profileResult.data||null;
+  if(profileResult.error) console.warn("Dashboard profile lookup:",profileResult.error.message);
+} catch(profileLoadError) { console.warn("Dashboard profile request failed:",profileLoadError); }
 
 
 let name;
@@ -3180,15 +3315,29 @@ document.getElementById("avatar")
 name.charAt(0).toUpperCase();
 
 
-await loadProfile(user.id);
-
-await loadWallet(user.id);
-
-await loadTransactions(user.id);
-
-await createDedicatedAccount();
-
-await loadReferralStats();
+// Load independent dashboard sections in parallel. A failure in one request
+// must never leave account details or Recent Transactions stuck on Loading.
+const dashboardTasks = [
+  ["profile", () => loadProfile(user.id)],
+  ["wallet", () => loadWallet(user.id)],
+  ["transactions", () => loadTransactions(user.id)],
+  ["dedicated account", () => createDedicatedAccount()],
+  ["referrals", () => loadReferralStats()],
+];
+await Promise.allSettled(dashboardTasks.map(async ([label, task]) => {
+  try { await task(); }
+  catch (sectionError) {
+    console.error("Sparkle dashboard section failed:", label, sectionError);
+    if(label==="transactions") {
+      const box=document.getElementById("transactions");
+      if(box) box.innerHTML='<p style="color:#ef4444">Transactions could not load. Tap to retry.</p><button class="btn" onclick="retryRecentTransactions()">Retry</button>';
+    }
+    if(label==="dedicated account") {
+      const status=document.getElementById("dvaStatus");
+      if(status) status.textContent="Could not load — tap Fund Wallet to retry";
+    }
+  }
+}));
 
 }
 
@@ -3270,6 +3419,35 @@ document.getElementById("profileAvatar")
 (firstName || fullName)
 .charAt(0)
 .toUpperCase();
+
+const displayName = document.getElementById("profileDisplayName");
+const displayUsername = document.getElementById("profileDisplayUsername");
+if(displayName) displayName.textContent = fullName;
+if(displayUsername) displayUsername.textContent = data?.username ? "@" + data.username : (data?.email || "Your Sparkle account");
+
+const completionFields = [firstName, lastName, data?.username, data?.phone, data?.email || ""];
+const completion = Math.round(completionFields.filter(v => String(v || "").trim()).length / completionFields.length * 100);
+const completionPercent = document.getElementById("profileCompletionPercent");
+const completionBar = document.getElementById("profileCompletionBar");
+const completionCaption = document.getElementById("profileCompletionCaption");
+if(completionPercent) completionPercent.textContent = completion + "% complete";
+if(completionBar) completionBar.style.width = completion + "%";
+if(completionCaption) completionCaption.textContent = completion === 100 ? "Your details look complete" : "Add missing details to complete your profile";
+
+try {
+  const {data:authData} = await supabaseClient.auth.getUser();
+  const authUser = authData?.user;
+  const verified = !!(authUser?.email_confirmed_at || authUser?.confirmed_at);
+  const verification = document.getElementById("profileVerificationStatus");
+  if(verification){
+    verification.classList.toggle("is-verified", verified);
+    verification.classList.toggle("is-unverified", !verified);
+    verification.innerHTML = '<span class="profile-status-dot"></span>' + (verified ? 'Email verified' : 'Email not verified');
+  }
+} catch(verificationError) {
+  const verification = document.getElementById("profileVerificationStatus");
+  if(verification) verification.innerHTML = '<span class="profile-status-dot"></span>Email status unavailable';
+}
 
 }
 
@@ -3946,53 +4124,66 @@ function toggleNotifications(){
    ===================================================== */
 
 async function createDedicatedAccount(){
+  const setStatus=(value)=>{const el=document.getElementById("dvaStatus");if(el)el.textContent=value;};
+  const showAccount=(row)=>{
+    if(!row?.account_number) return false;
+    const name=document.getElementById("dvaAccountName");
+    const number=document.getElementById("dvaAccountNumber");
+    const bank=document.getElementById("dvaBankName");
+    if(name)name.textContent=row.account_name||"Sparkle User";
+    if(number)number.textContent=String(row.account_number);
+    if(bank)bank.textContent=row.bank_name||"—";
+    setStatus("Ready");
+    return true;
+  };
   try{
+    setStatus("Checking saved account…");
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) return;
-
+    if(userError||!userData?.user){setStatus("Sign in to load account details");return false;}
     const user=userData.user;
+    // Prefer the saved account record. Do not call the provider again if it already exists.
+    try{
+      const saved=await supabaseClient.from("paystack_dedicated_accounts")
+        .select("account_name,account_number,bank_name").eq("user_id",user.id).maybeSingle();
+      if(saved.data?.account_number){showAccount(saved.data);return true;}
+      if(saved.error) console.warn("Saved dedicated account lookup:",saved.error.message);
+    }catch(savedError){console.warn("Saved dedicated account lookup failed:",savedError);}
     let profile=null;
     try{
-      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).single();
-      profile=result.data || null;
-    }catch(e){ console.warn("Profile lookup skipped:",e); }
-
-    const firstName=profile?.first_name || user.user_metadata?.first_name || "";
-    const lastName=profile?.last_name || user.user_metadata?.last_name || "";
-    const name=(profile?.full_name || `${firstName} ${lastName}`.trim() || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
-    const email=(profile?.email || user.email || "").trim();
-    const phone=(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
-
-    if(!email || !name){
-      const status=document.getElementById("dvaStatus");
-      if(status) status.textContent="Account details missing";
-      return;
+      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).maybeSingle();
+      profile=result.data||null;
+    }catch(e){console.warn("Profile lookup skipped:",e);}
+    const firstName=profile?.first_name||user.user_metadata?.first_name||"";
+    const lastName=profile?.last_name||user.user_metadata?.last_name||"";
+    const name=(profile?.full_name||`${firstName} ${lastName}`.trim()||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Sparkle User").trim();
+    const email=(profile?.email||user.email||"").trim();
+    const phone=(profile?.phone||user.phone||user.user_metadata?.phone||"").trim();
+    if(!email||!name){setStatus("Account details missing");return false;}
+    setStatus("Loading saved account…");
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{body:{email,name,phone}});
+    if(error){console.error("Virtual account error:",error);setStatus("Unable to load — tap Fund Wallet to retry");return false;}
+    if(data?.success&&data.account_number){
+      showAccount({account_name:data.account_name||name,account_number:data.account_number,bank_name:data.bank_name||"—"});
+      return true;
     }
-
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{
-      body:{email,name,phone}
-    });
-
-    if(error){
-      console.error("Virtual account error:",error);
-      document.getElementById("dvaStatus").textContent="Unable to create";
-      return;
-    }
-
-    if(data?.success && data.account_number){
-      document.getElementById("dvaAccountName").textContent=data.account_name || name;
-      document.getElementById("dvaAccountNumber").textContent=data.account_number;
-      document.getElementById("dvaBankName").textContent=data.bank_name || "—";
-      document.getElementById("dvaStatus").textContent="Ready";
-    }else{
-      document.getElementById("dvaStatus").textContent=data?.paystack_error || data?.error || "Unable to create";
-      console.error("Virtual account creation failed:",data);
-    }
+    // If function did not return an account, re-read the saved row before displaying failure.
+    try{
+      const saved=await supabaseClient.from("paystack_dedicated_accounts").select("account_name,account_number,bank_name").eq("user_id",user.id).maybeSingle();
+      if(showAccount(saved.data))return true;
+    }catch(_){}
+    setStatus(data?.paystack_error||data?.error||"Account unavailable — tap Fund Wallet to retry");
+    console.error("Virtual account creation/loading failed:",data);
+    return false;
   }catch(error){
     console.error("Virtual account function error:",error);
-    const status=document.getElementById("dvaStatus");
-    if(status) status.textContent="Unable to create";
+    setStatus("Unable to load — tap Fund Wallet to retry");
+    return false;
   }
+}
+async function retryRecentTransactions(){
+  const {data,error}=await supabaseClient.auth.getUser();
+  if(error||!data?.user){const box=document.getElementById("transactions");if(box)box.textContent="Please sign in again to load transactions.";return;}
+  await loadTransactions(data.user.id);
 }
 
 function copyDVA(){
@@ -4043,9 +4234,9 @@ async function loadReferralStats(){
   }
 
   let count=0, total=0, withdrawn=0;
-  const {count:refCount,error:countError}=await supabaseClient
-    .from("profiles").select("id",{count:"exact",head:true}).eq("referred_by",user.id);
-  if(!countError) count=refCount||0;
+  const {data:refCount,error:countError}=await supabaseClient.rpc("sparkle_count_referred_users");
+  if(!countError) count=Number(refCount||0);
+  else console.warn("Referral count could not be loaded:",countError.message);
 
   const {data:rewards,error:rewardError}=await supabaseClient
     .from("sparkle_referral_rewards")
@@ -5271,77 +5462,57 @@ async function processPendingPurchase(transactionPin){
     finally{if(overlay)overlay.classList.remove("show");}
     return;
   }
-  // All non-electricity services now go through authenticated server-side purchase functions.
-  const items = pendingPurchase.items;
-  const isBulk = pendingPurchase.type === "bulk" || items.length > 1;
+  // Secure data purchases now use the dedicated wallet-reserving Edge Function.
+  if(pendingPurchase.items.length!==1 || !["Airtime","Data"].includes(pendingPurchase.items[0]?.service)) {
+    alert("This service is still being connected to secure wallet processing. Your wallet has not been charged.");
+    return;
+  }
+  const p=pendingPurchase.items[0];
+  const isData=p.service==="Data";
   const overlay=document.getElementById("processingOverlay");
   if(overlay) overlay.classList.add("show");
   const progress=document.getElementById("processingProgress");
-  const userResult=await supabaseClient.auth.getUser();
-  const userId=userResult?.data?.user?.id;
-  const completed=[];
-  const failed=[];
-  let stoppedOnUncertain=false;
+  if(progress) progress.textContent=isData?"Securely processing data purchase…":"Securely processing airtime…";
   try{
-    for(let i=0;i<items.length;i++){
-      const p=items[i];
-      if(progress) progress.textContent=isBulk?`Securely processing ${i+1} of ${items.length}…`:`Securely processing ${p.service}…`;
-      const requestID="WEB-"+crypto.randomUUID();
-      let functionName="";
-      let body={};
-      if(p.service==="Cable TV"){
-        const serviceID=p.serviceID||({DSTV:"dstv",GOtv:"gotv",Startimes:"startimes"}[p.network]||String(p.network||"").toLowerCase());
-        if(!serviceID || !p.phone || !(p.planValue||p.plan)) throw new Error("Cable purchase needs a valid provider, smartcard/IUC number, and selected package.");
-        functionName="sparkle-secure-bill-purchase";
-        body={serviceID,customerID:p.customerID||p.phone,phone:p.phone,plan:p.planValue||p.plan,amount:Number(p.amount),pin:transactionPin,requestID};
-      }else if(p.service==="Education Pin"){
-        if(!p.serviceID || !p.phone || !(p.planValue||p.plan)) throw new Error("Education PIN purchase needs a selected exam PIN and valid phone number.");
-        functionName="sparkle-secure-bill-purchase";
-        body={serviceID:p.serviceID,phone:p.phone,plan:p.planValue||p.plan,amount:Number(p.amount),pin:transactionPin,requestID};
-      }else if(p.service==="Data"){
-        if(!p.serviceID || !p.phone || !p.planValue) throw new Error("This data order is missing a verified provider plan code. Please select a live data plan rather than using the incomplete bulk-plan list. No money was deducted for this row.");
-        functionName="sparkle-data-purchase";
-        body={serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID};
-      }else if(p.service==="Airtime"){
-        functionName="sparkle-airtime-purchase";
-        body={network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin,requestID};
-      }else{
-        throw new Error("Unsupported service: "+String(p.service||"unknown"));
-      }
-      const {data,error}=await supabaseClient.functions.invoke(functionName,{body});
-      if(error&&!data) throw new Error(await sparkleFunctionErrorMessage(error,"Could not reach secure purchase processing."));
-      if(data?.success===true && ["successful","success"].includes(String(data.status||"").toLowerCase())){
-        completed.push({item:p,result:data});
-        showReceipt({service:p.service,reference:data.reference||requestID,customer:data.customerName||p.customerName||p.customerID||p.phone,provider:p.network||p.serviceLabel||p.serviceID,type:p.plan||p.serviceLabel||p.planValue,phone:p.phone,amount:Number(data.amount??p.amount)});
-        continue;
-      }
-      failed.push({item:p,result:data,error:data?.error||data?.message||"Purchase was not confirmed."});
-      if(data?.status==="pending" || data?.status==="unknown" || data?.status==="refunded"){
-        stoppedOnUncertain=data.status==="pending"||data.status==="unknown";
-        // Never repeat prior successful rows after a partial bulk result.
-        break;
-      }
-      // A definitive not-started failure may safely stop the remaining batch.
-      break;
+    const {data,error}=isData
+      ? await supabaseClient.functions.invoke("sparkle-data-purchase",{
+          body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
+        })
+      : await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
+          body:{network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin}
+        });
+    if(error && !data) throw new Error(await sparkleFunctionErrorMessage(error,"Could not reach secure airtime/data processing. No purchase was confirmed."));
+    if(data?.success && data.status==="successful"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:isData?(p.serviceLabel||p.serviceID):undefined,type:isData?p.plan:undefined,phone:p.phone,amount:Number(data.amount||p.amount)});
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
     }
-    pendingPurchase=null;
-    if(userId){await loadWallet(userId);await loadTransactions(userId);}
-    if(failed.length){
-      const first=failed[0];
-      const ref=first.result?.reference||"not provided";
-      const partial=completed.length?` ${completed.length} earlier order(s) were successful; they will not be repeated.`:"";
-      const status=String(first.result?.status||"").toLowerCase();
-      const note=status==="refunded"?"The failed order was refunded.":stoppedOnUncertain?"Do not retry the pending order until its status is checked.":"No further orders were sent after the failure.";
-      alert(`${first.error} Reference: ${ref}. ${note}${partial}`);
-    }else if(completed.length){
-      alert(isBulk?`All ${completed.length} order(s) were confirmed successful. Receipts have been generated.`:"Purchase confirmed successfully. Your receipt has been generated.");
+    if(data?.status==="refunded"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||(isData?"Data purchase failed.":"Airtime purchase failed."))+" Reference: "+(data.reference||"not provided"));
+      return;
     }
+    if(data?.status==="pending"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||(isData?"The provider has not confirmed the data order yet.":"The provider has not confirmed the airtime order yet."))+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
+      return;
+    }
+    throw new Error(data?.error||(isData?"Data purchase was not completed.":"Airtime purchase was not completed."));
   }catch(error){
-    console.error("Secure Sparkle purchase processing:",error);
-    pendingPurchase=null;
-    if(userId){await loadWallet(userId);await loadTransactions(userId);}
-    const partial=completed.length?` ${completed.length} earlier order(s) succeeded and will not be repeated.`:"";
-    alert((error.message||"Purchase was not confirmed.")+" Check transaction history before trying again."+partial);
+    console.error(isData?"Secure Sparkle data purchase:":"Secure Sparkle airtime purchase:",error);
+    alert((isData?"Data purchase":"Airtime purchase")+" was not confirmed. Check your transaction history before trying again. "+(error.message||""));
   }finally{
     if(overlay) overlay.classList.remove("show");
   }
@@ -5351,86 +5522,60 @@ async function processPendingPurchase(transactionPin){
    RECEIPTS
    ===================================================== */
 
-/* =====================================================
-   RECEIPTS — reusable for each saved transaction
-   ===================================================== */
-window.sparkleTransactionReceiptCache = window.sparkleTransactionReceiptCache || {};
-
-function receiptStatusLabel(status){
-  const raw=String(status||"unknown").trim().toLowerCase();
-  if(["success","successful","completed","complete","paid","confirmed","credited"].includes(raw)) return "Successful";
-  if(["pending","processing","initiated","queued","awaiting_confirmation"].includes(raw)) return "Pending";
-  if(["failed","failure","rejected","cancelled","canceled","expired","refunded","reversed"].includes(raw)) return raw.charAt(0).toUpperCase()+raw.slice(1);
-  return raw==="unknown"?"Status unavailable":raw.charAt(0).toUpperCase()+raw.slice(1);
-}
-function receiptStatusColor(status){
-  const label=receiptStatusLabel(status).toLowerCase();
-  if(label==="successful") return "#10b981";
-  if(label==="pending"||label==="processing") return "#d97706";
-  return "#dc2626";
-}
-function getTxMeta(tx){
-  let meta=tx?.metadata;
-  if(typeof meta==="string"){try{meta=JSON.parse(meta)}catch(_){meta={}}}
-  return meta&&typeof meta==="object"?meta:{};
-}
-function getFirstTxValue(objects,keys){
-  for(const obj of objects){
-    if(!obj||typeof obj!=="object") continue;
-    for(const key of keys){const value=obj[key];if(value!==undefined&&value!==null&&String(value).trim()!=="") return value;}
-  }
-  return "";
-}
-function transactionReceiptData(tx){
-  const meta=getTxMeta(tx);
-  const nested=[meta,meta.details,meta.data,meta.provider_response,meta.providerResponse].filter(Boolean);
-  const service=String(tx.service||meta.service||"Wallet transaction").replace(/[_-]+/g," ").replace(/\b\w/g,c=>c.toUpperCase());
-  const ref=tx.reference||getFirstTxValue(nested,["reference","request_id","requestId","transaction_reference","transactionReference","id"] )||tx.id||"—";
-  const customer=getFirstTxValue(nested,["customer","customerID","customerId","recipient","phone","phoneNumber","meter","meterNumber","accountNumber","smartcardNumber","beneficiary"]);
-  const provider=getFirstTxValue(nested,["provider","network","networkLabel","serviceLabel","disco","operator"]);
-  const meter=getFirstTxValue(nested,["meter","meterNumber","meter_number"]);
-  const token=getFirstTxValue(nested,["token","electricityToken","electricity_token"]);
-  const plan=getFirstTxValue(nested,["plan","bundle","type","meterType","meter_type"]);
-  const phone=getFirstTxValue(nested,["phone","phoneNumber","phone_number"]);
-  return {service,reference:ref,customer,provider,meter,type:plan,phone,token,amount:Number(tx.amount||0),status:tx.status,created_at:tx.created_at,transactionId:tx.id,transactionType:tx.type,metadata:meta};
-}
-function showTransactionReceipt(id){
-  const tx=window.sparkleTransactionReceiptCache[String(id)];
-  if(!tx){alert("This transaction receipt could not be loaded. Refresh your transaction history and try again.");return;}
-  showReceipt(transactionReceiptData(tx));
-}
 function showReceipt(result){
   const d=result||{};
-  const status=receiptStatusLabel(d.status||"successful");
-  const statusColor=receiptStatusColor(d.status||"successful");
-  const dateValue=d.created_at?new Date(d.created_at):new Date();
-  const date=Number.isNaN(dateValue.getTime())?"Date unavailable":dateValue.toLocaleString("en-NG");
-  const detailRows=[
-    `<div class="receipt-row"><span>Service</span><strong>${escapeHtml(d.service||"Sparkle Payment")}</strong></div>`,
-    `<div class="receipt-row"><span>Reference</span><strong style="text-align:right;word-break:break-word">${escapeHtml(d.reference||"—")}</strong></div>`,
-    d.customer?`<div class="receipt-row"><span>Customer / Recipient</span><strong style="text-align:right;word-break:break-word">${escapeHtml(d.customer)}</strong></div>`:"",
-    d.provider?`<div class="receipt-row"><span>Provider</span><strong>${escapeHtml(d.provider)}</strong></div>`:"",
-    d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${escapeHtml(d.meter)}</strong></div>`:"",
-    d.type?`<div class="receipt-row"><span>Plan / Type</span><strong>${escapeHtml(d.type)}</strong></div>`:"",
-    d.phone?`<div class="receipt-row"><span>Phone</span><strong>${escapeHtml(d.phone)}</strong></div>`:"",
-    `<div class="receipt-row"><span>${d.transactionType==="credit"?"Amount credited":"Amount"}</span><strong>${money(d.amount||0)}</strong></div>`,
-    d.service==="Electricity"&&Number.isFinite(Number(d.electricityValue))?`<div class="receipt-row"><span>Electricity value</span><strong>${money(d.electricityValue)}</strong></div>`:"",
-    d.token?`<div class="receipt-row"><span>Electricity token</span><strong style="word-break:break-word">${escapeHtml(d.token)}</strong></div>`:"",
-    `<div class="receipt-row"><span>Status</span><strong style="color:${statusColor}">${escapeHtml(status)}</strong></div>`,
-    `<div class="receipt-row"><span>Date</span><strong style="text-align:right">${escapeHtml(date)}</strong></div>`
-  ];
-  document.getElementById("receiptDetails").innerHTML=detailRows.join("");
-  const statusEl=document.querySelector("#receiptCard .receipt-status");
-  if(statusEl){statusEl.textContent=(status==="Successful"?"✓ ":status==="Pending"?"◷ ":"• ")+status.toUpperCase();statusEl.style.color=statusColor;}
-  const titleEl=document.querySelector("#receiptModal .modal-head h2");
-  if(titleEl) titleEl.textContent=status==="Successful"?"Payment Receipt":"Transaction Receipt";
+  const safe=v=>escapeHtml(v==null||v===""?"—":String(v));
+  const status=String(d.status||"successful").toLowerCase();
+  const failed=/fail|declin|revers|cancel|refund|expired/.test(status);
+  const pending=/pending|process|initiated|unknown|awaiting/.test(status);
+  const statusLabel=failed?(status.includes("refund")||status.includes("revers")?"REFUNDED / REVERSED":"TRANSACTION FAILED"):pending?"TRANSACTION PENDING":"TRANSACTION SUCCESSFUL";
+  const statusColor=failed?"#dc2626":pending?"#d97706":"#059669";
+  const date=d.created_at?new Date(d.created_at):new Date();
+  const service=String(d.service||"Sparkle Payment");
+  const amountLabel=(String(d.type||"").toLowerCase()==="credit"||/deposit|fund|refund|reversal|reward/i.test(service))?"Amount credited":"Transaction amount";
+  const details=document.getElementById("receiptDetails");
+  details.innerHTML=`
+    <div class="receipt-row"><span>Service</span><strong>${safe(service)}</strong></div>
+    <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id)}</strong></div>
+    ${d.customer?`<div class="receipt-row"><span>Customer</span><strong>${safe(d.customer)}</strong></div>`:""}
+    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${safe(d.provider)}</strong></div>`:""}
+    ${d.meter?`<div class="receipt-row"><span>Meter / Smartcard</span><strong>${safe(d.meter)}</strong></div>`:""}
+    ${d.type_detail||d.plan||d.type?`<div class="receipt-row"><span>Type / Plan</span><strong>${safe(d.type_detail||d.plan||(d.type==="credit"||d.type==="debit"?"":d.type))}</strong></div>`:""}
+    ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${safe(d.phone)}</strong></div>`:""}
+    <div class="receipt-row"><span>${amountLabel}</span><strong>${money(Math.abs(Number(d.amount)||0))}</strong></div>
+    ${d.token?`<div class="receipt-row"><span>Token / Details</span><strong style="overflow-wrap:anywhere">${safe(d.token)}</strong></div>`:""}
+    <div class="receipt-row"><span>Status</span><strong style="color:${statusColor}">${statusLabel}</strong></div>
+    <div class="receipt-row"><span>Date</span><strong>${safe(date.toLocaleString("en-NG"))}</strong></div>`;
+  const card=document.getElementById("receiptCard");
+  const badge=card.querySelector(".receipt-status");
+  if(badge){badge.textContent=statusLabel;badge.style.color=statusColor;}
+  card.dataset.reference=String(d.reference||d.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
   document.getElementById("receiptModal").classList.add("show");
 }
+function showTransactionReceipt(encoded){
+  try {
+    const tx=JSON.parse(decodeURIComponent(encoded));
+    const m=tx.metadata&&typeof tx.metadata==="object"?tx.metadata:{};
+    const status=String(tx.status||"").toLowerCase();
+    const detail={
+      ...tx,
+      customer:m.customer||m.customer_name||m.phone||m.phone_number||m.recipient||m.billersCode||m.billers_code||"",
+      phone:m.phone||m.phone_number||m.recipient_phone||"",
+      provider:m.provider||m.provider_service||m.serviceID||m.service_id||"",
+      meter:m.meter||m.meter_number||m.customerID||m.customer_id||m.smartcard||m.iuc||"",
+      plan:m.plan||m.plan_name||m.variation_code||"",
+      type_detail:m.plan||m.plan_name||m.provider_service||m.service_type||"",
+      token:m.token||m.electricity_token||m.pin||"",
+      status:status||"unknown"
+    };
+    showReceipt(detail);
+  } catch(error){ console.error("Could not open Sparkle receipt:",error); alert("This receipt could not be opened. Please refresh transaction history and try again."); }
+}
+
 function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
 async function downloadReceiptImage(){
   const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
-  const ref=(document.querySelector("#receiptDetails .receipt-row:nth-child(2) strong")?.textContent||"sparkle").replace(/[^a-z0-9_-]/gi,"-").slice(0,35);
-  const a=document.createElement("a");a.download=`sparkle-receipt-${ref}.png`;a.href=canvas.toDataURL("image/png");a.click();
+  const a=document.createElement("a");a.download=(document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".png";a.href=canvas.toDataURL("image/png");a.click();
 }
 async function downloadReceiptPDF(){
   const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
@@ -5439,34 +5584,32 @@ async function downloadReceiptPDF(){
   const img=canvas.toDataURL("image/png");
   const width=180, height=canvas.height*width/canvas.width;
   pdf.addImage(img,"PNG",15,15,width,height);
-  const ref=(document.querySelector("#receiptDetails .receipt-row:nth-child(2) strong")?.textContent||"sparkle").replace(/[^a-z0-9_-]/gi,"-").slice(0,35);
-  pdf.save(`sparkle-receipt-${ref}.pdf`);
+  pdf.save((document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".pdf");
 }
 
 async function loadAllTransactions(){
   const box=document.getElementById("allTransactions");
-  if(!box) return;
-  const user=(await supabaseClient.auth.getUser()).data.user;
-  if(!user){box.innerHTML="<p style='color:#64748b'>Please sign in to view transactions.</p>";return;}
-  const {data,error}=await supabaseClient.from("wallet_transactions")
-    .select("id,type,amount,service,reference,status,metadata,created_at")
-    .eq("user_id",user.id)
-    .order("created_at",{ascending:false}).limit(100);
-  if(error){console.error("Transaction history:",error);box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
-  if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
-  data.forEach(tx=>{window.sparkleTransactionReceiptCache[String(tx.id)]=tx;});
-  box.innerHTML=data.map(tx=>renderTransactionRow(tx,false)).join("");
+  if(!box)return;
+  box.innerHTML='<p style="color:#64748b">Loading transactions…</p>';
+  try{
+    const auth=await supabaseClient.auth.getUser();
+    const userId=auth?.data?.user?.id;
+    if(auth?.error||!userId){box.innerHTML='<p style="color:#ef4444">Please sign in again to view transaction history.</p>';return;}
+    const {data,error}=await supabaseClient.from("wallet_transactions")
+      .select("id,type,amount,service,reference,metadata,status,created_at")
+      .eq("user_id",userId).order("created_at",{ascending:false}).limit(100);
+    if(error)throw error;
+    if(!data?.length){box.innerHTML='<p style="color:#64748b">No transactions yet.</p>';return;}
+    box.innerHTML=data.map(tx=>{
+      const amount=Number(tx.amount||0),cls=tx.type==="credit"?"credit":"debit",sign=tx.type==="credit"?"+":"-";
+      const payload=encodeURIComponent(JSON.stringify(tx));
+      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+    }).join("");
+  }catch(error){
+    console.error("Transaction history failed:",error);
+    box.innerHTML='<p style="color:#ef4444">Transaction history could not load.</p><button class="btn" onclick="loadAllTransactions()">Retry</button>';
+  }
 }
-function renderTransactionRow(tx,compact=false){
-  const amount=Number(tx.amount||0);
-  const isCredit=String(tx.type||"").toLowerCase()==="credit";
-  const cls=isCredit?"credit":"debit";
-  const sign=isCredit?"+":"−";
-  const date=new Date(tx.created_at).toLocaleString("en-NG");
-  const status=receiptStatusLabel(tx.status);
-  return `<div class="tx"><div style="min-width:0;flex:1"><strong>${escapeHtml(String(tx.service||"Wallet transaction").replace(/[_-]+/g," "))}</strong><br><small>${escapeHtml(date)} · ${escapeHtml(status)}</small><div class="tx-row-actions"><button class="tx-receipt-btn" type="button" onclick="showTransactionReceipt('${escapeHtml(String(tx.id))}')">View receipt ↗</button></div></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
-}
-
 
 /* =====================================================
    WALLET
@@ -5490,7 +5633,7 @@ error
 );
 
 document.getElementById("walletBalance")
-.textContent="₦0.00";
+.textContent="Balance unavailable";
 
 return;
 
@@ -5520,272 +5663,49 @@ maximumFractionDigits:2
    ===================================================== */
 
 async function loadTransactions(userId){
-
-const box =
-document.getElementById("transactions");
-
-
-const {data,error} =
-await supabaseClient
-.from("wallet_transactions")
-.select(
-"id,type,amount,service,status,created_at"
-)
-.eq("user_id",userId)
-.order(
-"created_at",
-{ascending:false}
-)
-.limit(10);
-
-
-if(error){
-
-console.error(error);
-
-box.innerHTML =
-"<p style='color:#ef4444'>Unable to load transactions.</p>";
-
-return;
-
+  const box=document.getElementById("transactions");
+  if(!box)return;
+  box.innerHTML='<p style="color:#64748b">Loading transactions…</p>';
+  try{
+    if(!userId){
+      const auth=await supabaseClient.auth.getUser();
+      userId=auth?.data?.user?.id;
+    }
+    if(!userId){box.innerHTML='<p style="color:#ef4444">Please sign in to view transactions.</p>';return;}
+    const {data,error}=await supabaseClient.from("wallet_transactions")
+      .select("id,type,amount,service,reference,metadata,status,created_at")
+      .eq("user_id",userId).order("created_at",{ascending:false}).limit(10);
+    if(error)throw error;
+    if(!data?.length){box.innerHTML='<p style="color:#64748b">No transactions yet.</p>';return;}
+    box.innerHTML=data.map(tx=>{
+      const amount=Number(tx.amount||0),sign=tx.type==="credit"?"+":"-",cls=tx.type==="credit"?"credit":"debit";
+      const payload=encodeURIComponent(JSON.stringify(tx));
+      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+    }).join("");
+  }catch(error){
+    console.error("Recent transactions failed:",error);
+    box.innerHTML='<p style="color:#ef4444">Transactions could not load.</p><button class="btn" onclick="retryRecentTransactions()">Retry</button>';
+  }
 }
-
-
-if(!data || data.length===0){
-
-box.innerHTML =
-"<p style='color:#64748b'>No transactions yet.</p>";
-
-return;
-
-}
-
-
-box.innerHTML =
-data.map(tx=>{
-
-const amount =
-Number(tx.amount || 0);
-
-
-const sign =
-tx.type === "credit"
-? "+"
-: "-";
-
-
-const cls =
-tx.type === "credit"
-? "credit"
-: "debit";
-
-
-const date =
-new Date(
-tx.created_at
-).toLocaleString("en-NG");
-
-
-return `
-
-<div class="tx">
-
-<div>
-
-<strong>
-${tx.service || "Wallet transaction"}
-</strong>
-
-<br>
-
-<small>
-${date} · ${tx.status || ""}
-</small>
-
-</div>
-
-
-<strong class="${cls}">
-
-${sign}₦${amount.toLocaleString(
-"en-NG",
-{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-}
-)}
-
-</strong>
-
-</div>
-
-`;
-
-}).join("");
-
-}
-
 
 /* =====================================================
    LEGAL
    ===================================================== */
 
 function openLegal(type){
-
-const title =
-document.getElementById("legalTitle");
-
-
-const content =
-document.getElementById("legalContent");
-
-
-if(type==="terms"){
-
-title.textContent =
-"Sparkle Terms & Conditions";
-
-
-content.innerHTML = `
-
-<h3>1. Acceptance of Terms</h3>
-
-<p>
-By creating or using a Sparkle account, you agree to these Terms & Conditions and to use the platform lawfully.
-</p>
-
-
-<h3>2. Sparkle Services</h3>
-
-<p>
-Sparkle provides access to supported digital services including airtime, data, cable subscriptions, electricity payments and examination pins.
-</p>
-
-
-<h3>3. User Account</h3>
-
-<p>
-You are responsible for keeping your login credentials secure and for all activity carried out through your account.
-</p>
-
-
-<h3>4. Wallet</h3>
-
-<p>
-Wallet balances are intended for purchasing supported Sparkle services. Funding, debits, refunds and adjustments may be subject to verification.
-</p>
-
-
-<h3>5. Transactions</h3>
-
-<p>
-Users must provide accurate information when purchasing services. Sparkle may be unable to reverse a transaction where incorrect customer information was supplied.
-</p>
-
-
-<h3>6. Prohibited Use</h3>
-
-<p>
-You must not use Sparkle for fraud, unlawful transactions, abuse of the platform or any activity that violates applicable laws.
-</p>
-
-
-<h3>7. Service Availability</h3>
-
-<p>
-We aim to provide reliable services, but third-party network, payment and service-provider outages may affect availability.
-</p>
-
-
-<h3>8. Changes</h3>
-
-<p>
-Sparkle may update these terms when necessary.
-</p>
-
-<p>
-<strong>Last updated: October 2026</strong>
-</p>
-
-`;
-
-}else{
-
-title.textContent =
-"Sparkle Privacy Policy";
-
-
-content.innerHTML = `
-
-<h3>1. Information We Collect</h3>
-
-<p>
-Sparkle may collect information such as your name, email address, phone number, account information and transaction records.
-</p>
-
-
-<h3>2. How We Use Information</h3>
-
-<p>
-We use information to create and manage accounts, process transactions, provide customer support, maintain security and improve Sparkle services.
-</p>
-
-
-<h3>3. Payment Information</h3>
-
-<p>
-Payment processing may be handled by third-party payment providers.
-</p>
-
-
-<h3>4. Transaction Information</h3>
-
-<p>
-We retain appropriate transaction information to provide receipts, resolve disputes, prevent fraud and maintain accurate account records.
-</p>
-
-
-<h3>5. Security</h3>
-
-<p>
-We use reasonable technical and organizational measures to protect account and transaction information.
-</p>
-
-
-<h3>6. Third-Party Providers</h3>
-
-<p>
-Sparkle may use trusted providers for payment processing, bill-payment services, hosting and authentication.
-</p>
-
-
-<h3>7. Your Rights</h3>
-
-<p>
-Subject to applicable law, you may request access to or correction of your personal information.
-</p>
-
-
-<h3>8. Policy Updates</h3>
-
-<p>
-This Privacy Policy may be updated when Sparkle's services or legal requirements change.
-</p>
-
-
-<p>
-<strong>Last updated: October 2026</strong>
-</p>
-
-`;
-
-}
-
-
-document
-.getElementById("legalModal")
-.classList.add("show");
-
+  const title=document.getElementById("legalTitle");
+  const content=document.getElementById("legalContent");
+  const docs={
+    terms:{title:"Sparkle Terms & Conditions",html:`<h3>1. Acceptance of Terms</h3><p>By creating or using a Sparkle account, you agree to these Terms & Conditions and to use the platform lawfully.</p><h3>2. Sparkle Services</h3><p>Sparkle provides access to supported digital services including airtime, data, cable subscriptions, electricity payments and digital pins, where available.</p><h3>3. User Account</h3><p>You are responsible for keeping your login credentials secure and for activity carried out through your account. Never share your password or transaction PIN.</p><h3>4. Wallet</h3><p>Wallet balances are intended for purchasing supported Sparkle services. Funding, debits, refunds and adjustments may be subject to verification.</p><h3>5. Transactions</h3><p>Provide accurate recipient and service information before confirming a purchase. Incorrect details can affect whether a transaction can be reversed.</p><h3>6. Prohibited Use</h3><p>You must not use Sparkle for fraud, unlawful transactions, abuse of the platform or activity that violates applicable law.</p><h3>7. Service Availability</h3><p>Third-party network, payment and service-provider outages may affect availability and delivery times.</p><h3>8. Changes</h3><p>These terms may be updated as Sparkle's services or legal requirements change.</p><p><strong>Last updated: October 2026</strong></p>`},
+    privacy:{title:"Sparkle Privacy Policy",html:`<h3>1. Information We Handle</h3><p>Sparkle may handle account details such as your name, email address, phone number, profile information and transaction records.</p><h3>2. How Information Is Used</h3><p>Information may be used to manage accounts, process transactions, provide customer support, maintain security, prevent fraud and improve services.</p><h3>3. Payments & Providers</h3><p>Payment and bill-payment services may be processed by third-party providers under their applicable terms and privacy practices.</p><h3>4. Transaction Records</h3><p>Relevant records may be retained to provide receipts, resolve disputes, prevent abuse and maintain accurate account history.</p><h3>5. Security</h3><p>Reasonable technical and organizational measures should be used to protect account and transaction information. No online service can promise absolute security.</p><h3>6. Sharing</h3><p>Information may be shared with service providers where needed to deliver requested services, or where required by law.</p><h3>7. Your Choices & Rights</h3><p>Subject to applicable law, you may request access to or correction of your personal information and ask questions about its handling through customer support.</p><h3>8. Updates</h3><p>This policy may be updated as Sparkle's services or legal requirements change.</p><p><strong>Last updated: October 2026</strong></p>`},
+    refunds:{title:"Sparkle Refund & Dispute Policy",html:`<h3>1. Check Transaction Status</h3><p>If a purchase appears pending or unconfirmed, check Sparkle transaction history before attempting the purchase again. Repeating a transaction may cause duplicate requests.</p><h3>2. Failed Transactions</h3><p>Where a transaction is confirmed as failed and a wallet debit was made, the transaction should be reviewed for the applicable reversal or refund.</p><h3>3. Pending Transactions</h3><p>Some transactions require confirmation from a network or service provider. Allow time for status reconciliation and contact customer care if the status does not update.</p><h3>4. Successful Delivery</h3><p>Completed digital services may not be reversible after delivery, especially where the recipient details supplied were incorrect.</p><h3>5. Report a Dispute</h3><p>Contact Sparkle support with the transaction reference, service, amount and approximate time. Never send your password or transaction PIN.</p><h3>6. Review</h3><p>Each report is subject to transaction records and confirmation from the relevant payment or service provider. Do not assume a refund is complete until it appears in your wallet or payment account.</p><p><strong>Last updated: October 2026</strong></p>`},
+    wallet:{title:"Sparkle Wallet & Payment Policy",html:`<h3>1. Wallet Use</h3><p>Your Sparkle wallet balance is used to pay for supported services in the app. It is not a bank account.</p><h3>2. Funding</h3><p>Wallet funding may depend on payment-provider processing and verification. Keep your payment receipt and check your Sparkle balance and transaction history.</p><h3>3. Debits</h3><p>Wallet debits should correspond to a transaction or clearly identified adjustment. If you notice an unfamiliar or unresolved debit, contact customer care with the reference.</p><h3>4. Transaction Verification</h3><p>Do not repeat a purchase merely because a confirmation screen failed to load. Check transaction history or contact support first.</p><h3>5. Withdrawals</h3><p>Wallet withdrawal or cash-out is only available if the feature is explicitly provided in Sparkle. Do not assume every wallet balance is withdrawable.</p><h3>6. Payment Security</h3><p>Never share your login password, one-time verification codes or transaction PIN with anyone, including people claiming to be support staff.</p><p><strong>Last updated: October 2026</strong></p>`},
+    referrals:{title:"Sparkle Referral & Rewards Policy",html:`<h3>1. Referral Eligibility</h3><p>Referral rewards apply only to eligible referred users and qualifying transactions recorded by Sparkle.</p><h3>2. First Eligible Purchase</h3><p>The referrer is eligible for a reward equal to 5% of the referred user's first eligible successful purchase amount, once per referred user, subject to the app's reward rules.</p><h3>3. Successful Transactions</h3><p>Failed, pending or refunded transactions do not qualify as successful purchases for reward purposes.</p><h3>4. Reversals</h3><p>If a transaction that generated a reward is later refunded or reversed, the related reward may also be reversed to keep records accurate.</p><h3>5. Abuse Prevention</h3><p>Fraudulent, self-referral, manipulated or otherwise abusive activity may be excluded from rewards and may lead to account review.</p><h3>6. Records</h3><p>Check the referral activity shown in your account for the status of any reward. Contact support if you believe a reward is missing.</p><p><strong>Last updated: October 2026</strong></p>`}
+  };
+  const doc=docs[type]||docs.terms;
+  title.textContent=doc.title;
+  content.innerHTML=doc.html;
+  document.getElementById("legalModal").classList.add("show");
 }
 
 
@@ -5798,25 +5718,45 @@ document
 }
 
 
+/* Help & Support page actions. Existing Sparkle support destinations are reused. */
+function openSparkleSupport(kind){
+  const chatUrl="https://wa.me/2348089206869?text=";
+  const messages={
+    transaction:"Hi Sparkle Support, I need help with a transaction. I will provide the transaction reference and status.",
+    wallet:"Hi Sparkle Support, I need help with my Sparkle wallet or funding.",
+    faq:"Hi Sparkle Support, I have a question about using Sparkle."
+  };
+  if(kind==='email'){
+    window.location.href='mailto:support@sparkle.com?subject='+encodeURIComponent('Sparkle Customer Care');
+    return;
+  }
+  if(kind==='chat'||kind==='transaction'||kind==='wallet'||kind==='faq'){
+    const url=kind==='chat'?"https://wa.me/2348089206869?text="+encodeURIComponent("Hi Sparkle Support, I need assistance."):chatUrl+encodeURIComponent(messages[kind]);
+    window.open(url,'_blank','noopener,noreferrer');
+    return;
+  }
+  const toggle=document.getElementById('sparkle-support-toggle');
+  if(toggle){toggle.click();return;}
+  window.location.href='mailto:support@sparkle.com?subject='+encodeURIComponent('Sparkle Customer Care');
+}
+
 /* =====================================================
    LOGOUT
    ===================================================== */
 
 async function showFundWallet(){
-  let number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
-  if(!number || number==="Loading…" || number==="—"){
-    const statusEl=document.getElementById("fundModalStatus");
-    if(statusEl) statusEl.textContent="Checking your dedicated account…";
+  const currentNumber=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
+  if(currentNumber==="Loading…"||currentNumber==="—"||!currentNumber){
     await createDedicatedAccount();
-    number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
   }
-  const name=document.getElementById("dvaAccountName")?.textContent?.trim()||"—";
-  const bank=document.getElementById("dvaBankName")?.textContent?.trim()||"—";
+  const name=document.getElementById("dvaAccountName")?.textContent?.trim()||"Loading…";
+  const number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
+  const bank=document.getElementById("dvaBankName")?.textContent?.trim()||"Loading…";
   document.getElementById("fundModalAccountName").textContent=name;
   document.getElementById("fundModalAccountNumber").textContent=number;
   document.getElementById("fundModalBankName").textContent=bank;
   const status=document.getElementById("dvaStatus")?.textContent?.trim()||"";
-  document.getElementById("fundModalStatus").textContent=(status==="Ready"||number!=="Loading…"&&number!=="—")?"Dedicated account":(status||"Account details unavailable. Please try again.");
+  document.getElementById("fundModalStatus").textContent=(status==="Ready"||number!=="Loading…"&&number!=="—")?"Dedicated account":"Account details loading";
   document.getElementById("fundWalletModal").classList.add("show");
 }
 function closeFundWallet(){document.getElementById("fundWalletModal")?.classList.remove("show");}
