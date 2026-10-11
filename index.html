@@ -2117,10 +2117,10 @@ Privacy Policy
     <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
     <p style="color:var(--muted)">Enter your PIN to authorize this transaction.</p>
     <div class="pin-boxes">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
-      <input class="pin-box" maxlength="1" inputmode="numeric">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 1">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 2">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 3">
+      <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 4">
     </div>
     <p id="pinMessage" style="color:#ef4444;font-size:13px"></p>
     <button class="btn primary full" onclick="confirmTransactionPIN()">MAKE PAYMENT</button>
@@ -2130,7 +2130,7 @@ Privacy Policy
 <div class="modal pin-modal" id="setPinModal" style="z-index:100003">
   <div class="modal-box">
     <div class="modal-head"><h2>Set Transaction PIN</h2><button class="close" onclick="closeSetPinModal()">×</button></div>
-    <p style="color:var(--muted)">Create a private 4-digit PIN to authorize Recharge PIN purchases.</p>
+    <p style="color:var(--muted)">Create a private 4-digit PIN to authorize purchases.</p>
     <label for="newTransactionPin">New 4-digit PIN</label>
     <input id="newTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
     <label for="confirmTransactionPin">Confirm PIN</label>
@@ -4544,24 +4544,28 @@ document.querySelectorAll("#electricityServices .electricity-service-card").forE
   },{passive:true});
 });
 async function sparkleFunctionErrorMessage(error, fallback="The request could not be completed."){
-  // Supabase FunctionsHttpError keeps the original HTTP Response in error.context.
+  // Supabase FunctionsHttpError stores the HTTP Response in error.context.
+  // Read both JSON error/message fields and preserve useful HTTP status messages.
   try{
     const context=error?.context;
     if(context){
       let payload=null;
       if(typeof context.clone==="function"){
-        const response=context.clone();
-        try{payload=await response.json();}catch(e){
-          try{const raw=await context.clone().text();if(raw)payload={message:raw};}catch(_){}
+        try{payload=await context.clone().json();}catch(_){
+          try{const raw=await context.clone().text();if(raw)payload={message:raw};}catch(__){}
         }
       }else if(typeof context==="object") payload=context;
-      const message=String(payload?.error||payload?.message||payload?.msg||payload?.api_response||"").trim();
+      const message=String(payload?.message||payload?.error_description||payload?.error||payload?.msg||payload?.api_response||"").trim();
       if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
       if(message) return message;
+      const status=Number(context.status||error?.status||0);
+      if(status===429) return "Too many attempts. Please wait before trying your transaction PIN again.";
+      if(status===401) return "Your PIN was not accepted, or your session has expired. Please check the message and sign in again if needed.";
     }
   }catch(e){}
   const message=String(error?.message||"").trim();
   if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
+  if(/429|too many attempts|temporarily locked/i.test(message)) return "Too many attempts. Please wait before trying your transaction PIN again.";
   if(message && !/edge function returned a non-2xx status code/i.test(message)) return message;
   return fallback;
 }
@@ -4818,6 +4822,8 @@ function showPurchaseSummary(service){
   }
   currentService=service;
   pendingPurchase={type:"single",items:[p],total:p.amount};
+  // Keep one stable ID through the review/PIN flow to reduce duplicate submissions.
+  if(service==="data") pendingPurchase.requestID="WEB-"+crypto.randomUUID();
   try { sessionStorage.setItem("sparklePendingPurchase", JSON.stringify({service, purchase:pendingPurchase})); } catch(e) {}
   const networkName=String(p.network||p.service);
   const networkKey=service==="cable"?"cable":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
@@ -4933,6 +4939,8 @@ function showBulkSummary(service){
   openPinForPurchase();
 }
 
+let sparklePinRequiredForPendingPurchase=false;
+
 function openPinForPurchase(){
   document.getElementById("pinModal").classList.add("show");
   document.querySelectorAll(".pin-box").forEach(x=>x.value="");
@@ -4952,14 +4960,19 @@ async function saveTransactionPIN(){
   const confirm=document.getElementById("confirmTransactionPin").value.trim();
   const msg=document.getElementById("setPinMessage");
   const btn=document.getElementById("saveTransactionPinButton");
-  if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a 4-digit PIN.";return;}
+  if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a PIN with exactly 4 digits.";return;}
   if(pin!==confirm){msg.textContent="The PINs do not match.";return;}
   btn.disabled=true;btn.textContent="Saving securely…";msg.textContent="";
   try{
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"set",pin}});
     if(error||!data?.success)throw new Error(data?.message||error?.message||"Could not save your PIN. Backend setup may be incomplete.");
     msg.style.color="#16a34a";msg.textContent="Transaction PIN saved securely. You can now authorize purchases.";
-    setTimeout(()=>closeSetPinModal(),1200);
+    if(sparklePinRequiredForPendingPurchase){
+      sparklePinRequiredForPendingPurchase=false;
+      setTimeout(()=>{closeSetPinModal();openPinForPurchase();},700);
+    }else{
+      setTimeout(()=>closeSetPinModal(),1200);
+    }
   }catch(e){msg.style.color="#ef4444";msg.textContent=e.message||"Could not save your PIN.";}
   finally{btn.disabled=false;btn.textContent="Save Transaction PIN";}
 }
@@ -4977,7 +4990,7 @@ document.addEventListener("input",e=>{
 async function confirmTransactionPIN(){
   const pin=[...document.querySelectorAll(".pin-box")].map(x=>x.value).join("");
   const msg=document.getElementById("pinMessage");
-  if(pin.length!==4){
+  if(!/^\d{4}$/.test(pin)){
     msg.textContent="Enter your 4-digit transaction PIN.";
     return;
   }
@@ -5002,7 +5015,19 @@ async function confirmTransactionPIN(){
     }
     alert("Your PIN is correct, but no purchase was queued. Your wallet has not been charged.");
   }catch(e){
-    msg.textContent=e.message||"Could not verify your PIN.";
+    const detail=await sparkleFunctionErrorMessage(e,"Could not verify your transaction PIN.");
+    if(/pin.{0,30}(not set|not created|missing|does not exist)|create.{0,20}pin|no transaction pin/i.test(detail)){
+      sparklePinRequiredForPendingPurchase=true;
+      msg.textContent="You haven’t created a transaction PIN yet. Please create your PIN to continue.";
+      document.getElementById("setPinMessage").textContent="You haven’t created a transaction PIN yet. Please create your PIN to continue.";
+      document.getElementById("setPinModal").classList.add("show");
+      document.getElementById("newTransactionPin").value="";
+      document.getElementById("confirmTransactionPin").value="";
+    }else if(/incorrect|invalid pin|wrong pin/i.test(detail)){
+      msg.textContent="Incorrect transaction PIN. Please try again. No transaction has been processed.";
+    }else{
+      msg.textContent=detail||"Could not verify your PIN.";
+    }
   }finally{
     if(button){button.disabled=false;button.textContent="MAKE PAYMENT";}
   }
@@ -5029,7 +5054,7 @@ async function processPendingPurchase(transactionPin){
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
         const providerText=String(data.providerResponse?.api_response||data.providerResponse?.content?.token||data.providerResponse?.token||"");
         const tokenMatch=providerText.match(/(?:token(?:\s*(?:number|no|is))?\s*[:#-]?\s*)([0-9 ]{12,24})/i);
-        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
+        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,provider:p.networkLabel||p.serviceID,meter:p.customerID,type:(p.type||p.plan||"").toUpperCase(),phone:p.phone,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
         return;
       }
       if(data?.status==="refunded"){
@@ -5045,25 +5070,30 @@ async function processPendingPurchase(transactionPin){
     finally{if(overlay)overlay.classList.remove("show");}
     return;
   }
-  // Other services remain paused rather than risking an incorrect wallet debit.
-  if(pendingPurchase.items.length!==1 || pendingPurchase.items[0]?.service!=="Airtime") {
+  // Secure data purchases now use the dedicated wallet-reserving Edge Function.
+  if(pendingPurchase.items.length!==1 || !["Airtime","Data"].includes(pendingPurchase.items[0]?.service)) {
     alert("This service is still being connected to secure wallet processing. Your wallet has not been charged.");
     return;
   }
   const p=pendingPurchase.items[0];
+  const isData=p.service==="Data";
   const overlay=document.getElementById("processingOverlay");
   if(overlay) overlay.classList.add("show");
   const progress=document.getElementById("processingProgress");
-  if(progress) progress.textContent="Securely processing airtime…";
+  if(progress) progress.textContent=isData?"Securely processing data purchase…":"Securely processing airtime…";
   try{
-    const {data,error}=await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
-      body:{network:p.network,phone:p.phone,amount:Number(p.amount)}
-    });
+    const {data,error}=isData
+      ? await supabaseClient.functions.invoke("sparkle-data-purchase",{
+          body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
+        })
+      : await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
+          body:{network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin}
+        });
     if(error && !data) throw new Error(error.message||"Could not reach secure airtime processing.");
     if(data?.success && data.status==="successful"){
       pendingPurchase=null;
       if(overlay) overlay.classList.remove("show");
-      showReceipt({service:"Airtime",reference:data.reference||"—",customer:p.phone,amount:Number(data.amount||p.amount)});
+      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:isData?(p.serviceLabel||p.serviceID):undefined,type:isData?p.plan:undefined,phone:p.phone,amount:Number(data.amount||p.amount)});
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
@@ -5075,7 +5105,7 @@ async function processPendingPurchase(transactionPin){
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
-      alert((data.error||"Airtime purchase failed.")+" Reference: "+(data.reference||"not provided"));
+      alert((data.error||(isData?"Data purchase failed.":"Airtime purchase failed."))+" Reference: "+(data.reference||"not provided"));
       return;
     }
     if(data?.status==="pending"){
@@ -5084,13 +5114,13 @@ async function processPendingPurchase(transactionPin){
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
-      alert((data.error||"The provider has not confirmed the airtime order yet.")+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
+      alert((data.error||(isData?"The provider has not confirmed the data order yet.":"The provider has not confirmed the airtime order yet."))+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
       return;
     }
-    throw new Error(data?.error||"Airtime purchase was not completed.");
+    throw new Error(data?.error||(isData?"Data purchase was not completed.":"Airtime purchase was not completed."));
   }catch(error){
-    console.error("Secure Sparkle airtime purchase:",error);
-    alert("Airtime was not confirmed. Check your transaction history before trying again. "+(error.message||""));
+    console.error(isData?"Secure Sparkle data purchase:":"Secure Sparkle airtime purchase:",error);
+    alert((isData?"Data purchase":"Airtime purchase")+" was not confirmed. Check your transaction history before trying again. "+(error.message||""));
   }finally{
     if(overlay) overlay.classList.remove("show");
   }
@@ -5105,8 +5135,13 @@ function showReceipt(result){
   document.getElementById("receiptDetails").innerHTML=`
     <div class="receipt-row"><span>Service</span><strong>${d.service||"Sparkle Payment"}</strong></div>
     <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
-    <div class="receipt-row"><span>Customer</span><strong>${d.customer||"—"}</strong></div>
-    <div class="receipt-row"><span>Amount</span><strong>${money(d.amount||0)}</strong></div>
+    <div class="receipt-row"><span>Customer</span><strong>${escapeHtml(d.customer||"—")}</strong></div>
+    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${escapeHtml(d.provider)}</strong></div>`:""}
+    ${d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${escapeHtml(d.meter)}</strong></div>`:""}
+    ${d.type?`<div class="receipt-row"><span>Meter type</span><strong>${escapeHtml(d.type)}</strong></div>`:""}
+    ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${escapeHtml(d.phone)}</strong></div>`:""}
+    <div class="receipt-row"><span>Amount paid</span><strong>${money(d.amount||0)}</strong></div>
+    ${d.service==="Electricity"&&Number.isFinite(Number(d.electricityValue))?`<div class="receipt-row"><span>Electricity value</span><strong>${money(d.electricityValue)}</strong></div>`:""}
     ${d.token?`<div class="receipt-row"><span>Electricity token</span><strong style="word-break:break-word">${escapeHtml(d.token)}</strong></div>`:""}
     <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
     <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
