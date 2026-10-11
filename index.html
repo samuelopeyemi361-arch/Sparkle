@@ -2358,8 +2358,8 @@ Privacy Policy
       </div>
     </div>
     <div class="receipt-actions">
-      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
       <button class="btn primary" onclick="downloadReceiptPDF()">⬇ PDF</button>
+      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
     </div>
   </div>
 </div>
@@ -5490,25 +5490,42 @@ async function processPendingPurchase(transactionPin){
 
 function showReceipt(result){
   const d=result||{};
+  const status=String(d.status||"successful").toLowerCase();
+  const isFailed=/fail|declin|revers|cancel|refund/.test(status);
+  const isPending=/pending|process|initiated|unknown/.test(status);
+  const statusLabel=isFailed?(status.includes("refund")||status.includes("revers")?"REFUNDED / REVERSED":"TRANSACTION FAILED"):isPending?"TRANSACTION PENDING":"TRANSACTION SUCCESSFUL";
+  const statusColor=isFailed?"#dc2626":isPending?"#d97706":"#059669";
+  const safe=(v)=>escapeHtml(v==null||v===""?"—":String(v));
+  const date=d.created_at?new Date(d.created_at):new Date();
+  const kind=String(d.type||"").toLowerCase();
+  const amountLabel=(kind==="credit"||/deposit|fund|refund|reversal|reward/i.test(String(d.service||"")))?"Amount credited":"Transaction amount";
   document.getElementById("receiptDetails").innerHTML=`
-    <div class="receipt-row"><span>Service</span><strong>${d.service||"Sparkle Payment"}</strong></div>
-    <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
-    <div class="receipt-row"><span>Customer</span><strong>${escapeHtml(d.customer||"—")}</strong></div>
-    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${escapeHtml(d.provider)}</strong></div>`:""}
-    ${d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${escapeHtml(d.meter)}</strong></div>`:""}
-    ${d.type?`<div class="receipt-row"><span>Meter type</span><strong>${escapeHtml(d.type)}</strong></div>`:""}
-    ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${escapeHtml(d.phone)}</strong></div>`:""}
-    <div class="receipt-row"><span>Amount paid</span><strong>${money(d.amount||0)}</strong></div>
-    ${d.service==="Electricity"&&Number.isFinite(Number(d.electricityValue))?`<div class="receipt-row"><span>Electricity value</span><strong>${money(d.electricityValue)}</strong></div>`:""}
-    ${d.token?`<div class="receipt-row"><span>Electricity token</span><strong style="word-break:break-word">${escapeHtml(d.token)}</strong></div>`:""}
-    <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
-    <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
+    <div class="receipt-row"><span>Service</span><strong>${safe(d.service||"Wallet transaction")}</strong></div>
+    <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id||"—")}</strong></div>
+    ${d.customer?`<div class="receipt-row"><span>Customer</span><strong>${safe(d.customer)}</strong></div>`:""}
+    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${safe(d.provider)}</strong></div>`:""}
+    ${d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${safe(d.meter)}</strong></div>`:""}
+    ${d.type_detail?`<div class="receipt-row"><span>Type / plan</span><strong>${safe(d.type_detail)}</strong></div>`:""}
+    ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${safe(d.phone)}</strong></div>`:""}
+    <div class="receipt-row"><span>${amountLabel}</span><strong>${money(Math.abs(Number(d.amount)||0))}</strong></div>
+    ${d.token?`<div class="receipt-row"><span>Token / details</span><strong style="overflow-wrap:anywhere">${safe(d.token)}</strong></div>`:""}
+    <div class="receipt-row"><span>Status</span><strong style="color:${statusColor}">${statusLabel}</strong></div>
+    <div class="receipt-row"><span>Date</span><strong>${safe(date.toLocaleString("en-NG"))}</strong></div>`;
+  const card=document.getElementById("receiptCard");
+  const statusEl=card.querySelector(".receipt-status");
+  if(statusEl){statusEl.textContent=statusLabel;statusEl.style.color=statusColor;}
+  card.dataset.reference=String(d.reference||d.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
   document.getElementById("receiptModal").classList.add("show");
 }
+function showTransactionReceipt(encoded){
+  try{showReceipt(JSON.parse(decodeURIComponent(encoded)));}
+  catch(error){console.error("Could not open Sparkle receipt:",error);}
+}
+
 function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
 async function downloadReceiptImage(){
   const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
-  const a=document.createElement("a");a.download="sparkle-receipt.png";a.href=canvas.toDataURL("image/png");a.click();
+  const a=document.createElement("a");a.download=(document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".png";a.href=canvas.toDataURL("image/png");a.click();
 }
 async function downloadReceiptPDF(){
   const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
@@ -5517,7 +5534,7 @@ async function downloadReceiptPDF(){
   const img=canvas.toDataURL("image/png");
   const width=180, height=canvas.height*width/canvas.width;
   pdf.addImage(img,"PNG",15,15,width,height);
-  pdf.save("sparkle-receipt.pdf");
+  pdf.save((document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".pdf");
 }
 
 async function loadAllTransactions(){
@@ -5530,10 +5547,11 @@ async function loadAllTransactions(){
   if(error){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
   if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
   box.innerHTML=data.map(tx=>{
+    const receiptPayload=encodeURIComponent(JSON.stringify(tx)).replace(/'/g,"%27");
     const amount=Number(tx.amount||0);
     const cls=tx.type==="credit"?"credit":"debit";
     const sign=tx.type==="credit"?"+":"-";
-    return `<div class="tx"><div><strong>${tx.service||"Wallet transaction"}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${tx.status||""}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
+    return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${receiptPayload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${receiptPayload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
   }).join("");
 }
 
@@ -5656,14 +5674,15 @@ tx.created_at
 ).toLocaleString("en-NG");
 
 
+const receiptPayload=encodeURIComponent(JSON.stringify(tx)).replace(/'/g,"%27");
 return `
 
-<div class="tx">
+<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${receiptPayload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${receiptPayload}')}" style="cursor:pointer">
 
 <div>
 
 <strong>
-${tx.service || "Wallet transaction"}
+${escapeHtml(tx.service || "Wallet transaction")}
 </strong>
 
 <br>
