@@ -120,11 +120,14 @@ Deno.serve(async (req) => {
   }
 
   const action = str(body.action).toLowerCase();
+
   const serviceID = str(body.serviceID || body.provider)
     .toLowerCase()
     .replace(/_/g, "-");
+
   const meter = str(body.customerID || body.meter || body.billersCode);
   const phone = str(body.phone);
+
   const type = str(
     body.type ||
     body.variation_code ||
@@ -188,6 +191,7 @@ Deno.serve(async (req) => {
     });
   }
 
+  // VERIFY METER
   if (action === "verify") {
     if (
       !providers.has(serviceID) ||
@@ -207,16 +211,33 @@ Deno.serve(async (req) => {
         { serviceID, billersCode: meter, type }
       );
 
+      const providerStatus = statusOf(data);
+      const content = data?.content ?? data?.data?.content ?? data?.data ?? data;
+
+      const customerName = str(
+        content?.customerName ??
+        content?.customer_name ??
+        content?.Customer_Name ??
+        content?.name
+      );
+
       if (
         !response.ok ||
-        statusOf(data) !== "successful" ||
-        !data?.content?.customerName
+        !successStatus(providerStatus) ||
+        !customerName
       ) {
+        const detail = str(
+          data?.api_response ||
+          data?.description ||
+          data?.message ||
+          data?.error
+        );
+
         return reply({
           success: false,
           status: "verification_failed",
-          error: str(data?.api_response || data?.description) ||
-            "Meter verification failed. Check the number and provider."
+          error: detail || "Meter verification failed. Check the number and provider.",
+          providerStatus: providerStatus || "unknown"
         }, 422);
       }
 
@@ -226,9 +247,9 @@ Deno.serve(async (req) => {
         provider: serviceID,
         meter,
         type,
-        customerName: data.content.customerName,
-        address: data.content.address || "",
-        meterType: data.content.meterType || type.toUpperCase()
+        customerName,
+        address: str(content?.address ?? content?.Address),
+        meterType: str(content?.meterType ?? content?.meter_type) || type.toUpperCase()
       });
     } catch {
       return reply({
@@ -239,6 +260,7 @@ Deno.serve(async (req) => {
     }
   }
 
+  // CHECK PENDING TRANSACTION
   if (action === "check") {
     const reference = str(body.reference);
 
@@ -374,6 +396,7 @@ Deno.serve(async (req) => {
     }
   }
 
+  // PURCHASE ELECTRICITY
   if (action !== "purchase") {
     return reply({ success: false, error: "Unsupported action." }, 400);
   }
@@ -474,6 +497,7 @@ Deno.serve(async (req) => {
   const sparkleProfit = amount - electricityValue;
   const reference = "SPK-EL-" + crypto.randomUUID();
 
+  // Re-verify meter before reserving wallet funds.
   let verification: any;
 
   try {
@@ -490,16 +514,24 @@ Deno.serve(async (req) => {
   }
 
   const vd = verification.data;
+  const content = vd?.content ?? vd?.data?.content ?? vd?.data ?? vd;
+
+  const customerName = str(
+    content?.customerName ??
+    content?.customer_name ??
+    content?.Customer_Name ??
+    content?.name
+  );
 
   if (
     !verification.response.ok ||
-    statusOf(vd) !== "successful" ||
-    !vd?.content?.customerName
+    !successStatus(statusOf(vd)) ||
+    !customerName
   ) {
     return reply({
       success: false,
       status: "not_started",
-      error: str(vd?.api_response || vd?.description) ||
+      error: str(vd?.api_response || vd?.description || vd?.message || vd?.error) ||
         "Meter verification failed. No money has been deducted."
     }, 422);
   }
@@ -510,8 +542,8 @@ Deno.serve(async (req) => {
     type,
     electricity_value: electricityValue,
     sparkle_profit: sparkleProfit,
-    customer_name: vd.content.customerName,
-    address: vd.content.address || "",
+    customer_name: customerName,
+    address: str(content?.address ?? content?.Address),
     phone,
     currency: "NGN"
   };
@@ -620,7 +652,7 @@ Deno.serve(async (req) => {
       amount,
       electricityValue,
       sparkleProfit,
-      customerName: vd.content.customerName,
+      customerName,
       providerResponse: pd
     });
   }
