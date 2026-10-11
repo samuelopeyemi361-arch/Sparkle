@@ -4974,7 +4974,7 @@ async function saveTransactionPIN(){
     const body=currentPin?{action:"change",currentPin,newPin:pin}:{action:"set",pin};
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body});
     if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Could not save your PIN. Please try again."));
-    if(!data?.success) throw new Error(data?.message||data?.error||"Could not save your PIN. Please try again.");
+    if(!data?.success) throw new Error(String(data?.message||data?.error||"Could not save your PIN. Please try again."));
     msg.style.color="#16a34a";msg.textContent=currentPin?"Transaction PIN changed successfully.":"Transaction PIN saved securely. You can now authorize purchases.";
     if(sparklePinRequiredForPendingPurchase){
       sparklePinRequiredForPendingPurchase=false;
@@ -5007,7 +5007,8 @@ async function confirmTransactionPIN(){
   if(button){button.disabled=true;button.textContent="Verifying PIN…";}
   try{
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
-    if(error||!data?.success) throw new Error(data?.message||error?.message||"Transaction PIN verification failed.");
+    if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Could not verify your transaction PIN."));
+    if(!data?.success) throw new Error(String(data?.message||data?.error||"Transaction PIN verification failed."));
     closePinModal();
     if(currentService==="rechargepin" && window.sparkleRechargePinPending){
       await confirmRechargePinPurchase(pin);
