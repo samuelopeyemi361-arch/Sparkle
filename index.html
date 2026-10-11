@@ -1776,14 +1776,21 @@ Privacy Policy
           <p class="dashboard-subtitle">Invite people to Sparkle and track your referral rewards.</p>
           <div class="earn-card">
             <div class="earn-grid">
-              <div class="earn-stat"><small>TOTAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong></div>
+              <div class="earn-stat"><small>TOTAL REFERRAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong></div>
               <div class="earn-stat"><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong></div>
+              <div class="earn-stat"><small>AVAILABLE TO WITHDRAW</small><strong id="referralAvailable">₦0.00</strong></div>
+              <div class="earn-stat"><small>REWARD RATE</small><strong>5%</strong></div>
             </div>
-            <h3>Your Referral Link</h3>
-            <p style="color:var(--muted)">Share your personal link and let people join Sparkle through you.</p>
+            <h3>Your Username Referral Link</h3>
+            <p style="color:var(--muted)">Your username is your unique referral ID. Earn 5% from each eligible successful purchase made by users you refer.</p>
             <div class="referral-box">
               <input id="referralLink" readonly value="Generating your referral link…">
               <button class="btn primary" onclick="shareReferral()">Share</button>
+            </div>
+            <p id="referralWithdrawNotice" style="color:var(--muted);margin-top:16px">Minimum withdrawal to Sparkle wallet: ₦1,000.</p>
+            <div style="margin-top:18px">
+              <h3>Referral Reward History</h3>
+              <div id="referralRewardHistory" style="color:var(--muted)">Loading referral history…</div>
             </div>
           </div>
         </section>
@@ -2259,7 +2266,14 @@ Username
 type="text"
 id="username"
 placeholder="Choose a username"
-autocomplete="username">
+required
+minlength="3"
+maxlength="24"
+pattern="[A-Za-z0-9_]{3,24}"
+autocomplete="username"
+autocapitalize="none"
+spellcheck="false">
+<small style="color:#64748b">3–24 characters. Use letters, numbers, or underscores.</small>
 
 </div>
 
@@ -2301,7 +2315,7 @@ id="referralField"
 style="display:none">
 
 <label>
-Referral Code
+Referral Username
 <span style="color:#64748b">
 (Optional)
 </span>
@@ -2310,7 +2324,9 @@ Referral Code
 <input
 type="text"
 id="referralCode"
-placeholder="Enter referral code">
+placeholder="Enter the referrer's username"
+autocapitalize="none"
+spellcheck="false">
 
 </div>
 
@@ -2636,6 +2652,13 @@ document.getElementById("referralField")
 .style.display =
 signup ? "block" : "none";
 
+if(signup){
+  const params = new URLSearchParams(window.location.search);
+  const referralFromLink = (params.get("ref") || "").trim().toLowerCase();
+  const referralInput = document.getElementById("referralCode");
+  if(referralFromLink && referralInput && !referralInput.value.trim()) referralInput.value = referralFromLink;
+}
+
 
 document.getElementById("switchText").textContent =
 signup
@@ -2855,12 +2878,20 @@ throw new Error(
 }
 
 
-if(username.length < 3){
+if(!/^[a-z0-9_]{3,24}$/.test(username)){
 
 throw new Error(
-"Username must be at least 3 characters."
+"Username must be 3–24 characters using only letters, numbers, or underscores."
 );
 
+}
+
+const normalizedReferralUsername = referralCode.toLowerCase();
+if(normalizedReferralUsername && !/^[a-z0-9_]{3,24}$/.test(normalizedReferralUsername)){
+  throw new Error("Enter a valid referral username.");
+}
+if(normalizedReferralUsername && normalizedReferralUsername === username){
+  throw new Error("You cannot use your own username as a referral.");
 }
 
 
@@ -2892,7 +2923,9 @@ last_name:lastName,
 
 username:username,
 
-phone:phone
+phone:phone,
+
+referral_username:normalizedReferralUsername || null
 
 }
 
@@ -2930,8 +2963,7 @@ phone:phone,
 
 username:username,
 
-referral_code:
-referralCode || null,
+referral_code:username,
 
 email:email
 
@@ -3917,34 +3949,71 @@ async function loadReferralStats(){
   const {data:userData}=await supabaseClient.auth.getUser();
   if(!userData?.user) return;
   const user=userData.user;
+  const money=n=>"₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 
-  const {data:profile}=await supabaseClient
+  const {data:profile,error:profileError}=await supabaseClient
     .from("profiles")
     .select("username,referral_code")
     .eq("id",user.id)
     .single();
 
-  const code=profile?.referral_code || profile?.username || user.id.slice(0,8);
-  const link=window.location.origin + "/?ref=" + encodeURIComponent(code);
-  document.getElementById("referralLink").value=link;
+  const username=(profile?.username || "").trim().toLowerCase();
+  const code=username || (profile?.referral_code || "").trim().toLowerCase();
+  const link=code ? (window.location.origin + "/?ref=" + encodeURIComponent(code)) : "";
+  const linkInput=document.getElementById("referralLink");
+  if(linkInput) linkInput.value=link || "Set your username to activate your referral link";
 
-  // These totals are intentionally read only from tables when they exist.
-  // No fake earnings are displayed if the referral tables have not yet been created.
-  let count=0, earnings=0;
-  try{
-    const r=await supabaseClient.from("referrals").select("id",{count:"exact",head:true}).eq("referrer_id",user.id);
-    if(!r.error) count=r.count || 0;
-  }catch(e){}
-  try{
-    const r=await supabaseClient.from("referral_earnings").select("amount").eq("user_id",user.id);
-    if(!r.error && r.data) earnings=r.data.reduce((s,x)=>s+Number(x.amount||0),0);
-  }catch(e){}
-  document.getElementById("referralCount").textContent=count.toLocaleString("en-NG");
-  document.getElementById("referralEarnings").textContent="₦"+earnings.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(profileError || !username){
+    const history=document.getElementById("referralRewardHistory");
+    if(history) history.textContent="A unique username is required to use referrals.";
+  }
+
+  let count=0, total=0, withdrawn=0;
+  const {count:refCount,error:countError}=await supabaseClient
+    .from("profiles").select("id",{count:"exact",head:true}).eq("referred_by",user.id);
+  if(!countError) count=refCount||0;
+
+  const {data:rewards,error:rewardError}=await supabaseClient
+    .from("sparkle_referral_rewards")
+    .select("id,referred_user_id,purchase_amount,reward_amount,status,created_at")
+    .eq("referrer_user_id",user.id)
+    .order("created_at",{ascending:false});
+  if(!rewardError && rewards){
+    total=rewards.filter(x=>x.status==="credited").reduce((sum,x)=>sum+Number(x.reward_amount||0),0);
+    const history=document.getElementById("referralRewardHistory");
+    if(history){
+      if(!rewards.length) history.innerHTML='<p>No referral rewards yet. Your rewards will appear here after a referred user completes an eligible successful purchase.</p>';
+      else history.innerHTML=rewards.slice(0,20).map(x=>{
+        const reversed=x.status==="reversed";
+        const date=x.created_at?new Date(x.created_at).toLocaleString("en-NG"):"";
+        return '<div style="display:flex;justify-content:space-between;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)"><div><strong style="display:block">'+(reversed?'Reward reversed':'Referral reward')+'</strong><small style="color:var(--muted)">'+date+' · Purchase '+money(x.purchase_amount)+'</small></div><strong style="white-space:nowrap;color:'+(reversed?'#dc2626':'#16a34a')+'">'+(reversed?'−':' + ')+money(x.reward_amount)+'</strong></div>';
+      }).join('');
+    }
+  }else{
+    const history=document.getElementById("referralRewardHistory");
+    if(history) history.textContent="Referral reward history is not available right now.";
+  }
+
+  const {data:withdrawals,error:withdrawalError}=await supabaseClient
+    .from("sparkle_referral_withdrawals")
+    .select("amount,status")
+    .eq("user_id",user.id);
+  if(!withdrawalError && withdrawals) withdrawn=withdrawals.filter(x=>x.status==="completed").reduce((sum,x)=>sum+Number(x.amount||0),0);
+
+  const available=Math.max(0,total-withdrawn);
+  const countEl=document.getElementById("referralCount");
+  const totalEl=document.getElementById("referralEarnings");
+  const availableEl=document.getElementById("referralAvailable");
+  if(countEl) countEl.textContent=count.toLocaleString("en-NG");
+  if(totalEl) totalEl.textContent=money(total);
+  if(availableEl) availableEl.textContent=money(available);
+  const notice=document.getElementById("referralWithdrawNotice");
+  if(notice) notice.textContent=available>=1000 ? "You have at least ₦1,000 available. Secure withdrawal setup is the next step." : "Minimum withdrawal to Sparkle wallet is ₦1,000. You need ₦"+Math.max(0,1000-available).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" more.";
 }
 
 async function shareReferral(){
   const link=document.getElementById("referralLink").value;
+  if(!link || !link.startsWith("http")) { alert("Set your username before sharing a referral link."); return; }
   if(navigator.share){
     try{ await navigator.share({title:"Join Sparkle",text:"Join me on Sparkle for fast bill payments.",url:link}); }catch(e){}
   }else{
