@@ -276,7 +276,6 @@ serve(async (req) => {
           );
         }
 
-        // IMPORTANT: Enforce the minimum quantity on the server.
         if (value < 500 && number < 10) {
           return json(
             {
@@ -326,7 +325,6 @@ serve(async (req) => {
           );
         }
 
-        // Require an explicit success status from the provider.
         const providerSucceeded =
           providerResponse.ok &&
           String(providerData?.status || "").toLowerCase() ===
@@ -398,7 +396,7 @@ serve(async (req) => {
           "",
       ).trim();
 
-      // AIRTIME
+      // AIRTIME — EXISTING LOGIC PRESERVED
       if (AIRTIME_SERVICES.includes(serviceID)) {
         if (!phone || !amount) {
           return json(
@@ -459,7 +457,7 @@ serve(async (req) => {
         );
       }
 
-      // DATA
+      // DATA — TRANSACTION PIN REQUIRED
       if (DATA_SERVICES.includes(serviceID)) {
         if (!phone || !plan) {
           return json(
@@ -472,6 +470,91 @@ serve(async (req) => {
           );
         }
 
+        const pin = String(body.pin || "").trim();
+
+        if (!/^\d{4}$/.test(pin)) {
+          return json(
+            {
+              success: false,
+              error: "Enter your 4-digit transaction PIN.",
+            },
+            400,
+          );
+        }
+
+        const supabaseUrl = Deno.env.get("SUPABASE_URL");
+        const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+        const authorization = req.headers.get("Authorization");
+
+        if (!supabaseUrl || !anonKey || !authorization) {
+          return json(
+            {
+              success: false,
+              error: "Could not verify your transaction PIN.",
+            },
+            401,
+          );
+        }
+
+        let pinResponse: Response;
+
+        try {
+          pinResponse = await fetch(
+            `${supabaseUrl}/functions/v1/sparkle-transaction-pin`,
+            {
+              method: "POST",
+              headers: {
+                Authorization: authorization,
+                apikey: anonKey,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                action: "verify",
+                pin,
+              }),
+              signal: AbortSignal.timeout(15000),
+            },
+          );
+        } catch {
+          return json(
+            {
+              success: false,
+              error:
+                "PIN verification unavailable. No data purchase was sent.",
+            },
+            502,
+          );
+        }
+
+        let pinResult: any;
+
+        try {
+          pinResult = await pinResponse.json();
+        } catch {
+          return json(
+            {
+              success: false,
+              error:
+                "PIN verification failed. No data purchase was sent.",
+            },
+            502,
+          );
+        }
+
+        if (!pinResponse.ok || pinResult?.success !== true) {
+          return json(
+            {
+              success: false,
+              error:
+                pinResult?.error ||
+                pinResult?.message ||
+                "Incorrect PIN. No data purchase was sent.",
+            },
+            400,
+          );
+        }
+
+        // PIN VERIFIED — SEND DATA ORDER TO GSUBZ
         const form = new FormData();
         form.append("serviceID", serviceID);
         form.append("plan", plan);
