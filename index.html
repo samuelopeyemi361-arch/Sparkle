@@ -2131,6 +2131,8 @@ Privacy Policy
   <div class="modal-box">
     <div class="modal-head"><h2>Set Transaction PIN</h2><button class="close" onclick="closeSetPinModal()">×</button></div>
     <p style="color:var(--muted)">Create a private 4-digit PIN to authorize purchases.</p>
+    <label for="currentTransactionPin">Current PIN (only when changing)</label>
+    <input id="currentTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="current-password" placeholder="Leave blank to create a PIN" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
     <label for="newTransactionPin">New 4-digit PIN</label>
     <input id="newTransactionPin" type="password" inputmode="numeric" maxlength="4" autocomplete="new-password" placeholder="••••" style="width:100%;padding:14px;border:1px solid var(--border);border-radius:12px;margin:8px 0 14px">
     <label for="confirmTransactionPin">Confirm PIN</label>
@@ -4951,22 +4953,27 @@ function openPinForPurchase(){
 function openPinModal(){
   document.getElementById("setPinModal").classList.add("show");
   document.getElementById("setPinMessage").textContent="";
+  document.getElementById("currentTransactionPin").value="";
   document.getElementById("newTransactionPin").value="";
   document.getElementById("confirmTransactionPin").value="";
 }
 function closeSetPinModal(){document.getElementById("setPinModal").classList.remove("show");}
 async function saveTransactionPIN(){
+  const currentPin=document.getElementById("currentTransactionPin").value.trim();
   const pin=document.getElementById("newTransactionPin").value.trim();
   const confirm=document.getElementById("confirmTransactionPin").value.trim();
   const msg=document.getElementById("setPinMessage");
   const btn=document.getElementById("saveTransactionPinButton");
+  if(currentPin && !/^\d{4}$/.test(currentPin)){msg.textContent="Your current PIN must contain exactly 4 digits.";return;}
   if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a PIN with exactly 4 digits.";return;}
   if(pin!==confirm){msg.textContent="The PINs do not match.";return;}
+  if(currentPin && currentPin===pin){msg.textContent="Choose a new PIN different from your current PIN.";return;}
   btn.disabled=true;btn.textContent="Saving securely…";msg.textContent="";
   try{
-    const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"set",pin}});
-    if(error||!data?.success)throw new Error(data?.message||error?.message||"Could not save your PIN. Backend setup may be incomplete.");
-    msg.style.color="#16a34a";msg.textContent="Transaction PIN saved securely. You can now authorize purchases.";
+    const body=currentPin?{action:"change",currentPin,newPin:pin}:{action:"set",pin};
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body});
+    if(error||!data?.success)throw new Error(data?.message||error?.message||"Could not save your PIN. Please try again.");
+    msg.style.color="#16a34a";msg.textContent=currentPin?"Transaction PIN changed successfully.":"Transaction PIN saved securely. You can now authorize purchases.";
     if(sparklePinRequiredForPendingPurchase){
       sparklePinRequiredForPendingPurchase=false;
       setTimeout(()=>{closeSetPinModal();openPinForPurchase();},700);
@@ -5021,6 +5028,7 @@ async function confirmTransactionPIN(){
       msg.textContent="You haven’t created a transaction PIN yet. Please create your PIN to continue.";
       document.getElementById("setPinMessage").textContent="You haven’t created a transaction PIN yet. Please create your PIN to continue.";
       document.getElementById("setPinModal").classList.add("show");
+      document.getElementById("currentTransactionPin").value="";
       document.getElementById("newTransactionPin").value="";
       document.getElementById("confirmTransactionPin").value="";
     }else if(/incorrect|invalid pin|wrong pin/i.test(detail)){
