@@ -1201,6 +1201,77 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 @media(max-width:600px){#sparkle-support-widget{bottom:88px}.sparkle-summary-card{padding:18px}.sparkle-summary-page{padding-top:6px}}
 </style>
 
+
+<style id="sparkle-profile-premium-preview">
+/* Scoped only to Profile: Earn & Referral and all other pages remain untouched. */
+#profilePage{--profile-navy:#101b3c;--profile-violet:#7656e8;--profile-line:#e8eaf4;--profile-muted:#77809a;padding-bottom:28px}
+#profilePage .profile-page-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}
+#profilePage .profile-page-heading .dashboard-title{margin:4px 0 5px;letter-spacing:-.7px;font-weight:850}
+#profilePage .profile-page-heading .dashboard-subtitle{margin:0;line-height:1.55}
+#profilePage .profile-eyebrow{display:block;font-size:10px;letter-spacing:1.6px;font-weight:900;color:#7b70c9}
+#profilePage .profile-heading-mark{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:15px;color:#fff;font-size:24px;background:linear-gradient(145deg,#17244b,#7957e9);box-shadow:0 9px 22px rgba(82,64,180,.22)}
+#profilePage .profile-section,#profilePage .profile-settings-panel{margin-top:18px;padding:0;background:#fff;border:1px solid var(--profile-line);border-radius:23px;overflow:hidden;box-shadow:0 12px 36px rgba(28,35,77,.055)}
+#profilePage .profile-premium-hero{position:relative;display:flex;align-items:center;gap:17px;padding:25px 25px 28px;color:#fff;background:radial-gradient(circle at 90% 10%,rgba(151,119,255,.4),transparent 32%),linear-gradient(120deg,#111b3b 0%,#222653 57%,#503a9e 100%);overflow:hidden}
+#profilePage .profile-premium-hero:after{content:"";position:absolute;width:190px;height:190px;right:-82px;bottom:-135px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 24px rgba(255,255,255,.035),0 0 0 48px rgba(255,255,255,.025);pointer-events:none}
+#profilePage .profile-avatar{width:68px;height:68px;flex:0 0 68px;border:2px solid rgba(255,255,255,.45);border-radius:21px;background:linear-gradient(145deg,#b7a7ff,#7855e8);color:#fff;box-shadow:0 7px 20px rgba(0,0,0,.18);font-size:26px}
+#profilePage .profile-identity{min-width:0;flex:1;position:relative;z-index:1}
+#profilePage .profile-eyebrow-light{color:#c7bcff}
+#profilePage .profile-identity h2{margin:5px 0 4px;color:#fff;font-size:22px;line-height:1.2;letter-spacing:-.4px;overflow-wrap:anywhere}
+#profilePage .profile-identity p{margin:0;color:#d4d8ef;font-size:13px;overflow-wrap:anywhere}
+#profilePage .profile-status-line{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:12px}
+#profilePage .profile-status-pill,#profilePage .profile-member-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(255,255,255,.16);border-radius:999px;background:rgba(255,255,255,.09);font-size:10px;font-weight:800;color:#f5f3ff}
+#profilePage .profile-status-dot{width:6px;height:6px;border-radius:50%;background:#fbbf24}
+#profilePage .profile-status-pill.is-verified .profile-status-dot{background:#4ade80}
+#profilePage .profile-status-pill.is-unverified .profile-status-dot{background:#fbbf24}
+#profilePage .profile-edit-hero{position:relative;z-index:2;display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;padding:10px 12px;border:1px solid rgba(255,255,255,.24);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-size:12px;font-weight:800}
+#profilePage .profile-edit-hero:hover{background:rgba(255,255,255,.18)}
+#profilePage .profile-completion-panel{padding:19px 24px 21px;background:linear-gradient(180deg,#fbfaff,#fff);border-bottom:1px solid #f0eff8}
+#profilePage .profile-completion-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+#profilePage .profile-completion-top strong{display:block;margin-top:4px;font-size:19px;color:#202747;letter-spacing:-.4px}
+#profilePage .profile-completion-caption{font-size:11px;color:#858ba3;text-align:right}
+#profilePage .profile-progress-track{height:7px;background:#ece9fa;border-radius:99px;overflow:hidden}
+#profilePage .profile-progress-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,#6b5ce7,#a58bff);transition:width .35s ease}
+#profilePage .profile-section-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:23px 24px 15px}
+#profilePage .profile-section-heading h3{margin:5px 0 0;color:#202747;font-size:17px;letter-spacing:-.3px}
+#profilePage .profile-section-heading p{margin:5px 0 0;color:#858ba3;font-size:12px;line-height:1.5}
+#profilePage .profile-section-icon{width:36px;height:36px;flex:0 0 36px;display:grid;place-items:center;border-radius:12px;background:#f0edff;color:#7056d9;font-size:20px}
+#profilePage .profile-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;padding:0 24px 24px}
+#profilePage .profile-item{min-width:0;padding:14px 15px;border:1px solid #ececf5;border-radius:14px;background:#fcfcff;transition:border-color .18s,transform .18s}
+#profilePage .profile-item:hover{border-color:#d8d0ff;transform:translateY(-1px)}
+#profilePage .profile-item label{font-size:9px;letter-spacing:1.05px;color:#8b90a8;margin-bottom:7px}
+#profilePage .profile-item strong{display:block;color:#222847;font-size:13px;font-weight:800;line-height:1.45;overflow-wrap:anywhere}
+#profilePage .profile-settings-panel{padding-bottom:8px}
+#profilePage .profile-settings-panel .profile-section-heading{padding-bottom:17px}
+#profilePage .profile-setting-row{width:calc(100% - 32px);margin:0 16px;display:flex;align-items:center;gap:13px;padding:14px 8px;border:0;border-top:1px solid #f0f0f7;background:#fff;text-align:left;color:#202747}
+#profilePage .profile-setting-row:hover{background:#fbfaff}
+#profilePage .profile-setting-icon{width:42px;height:42px;flex:0 0 42px;display:grid;place-items:center;border-radius:14px;font-size:20px;font-weight:800}
+#profilePage .profile-setting-icon.violet{background:#f0edff;color:#7155df}#profilePage .profile-setting-icon.blue{background:#eaf2ff;color:#3973dc}#profilePage .profile-setting-icon.amber{background:#fff5df;color:#bd8522}#profilePage .profile-setting-icon.green{background:#e6f8f0;color:#21966b}
+#profilePage .profile-setting-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+#profilePage .profile-setting-copy strong{font-size:13px;font-weight:850}
+#profilePage .profile-setting-copy small{font-size:11px;line-height:1.45;color:#858ba3}
+#profilePage .profile-setting-action{display:inline-flex;align-items:center;gap:7px;color:#7056d9;font-size:11px;font-weight:850;white-space:nowrap}
+#profilePage .profile-setting-action b{font-size:20px;font-weight:500;color:#9b91d9}
+#profilePage .profile-legal-actions{display:flex;flex-wrap:wrap;gap:10px;padding:16px 24px 18px;border-top:1px solid #f0f0f7}
+#profilePage .profile-legal-actions button{padding:8px 0;border:0;background:transparent;color:#666f8b;font-size:11px;font-weight:750}
+#profilePage .profile-legal-actions button span{color:#8c7de0;margin-left:4px}
+#profilePage .profile-logout-row{width:calc(100% - 32px);margin:0 16px 14px;padding:14px 13px;display:flex;align-items:center;gap:12px;text-align:left;border:1px solid #f5dfe5;border-radius:14px;background:#fff8fa;color:#b93854}
+#profilePage .profile-logout-row>span:first-child{font-size:22px}
+#profilePage .profile-logout-row>span:nth-child(2){display:flex;flex-direction:column;gap:4px;flex:1}
+#profilePage .profile-logout-row strong{font-size:12px;font-weight:850}
+#profilePage .profile-logout-row small{font-size:10px;color:#a77b87}
+#profilePage .profile-logout-row>b{font-size:20px;font-weight:500}
+#profilePage .profile-message{margin:0 24px 18px}
+body.dark-mode #profilePage .profile-section,body.dark-mode #profilePage .profile-settings-panel{background:#0e1b2d;border-color:#213149}
+body.dark-mode #profilePage .profile-completion-panel{background:#111f34;border-color:#213149}
+body.dark-mode #profilePage .profile-completion-top strong,body.dark-mode #profilePage .profile-section-heading h3,body.dark-mode #profilePage .profile-item strong,body.dark-mode #profilePage .profile-setting-row{color:#eef4ff}
+body.dark-mode #profilePage .profile-item,body.dark-mode #profilePage .profile-setting-row{background:#0e1b2d;border-color:#213149}
+body.dark-mode #profilePage .profile-setting-row:hover{background:#13243b}
+body.dark-mode #profilePage .profile-legal-actions{border-color:#213149}
+body.dark-mode #profilePage .profile-logout-row{background:#2b1727;border-color:#513044}
+@media(max-width:600px){#profilePage .profile-premium-hero{padding:21px 17px;gap:12px;flex-wrap:wrap}#profilePage .profile-avatar{width:57px;height:57px;flex-basis:57px;border-radius:18px;font-size:23px}#profilePage .profile-identity h2{font-size:19px}#profilePage .profile-edit-hero{margin-left:auto;padding:9px 10px}#profilePage .profile-completion-panel{padding:17px}#profilePage .profile-section-heading{padding:20px 17px 14px}#profilePage .profile-grid{padding:0 17px 18px;gap:9px}#profilePage .profile-item{padding:12px 11px}#profilePage .profile-item strong{font-size:12px}#profilePage .profile-setting-row{width:calc(100% - 20px);margin:0 10px;gap:10px;padding:13px 5px}#profilePage .profile-setting-icon{width:37px;height:37px;flex-basis:37px;border-radius:12px}#profilePage .profile-setting-action{font-size:10px;gap:3px}#profilePage .profile-setting-copy small{font-size:10px}#profilePage .profile-legal-actions{padding:14px 17px}#profilePage .profile-logout-row{width:calc(100% - 20px);margin:0 10px 12px}#profilePage .profile-completion-caption{max-width:45%;line-height:1.4}}
+@media(max-width:380px){#profilePage .profile-grid{grid-template-columns:1fr}#profilePage .profile-edit-hero{font-size:11px}#profilePage .profile-status-pill,#profilePage .profile-member-pill{font-size:9px}}
+</style>
+
 </head>
 
 <body>
@@ -1839,19 +1910,21 @@ Privacy Policy
           </div>
         </section>
 
-        <!-- PROFILE -->
+        <!-- PROFILE: premium redesign preview; existing actions retained -->
         <section class="page" id="profilePage">
-          <h1 class="dashboard-title">Profile</h1>
-          <p class="dashboard-subtitle">Manage your Sparkle account and security settings.</p>
+          <div class="profile-page-heading"><div><span class="profile-eyebrow">YOUR ACCOUNT</span><h1 class="dashboard-title">Profile & Settings</h1><p class="dashboard-subtitle">Your Sparkle identity, security and preferences in one place.</p></div><div class="profile-heading-mark" aria-hidden="true">✦</div></div>
 
           <section class="profile-section" id="profileSection">
-            <div class="profile-header">
+            <div class="profile-premium-hero">
               <div class="profile-avatar" id="profileAvatar">S</div>
-              <div><h2>My Profile</h2><p>Manage your Sparkle account information.</p></div>
+              <div class="profile-identity"><span class="profile-eyebrow profile-eyebrow-light">SPARKLE MEMBER</span><h2 id="profileDisplayName">My Profile</h2><p id="profileDisplayUsername">Manage your Sparkle account information.</p><div class="profile-status-line"><span class="profile-status-pill" id="profileVerificationStatus"><span class="profile-status-dot"></span>Checking email status…</span><span class="profile-member-pill">Account profile</span></div></div>
+              <button class="profile-edit-hero" onclick="openEditProfile()" type="button"><span aria-hidden="true">✎</span> Edit profile</button>
             </div>
 
-            <div class="profile-message" id="profileMessage"></div>
+            <div class="profile-completion-panel"><div class="profile-completion-top"><div><span class="profile-eyebrow">PROFILE COMPLETION</span><strong id="profileCompletionPercent">Checking…</strong></div><span class="profile-completion-caption" id="profileCompletionCaption">Checking your account details</span></div><div class="profile-progress-track"><div class="profile-progress-fill" id="profileCompletionBar" style="width:0%"></div></div></div>
 
+            <div class="profile-message" id="profileMessage"></div>
+            <div class="profile-section-heading"><div><span class="profile-eyebrow">PERSONAL DETAILS</span><h3>Your information</h3></div><span class="profile-section-icon" aria-hidden="true">◎</span></div>
             <div class="profile-grid">
               <div class="profile-item"><label>FIRST NAME</label><strong id="profileFirstName">Loading...</strong></div>
               <div class="profile-item"><label>LAST NAME</label><strong id="profileLastName">Loading...</strong></div>
@@ -1860,22 +1933,16 @@ Privacy Policy
               <div class="profile-item"><label>EMAIL ADDRESS</label><strong id="profileEmail">Loading...</strong></div>
               <div class="profile-item"><label>REFERRAL CODE</label><strong id="profileReferral">Not added</strong></div>
             </div>
-
-            <div class="profile-actions">
-              <button class="btn primary" onclick="openEditProfile()">Edit Profile</button>
-              <button class="btn" onclick="openPasswordModal()">Change Password</button>
-              <button class="btn" onclick="openLegal('terms')">Terms & Conditions</button>
-              <button class="btn" onclick="openLegal('privacy')">Privacy Policy</button>
-              <button class="btn" onclick="logout()">↪ Logout</button>
-              <button class="btn" onclick="openPinModal()">Transaction PIN</button>
-            </div>
           </section>
 
-          <div class="settings-grid">
-            <div class="setting-card"><div class="setting-icon">🔒</div><h3>Transaction PIN</h3><p>Protect purchases with your private transaction PIN.</p><button class="btn" onclick="openPinModal()">Manage PIN</button></div>
-            <div class="setting-card"><div class="setting-icon">🔔</div><h3>Notifications</h3><p>Receive important updates about your account and transactions.</p><button class="btn" onclick="toggleNotifications()">View</button></div>
-            <div class="setting-card"><div class="setting-icon">🛡️</div><h3>Security</h3><p>Keep your Sparkle account secure with a strong password.</p><button class="btn" onclick="openPasswordModal()">Change Password</button></div>
-          </div>
+          <section class="profile-settings-panel"><div class="profile-section-heading"><div><span class="profile-eyebrow">ACCOUNT PREFERENCES</span><h3>Security & settings</h3><p>Manage access to your account and important information.</p></div><span class="profile-section-icon" aria-hidden="true">⚙</span></div>
+            <button class="profile-setting-row" type="button" onclick="openPinModal()"><span class="profile-setting-icon violet" aria-hidden="true">⌑</span><span class="profile-setting-copy"><strong>Transaction PIN</strong><small>Secure your purchases with your private PIN.</small></span><span class="profile-setting-action">Manage <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="openPasswordModal()"><span class="profile-setting-icon blue" aria-hidden="true">♙</span><span class="profile-setting-copy"><strong>Password & security</strong><small>Keep your account protected with a strong password.</small></span><span class="profile-setting-action">Change <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="toggleNotifications()"><span class="profile-setting-icon amber" aria-hidden="true">♧</span><span class="profile-setting-copy"><strong>Notifications</strong><small>View important wallet and transaction update information.</small></span><span class="profile-setting-action">View <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="const t=document.getElementById('sparkle-support-toggle');if(t)t.click();else alert('Support is not available on this screen yet.')"><span class="profile-setting-icon green" aria-hidden="true">♡</span><span class="profile-setting-copy"><strong>Help & support</strong><small>Get help from the Sparkle support team.</small></span><span class="profile-setting-action">Get help <b>›</b></span></button>
+            <div class="profile-legal-actions"><button type="button" onclick="openLegal('terms')">Terms & Conditions <span>↗</span></button><button type="button" onclick="openLegal('privacy')">Privacy Policy <span>↗</span></button></div>
+            <button class="profile-logout-row" type="button" onclick="logout()"><span aria-hidden="true">↪</span><span><strong>Log out of Sparkle</strong><small>Sign out of this account on this device.</small></span><b>›</b></button>
+          </section>
         </section>
 
         <!-- SERVICE PAGES -->
@@ -3267,6 +3334,35 @@ document.getElementById("profileAvatar")
 (firstName || fullName)
 .charAt(0)
 .toUpperCase();
+
+const displayName = document.getElementById("profileDisplayName");
+const displayUsername = document.getElementById("profileDisplayUsername");
+if(displayName) displayName.textContent = fullName;
+if(displayUsername) displayUsername.textContent = data?.username ? "@" + data.username : (data?.email || "Your Sparkle account");
+
+const completionFields = [firstName, lastName, data?.username, data?.phone, data?.email || ""];
+const completion = Math.round(completionFields.filter(v => String(v || "").trim()).length / completionFields.length * 100);
+const completionPercent = document.getElementById("profileCompletionPercent");
+const completionBar = document.getElementById("profileCompletionBar");
+const completionCaption = document.getElementById("profileCompletionCaption");
+if(completionPercent) completionPercent.textContent = completion + "% complete";
+if(completionBar) completionBar.style.width = completion + "%";
+if(completionCaption) completionCaption.textContent = completion === 100 ? "Your details look complete" : "Add missing details to complete your profile";
+
+try {
+  const {data:authData} = await supabaseClient.auth.getUser();
+  const authUser = authData?.user;
+  const verified = !!(authUser?.email_confirmed_at || authUser?.confirmed_at);
+  const verification = document.getElementById("profileVerificationStatus");
+  if(verification){
+    verification.classList.toggle("is-verified", verified);
+    verification.classList.toggle("is-unverified", !verified);
+    verification.innerHTML = '<span class="profile-status-dot"></span>' + (verified ? 'Email verified' : 'Email not verified');
+  }
+} catch(verificationError) {
+  const verification = document.getElementById("profileVerificationStatus");
+  if(verification) verification.innerHTML = '<span class="profile-status-dot"></span>Email status unavailable';
+}
 
 }
 
