@@ -1092,6 +1092,13 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
  .data-plan-price{font-size:14px}
 }
 
+
+/* Transaction rows open their receipt when tapped; no extra receipt button. */
+#transactions .tx[role="button"],#allTransactions .tx[role="button"]{cursor:pointer;transition:background .15s ease,transform .15s ease}
+#transactions .tx[role="button"]:hover,#allTransactions .tx[role="button"]:hover{background:rgba(11,92,255,.035)}
+#transactions .tx[role="button"]:focus-visible,#allTransactions .tx[role="button"]:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
+.receipt-actions button{min-width:112px}
+
 </style>
 
 <style id="sparkle-support-widget-styles">
@@ -2357,9 +2364,9 @@ Privacy Policy
         <p style="text-align:center;color:#64748b;font-size:11px;margin-top:20px">Thank you for using Sparkle.</p>
       </div>
     </div>
-    <div class="receipt-actions">
-      <button class="btn primary" onclick="downloadReceiptPDF()">⬇ PDF</button>
-      <button class="btn" onclick="downloadReceiptImage()">⬇ Image</button>
+    <div class="receipt-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+      <button class="btn primary" onclick="downloadReceiptPDF()">PDF ↓</button>
+      <button class="btn" onclick="downloadReceiptImage()">Image ↓</button>
     </div>
   </div>
 </div>
@@ -3263,14 +3270,14 @@ window.currentSparkleUser=user;
 showDashPage("home",document.querySelector('.sidebar-nav .nav-item'));
 
 
-const {data:profile} =
-await supabaseClient
-.from("profiles")
-.select(
-"first_name,last_name,full_name,username,phone,email,referral_code"
-)
-.eq("id",user.id)
-.single();
+let profile=null;
+try {
+  const profileResult=await supabaseClient.from("profiles")
+    .select("first_name,last_name,full_name,username,phone,email,referral_code")
+    .eq("id",user.id).maybeSingle();
+  profile=profileResult.data||null;
+  if(profileResult.error) console.warn("Dashboard profile lookup:",profileResult.error.message);
+} catch(profileLoadError) { console.warn("Dashboard profile request failed:",profileLoadError); }
 
 
 let name;
@@ -3308,15 +3315,29 @@ document.getElementById("avatar")
 name.charAt(0).toUpperCase();
 
 
-await loadProfile(user.id);
-
-await loadWallet(user.id);
-
-await loadTransactions(user.id);
-
-await createDedicatedAccount();
-
-await loadReferralStats();
+// Load independent dashboard sections in parallel. A failure in one request
+// must never leave account details or Recent Transactions stuck on Loading.
+const dashboardTasks = [
+  ["profile", () => loadProfile(user.id)],
+  ["wallet", () => loadWallet(user.id)],
+  ["transactions", () => loadTransactions(user.id)],
+  ["dedicated account", () => createDedicatedAccount()],
+  ["referrals", () => loadReferralStats()],
+];
+await Promise.allSettled(dashboardTasks.map(async ([label, task]) => {
+  try { await task(); }
+  catch (sectionError) {
+    console.error("Sparkle dashboard section failed:", label, sectionError);
+    if(label==="transactions") {
+      const box=document.getElementById("transactions");
+      if(box) box.innerHTML='<p style="color:#ef4444">Transactions could not load. Tap to retry.</p><button class="btn" onclick="retryRecentTransactions()">Retry</button>';
+    }
+    if(label==="dedicated account") {
+      const status=document.getElementById("dvaStatus");
+      if(status) status.textContent="Could not load — tap Fund Wallet to retry";
+    }
+  }
+}));
 
 }
 
@@ -4103,53 +4124,66 @@ function toggleNotifications(){
    ===================================================== */
 
 async function createDedicatedAccount(){
+  const setStatus=(value)=>{const el=document.getElementById("dvaStatus");if(el)el.textContent=value;};
+  const showAccount=(row)=>{
+    if(!row?.account_number) return false;
+    const name=document.getElementById("dvaAccountName");
+    const number=document.getElementById("dvaAccountNumber");
+    const bank=document.getElementById("dvaBankName");
+    if(name)name.textContent=row.account_name||"Sparkle User";
+    if(number)number.textContent=String(row.account_number);
+    if(bank)bank.textContent=row.bank_name||"—";
+    setStatus("Ready");
+    return true;
+  };
   try{
+    setStatus("Checking saved account…");
     const {data:userData,error:userError}=await supabaseClient.auth.getUser();
-    if(userError || !userData?.user) return;
-
+    if(userError||!userData?.user){setStatus("Sign in to load account details");return false;}
     const user=userData.user;
+    // Prefer the saved account record. Do not call the provider again if it already exists.
+    try{
+      const saved=await supabaseClient.from("paystack_dedicated_accounts")
+        .select("account_name,account_number,bank_name").eq("user_id",user.id).maybeSingle();
+      if(saved.data?.account_number){showAccount(saved.data);return true;}
+      if(saved.error) console.warn("Saved dedicated account lookup:",saved.error.message);
+    }catch(savedError){console.warn("Saved dedicated account lookup failed:",savedError);}
     let profile=null;
     try{
-      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).single();
-      profile=result.data || null;
-    }catch(e){ console.warn("Profile lookup skipped:",e); }
-
-    const firstName=profile?.first_name || user.user_metadata?.first_name || "";
-    const lastName=profile?.last_name || user.user_metadata?.last_name || "";
-    const name=(profile?.full_name || `${firstName} ${lastName}`.trim() || user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Sparkle User").trim();
-    const email=(profile?.email || user.email || "").trim();
-    const phone=(profile?.phone || user.phone || user.user_metadata?.phone || "").trim();
-
-    if(!email || !name){
-      const status=document.getElementById("dvaStatus");
-      if(status) status.textContent="Account details missing";
-      return;
+      const result=await supabaseClient.from("profiles").select("full_name,first_name,last_name,phone,email").eq("id",user.id).maybeSingle();
+      profile=result.data||null;
+    }catch(e){console.warn("Profile lookup skipped:",e);}
+    const firstName=profile?.first_name||user.user_metadata?.first_name||"";
+    const lastName=profile?.last_name||user.user_metadata?.last_name||"";
+    const name=(profile?.full_name||`${firstName} ${lastName}`.trim()||user.user_metadata?.full_name||user.user_metadata?.name||user.email?.split("@")[0]||"Sparkle User").trim();
+    const email=(profile?.email||user.email||"").trim();
+    const phone=(profile?.phone||user.phone||user.user_metadata?.phone||"").trim();
+    if(!email||!name){setStatus("Account details missing");return false;}
+    setStatus("Loading saved account…");
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{body:{email,name,phone}});
+    if(error){console.error("Virtual account error:",error);setStatus("Unable to load — tap Fund Wallet to retry");return false;}
+    if(data?.success&&data.account_number){
+      showAccount({account_name:data.account_name||name,account_number:data.account_number,bank_name:data.bank_name||"—"});
+      return true;
     }
-
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{
-      body:{email,name,phone}
-    });
-
-    if(error){
-      console.error("Virtual account error:",error);
-      document.getElementById("dvaStatus").textContent="Unable to create";
-      return;
-    }
-
-    if(data?.success && data.account_number){
-      document.getElementById("dvaAccountName").textContent=data.account_name || name;
-      document.getElementById("dvaAccountNumber").textContent=data.account_number;
-      document.getElementById("dvaBankName").textContent=data.bank_name || "—";
-      document.getElementById("dvaStatus").textContent="Ready";
-    }else{
-      document.getElementById("dvaStatus").textContent=data?.paystack_error || data?.error || "Unable to create";
-      console.error("Virtual account creation failed:",data);
-    }
+    // If function did not return an account, re-read the saved row before displaying failure.
+    try{
+      const saved=await supabaseClient.from("paystack_dedicated_accounts").select("account_name,account_number,bank_name").eq("user_id",user.id).maybeSingle();
+      if(showAccount(saved.data))return true;
+    }catch(_){}
+    setStatus(data?.paystack_error||data?.error||"Account unavailable — tap Fund Wallet to retry");
+    console.error("Virtual account creation/loading failed:",data);
+    return false;
   }catch(error){
     console.error("Virtual account function error:",error);
-    const status=document.getElementById("dvaStatus");
-    if(status) status.textContent="Unable to create";
+    setStatus("Unable to load — tap Fund Wallet to retry");
+    return false;
   }
+}
+async function retryRecentTransactions(){
+  const {data,error}=await supabaseClient.auth.getUser();
+  if(error||!data?.user){const box=document.getElementById("transactions");if(box)box.textContent="Please sign in again to load transactions.";return;}
+  await loadTransactions(data.user.id);
 }
 
 function copyDVA(){
@@ -4200,9 +4234,9 @@ async function loadReferralStats(){
   }
 
   let count=0, total=0, withdrawn=0;
-  const {count:refCount,error:countError}=await supabaseClient
-    .from("profiles").select("id",{count:"exact",head:true}).eq("referred_by",user.id);
-  if(!countError) count=refCount||0;
+  const {data:refCount,error:countError}=await supabaseClient.rpc("sparkle_count_referred_users");
+  if(!countError) count=Number(refCount||0);
+  else console.warn("Referral count could not be loaded:",countError.message);
 
   const {data:rewards,error:rewardError}=await supabaseClient
     .from("sparkle_referral_rewards")
@@ -5490,36 +5524,52 @@ async function processPendingPurchase(transactionPin){
 
 function showReceipt(result){
   const d=result||{};
+  const safe=v=>escapeHtml(v==null||v===""?"—":String(v));
   const status=String(d.status||"successful").toLowerCase();
-  const isFailed=/fail|declin|revers|cancel|refund/.test(status);
-  const isPending=/pending|process|initiated|unknown/.test(status);
-  const statusLabel=isFailed?(status.includes("refund")||status.includes("revers")?"REFUNDED / REVERSED":"TRANSACTION FAILED"):isPending?"TRANSACTION PENDING":"TRANSACTION SUCCESSFUL";
-  const statusColor=isFailed?"#dc2626":isPending?"#d97706":"#059669";
-  const safe=(v)=>escapeHtml(v==null||v===""?"—":String(v));
+  const failed=/fail|declin|revers|cancel|refund|expired/.test(status);
+  const pending=/pending|process|initiated|unknown|awaiting/.test(status);
+  const statusLabel=failed?(status.includes("refund")||status.includes("revers")?"REFUNDED / REVERSED":"TRANSACTION FAILED"):pending?"TRANSACTION PENDING":"TRANSACTION SUCCESSFUL";
+  const statusColor=failed?"#dc2626":pending?"#d97706":"#059669";
   const date=d.created_at?new Date(d.created_at):new Date();
-  const kind=String(d.type||"").toLowerCase();
-  const amountLabel=(kind==="credit"||/deposit|fund|refund|reversal|reward/i.test(String(d.service||"")))?"Amount credited":"Transaction amount";
-  document.getElementById("receiptDetails").innerHTML=`
-    <div class="receipt-row"><span>Service</span><strong>${safe(d.service||"Wallet transaction")}</strong></div>
-    <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id||"—")}</strong></div>
+  const service=String(d.service||"Sparkle Payment");
+  const amountLabel=(String(d.type||"").toLowerCase()==="credit"||/deposit|fund|refund|reversal|reward/i.test(service))?"Amount credited":"Transaction amount";
+  const details=document.getElementById("receiptDetails");
+  details.innerHTML=`
+    <div class="receipt-row"><span>Service</span><strong>${safe(service)}</strong></div>
+    <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id)}</strong></div>
     ${d.customer?`<div class="receipt-row"><span>Customer</span><strong>${safe(d.customer)}</strong></div>`:""}
     ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${safe(d.provider)}</strong></div>`:""}
-    ${d.meter?`<div class="receipt-row"><span>Meter number</span><strong>${safe(d.meter)}</strong></div>`:""}
-    ${d.type_detail?`<div class="receipt-row"><span>Type / plan</span><strong>${safe(d.type_detail)}</strong></div>`:""}
+    ${d.meter?`<div class="receipt-row"><span>Meter / Smartcard</span><strong>${safe(d.meter)}</strong></div>`:""}
+    ${d.type_detail||d.plan||d.type?`<div class="receipt-row"><span>Type / Plan</span><strong>${safe(d.type_detail||d.plan||(d.type==="credit"||d.type==="debit"?"":d.type))}</strong></div>`:""}
     ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${safe(d.phone)}</strong></div>`:""}
     <div class="receipt-row"><span>${amountLabel}</span><strong>${money(Math.abs(Number(d.amount)||0))}</strong></div>
-    ${d.token?`<div class="receipt-row"><span>Token / details</span><strong style="overflow-wrap:anywhere">${safe(d.token)}</strong></div>`:""}
+    ${d.token?`<div class="receipt-row"><span>Token / Details</span><strong style="overflow-wrap:anywhere">${safe(d.token)}</strong></div>`:""}
     <div class="receipt-row"><span>Status</span><strong style="color:${statusColor}">${statusLabel}</strong></div>
     <div class="receipt-row"><span>Date</span><strong>${safe(date.toLocaleString("en-NG"))}</strong></div>`;
   const card=document.getElementById("receiptCard");
-  const statusEl=card.querySelector(".receipt-status");
-  if(statusEl){statusEl.textContent=statusLabel;statusEl.style.color=statusColor;}
+  const badge=card.querySelector(".receipt-status");
+  if(badge){badge.textContent=statusLabel;badge.style.color=statusColor;}
   card.dataset.reference=String(d.reference||d.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
   document.getElementById("receiptModal").classList.add("show");
 }
 function showTransactionReceipt(encoded){
-  try{showReceipt(JSON.parse(decodeURIComponent(encoded)));}
-  catch(error){console.error("Could not open Sparkle receipt:",error);}
+  try {
+    const tx=JSON.parse(decodeURIComponent(encoded));
+    const m=tx.metadata&&typeof tx.metadata==="object"?tx.metadata:{};
+    const status=String(tx.status||"").toLowerCase();
+    const detail={
+      ...tx,
+      customer:m.customer||m.customer_name||m.phone||m.phone_number||m.recipient||m.billersCode||m.billers_code||"",
+      phone:m.phone||m.phone_number||m.recipient_phone||"",
+      provider:m.provider||m.provider_service||m.serviceID||m.service_id||"",
+      meter:m.meter||m.meter_number||m.customerID||m.customer_id||m.smartcard||m.iuc||"",
+      plan:m.plan||m.plan_name||m.variation_code||"",
+      type_detail:m.plan||m.plan_name||m.provider_service||m.service_type||"",
+      token:m.token||m.electricity_token||m.pin||"",
+      status:status||"unknown"
+    };
+    showReceipt(detail);
+  } catch(error){ console.error("Could not open Sparkle receipt:",error); alert("This receipt could not be opened. Please refresh transaction history and try again."); }
 }
 
 function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
@@ -5539,22 +5589,27 @@ async function downloadReceiptPDF(){
 
 async function loadAllTransactions(){
   const box=document.getElementById("allTransactions");
-  if(!box) return;
-  const {data,error}=await supabaseClient.from("wallet_transactions")
-    .select("id,type,amount,service,status,created_at")
-    .eq("user_id",(await supabaseClient.auth.getUser()).data.user.id)
-    .order("created_at",{ascending:false}).limit(100);
-  if(error){box.innerHTML="<p style='color:#ef4444'>Unable to load transactions.</p>";return;}
-  if(!data?.length){box.innerHTML="<p style='color:#64748b'>No transactions yet.</p>";return;}
-  box.innerHTML=data.map(tx=>{
-    const receiptPayload=encodeURIComponent(JSON.stringify(tx)).replace(/'/g,"%27");
-    const amount=Number(tx.amount||0);
-    const cls=tx.type==="credit"?"credit":"debit";
-    const sign=tx.type==="credit"?"+":"-";
-    return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${receiptPayload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${receiptPayload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount).replace("₦","₦")}</strong></div>`;
-  }).join("");
+  if(!box)return;
+  box.innerHTML='<p style="color:#64748b">Loading transactions…</p>';
+  try{
+    const auth=await supabaseClient.auth.getUser();
+    const userId=auth?.data?.user?.id;
+    if(auth?.error||!userId){box.innerHTML='<p style="color:#ef4444">Please sign in again to view transaction history.</p>';return;}
+    const {data,error}=await supabaseClient.from("wallet_transactions")
+      .select("id,type,amount,service,reference,metadata,status,created_at")
+      .eq("user_id",userId).order("created_at",{ascending:false}).limit(100);
+    if(error)throw error;
+    if(!data?.length){box.innerHTML='<p style="color:#64748b">No transactions yet.</p>';return;}
+    box.innerHTML=data.map(tx=>{
+      const amount=Number(tx.amount||0),cls=tx.type==="credit"?"credit":"debit",sign=tx.type==="credit"?"+":"-";
+      const payload=encodeURIComponent(JSON.stringify(tx));
+      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+    }).join("");
+  }catch(error){
+    console.error("Transaction history failed:",error);
+    box.innerHTML='<p style="color:#ef4444">Transaction history could not load.</p><button class="btn" onclick="loadAllTransactions()">Retry</button>';
+  }
 }
-
 
 /* =====================================================
    WALLET
@@ -5578,7 +5633,7 @@ error
 );
 
 document.getElementById("walletBalance")
-.textContent="₦0.00";
+.textContent="Balance unavailable";
 
 return;
 
@@ -5608,112 +5663,30 @@ maximumFractionDigits:2
    ===================================================== */
 
 async function loadTransactions(userId){
-
-const box =
-document.getElementById("transactions");
-
-
-const {data,error} =
-await supabaseClient
-.from("wallet_transactions")
-.select(
-"id,type,amount,service,status,created_at"
-)
-.eq("user_id",userId)
-.order(
-"created_at",
-{ascending:false}
-)
-.limit(10);
-
-
-if(error){
-
-console.error(error);
-
-box.innerHTML =
-"<p style='color:#ef4444'>Unable to load transactions.</p>";
-
-return;
-
+  const box=document.getElementById("transactions");
+  if(!box)return;
+  box.innerHTML='<p style="color:#64748b">Loading transactions…</p>';
+  try{
+    if(!userId){
+      const auth=await supabaseClient.auth.getUser();
+      userId=auth?.data?.user?.id;
+    }
+    if(!userId){box.innerHTML='<p style="color:#ef4444">Please sign in to view transactions.</p>';return;}
+    const {data,error}=await supabaseClient.from("wallet_transactions")
+      .select("id,type,amount,service,reference,metadata,status,created_at")
+      .eq("user_id",userId).order("created_at",{ascending:false}).limit(10);
+    if(error)throw error;
+    if(!data?.length){box.innerHTML='<p style="color:#64748b">No transactions yet.</p>';return;}
+    box.innerHTML=data.map(tx=>{
+      const amount=Number(tx.amount||0),sign=tx.type==="credit"?"+":"-",cls=tx.type==="credit"?"credit":"debit";
+      const payload=encodeURIComponent(JSON.stringify(tx));
+      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+    }).join("");
+  }catch(error){
+    console.error("Recent transactions failed:",error);
+    box.innerHTML='<p style="color:#ef4444">Transactions could not load.</p><button class="btn" onclick="retryRecentTransactions()">Retry</button>';
+  }
 }
-
-
-if(!data || data.length===0){
-
-box.innerHTML =
-"<p style='color:#64748b'>No transactions yet.</p>";
-
-return;
-
-}
-
-
-box.innerHTML =
-data.map(tx=>{
-
-const amount =
-Number(tx.amount || 0);
-
-
-const sign =
-tx.type === "credit"
-? "+"
-: "-";
-
-
-const cls =
-tx.type === "credit"
-? "credit"
-: "debit";
-
-
-const date =
-new Date(
-tx.created_at
-).toLocaleString("en-NG");
-
-
-const receiptPayload=encodeURIComponent(JSON.stringify(tx)).replace(/'/g,"%27");
-return `
-
-<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${receiptPayload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${receiptPayload}')}" style="cursor:pointer">
-
-<div>
-
-<strong>
-${escapeHtml(tx.service || "Wallet transaction")}
-</strong>
-
-<br>
-
-<small>
-${date} · ${tx.status || ""}
-</small>
-
-</div>
-
-
-<strong class="${cls}">
-
-${sign}₦${amount.toLocaleString(
-"en-NG",
-{
-minimumFractionDigits:2,
-maximumFractionDigits:2
-}
-)}
-
-</strong>
-
-</div>
-
-`;
-
-}).join("");
-
-}
-
 
 /* =====================================================
    LEGAL
@@ -5772,6 +5745,10 @@ function openSparkleSupport(kind){
    ===================================================== */
 
 async function showFundWallet(){
+  const currentNumber=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
+  if(currentNumber==="Loading…"||currentNumber==="—"||!currentNumber){
+    await createDedicatedAccount();
+  }
   const name=document.getElementById("dvaAccountName")?.textContent?.trim()||"Loading…";
   const number=document.getElementById("dvaAccountNumber")?.textContent?.trim()||"Loading…";
   const bank=document.getElementById("dvaBankName")?.textContent?.trim()||"Loading…";
