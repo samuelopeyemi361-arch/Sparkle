@@ -3,7 +3,8 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Content-Type": "application/json",
 };
@@ -22,7 +23,10 @@ const successStatus = (s: string) =>
 const failureStatus = (s: string) =>
   ["failed", "failure", "error", "rejected", "cancelled"].includes(s);
 
-async function checkStoredPin(pin: string, stored: string): Promise<boolean> {
+async function checkStoredPin(
+  pin: string,
+  stored: string,
+): Promise<boolean> {
   const [saltHex, expected] = stored.split(":");
 
   if (!saltHex || !expected || !/^[0-9a-f]+$/i.test(saltHex)) {
@@ -30,7 +34,7 @@ async function checkStoredPin(pin: string, stored: string): Promise<boolean> {
   }
 
   const salt = new Uint8Array(
-    (saltHex.match(/.{2}/g) || []).map(v => parseInt(v, 16))
+    (saltHex.match(/.{2}/g) || []).map((v) => parseInt(v, 16)),
   );
 
   const key = await crypto.subtle.importKey(
@@ -38,17 +42,22 @@ async function checkStoredPin(pin: string, stored: string): Promise<boolean> {
     new TextEncoder().encode(pin),
     "PBKDF2",
     false,
-    ["deriveBits"]
+    ["deriveBits"],
   );
 
   const bits = await crypto.subtle.deriveBits(
-    { name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" },
+    {
+      name: "PBKDF2",
+      salt,
+      iterations: 310000,
+      hash: "SHA-256",
+    },
     key,
-    256
+    256,
   );
 
   const actual = Array.from(new Uint8Array(bits))
-    .map(v => v.toString(16).padStart(2, "0"))
+    .map((v) => v.toString(16).padStart(2, "0"))
     .join("");
 
   return actual === expected;
@@ -66,7 +75,7 @@ const providers = new Set([
   "kaduna-electric",
   "kano-electric",
   "portharcourt-electric",
-  "yola-electric"
+  "yola-electric",
 ]);
 
 Deno.serve(async (req) => {
@@ -92,22 +101,24 @@ Deno.serve(async (req) => {
   if (!url || !anonKey || !serviceKey || !gsubzKey) {
     return reply({
       success: false,
-      error: "Secure electricity service is not configured."
+      error: "Secure electricity service is not configured.",
     }, 500);
   }
 
   const userClient = createClient(url, anonKey, {
     global: { headers: { Authorization: auth } },
-    auth: { persistSession: false }
+    auth: { persistSession: false },
   });
 
-  const { data: { user }, error: authError } =
-    await userClient.auth.getUser();
+  const {
+    data: { user },
+    error: authError,
+  } = await userClient.auth.getUser();
 
   if (authError || !user) {
     return reply({
       success: false,
-      error: "Invalid session. Sign in again."
+      error: "Invalid session. Sign in again.",
     }, 401);
   }
 
@@ -130,35 +141,35 @@ Deno.serve(async (req) => {
 
   const type = str(
     body.type ||
-    body.variation_code ||
-    body.variationCode ||
-    body.planValue ||
-    body.plan
+      body.variation_code ||
+      body.variationCode ||
+      body.planValue ||
+      body.plan,
   ).toLowerCase();
 
   const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false }
+    auth: { persistSession: false },
   });
 
   async function callGsubz(
     path: string,
-    fields: Record<string, string>
+    fields: Record<string, string>,
   ) {
     const form = new FormData();
     form.append("api", gsubzKey!);
 
-    for (const [k, v] of Object.entries(fields)) {
-      form.append(k, v);
+    for (const [key, value] of Object.entries(fields)) {
+      form.append(key, value);
     }
 
     const response = await fetch("https://api.gsubz.com" + path, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${gsubzKey}`,
-        Accept: "application/json"
+        Accept: "application/json",
       },
       body: form,
-      signal: AbortSignal.timeout(55000)
+      signal: AbortSignal.timeout(55000),
     });
 
     const raw = await response.text();
@@ -178,7 +189,7 @@ Deno.serve(async (req) => {
     reference: string,
     amount: number,
     pPhone: string,
-    metadata: Record<string, unknown> = {}
+    metadata: Record<string, unknown> = {},
   ) {
     return await admin.rpc("sparkle_airtime_wallet_action", {
       p_user_id: user!.id,
@@ -187,11 +198,11 @@ Deno.serve(async (req) => {
       p_amount: amount,
       p_service: "Electricity",
       p_phone: pPhone,
-      p_metadata: metadata
+      p_metadata: metadata,
     });
   }
 
-  // VERIFY METER
+  // STEP 1: Verify the electricity meter.
   if (action === "verify") {
     if (
       !providers.has(serviceID) ||
@@ -201,24 +212,30 @@ Deno.serve(async (req) => {
       return reply({
         success: false,
         status: "not_started",
-        error: "Choose a valid electricity provider, meter number, and Prepaid/Postpaid type."
+        error:
+          "Choose a valid electricity provider, meter number, and Prepaid/Postpaid type.",
       }, 400);
     }
 
     try {
       const { response, data } = await callGsubz(
         "/api/verify-customer/",
-        { serviceID, billersCode: meter, type }
+        {
+          serviceID,
+          billersCode: meter,
+          type,
+        },
       );
 
       const providerStatus = statusOf(data);
-      const content = data?.content ?? data?.data?.content ?? data?.data ?? data;
+      const content =
+        data?.content ?? data?.data?.content ?? data?.data ?? data;
 
       const customerName = str(
         content?.customerName ??
-        content?.customer_name ??
-        content?.Customer_Name ??
-        content?.name
+          content?.customer_name ??
+          content?.Customer_Name ??
+          content?.name,
       );
 
       if (
@@ -228,16 +245,18 @@ Deno.serve(async (req) => {
       ) {
         const detail = str(
           data?.api_response ||
-          data?.description ||
-          data?.message ||
-          data?.error
+            data?.description ||
+            data?.message ||
+            data?.error,
         );
 
         return reply({
           success: false,
           status: "verification_failed",
-          error: detail || "Meter verification failed. Check the number and provider.",
-          providerStatus: providerStatus || "unknown"
+          error:
+            detail ||
+            "Meter verification failed. Check the number and provider.",
+          providerStatus: providerStatus || "unknown",
         }, 422);
       }
 
@@ -249,18 +268,21 @@ Deno.serve(async (req) => {
         type,
         customerName,
         address: str(content?.address ?? content?.Address),
-        meterType: str(content?.meterType ?? content?.meter_type) || type.toUpperCase()
+        meterType:
+          str(content?.meterType ?? content?.meter_type) ||
+          type.toUpperCase(),
       });
     } catch {
       return reply({
         success: false,
         status: "verification_failed",
-        error: "Could not verify this meter right now. No money has been deducted."
+        error:
+          "Could not verify this meter right now. No money has been deducted.",
       }, 502);
     }
   }
 
-  // CHECK PENDING TRANSACTION
+  // STEP 2: Check or reconcile a previous transaction.
   if (action === "check") {
     const reference = str(body.reference);
 
@@ -268,7 +290,7 @@ Deno.serve(async (req) => {
       return reply({
         success: false,
         status: "not_started",
-        error: "Invalid transaction reference."
+        error: "Invalid transaction reference.",
       }, 400);
     }
 
@@ -287,7 +309,7 @@ Deno.serve(async (req) => {
       return reply({
         success: false,
         status: "not_found",
-        error: "Electricity transaction not found."
+        error: "Electricity transaction not found.",
       }, 404);
     }
 
@@ -296,7 +318,7 @@ Deno.serve(async (req) => {
         success: true,
         status: "successful",
         reference,
-        details: tx.metadata || {}
+        details: tx.metadata || {},
       });
     }
 
@@ -305,15 +327,14 @@ Deno.serve(async (req) => {
         success: false,
         status: "refunded",
         reference,
-        error: "This electricity transaction was already refunded."
+        error: "This electricity transaction was already refunded.",
       });
     }
 
     try {
-      const { response, data } = await callGsubz(
-        "/api/verify/",
-        { requestID: reference }
-      );
+      const { response, data } = await callGsubz("/api/verify/", {
+        requestID: reference,
+      });
 
       const s = statusOf(data);
 
@@ -323,7 +344,7 @@ Deno.serve(async (req) => {
           reference,
           Number(tx.amount),
           str(tx.metadata?.phone),
-          { provider_response: data, stage: "completed" }
+          { provider_response: data, stage: "completed" },
         );
 
         if (fin.error || !fin.data?.success) {
@@ -331,7 +352,8 @@ Deno.serve(async (req) => {
             success: false,
             status: "pending",
             reference,
-            error: "Provider confirmed success, but Sparkle needs to reconcile the wallet record."
+            error:
+              "Provider confirmed success, but Sparkle needs to reconcile the wallet record.",
           }, 202);
         }
 
@@ -341,8 +363,8 @@ Deno.serve(async (req) => {
           reference,
           details: {
             ...(tx.metadata || {}),
-            provider_response: data
-          }
+            provider_response: data,
+          },
         });
       }
 
@@ -352,7 +374,7 @@ Deno.serve(async (req) => {
           reference,
           Number(tx.amount),
           str(tx.metadata?.phone),
-          { provider_response: data, stage: "refunded" }
+          { provider_response: data, stage: "refunded" },
         );
 
         if (ref.error || !ref.data?.success) {
@@ -360,7 +382,8 @@ Deno.serve(async (req) => {
             success: false,
             status: "pending",
             reference,
-            error: "Provider rejected the order; automatic refund needs reconciliation."
+            error:
+              "Provider rejected the order; automatic refund needs reconciliation.",
           }, 202);
         }
 
@@ -368,7 +391,8 @@ Deno.serve(async (req) => {
           success: false,
           status: "refunded",
           reference,
-          error: "The electricity order failed and your wallet was refunded."
+          error:
+            "The electricity transaction failed and your wallet was refunded.",
         });
       }
 
@@ -377,28 +401,33 @@ Deno.serve(async (req) => {
         reference,
         Number(tx.amount),
         str(tx.metadata?.phone),
-        { provider_check: data, stage: "provider_pending" }
+        { provider_check: data, stage: "provider_pending" },
       );
 
       return reply({
         success: false,
         status: "pending",
         reference,
-        error: "The provider has not confirmed this order yet. Funds remain reserved; do not retry it."
+        error:
+          "The provider has not confirmed this order yet. Funds remain reserved; do not retry it.",
       }, 202);
     } catch {
       return reply({
         success: false,
         status: "pending",
         reference,
-        error: "Could not check the provider yet. Funds remain reserved; do not retry it."
+        error:
+          "Could not check the provider yet. Funds remain reserved; do not retry it.",
       }, 202);
     }
   }
 
-  // PURCHASE ELECTRICITY
+  // STEP 3: Process a purchase after the customer reviews and enters PIN.
   if (action !== "purchase") {
-    return reply({ success: false, error: "Unsupported action." }, 400);
+    return reply({
+      success: false,
+      error: "Unsupported action.",
+    }, 400);
   }
 
   const amount = Number(body.amount);
@@ -415,21 +444,26 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: "not_started",
-      error: "Complete all electricity details. Total payment must be between ₦1,000 and ₦1,000,000."
+      error:
+        "Complete all electricity details. Total payment must be between ₦1,000 and ₦1,000,000.",
     }, 400);
   }
 
   const pin = str(body.pin);
 
-  if (!/^\d{4}$/.test(pin)) {
+  // Supports Sparkle's existing 4–6 digit PIN format.
+  if (!/^\d{4,6}$/.test(pin)) {
     return reply({
       success: false,
       status: "not_started",
-      error: "Enter your 4-digit transaction PIN."
+      error: "Enter your 4–6 digit transaction PIN.",
     }, 400);
   }
 
-  const { data: pinRecord, error: pinReadError } = await admin
+  const {
+    data: pinRecord,
+    error: pinReadError,
+  } = await admin
     .from("sparkle_transaction_pins")
     .select("pin_hash,failed_attempts,locked_until")
     .eq("user_id", user.id)
@@ -439,7 +473,7 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: "not_started",
-      error: "Could not verify transaction PIN."
+      error: "Could not verify transaction PIN.",
     }, 500);
   }
 
@@ -447,7 +481,7 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: "not_started",
-      error: "Set your transaction PIN first."
+      error: "Set your transaction PIN first.",
     }, 403);
   }
 
@@ -458,7 +492,7 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: "not_started",
-      error: "Too many PIN attempts. Try again later."
+      error: "Too many PIN attempts. Try again later.",
     }, 429);
   }
 
@@ -471,16 +505,17 @@ Deno.serve(async (req) => {
       .from("sparkle_transaction_pins")
       .update({
         failed_attempts: attempts >= 5 ? 0 : attempts,
-        locked_until: attempts >= 5
-          ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
-          : null
+        locked_until:
+          attempts >= 5
+            ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
+            : null,
       })
       .eq("user_id", user.id);
 
     return reply({
       success: false,
       status: "not_started",
-      error: "Incorrect transaction PIN."
+      error: "Incorrect transaction PIN.",
     }, 401);
   }
 
@@ -489,38 +524,41 @@ Deno.serve(async (req) => {
     .update({
       failed_attempts: 0,
       locked_until: null,
-      updated_at: new Date().toISOString()
+      updated_at: new Date().toISOString(),
     })
     .eq("user_id", user.id);
 
+  // Customer pays the total amount; 90% is electricity value.
   const electricityValue = Math.floor(amount * 0.9);
   const sparkleProfit = amount - electricityValue;
   const reference = "SPK-EL-" + crypto.randomUUID();
 
-  // Re-verify meter before reserving wallet funds.
+  // Verify the meter again before reserving wallet funds.
   let verification: any;
 
   try {
-    verification = await callGsubz(
-      "/api/verify-customer/",
-      { serviceID, billersCode: meter, type }
-    );
+    verification = await callGsubz("/api/verify-customer/", {
+      serviceID,
+      billersCode: meter,
+      type,
+    });
   } catch {
     return reply({
       success: false,
       status: "not_started",
-      error: "Could not verify the meter. No purchase was sent."
+      error: "Could not verify the meter. No purchase was sent.",
     }, 502);
   }
 
   const vd = verification.data;
-  const content = vd?.content ?? vd?.data?.content ?? vd?.data ?? vd;
+  const verifyContent =
+    vd?.content ?? vd?.data?.content ?? vd?.data ?? vd;
 
   const customerName = str(
-    content?.customerName ??
-    content?.customer_name ??
-    content?.Customer_Name ??
-    content?.name
+    verifyContent?.customerName ??
+      verifyContent?.customer_name ??
+      verifyContent?.Customer_Name ??
+      verifyContent?.name,
   );
 
   if (
@@ -531,8 +569,9 @@ Deno.serve(async (req) => {
     return reply({
       success: false,
       status: "not_started",
-      error: str(vd?.api_response || vd?.description || vd?.message || vd?.error) ||
-        "Meter verification failed. No money has been deducted."
+      error:
+        str(vd?.api_response || vd?.description || vd?.message) ||
+        "Meter verification failed. No money has been deducted.",
     }, 422);
   }
 
@@ -543,24 +582,25 @@ Deno.serve(async (req) => {
     electricity_value: electricityValue,
     sparkle_profit: sparkleProfit,
     customer_name: customerName,
-    address: str(content?.address ?? content?.Address),
+    address: verifyContent?.address || "",
     phone,
-    currency: "NGN"
+    currency: "NGN",
   };
 
+  // Reserve wallet funds before sending the provider order.
   const reserve = await walletAction(
     "reserve",
     reference,
     amount,
     phone,
-    metadata
+    metadata,
   );
 
   if (reserve.error) {
     return reply({
       success: false,
       status: "not_started",
-      error: "Wallet reservation failed; no electricity order was sent."
+      error: "Wallet reservation failed; no electricity order was sent.",
     }, 500);
   }
 
@@ -569,14 +609,15 @@ Deno.serve(async (req) => {
       return reply({
         success: false,
         status: "not_started",
-        error: "Insufficient funds. Please fund your wallet to continue."
+        error:
+          "Insufficient funds. Please fund your wallet to continue.",
       }, 402);
     }
 
     return reply({
       success: false,
       status: "not_started",
-      error: str(reserve.data?.error) || "Wallet reservation failed."
+      error: str(reserve.data?.error) || "Wallet reservation failed.",
     }, 400);
   }
 
@@ -585,38 +626,37 @@ Deno.serve(async (req) => {
       success: false,
       status: reserve.data.status,
       reference,
-      error: "This reference already exists. Check your transaction history before retrying."
+      error:
+        "This reference already exists. Check your transaction history before retrying.",
     }, 409);
   }
 
   let providerResult: { response: Response; data: any };
 
   try {
-    providerResult = await callGsubz(
-      "/api/pay/",
-      {
-        serviceID,
-        phone,
-        customerID: meter,
-        amount: String(electricityValue),
-        variation_code: type,
-        requestID: reference
-      }
-    );
+    providerResult = await callGsubz("/api/pay/", {
+      serviceID,
+      phone,
+      customerID: meter,
+      amount: String(electricityValue),
+      variation_code: type,
+      requestID: reference,
+    });
   } catch {
     await walletAction(
       "pending",
       reference,
       amount,
       phone,
-      { ...metadata, provider_timeout: true, stage: "provider_pending" }
+      { ...metadata, provider_timeout: true, stage: "provider_pending" },
     );
 
     return reply({
       success: false,
       status: "pending",
       reference,
-      error: "Provider response is uncertain. Funds remain reserved while the order is checked. Do not retry this purchase yet."
+      error:
+        "Provider response is uncertain. Funds remain reserved while the order is checked. Do not retry this purchase yet.",
     }, 202);
   }
 
@@ -629,7 +669,7 @@ Deno.serve(async (req) => {
       reference,
       amount,
       phone,
-      { ...metadata, provider_response: pd, stage: "completed" }
+      { ...metadata, provider_response: pd, stage: "completed" },
     );
 
     if (fin.error || !fin.data?.success) {
@@ -637,7 +677,8 @@ Deno.serve(async (req) => {
         success: false,
         status: "pending",
         reference,
-        error: "Provider reported success but Sparkle needs to reconcile the transaction. Do not retry."
+        error:
+          "Provider reported success but Sparkle needs to reconcile the transaction. Do not retry.",
       }, 202);
     }
 
@@ -653,7 +694,7 @@ Deno.serve(async (req) => {
       electricityValue,
       sparkleProfit,
       customerName,
-      providerResponse: pd
+      providerResponse: pd,
     });
   }
 
@@ -663,7 +704,7 @@ Deno.serve(async (req) => {
       reference,
       amount,
       phone,
-      { ...metadata, provider_response: pd, stage: "refunded" }
+      { ...metadata, provider_response: pd, stage: "refunded" },
     );
 
     if (refund.error || !refund.data?.success) {
@@ -671,7 +712,8 @@ Deno.serve(async (req) => {
         success: false,
         status: "pending",
         reference,
-        error: "Provider rejected the order, but the automatic refund needs reconciliation. Do not retry yet."
+        error:
+          "Provider rejected the order, but the automatic refund needs reconciliation. Do not retry yet.",
       }, 202);
     }
 
@@ -680,7 +722,7 @@ Deno.serve(async (req) => {
       status: "refunded",
       reference,
       error: "Electricity purchase failed. Your wallet has been refunded.",
-      providerResponse: pd
+      providerResponse: pd,
     });
   }
 
@@ -689,14 +731,15 @@ Deno.serve(async (req) => {
     reference,
     amount,
     phone,
-    { ...metadata, provider_response: pd, stage: "provider_pending" }
+    { ...metadata, provider_response: pd, stage: "provider_pending" },
   );
 
   return reply({
     success: false,
     status: "pending",
     reference,
-    error: "The provider has not confirmed the electricity order. Funds remain reserved; do not retry it.",
-    providerResponse: pd
+    error:
+      "The provider has not confirmed the electricity order. Funds remain reserved; do not retry it.",
+    providerResponse: pd,
   }, 202);
 });
