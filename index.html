@@ -908,6 +908,42 @@ body.dark-mode .earn-stat{background:#0b1727}
 .earn-stat strong{font-size:26px}
 .referral-box{display:flex;gap:10px;margin-top:18px}
 .referral-box input{flex:1;padding:13px;border:1px solid var(--line);border-radius:10px;background:transparent;color:inherit}
+/* Premium Earn & Referrals presentation */
+.earn-premium-card{padding:0!important;overflow:hidden;text-align:left!important;border-radius:24px!important;background:var(--white)!important}
+.earn-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:30px 32px;background:linear-gradient(118deg,#071b4d 0%,#0b5cff 72%,#3986ff 100%);color:#fff;overflow:hidden}
+.earn-hero:after{content:"";position:absolute;width:210px;height:210px;border:1px solid rgba(255,255,255,.18);border-radius:50%;right:42px;top:-110px;box-shadow:0 0 0 28px rgba(255,255,255,.04),0 0 0 56px rgba(255,255,255,.035)}
+.earn-hero-copy{position:relative;z-index:1;max-width:570px}.earn-eyebrow{display:block;font-size:10px;letter-spacing:1.7px;font-weight:900;color:#6b93ff;margin-bottom:8px}.earn-hero .earn-eyebrow{color:#c8d9ff}.earn-hero h2{font-size:clamp(23px,3vw,32px);line-height:1.15;margin:0 0 9px;letter-spacing:-.7px}.earn-hero p{margin:0;color:#e0eaff;line-height:1.6;font-size:14px;max-width:480px}.earn-hero-mark{position:relative;z-index:1;width:66px;height:66px;display:grid;place-items:center;flex:0 0 66px;border:1px solid rgba(255,255,255,.35);border-radius:22px;background:rgba(255,255,255,.12);font-size:34px;color:#fff;transform:rotate(8deg)}
+.earn-premium-card .earn-grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:22px 24px 8px;margin:0}.earn-premium-card .earn-stat{position:relative;min-width:0;padding:17px 15px;border-radius:16px;background:#f7f9ff;border:1px solid #e7edfb}.earn-premium-card .earn-stat small{font-size:9px;letter-spacing:.65px;line-height:1.4;margin:9px 0 7px;color:#66748c}.earn-premium-card .earn-stat strong{display:block;font-size:clamp(19px,2.2vw,25px);letter-spacing:-.5px;overflow-wrap:anywhere;color:#101d3b}.earn-stat-icon{display:grid;place-items:center;width:30px;height:30px;border-radius:10px;background:#e8efff;color:#0b5cff;font-size:16px;font-weight:900}.earn-stat-foot{display:block;font-size:10px;color:#7a879b;margin-top:8px;line-height:1.4}.earn-premium-card .earn-stat-highlight{background:linear-gradient(145deg,#eef4ff,#f7faff);border-color:#cbdcff}
+.earn-referral-panel,.earn-history-panel{margin:18px 24px 0;border:1px solid var(--line);border-radius:18px;padding:21px;background:var(--white)}.earn-panel-heading,.earn-history-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.earn-panel-heading h3,.earn-history-heading h3{font-size:18px;letter-spacing:-.3px;margin:0 0 6px;color:var(--ink)}.earn-panel-heading p{font-size:12px;color:var(--muted);margin:0;line-height:1.5}.earn-user-chip{flex:0 0 auto;padding:8px 12px;border-radius:999px;background:#edf3ff;color:#0b5cff;font-size:12px;font-weight:900;max-width:45%;overflow-wrap:anywhere}.earn-premium-card .referral-box{display:flex;gap:9px;margin-top:18px;align-items:stretch}.earn-premium-card .referral-box input{min-width:0;width:100%;padding:13px 14px;border:1px solid #dbe4f4;border-radius:12px;background:#f8faff;color:#17233e;font-size:12px;font-weight:650}.earn-premium-card .referral-box .btn{white-space:nowrap;border-radius:12px;padding:0 16px;min-height:44px;font-size:12px;font-weight:800}.earn-secure-note{display:flex;align-items:center;gap:8px;margin:14px 0 0;color:var(--muted);font-size:11px}.earn-secure-note span{display:grid;place-items:center;width:18px;height:18px;border-radius:50%;background:#dcfce7;color:#15803d;font-weight:900}.earn-history-pill{border-radius:999px;background:#f1f5fb;padding:7px 10px;font-size:10px;font-weight:800;color:#64748b;white-space:nowrap}.earn-history-list{margin-top:10px;color:var(--muted);font-size:13px}.earn-history-list>p{margin:0;padding:14px 0;line-height:1.6}.earn-withdraw-note{margin:15px 24px 0;padding:0 0 22px;color:var(--muted);font-size:12px;line-height:1.5}
+.earn-withdraw-actions{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-top:18px;padding:16px;border:1px solid #dce7ff;border-radius:15px;background:linear-gradient(120deg,#f4f7ff,#fff)}.earn-withdraw-actions strong,.earn-withdraw-actions small{display:block}.earn-withdraw-actions strong{font-size:13px;color:#13244a;margin-bottom:5px}.earn-withdraw-actions small{font-size:11px;color:#71809a;line-height:1.4}.earn-withdraw-actions .btn{min-height:44px;white-space:nowrap;border-radius:12px;font-weight:800}.referral-withdraw-modal .modal-box{text-align:left;max-width:420px}.referral-withdraw-modal .modal-box>p{font-size:13px;line-height:1.5}.referral-withdraw-field{display:block;margin:16px 0}.referral-withdraw-field label{display:block;font-size:12px;font-weight:800;margin-bottom:7px;color:var(--ink)}.referral-withdraw-field input{width:100%;box-sizing:border-box;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--white);color:var(--ink);font-size:16px}.referral-withdraw-message{min-height:20px;font-size:12px;line-height:1.45;color:#dc2626}.referral-withdraw-actions{display:flex;gap:10px}.referral-withdraw-actions button{flex:1;min-height:45px}body.dark-mode .earn-withdraw-actions{background:#101d32;border-color:#26364d}body.dark-mode .earn-withdraw-actions strong{color:#f2f6ff}
+body.dark-mode .earn-referral-panel,body.dark-mode .earn-history-panel{background:#0b1727;border-color:#26364d}body.dark-mode .earn-premium-card .earn-stat{background:#0b1727;border-color:#26364d}body.dark-mode .earn-premium-card .earn-stat strong,body.dark-mode .earn-panel-heading h3,body.dark-mode .earn-history-heading h3{color:#f2f6ff}body.dark-mode .earn-premium-card .referral-box input{background:#07111f;border-color:#2b3b52;color:#f2f6ff}
+@media(max-width:900px){.earn-premium-card .earn-grid{grid-template-columns:repeat(2,minmax(0,1fr));padding:16px 14px 4px;gap:10px}.earn-hero{padding:25px 20px}.earn-hero-mark{width:48px;height:48px;flex-basis:48px;border-radius:16px;font-size:25px}.earn-referral-panel,.earn-history-panel{margin:14px 14px 0;padding:16px}.earn-withdraw-note{margin:13px 14px 0;padding-bottom:18px}}
+@media(max-width:540px){.earn-hero-mark{display:none}.earn-hero{padding:24px 19px}.earn-premium-card .earn-stat{padding:14px 12px}.earn-premium-card .earn-stat strong{font-size:20px}.earn-panel-heading{display:block}.earn-user-chip{display:inline-block;margin-top:12px;max-width:100%}.earn-premium-card .referral-box{display:grid;grid-template-columns:1fr 1fr}.earn-premium-card .referral-box input{grid-column:1/-1}.earn-premium-card .referral-box .btn{min-height:42px;padding:0 10px}.earn-history-heading{align-items:center}.earn-withdraw-actions{align-items:stretch;flex-direction:column}.earn-withdraw-actions .btn{width:100%}.referral-withdraw-actions{flex-direction:column}}
+
+/* Earn page visual refinement: higher contrast, depth, and clearer actions */
+.earn-premium-card{box-shadow:0 18px 48px rgba(13,44,105,.11)!important;border:1px solid #e2eaff!important}
+.earn-hero{min-height:190px;background:radial-gradient(circle at 88% 12%,rgba(124,180,255,.45),transparent 26%),linear-gradient(118deg,#071735 0%,#123f9f 48%,#1768f8 100%)}
+.earn-hero:before{content:"";position:absolute;inset:auto -4% -70% 38%;height:230px;border-radius:50%;background:rgba(255,255,255,.055);transform:rotate(-12deg)}
+.earn-hero-mark{box-shadow:0 12px 30px rgba(0,0,0,.12);backdrop-filter:blur(8px)}
+.earn-premium-card .earn-grid{padding-top:24px;padding-bottom:8px}
+.earn-premium-card .earn-stat{box-shadow:0 5px 16px rgba(16,40,90,.035);transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+.earn-premium-card .earn-stat:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(16,40,90,.08);border-color:#c6d7ff}
+.earn-premium-card .earn-stat-highlight{background:linear-gradient(145deg,#e5efff,#f7faff);border-color:#b7ceff}
+.earn-referral-panel,.earn-history-panel{box-shadow:0 8px 24px rgba(16,40,90,.035)}
+.earn-user-chip{border:1px solid #d9e5ff;background:linear-gradient(135deg,#edf3ff,#f8faff);color:#174ec4}
+.earn-premium-card .referral-box input{font-size:13px;letter-spacing:.05px;box-shadow:inset 0 1px 2px rgba(10,30,70,.025)}
+.earn-premium-card .referral-box input:focus{outline:3px solid rgba(34,105,255,.15);border-color:#4e86ff}
+.earn-premium-card .referral-box .btn{transition:transform .16s ease,box-shadow .16s ease}
+.earn-premium-card .referral-box .btn:hover,.earn-withdraw-actions .btn:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(18,75,190,.16)}
+.earn-withdraw-actions{background:linear-gradient(115deg,#edf4ff,#fff 75%);border-color:#d4e2ff}
+.earn-history-pill{background:#eaf1ff;color:#2856b6}
+.earn-withdraw-note{padding-top:4px}
+body.dark-mode .earn-premium-card{border-color:#26364d!important;box-shadow:0 18px 48px rgba(0,0,0,.2)!important}
+body.dark-mode .earn-premium-card .earn-stat-highlight{background:linear-gradient(145deg,#10264a,#0b1727);border-color:#31518b}
+body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9c6ff}
+@media(max-width:540px){.earn-hero{min-height:0}.earn-premium-card .earn-grid{padding-top:14px}.earn-premium-card .referral-box input{font-size:12px}.earn-referral-panel,.earn-history-panel{border-radius:15px}}
+
+
 .service-page{background:#fff;border:1px solid var(--line);border-radius:22px;padding:24px}
 .service-tabs{display:flex;gap:8px;margin-bottom:22px;border-bottom:1px solid var(--line);padding-bottom:12px}
 .service-tab{border:0;background:#f1f5f9;border-radius:9px;padding:10px 15px;font-weight:800}
@@ -1773,25 +1809,33 @@ Privacy Policy
         <!-- EARN -->
         <section class="page" id="earnPage">
           <h1 class="dashboard-title">Earn with Sparkle</h1>
-          <p class="dashboard-subtitle">Invite people to Sparkle and track your referral rewards.</p>
-          <div class="earn-card">
+          <p class="dashboard-subtitle">Your referrals. Your rewards. All in one place.</p>
+          <div class="earn-card earn-premium-card">
+            <div class="earn-hero">
+              <div class="earn-hero-copy"><span class="earn-eyebrow">SPARKLE REFERRALS</span><h2>Grow together. Earn together.</h2><p>Invite friends to Sparkle and earn 5% from each eligible successful purchase they make.</p></div>
+              <div class="earn-hero-mark" aria-hidden="true">✦</div>
+            </div>
             <div class="earn-grid">
-              <div class="earn-stat"><small>TOTAL REFERRAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong></div>
-              <div class="earn-stat"><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong></div>
-              <div class="earn-stat"><small>AVAILABLE TO WITHDRAW</small><strong id="referralAvailable">₦0.00</strong></div>
-              <div class="earn-stat"><small>REWARD RATE</small><strong>5%</strong></div>
+              <div class="earn-stat"><span class="earn-stat-icon">₦</span><small>TOTAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong><span class="earn-stat-foot">Rewards earned so far</span></div>
+              <div class="earn-stat"><span class="earn-stat-icon">♧</span><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong><span class="earn-stat-foot">Joined using your username</span></div>
+              <div class="earn-stat earn-stat-highlight"><span class="earn-stat-icon">↗</span><small>AVAILABLE BALANCE</small><strong id="referralAvailable">₦0.00</strong><span class="earn-stat-foot">Minimum withdrawal ₦1,000</span></div>
+              <div class="earn-stat"><span class="earn-stat-icon">%</span><small>YOUR REWARD RATE</small><strong>5%</strong><span class="earn-stat-foot">On eligible purchases</span></div>
             </div>
-            <h3>Your Username Referral Link</h3>
-            <p style="color:var(--muted)">Your username is your unique referral ID. Earn 5% from each eligible successful purchase made by users you refer.</p>
-            <div class="referral-box">
-              <input id="referralLink" readonly value="Generating your referral link…">
-              <button class="btn primary" onclick="shareReferral()">Share</button>
+            <div class="earn-referral-panel">
+              <div class="earn-panel-heading"><div><span class="earn-eyebrow">YOUR PERSONAL LINK</span><h3>Invite friends to Sparkle</h3><p>Share this link. Your username is included automatically.</p></div><div class="earn-user-chip" id="referralUsernameLabel">Loading username…</div></div>
+              <div class="referral-box">
+                <input id="referralLink" readonly value="Generating your referral link…" aria-label="Your referral link">
+                <button class="btn" type="button" onclick="copyReferralLink()">Copy link</button>
+                <button class="btn primary" type="button" onclick="shareReferral()">Share ↗</button>
+              </div>
+              <p class="earn-secure-note"><span>✓</span> Referral rewards are tracked against eligible successful purchases.</p>
+              <div class="earn-withdraw-actions">
+                <div><strong>Move earnings to your wallet</strong><small>Secure with your transaction PIN · Minimum ₦1,000</small></div>
+                <button id="referralWithdrawButton" class="btn primary" type="button" onclick="openReferralWithdraw()">Withdraw earnings</button>
+              </div>
             </div>
-            <p id="referralWithdrawNotice" style="color:var(--muted);margin-top:16px">Minimum withdrawal to Sparkle wallet: ₦1,000.</p>
-            <div style="margin-top:18px">
-              <h3>Referral Reward History</h3>
-              <div id="referralRewardHistory" style="color:var(--muted)">Loading referral history…</div>
-            </div>
+            <div class="earn-history-panel"><div class="earn-history-heading"><div><span class="earn-eyebrow">ACTIVITY</span><h3>Referral reward history</h3></div><span class="earn-history-pill">Latest rewards</span></div><div id="referralRewardHistory" class="earn-history-list">Loading referral history…</div></div>
+            <p id="referralWithdrawNotice" class="earn-withdraw-note">Minimum withdrawal to Sparkle wallet: ₦1,000.</p>
           </div>
         </section>
 
@@ -2134,6 +2178,17 @@ Privacy Policy
   </div>
 </div>
 
+<div class="modal pin-modal referral-withdraw-modal" id="referralWithdrawModal" style="z-index:100004">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Withdraw referral earnings</h2><button class="close" type="button" onclick="closeReferralWithdraw()">×</button></div>
+    <p style="color:var(--muted)">Transfer your available referral earnings into your Sparkle wallet. Minimum withdrawal is ₦1,000.</p>
+    <div class="referral-withdraw-field"><label for="referralWithdrawAmount">Amount (₦)</label><input id="referralWithdrawAmount" type="number" inputmode="decimal" min="1000" step="0.01" placeholder="1000.00"></div>
+    <div class="referral-withdraw-field"><label for="referralWithdrawPin">Transaction PIN</label><input id="referralWithdrawPin" type="password" inputmode="numeric" maxlength="6" autocomplete="current-password" placeholder="Enter your transaction PIN"></div>
+    <p id="referralWithdrawMessage" class="referral-withdraw-message" role="status"></p>
+    <div class="referral-withdraw-actions"><button class="btn" type="button" onclick="closeReferralWithdraw()">Cancel</button><button id="confirmReferralWithdrawButton" class="btn primary" type="button" onclick="submitReferralWithdraw()">Confirm withdrawal</button></div>
+  </div>
+</div>
+
 <div class="modal pin-modal" id="setPinModal" style="z-index:100003">
   <div class="modal-box">
     <div class="modal-head"><h2>Set Transaction PIN</h2><button class="close" onclick="closeSetPinModal()">×</button></div>
@@ -2266,7 +2321,6 @@ Username
 type="text"
 id="username"
 placeholder="Choose a username"
-required
 minlength="3"
 maxlength="24"
 pattern="[A-Za-z0-9_]{3,24}"
@@ -2646,6 +2700,9 @@ signup ? "block" : "none";
 document.getElementById("usernameField")
 .style.display =
 signup ? "block" : "none";
+
+// Username is compulsory only during registration, never during login.
+document.getElementById("username").required = signup;
 
 
 document.getElementById("referralField")
@@ -3951,21 +4008,35 @@ async function loadReferralStats(){
   const user=userData.user;
   const money=n=>"₦"+Number(n||0).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
 
+  // Use the profile as the source of truth, with auth metadata as a safe
+  // fallback for older accounts whose username was not copied into profiles.
   const {data:profile,error:profileError}=await supabaseClient
     .from("profiles")
     .select("username,referral_code")
     .eq("id",user.id)
-    .single();
+    .maybeSingle();
 
-  const username=(profile?.username || "").trim().toLowerCase();
-  const code=username || (profile?.referral_code || "").trim().toLowerCase();
-  const link=code ? (window.location.origin + "/?ref=" + encodeURIComponent(code)) : "";
+  const metadata=user.user_metadata || {};
+  const metadataUsername = metadata.username || metadata.user_name || metadata.userName || metadata.handle || metadata.referral_code || user.app_metadata?.username || "";
+  const username=String(profile?.username || profile?.referral_code || metadataUsername || "").trim().replace(/^@+/,"").toLowerCase();
+  const code=username;
+  // The username is embedded in the ref query parameter used by Sparkle signup.
+  const link=code ? ("https://sparkle-sooty.vercel.app/?ref=" + encodeURIComponent(code)) : "";
+  // Repair older profile rows from the account's saved username when possible.
+  if(username && (!profile?.username || profile?.referral_code !== username)){
+    const {error:repairError}=await supabaseClient.from("profiles").update({username,referral_code:username}).eq("id",user.id);
+    if(repairError) console.warn("Could not sync referral username to profile:",repairError.message);
+  }
   const linkInput=document.getElementById("referralLink");
-  if(linkInput) linkInput.value=link || "Set your username to activate your referral link";
-
-  if(profileError || !username){
-    const history=document.getElementById("referralRewardHistory");
-    if(history) history.textContent="A unique username is required to use referrals.";
+  if(linkInput){
+    linkInput.value=link || "Username not found — update your profile";
+    linkInput.dataset.referralLink=link;
+  }
+  const usernameLabel=document.getElementById("referralUsernameLabel");
+  if(usernameLabel) usernameLabel.textContent=username ? "@"+username : "Username not found";
+  const history=document.getElementById("referralRewardHistory");
+  if((profileError || !username) && history){
+    history.textContent="Your username could not be loaded from your profile. Please check Edit Profile before sharing.";
   }
 
   let count=0, total=0, withdrawn=0;
@@ -4008,17 +4079,64 @@ async function loadReferralStats(){
   if(totalEl) totalEl.textContent=money(total);
   if(availableEl) availableEl.textContent=money(available);
   const notice=document.getElementById("referralWithdrawNotice");
-  if(notice) notice.textContent=available>=1000 ? "You have at least ₦1,000 available. Secure withdrawal setup is the next step." : "Minimum withdrawal to Sparkle wallet is ₦1,000. You need ₦"+Math.max(0,1000-available).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" more.";
+  if(notice) notice.textContent=available>=1000 ? "Your earnings are ready. Withdraw securely to your Sparkle wallet whenever you like." : "Minimum withdrawal to Sparkle wallet is ₦1,000. You need ₦"+Math.max(0,1000-available).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" more.";
+  const withdrawButton=document.getElementById("referralWithdrawButton");
+  if(withdrawButton) withdrawButton.disabled=available<1000;
+}
+
+function openReferralWithdraw(){
+  const modal=document.getElementById("referralWithdrawModal");
+  const amount=document.getElementById("referralWithdrawAmount");
+  const availableText=document.getElementById("referralAvailable")?.textContent||"₦0";
+  const available=Number(availableText.replace(/[^0-9.]/g,""))||0;
+  if(available<1000){alert("You need at least ₦1,000 in available referral earnings to withdraw.");return;}
+  amount.value=available.toFixed(2);
+  document.getElementById("referralWithdrawPin").value="";
+  document.getElementById("referralWithdrawMessage").textContent="";
+  document.getElementById("referralWithdrawModal").classList.add("show");
+}
+function closeReferralWithdraw(){document.getElementById("referralWithdrawModal").classList.remove("show");}
+async function submitReferralWithdraw(){
+  const amountInput=document.getElementById("referralWithdrawAmount");
+  const pinInput=document.getElementById("referralWithdrawPin");
+  const msg=document.getElementById("referralWithdrawMessage");
+  const button=document.getElementById("confirmReferralWithdrawButton");
+  const amount=Number(amountInput.value);
+  const pin=pinInput.value.trim();
+  if(!Number.isFinite(amount)||amount<1000||Math.round(amount*100)!==amount*100){msg.textContent="Enter an amount of at least ₦1,000, with up to two decimal places.";return;}
+  if(!/^\d{4,6}$/.test(pin)){msg.textContent="Enter your 4–6 digit transaction PIN.";return;}
+  button.disabled=true;button.textContent="Processing securely…";msg.textContent="";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-referral-withdraw",{body:{amount,pin}});
+    if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Could not complete the withdrawal. Please try again."));
+    if(!data?.success) throw new Error(String(data?.message||"Withdrawal could not be completed."));
+    msg.style.color="#16a34a";msg.textContent="₦"+Number(data.amount||amount).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" added to your Sparkle wallet.";
+    pinInput.value="";
+    await loadReferralStats();
+    setTimeout(closeReferralWithdraw,1200);
+  }catch(e){msg.style.color="#dc2626";msg.textContent=e.message||"Withdrawal failed. Refresh and try again.";}
+  finally{button.disabled=false;button.textContent="Confirm withdrawal";}
+}
+
+async function copyReferralLink(){
+  const input=document.getElementById("referralLink");
+  const link=input?.dataset.referralLink || input?.value || "";
+  if(!link.startsWith("http")){alert("Your referral link is not ready. Check that your username is saved in Profile.");return;}
+  try{
+    if(navigator.clipboard?.writeText) await navigator.clipboard.writeText(link);
+    else { input.focus(); input.select(); if(!document.execCommand("copy")) throw new Error("Copy unavailable"); }
+    alert("Referral link copied. Share it with your friends.");
+  }catch(e){input.focus();input.select();alert("Your link is ready. Press and hold the selected link to copy it.");}
 }
 
 async function shareReferral(){
-  const link=document.getElementById("referralLink").value;
-  if(!link || !link.startsWith("http")) { alert("Set your username before sharing a referral link."); return; }
+  const input=document.getElementById("referralLink");
+  const link=input?.dataset.referralLink || input?.value || "";
+  if(!link.startsWith("http")) { alert("Your referral link is not ready. Check that your username is saved in Profile."); return; }
   if(navigator.share){
     try{ await navigator.share({title:"Join Sparkle",text:"Join me on Sparkle for fast bill payments.",url:link}); }catch(e){}
   }else{
-    await navigator.clipboard?.writeText(link);
-    alert("Your referral link has been copied.");
+    await copyReferralLink();
   }
 }
 
