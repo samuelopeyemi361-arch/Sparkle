@@ -23,46 +23,6 @@ const successStatus = (s: string) =>
 const failureStatus = (s: string) =>
   ["failed", "failure", "error", "rejected", "cancelled"].includes(s);
 
-async function checkStoredPin(
-  pin: string,
-  stored: string,
-): Promise<boolean> {
-  const [saltHex, expected] = stored.split(":");
-
-  if (!saltHex || !expected || !/^[0-9a-f]+$/i.test(saltHex)) {
-    return false;
-  }
-
-  const salt = new Uint8Array(
-    (saltHex.match(/.{2}/g) || []).map((v) => parseInt(v, 16)),
-  );
-
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode(pin),
-    "PBKDF2",
-    false,
-    ["deriveBits"],
-  );
-
-  const bits = await crypto.subtle.deriveBits(
-    {
-      name: "PBKDF2",
-      salt,
-      iterations: 310000,
-      hash: "SHA-256",
-    },
-    key,
-    256,
-  );
-
-  const actual = Array.from(new Uint8Array(bits))
-    .map((v) => v.toString(16).padStart(2, "0"))
-    .join("");
-
-  return actual === expected;
-}
-
 const providers = new Set([
   "aba-electric",
   "abuja-electric",
@@ -449,9 +409,9 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
+  // Use the same transaction PIN as the other Sparkle services.
   const pin = str(body.pin);
 
-  // Supports Sparkle's existing 4–6 digit PIN format.
   if (!/^\d{4,6}$/.test(pin)) {
     return reply({
       success: false,
@@ -460,73 +420,55 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
-  const {
-    data: pinRecord,
-    error: pinReadError,
-  } = await admin
-    .from("sparkle_transaction_pins")
-    .select("pin_hash,failed_attempts,locked_until")
-    .eq("user_id", user.id)
-    .maybeSingle();
+  let pinResponse: Response;
 
-  if (pinReadError) {
+  try {
+    pinResponse = await fetch(
+      `${url}/functions/v1/sparkle-transaction-pin`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: auth,
+          apikey: anonKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "verify",
+          pin,
+        }),
+        signal: AbortSignal.timeout(15000),
+      },
+    );
+  } catch {
     return reply({
       success: false,
       status: "not_started",
-      error: "Could not verify transaction PIN.",
-    }, 500);
+      error: "PIN verification is unavailable. No purchase was sent.",
+    }, 502);
   }
 
-  if (!pinRecord) {
+  const pinResult: any = await pinResponse.json().catch(() => null);
+
+  if (!pinResult) {
     return reply({
       success: false,
       status: "not_started",
-      error: "Set your transaction PIN first.",
-    }, 403);
+      error: "PIN verification failed. No purchase was sent.",
+    }, 502);
   }
 
-  if (
-    pinRecord.locked_until &&
-    new Date(pinRecord.locked_until).getTime() > Date.now()
-  ) {
+  if (!pinResponse.ok || pinResult.success !== true) {
     return reply({
       success: false,
       status: "not_started",
-      error: "Too many PIN attempts. Try again later.",
-    }, 429);
+      error:
+        pinResult.error ||
+        pinResult.message ||
+        "Transaction PIN verification failed. No purchase was sent.",
+    }, pinResponse.status >= 400 && pinResponse.status < 500
+      ? pinResponse.status
+      : 502);
   }
-
-  const validPin = await checkStoredPin(pin, pinRecord.pin_hash);
-
-  if (!validPin) {
-    const attempts = Number(pinRecord.failed_attempts || 0) + 1;
-
-    await admin
-      .from("sparkle_transaction_pins")
-      .update({
-        failed_attempts: attempts >= 5 ? 0 : attempts,
-        locked_until:
-          attempts >= 5
-            ? new Date(Date.now() + 15 * 60 * 1000).toISOString()
-            : null,
-      })
-      .eq("user_id", user.id);
-
-    return reply({
-      success: false,
-      status: "not_started",
-      error: "Incorrect transaction PIN.",
-    }, 401);
-  }
-
-  await admin
-    .from("sparkle_transaction_pins")
-    .update({
-      failed_attempts: 0,
-      locked_until: null,
-      updated_at: new Date().toISOString(),
-    })
-    .eq("user_id", user.id);
 
   // Customer pays the total amount; 90% is electricity value.
   const electricityValue = Math.floor(amount * 0.9);
