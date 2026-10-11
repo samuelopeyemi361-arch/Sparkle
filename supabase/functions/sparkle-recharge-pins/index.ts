@@ -1,8 +1,10 @@
+
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
+  "Access-Control-Allow-Headers":
+    "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
@@ -13,8 +15,13 @@ Deno.serve(async (req) => {
       headers: { ...cors, "Content-Type": "application/json" },
     });
 
-  if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
-  if (req.method !== "POST") return reply({ error: "POST required" }, 405);
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: cors });
+  }
+
+  if (req.method !== "POST") {
+    return reply({ error: "POST required" }, 405);
+  }
 
   const url = Deno.env.get("SUPABASE_URL");
   const anon = Deno.env.get("SUPABASE_ANON_KEY");
@@ -66,7 +73,10 @@ Deno.serve(async (req) => {
   // Verify the transaction PIN using the existing function.
   // Do not modify sparkle-transaction-pin.
   if (typeof body.pin !== "string" || !/^\d{4}$/.test(body.pin)) {
-    return reply({ error: "Enter your 4-digit transaction PIN" }, 400);
+    return reply(
+      { error: "Enter your 4-digit transaction PIN." },
+      400,
+    );
   }
 
   try {
@@ -89,18 +99,30 @@ Deno.serve(async (req) => {
     const pinResult = await pinResponse.json().catch(() => null);
 
     if (!pinResponse.ok || pinResult?.success !== true) {
+      const pinError =
+        typeof pinResult?.error === "string"
+          ? pinResult.error
+          : typeof pinResult?.message === "string"
+            ? pinResult.message
+            : "";
+
       return reply(
         {
           error:
-            pinResult?.message ||
-            "Transaction PIN verification failed",
+            pinError ||
+            "Could not verify your transaction PIN. Please try again.",
         },
-        401,
+        pinResponse.status >= 400 && pinResponse.status < 500
+          ? pinResponse.status
+          : 503,
       );
     }
   } catch {
     return reply(
-      { error: "Could not verify transaction PIN. Please try again" },
+      {
+        error:
+          "The transaction PIN service is temporarily unavailable. Please try again.",
+      },
       503,
     );
   }
@@ -155,7 +177,7 @@ Deno.serve(async (req) => {
           ? "Glo"
           : "9mobile";
 
-  // Read the selling price from the database.
+  // Read selling prices from the database.
   const {
     data: pricing,
     error: priceError,
@@ -190,7 +212,7 @@ Deno.serve(async (req) => {
     ).toFixed(2),
   );
 
-  // Reserve the wallet balance before requesting PINs.
+  // Reserve wallet balance before requesting PINs.
   const {
     data: reservation,
     error: reserveError,
@@ -203,7 +225,6 @@ Deno.serve(async (req) => {
     p_amount: amount,
   });
 
-  // Return a clear insufficient-funds message.
   if (reserveError) {
     const message = String(reserveError.message || "");
 
@@ -274,9 +295,9 @@ Deno.serve(async (req) => {
       },
     );
 
-    const provider = await response
+    const provider = (await response
       .json()
-      .catch(() => null) as Record<string, unknown> | null;
+      .catch(() => null)) as Record<string, unknown> | null;
 
     if (!provider) {
       await finish(
@@ -335,7 +356,8 @@ Deno.serve(async (req) => {
       if (!ok) {
         return reply(
           {
-            error: "PINs issued; order status needs reconciliation",
+            error:
+              "PINs issued; order status needs reconciliation",
             status: "unknown",
             request_id: requestId,
           },
@@ -351,7 +373,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Never automatically refund an ambiguous provider result.
+    // Do not automatically refund an ambiguous provider result.
     await finish(
       "unknown",
       provider,
@@ -367,7 +389,7 @@ Deno.serve(async (req) => {
       202,
     );
   } catch {
-    // Avoid a duplicate charge if the provider result is uncertain.
+    // Avoid duplicate charging if the provider result is uncertain.
     await finish(
       "unknown",
       null,
