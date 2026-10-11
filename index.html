@@ -1204,6 +1204,42 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 
 <style id="sparkle-profile-premium-preview">
 /* Scoped only to Profile: Earn & Referral and all other pages remain untouched. */
+
+/* Sparkle Legal Centre + Customer Care: scoped to these new pages */
+#legalPoliciesPage,#helpSupportPage{padding-bottom:28px;color:#222847}
+#legalPoliciesPage .lp-top,#helpSupportPage .lp-top{display:flex;align-items:center;gap:12px;margin:0 0 20px}
+#legalPoliciesPage .lp-back,#helpSupportPage .lp-back{width:39px;height:39px;flex:0 0 39px;border:1px solid #e8eaf4;border-radius:13px;background:#fff;color:#5547a6;font-size:23px;line-height:1}
+#legalPoliciesPage .lp-title,#helpSupportPage .lp-title{margin:0;font-size:21px;line-height:1.25;letter-spacing:-.45px;font-weight:780;color:#202747}
+#legalPoliciesPage .lp-sub,#helpSupportPage .lp-sub{margin:4px 0 0;color:#858ba3;font-size:12px;line-height:1.5}
+#legalPoliciesPage .lp-banner,#helpSupportPage .lp-banner{display:flex;align-items:center;gap:14px;padding:19px;border-radius:19px;background:radial-gradient(circle at 92% 8%,rgba(151,119,255,.25),transparent 34%),linear-gradient(120deg,#111b3b,#302d67 68%,#503a9e);color:#fff;margin-bottom:17px}
+#legalPoliciesPage .lp-banner-icon,#helpSupportPage .lp-banner-icon{width:46px;height:46px;flex:0 0 46px;display:grid;place-items:center;border-radius:15px;background:rgba(255,255,255,.13);font-size:23px}
+#legalPoliciesPage .lp-banner strong,#helpSupportPage .lp-banner strong{display:block;font-size:14px;font-weight:750;letter-spacing:-.1px}
+#legalPoliciesPage .lp-banner small,#helpSupportPage .lp-banner small{display:block;margin-top:4px;color:#dedcf7;font-size:11px;line-height:1.45}
+#legalPoliciesPage .lp-docs,#helpSupportPage .lp-docs{background:#fff;border:1px solid #e8eaf4;border-radius:20px;overflow:hidden;box-shadow:0 12px 36px rgba(28,35,77,.045)}
+#legalPoliciesPage .lp-doc,#helpSupportPage .lp-doc{width:100%;display:flex;align-items:center;gap:12px;padding:15px 16px;border:0;border-bottom:1px solid #f0f0f7;background:#fff;text-align:left;color:#222847}
+#legalPoliciesPage .lp-doc:last-child,#helpSupportPage .lp-doc:last-child{border-bottom:0}
+#legalPoliciesPage .lp-doc:hover,#helpSupportPage .lp-doc:hover{background:#fbfaff}
+#legalPoliciesPage .lp-doc-icon,#helpSupportPage .lp-doc-icon{width:39px;height:39px;flex:0 0 39px;display:grid;place-items:center;border-radius:13px;font-size:18px;background:#f0edff;color:#7155df}
+#legalPoliciesPage .lp-doc:nth-child(2) .lp-doc-icon{background:#eaf2ff;color:#3973dc}
+#legalPoliciesPage .lp-doc:nth-child(3) .lp-doc-icon{background:#fff5df;color:#bd8522}
+#legalPoliciesPage .lp-doc:nth-child(4) .lp-doc-icon{background:#e6f8f0;color:#21966b}
+#legalPoliciesPage .lp-doc:nth-child(5) .lp-doc-icon{background:#fcecf3;color:#bd4e7c}
+#legalPoliciesPage .lp-doc-copy,#helpSupportPage .lp-doc-copy{min-width:0;flex:1;display:flex;flex-direction:column;gap:4px}
+#legalPoliciesPage .lp-doc-copy strong,#helpSupportPage .lp-doc-copy strong{font-size:12.5px;font-weight:750;line-height:1.35}
+#legalPoliciesPage .lp-doc-copy small,#helpSupportPage .lp-doc-copy small{font-size:10.5px;color:#858ba3;line-height:1.45}
+#legalPoliciesPage .lp-chevron,#helpSupportPage .lp-chevron{font-size:21px;color:#9b91d9;font-weight:400}
+#legalPoliciesPage .lp-footnote{margin:13px 3px 0;color:#8a91a8;font-size:10.5px;line-height:1.55}
+#helpSupportPage .lp-doc-icon.care{background:#e6f8f0;color:#21966b}
+#helpSupportPage .lp-doc-icon.chat{background:#e6f8f0;color:#169b65}
+#helpSupportPage .lp-doc-icon.issue{background:#fff5df;color:#bd8522}
+#helpSupportPage .lp-doc-icon.wallet{background:#eaf2ff;color:#3973dc}
+#helpSupportPage .lp-doc-icon.faq{background:#f0edff;color:#7155df}
+body.dark-mode #legalPoliciesPage,body.dark-mode #helpSupportPage{color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-title,body.dark-mode #helpSupportPage .lp-title{color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-back,body.dark-mode #helpSupportPage .lp-back,body.dark-mode #legalPoliciesPage .lp-docs,body.dark-mode #helpSupportPage .lp-docs,body.dark-mode #legalPoliciesPage .lp-doc,body.dark-mode #helpSupportPage .lp-doc{background:#0e1b2d;border-color:#213149;color:#eef4ff}
+body.dark-mode #legalPoliciesPage .lp-doc-copy small,body.dark-mode #helpSupportPage .lp-doc-copy small,body.dark-mode #legalPoliciesPage .lp-sub,body.dark-mode #helpSupportPage .lp-sub{color:#9aabc4}
+@media(max-width:600px){#legalPoliciesPage .lp-title,#helpSupportPage .lp-title{font-size:19px}#legalPoliciesPage .lp-banner,#helpSupportPage .lp-banner{padding:16px}#legalPoliciesPage .lp-doc,#helpSupportPage .lp-doc{padding:13px 12px;gap:10px}#legalPoliciesPage .lp-doc-icon,#helpSupportPage .lp-doc-icon{width:36px;height:36px;flex-basis:36px}}
+
 #profilePage{--profile-navy:#101b3c;--profile-violet:#7656e8;--profile-line:#e8eaf4;--profile-muted:#77809a;padding-bottom:28px}
 #profilePage .profile-page-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}
 #profilePage .profile-page-heading .dashboard-title{margin:4px 0 5px;letter-spacing:-.7px;font-weight:850}
@@ -1939,10 +1975,38 @@ Privacy Policy
             <button class="profile-setting-row" type="button" onclick="openPinModal()"><span class="profile-setting-icon violet" aria-hidden="true">⌑</span><span class="profile-setting-copy"><strong>Transaction PIN</strong><small>Secure your purchases with your private PIN.</small></span><span class="profile-setting-action">Manage <b>›</b></span></button>
             <button class="profile-setting-row" type="button" onclick="openPasswordModal()"><span class="profile-setting-icon blue" aria-hidden="true">♙</span><span class="profile-setting-copy"><strong>Password & security</strong><small>Keep your account protected with a strong password.</small></span><span class="profile-setting-action">Change <b>›</b></span></button>
             <button class="profile-setting-row" type="button" onclick="toggleNotifications()"><span class="profile-setting-icon amber" aria-hidden="true">♧</span><span class="profile-setting-copy"><strong>Notifications</strong><small>View important wallet and transaction update information.</small></span><span class="profile-setting-action">View <b>›</b></span></button>
-            <button class="profile-setting-row" type="button" onclick="const t=document.getElementById('sparkle-support-toggle');if(t)t.click();else alert('Support is not available on this screen yet.')"><span class="profile-setting-icon green" aria-hidden="true">♡</span><span class="profile-setting-copy"><strong>Help & support</strong><small>Get help from the Sparkle support team.</small></span><span class="profile-setting-action">Get help <b>›</b></span></button>
-            <div class="profile-legal-actions"><button type="button" onclick="openLegal('terms')">Terms & Conditions <span>↗</span></button><button type="button" onclick="openLegal('privacy')">Privacy Policy <span>↗</span></button></div>
+            <button class="profile-setting-row" type="button" onclick="showDashPage('legalPoliciesPage',null)"><span class="profile-setting-icon violet" aria-hidden="true">▤</span><span class="profile-setting-copy"><strong>Legal & Policies</strong><small>Terms, privacy, refunds, payments and rewards.</small></span><span class="profile-setting-action">Read <b>›</b></span></button>
+            <button class="profile-setting-row" type="button" onclick="showDashPage('helpSupportPage',null)"><span class="profile-setting-icon green" aria-hidden="true">♡</span><span class="profile-setting-copy"><strong>Help & support</strong><small>Customer care and help with Sparkle services.</small></span><span class="profile-setting-action">Get help <b>›</b></span></button>
             <button class="profile-logout-row" type="button" onclick="logout()"><span aria-hidden="true">↪</span><span><strong>Log out of Sparkle</strong><small>Sign out of this account on this device.</small></span><b>›</b></button>
           </section>
+        </section>
+
+        <!-- LEGAL & POLICIES: separate page opened from Profile -->
+        <section class="page" id="legalPoliciesPage">
+          <div class="lp-top"><button class="lp-back" type="button" onclick="showDashPage('profilePage',null)" aria-label="Back to Profile">‹</button><div><h1 class="lp-title">Legal & Policies</h1><p class="lp-sub">Clear information about using Sparkle.</p></div></div>
+          <div class="lp-banner"><span class="lp-banner-icon" aria-hidden="true">♧</span><div><strong>Your Sparkle documents</strong><small>Take a moment to understand our policies and how they apply to your account.</small></div></div>
+          <div class="lp-docs">
+            <button class="lp-doc" type="button" onclick="openLegal('terms')"><span class="lp-doc-icon">▤</span><span class="lp-doc-copy"><strong>Terms & Conditions</strong><small>Rules for accounts, services and acceptable use.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('privacy')"><span class="lp-doc-icon">♧</span><span class="lp-doc-copy"><strong>Privacy Policy</strong><small>How personal information is collected and used.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('refunds')"><span class="lp-doc-icon">↻</span><span class="lp-doc-copy"><strong>Refund & Dispute Policy</strong><small>What to do when a purchase fails or is pending.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('wallet')"><span class="lp-doc-icon">₦</span><span class="lp-doc-copy"><strong>Wallet & Payment Policy</strong><small>Funding, deductions, verification and records.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openLegal('referrals')"><span class="lp-doc-icon">♙</span><span class="lp-doc-copy"><strong>Referral & Rewards Policy</strong><small>Eligibility, first-purchase rewards and reversals.</small></span><span class="lp-chevron">›</span></button>
+          </div>
+          <p class="lp-footnote">Policies should be reviewed periodically and updated to reflect Sparkle's actual services and applicable law.</p>
+        </section>
+
+        <!-- HELP & SUPPORT: Customer Care and service assistance -->
+        <section class="page" id="helpSupportPage">
+          <div class="lp-top"><button class="lp-back" type="button" onclick="showDashPage('profilePage',null)" aria-label="Back to Profile">‹</button><div><h1 class="lp-title">Help & Support</h1><p class="lp-sub">We're here to help with your Sparkle account.</p></div></div>
+          <div class="lp-banner"><span class="lp-banner-icon" aria-hidden="true">☏</span><div><strong>How can we help?</strong><small>Choose a support option and tell us what happened. Never share your transaction PIN or password.</small></div></div>
+          <div class="lp-docs">
+            <button class="lp-doc" type="button" onclick="openSparkleSupport()"><span class="lp-doc-icon care">☏</span><span class="lp-doc-copy"><strong>Customer Care</strong><small>Contact the Sparkle support team.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('chat')"><span class="lp-doc-icon chat">◉</span><span class="lp-doc-copy"><strong>WhatsApp Support</strong><small>Chat with customer care directly.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('transaction')"><span class="lp-doc-icon issue">↻</span><span class="lp-doc-copy"><strong>Transaction Issues</strong><small>Help with failed, pending or incorrect purchases.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('wallet')"><span class="lp-doc-icon wallet">₦</span><span class="lp-doc-copy"><strong>Wallet & Funding Help</strong><small>Missing deposits, wallet debits and balances.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('faq')"><span class="lp-doc-icon faq">?</span><span class="lp-doc-copy"><strong>Frequently Asked Questions</strong><small>Get help with common Sparkle questions.</small></span><span class="lp-chevron">›</span></button>
+            <button class="lp-doc" type="button" onclick="openSparkleSupport('email')"><span class="lp-doc-icon" style="background:#eaf2ff;color:#3973dc">✉</span><span class="lp-doc-copy"><strong>Email Customer Care</strong><small>support@sparkle.com</small></span><span class="lp-chevron">›</span></button>
+          </div>
         </section>
 
         <!-- SERVICE PAGES -->
@@ -5637,161 +5701,19 @@ maximumFractionDigits:2
    ===================================================== */
 
 function openLegal(type){
-
-const title =
-document.getElementById("legalTitle");
-
-
-const content =
-document.getElementById("legalContent");
-
-
-if(type==="terms"){
-
-title.textContent =
-"Sparkle Terms & Conditions";
-
-
-content.innerHTML = `
-
-<h3>1. Acceptance of Terms</h3>
-
-<p>
-By creating or using a Sparkle account, you agree to these Terms & Conditions and to use the platform lawfully.
-</p>
-
-
-<h3>2. Sparkle Services</h3>
-
-<p>
-Sparkle provides access to supported digital services including airtime, data, cable subscriptions, electricity payments and examination pins.
-</p>
-
-
-<h3>3. User Account</h3>
-
-<p>
-You are responsible for keeping your login credentials secure and for all activity carried out through your account.
-</p>
-
-
-<h3>4. Wallet</h3>
-
-<p>
-Wallet balances are intended for purchasing supported Sparkle services. Funding, debits, refunds and adjustments may be subject to verification.
-</p>
-
-
-<h3>5. Transactions</h3>
-
-<p>
-Users must provide accurate information when purchasing services. Sparkle may be unable to reverse a transaction where incorrect customer information was supplied.
-</p>
-
-
-<h3>6. Prohibited Use</h3>
-
-<p>
-You must not use Sparkle for fraud, unlawful transactions, abuse of the platform or any activity that violates applicable laws.
-</p>
-
-
-<h3>7. Service Availability</h3>
-
-<p>
-We aim to provide reliable services, but third-party network, payment and service-provider outages may affect availability.
-</p>
-
-
-<h3>8. Changes</h3>
-
-<p>
-Sparkle may update these terms when necessary.
-</p>
-
-<p>
-<strong>Last updated: October 2026</strong>
-</p>
-
-`;
-
-}else{
-
-title.textContent =
-"Sparkle Privacy Policy";
-
-
-content.innerHTML = `
-
-<h3>1. Information We Collect</h3>
-
-<p>
-Sparkle may collect information such as your name, email address, phone number, account information and transaction records.
-</p>
-
-
-<h3>2. How We Use Information</h3>
-
-<p>
-We use information to create and manage accounts, process transactions, provide customer support, maintain security and improve Sparkle services.
-</p>
-
-
-<h3>3. Payment Information</h3>
-
-<p>
-Payment processing may be handled by third-party payment providers.
-</p>
-
-
-<h3>4. Transaction Information</h3>
-
-<p>
-We retain appropriate transaction information to provide receipts, resolve disputes, prevent fraud and maintain accurate account records.
-</p>
-
-
-<h3>5. Security</h3>
-
-<p>
-We use reasonable technical and organizational measures to protect account and transaction information.
-</p>
-
-
-<h3>6. Third-Party Providers</h3>
-
-<p>
-Sparkle may use trusted providers for payment processing, bill-payment services, hosting and authentication.
-</p>
-
-
-<h3>7. Your Rights</h3>
-
-<p>
-Subject to applicable law, you may request access to or correction of your personal information.
-</p>
-
-
-<h3>8. Policy Updates</h3>
-
-<p>
-This Privacy Policy may be updated when Sparkle's services or legal requirements change.
-</p>
-
-
-<p>
-<strong>Last updated: October 2026</strong>
-</p>
-
-`;
-
-}
-
-
-document
-.getElementById("legalModal")
-.classList.add("show");
-
+  const title=document.getElementById("legalTitle");
+  const content=document.getElementById("legalContent");
+  const docs={
+    terms:{title:"Sparkle Terms & Conditions",html:`<h3>1. Acceptance of Terms</h3><p>By creating or using a Sparkle account, you agree to these Terms & Conditions and to use the platform lawfully.</p><h3>2. Sparkle Services</h3><p>Sparkle provides access to supported digital services including airtime, data, cable subscriptions, electricity payments and digital pins, where available.</p><h3>3. User Account</h3><p>You are responsible for keeping your login credentials secure and for activity carried out through your account. Never share your password or transaction PIN.</p><h3>4. Wallet</h3><p>Wallet balances are intended for purchasing supported Sparkle services. Funding, debits, refunds and adjustments may be subject to verification.</p><h3>5. Transactions</h3><p>Provide accurate recipient and service information before confirming a purchase. Incorrect details can affect whether a transaction can be reversed.</p><h3>6. Prohibited Use</h3><p>You must not use Sparkle for fraud, unlawful transactions, abuse of the platform or activity that violates applicable law.</p><h3>7. Service Availability</h3><p>Third-party network, payment and service-provider outages may affect availability and delivery times.</p><h3>8. Changes</h3><p>These terms may be updated as Sparkle's services or legal requirements change.</p><p><strong>Last updated: October 2026</strong></p>`},
+    privacy:{title:"Sparkle Privacy Policy",html:`<h3>1. Information We Handle</h3><p>Sparkle may handle account details such as your name, email address, phone number, profile information and transaction records.</p><h3>2. How Information Is Used</h3><p>Information may be used to manage accounts, process transactions, provide customer support, maintain security, prevent fraud and improve services.</p><h3>3. Payments & Providers</h3><p>Payment and bill-payment services may be processed by third-party providers under their applicable terms and privacy practices.</p><h3>4. Transaction Records</h3><p>Relevant records may be retained to provide receipts, resolve disputes, prevent abuse and maintain accurate account history.</p><h3>5. Security</h3><p>Reasonable technical and organizational measures should be used to protect account and transaction information. No online service can promise absolute security.</p><h3>6. Sharing</h3><p>Information may be shared with service providers where needed to deliver requested services, or where required by law.</p><h3>7. Your Choices & Rights</h3><p>Subject to applicable law, you may request access to or correction of your personal information and ask questions about its handling through customer support.</p><h3>8. Updates</h3><p>This policy may be updated as Sparkle's services or legal requirements change.</p><p><strong>Last updated: October 2026</strong></p>`},
+    refunds:{title:"Sparkle Refund & Dispute Policy",html:`<h3>1. Check Transaction Status</h3><p>If a purchase appears pending or unconfirmed, check Sparkle transaction history before attempting the purchase again. Repeating a transaction may cause duplicate requests.</p><h3>2. Failed Transactions</h3><p>Where a transaction is confirmed as failed and a wallet debit was made, the transaction should be reviewed for the applicable reversal or refund.</p><h3>3. Pending Transactions</h3><p>Some transactions require confirmation from a network or service provider. Allow time for status reconciliation and contact customer care if the status does not update.</p><h3>4. Successful Delivery</h3><p>Completed digital services may not be reversible after delivery, especially where the recipient details supplied were incorrect.</p><h3>5. Report a Dispute</h3><p>Contact Sparkle support with the transaction reference, service, amount and approximate time. Never send your password or transaction PIN.</p><h3>6. Review</h3><p>Each report is subject to transaction records and confirmation from the relevant payment or service provider. Do not assume a refund is complete until it appears in your wallet or payment account.</p><p><strong>Last updated: October 2026</strong></p>`},
+    wallet:{title:"Sparkle Wallet & Payment Policy",html:`<h3>1. Wallet Use</h3><p>Your Sparkle wallet balance is used to pay for supported services in the app. It is not a bank account.</p><h3>2. Funding</h3><p>Wallet funding may depend on payment-provider processing and verification. Keep your payment receipt and check your Sparkle balance and transaction history.</p><h3>3. Debits</h3><p>Wallet debits should correspond to a transaction or clearly identified adjustment. If you notice an unfamiliar or unresolved debit, contact customer care with the reference.</p><h3>4. Transaction Verification</h3><p>Do not repeat a purchase merely because a confirmation screen failed to load. Check transaction history or contact support first.</p><h3>5. Withdrawals</h3><p>Wallet withdrawal or cash-out is only available if the feature is explicitly provided in Sparkle. Do not assume every wallet balance is withdrawable.</p><h3>6. Payment Security</h3><p>Never share your login password, one-time verification codes or transaction PIN with anyone, including people claiming to be support staff.</p><p><strong>Last updated: October 2026</strong></p>`},
+    referrals:{title:"Sparkle Referral & Rewards Policy",html:`<h3>1. Referral Eligibility</h3><p>Referral rewards apply only to eligible referred users and qualifying transactions recorded by Sparkle.</p><h3>2. First Eligible Purchase</h3><p>The referrer is eligible for a reward equal to 5% of the referred user's first eligible successful purchase amount, once per referred user, subject to the app's reward rules.</p><h3>3. Successful Transactions</h3><p>Failed, pending or refunded transactions do not qualify as successful purchases for reward purposes.</p><h3>4. Reversals</h3><p>If a transaction that generated a reward is later refunded or reversed, the related reward may also be reversed to keep records accurate.</p><h3>5. Abuse Prevention</h3><p>Fraudulent, self-referral, manipulated or otherwise abusive activity may be excluded from rewards and may lead to account review.</p><h3>6. Records</h3><p>Check the referral activity shown in your account for the status of any reward. Contact support if you believe a reward is missing.</p><p><strong>Last updated: October 2026</strong></p>`}
+  };
+  const doc=docs[type]||docs.terms;
+  title.textContent=doc.title;
+  content.innerHTML=doc.html;
+  document.getElementById("legalModal").classList.add("show");
 }
 
 
@@ -5803,6 +5725,28 @@ document
 
 }
 
+
+/* Help & Support page actions. Existing Sparkle support destinations are reused. */
+function openSparkleSupport(kind){
+  const chatUrl="https://wa.me/2348089206869?text=";
+  const messages={
+    transaction:"Hi Sparkle Support, I need help with a transaction. I will provide the transaction reference and status.",
+    wallet:"Hi Sparkle Support, I need help with my Sparkle wallet or funding.",
+    faq:"Hi Sparkle Support, I have a question about using Sparkle."
+  };
+  if(kind==='email'){
+    window.location.href='mailto:support@sparkle.com?subject='+encodeURIComponent('Sparkle Customer Care');
+    return;
+  }
+  if(kind==='chat'||kind==='transaction'||kind==='wallet'||kind==='faq'){
+    const url=kind==='chat'?"https://wa.me/2348089206869?text="+encodeURIComponent("Hi Sparkle Support, I need assistance."):chatUrl+encodeURIComponent(messages[kind]);
+    window.open(url,'_blank','noopener,noreferrer');
+    return;
+  }
+  const toggle=document.getElementById('sparkle-support-toggle');
+  if(toggle){toggle.click();return;}
+  window.location.href='mailto:support@sparkle.com?subject='+encodeURIComponent('Sparkle Customer Care');
+}
 
 /* =====================================================
    LOGOUT
