@@ -1104,6 +1104,37 @@ body.dark-mode .earn-stat{background:#0b1727}
 @media(prefers-reduced-motion:reduce){#sparkle-support-panel{animation:none}#sparkle-support-toggle,.sparkle-support-option{transition:none}}
 </style>
 
+<style id="sparkle-electricity-redesign">
+#electricityPage .electricity-hero{display:flex;align-items:center;gap:14px;padding:18px;margin:12px 0 22px;border-radius:18px;background:linear-gradient(120deg,#0b5cff,#1746b7);color:#fff;box-shadow:0 9px 24px rgba(11,92,255,.16)}
+#electricityPage .electricity-hero-mark{width:54px;height:54px;flex:0 0 54px;border-radius:16px;background:rgba(255,255,255,.16);display:grid;place-items:center;font-size:27px}
+#electricityPage .electricity-hero-kicker{font-size:10px;letter-spacing:1.2px;font-weight:850;opacity:.82;margin-bottom:4px}
+#electricityPage .electricity-hero h2{font-size:19px;line-height:1.25;margin:0;font-weight:900;color:#fff}
+#electricityPage .electricity-hero p{font-size:12px;margin:5px 0 0;color:#e7efff}
+#electricityPage .electricity-service-grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:14px 0 22px}
+#electricityPage .electricity-service-card{min-height:82px;padding:13px;border-radius:14px}
+#electricityPage .electricity-service-card h3{font-size:13px;line-height:1.3}
+#electricityPage .electricity-service-card p{font-size:11px;line-height:1.35}
+#electricityPage .electricity-service-card.active{background:#eff5ff;border-color:#0b5cff;box-shadow:0 0 0 2px rgba(11,92,255,.12)}
+#electricityPage .electricity-type-section{margin:18px 0}
+#electricityPage .electricity-type-picker{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+#electricityPage .electricity-type-card{position:relative;display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:6px;min-height:132px;padding:16px;border:1.5px solid #dfe5ef;border-radius:16px;background:#fff;color:#111827;cursor:pointer;box-shadow:0 3px 10px rgba(15,23,42,.035);transition:border-color .16s,background .16s,transform .16s}
+#electricityPage .electricity-type-card:active{transform:scale(.99)}
+#electricityPage .electricity-type-card.active{border-color:#0b5cff;background:#f0f5ff;box-shadow:0 0 0 2px rgba(11,92,255,.10)}
+#electricityPage .electricity-type-icon{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;background:#eaf1ff;color:#0b5cff;font-size:19px;font-weight:900}
+#electricityPage .electricity-type-name{font-size:16px;font-weight:900}
+#electricityPage .electricity-type-desc{font-size:11px;color:#667085;line-height:1.4}
+#electricityPage .electricity-type-check{position:absolute;right:12px;top:12px;width:21px;height:21px;display:grid;place-items:center;border-radius:50%;background:#0b5cff;color:white;font-size:12px;font-weight:900;opacity:0}
+#electricityPage .electricity-type-card.active .electricity-type-check{opacity:1}
+#electricityPage .data-beneficiary-card{border-radius:16px;padding:16px}
+#electricityPage .electricity-amount{font-size:19px!important}
+#electricityPage .electricity-note{line-height:1.55}
+@media(max-width:700px){#electricityPage .electricity-service-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}#electricityPage .electricity-service-card{padding:12px;min-height:78px}#electricityPage .electricity-hero{padding:15px;gap:12px}#electricityPage .electricity-hero-mark{width:46px;height:46px;flex-basis:46px}#electricityPage .electricity-hero h2{font-size:17px}#electricityPage .electricity-type-card{min-height:125px;padding:13px}#electricityPage .electricity-type-name{font-size:15px}}
+
+/* Electricity provider cards: explicit touch target and stacking safety. */
+#electricityPage #electricityServices{position:relative;z-index:5;pointer-events:auto}
+#electricityPage #electricityServices .electricity-service-card{position:relative;z-index:6;pointer-events:auto;touch-action:manipulation;-webkit-tap-highlight-color:rgba(11,92,255,.16)}
+#electricityPage #electricityServices .electricity-service-card *{pointer-events:none}
+</style>
 <style id="sparkle-purchase-summary-screen-styles">
 #sparkle-purchase-summary-screen{position:fixed;inset:0;z-index:100000;background:#f5f7fb;display:none;overflow-y:auto;padding:env(safe-area-inset-top,12px) 16px env(safe-area-inset-bottom,20px)}
 /* Keep the transaction PIN dialog above the dedicated purchase-summary screen. */
@@ -2006,8 +2037,12 @@ Privacy Policy
 <section class="page" id="electricityPage">
   <div class="service-page">
     <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Electricity</h1></div>
+    <div class="electricity-hero">
+      <div class="electricity-hero-mark">⚡</div>
+      <div><div class="electricity-hero-kicker">SPARKLE UTILITIES</div><h2>Electricity bill payment</h2><p>Buy power securely in a few simple steps.</p></div>
+    </div>
     <div class="network-picker-title">1. Select electricity provider</div>
-    <p class="network-picker-subtitle">Choose your distribution company, then select prepaid or postpaid.</p>
+    <p class="network-picker-subtitle">Choose your distribution company, then select your meter type.</p>
     <div class="electricity-service-grid" id="electricityServices">
       <button type="button" class="electricity-service-card" data-service="ibadan-electric" onclick="selectElectricityService('ibadan-electric','Ibadan (IBEDC)')"><h3>Ibadan (IBEDC)</h3><p>Ibadan Electricity Distribution</p></button>
       <button type="button" class="electricity-service-card" data-service="eko-electric" onclick="selectElectricityService('eko-electric','Eko (EKEDC)')"><h3>Eko (EKEDC)</h3><p>Lagos distribution area</p></button>
@@ -2022,14 +2057,22 @@ Privacy Policy
       <button type="button" class="electricity-service-card" data-service="portharcourt-electric" onclick="selectElectricityService('portharcourt-electric','Port Harcourt (PHED)')"><h3>Port Harcourt (PHED)</h3><p>Port Harcourt distribution area</p></button>
       <button type="button" class="electricity-service-card" data-service="yola-electric" onclick="selectElectricityService('yola-electric','Yola (YEDC)')"><h3>Yola (YEDC)</h3><p>Yola distribution area</p></button>
     </div>
+    <div class="electricity-type-section">
+      <div class="network-picker-title">2. Choose meter type</div>
+      <div class="electricity-type-picker" role="group" aria-label="Choose meter type">
+        <button type="button" class="electricity-type-card active" data-type="prepaid" onclick="selectElectricityType('prepaid')"><span class="electricity-type-icon">⚡</span><span class="electricity-type-name">Prepaid</span><span class="electricity-type-desc">Buy electricity units</span><span class="electricity-type-check">✓</span></button>
+        <button type="button" class="electricity-type-card" data-type="postpaid" onclick="selectElectricityType('postpaid')"><span class="electricity-type-icon">▤</span><span class="electricity-type-name">Postpaid</span><span class="electricity-type-desc">Pay your electricity bill</span><span class="electricity-type-check">✓</span></button>
+      </div>
+      <select class="form-select" id="electricityType" aria-label="Meter type" style="position:absolute;width:1px;height:1px;opacity:0;pointer-events:none"><option value="prepaid">Prepaid</option><option value="postpaid">Postpaid</option></select>
+    </div>
     <div class="data-beneficiary-card">
+      <div class="network-picker-title">3. Enter meter details</div>
       <div class="service-form-grid">
-        <div class="form-field"><label>BILL TYPE</label><select class="form-select" id="electricityType"><option value="prepaid">Prepaid</option><option value="postpaid">Postpaid</option></select></div>
         <div class="form-field"><label>METER NUMBER</label><input class="form-input" id="electricityMeter" inputmode="numeric" placeholder="Enter meter number"></div>
         <div class="form-field"><label>PHONE NUMBER</label><input class="form-input" id="electricityPhone" inputmode="numeric" maxlength="11" placeholder="08012345678"></div>
-        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input electricity-amount" id="electricityAmount" type="number" min="100" placeholder="Enter amount"></div>
+        <div class="form-field"><label>AMOUNT (₦)</label><input class="form-input electricity-amount" id="electricityAmount" type="number" min="1000" step="1" placeholder="Minimum ₦1,000"></div>
       </div>
-      <p class="electricity-note">Electricity does not use a fixed plan price like data or exam pins. The amount is the electricity purchase value you choose; prepaid/postpaid determines the bill type.</p>
+      <p class="electricity-note">Minimum amount: ₦1,000.</p>
     </div>
     <div id="electricitySelection" class="electricity-note">Select an electricity provider above.</div>
     <div class="data-bottom-action"><button class="btn primary full" onclick="showElectricitySummary()">Continue</button></div>
@@ -4476,27 +4519,74 @@ function showEducationSummary(){
   pendingPurchase={type:"single",items:[item],total:item.amount};
   if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(p._name)}</strong><span>${escapeHtml(phone)}</span><b>${money(p._price)}</b><small>Ready for confirmation.</small><button class="btn primary full" style="margin-top:12px" onclick="openPinForPurchase()">Confirm & Buy</button></div>`;
 }
+function selectElectricityType(type){
+  if(!["prepaid","postpaid"].includes(type))return;
+  const select=document.getElementById("electricityType");
+  if(select)select.value=type;
+  document.querySelectorAll("#electricityPage .electricity-type-card").forEach(b=>b.classList.toggle("active",b.dataset.type===type));
+  const selected=document.querySelector("#electricityServices .electricity-service-card.active h3")?.textContent;
+  const box=document.getElementById("electricitySelection");
+  if(box)box.textContent=`${selected||"Select an electricity provider"} • ${type.toUpperCase()}`;
+}
 function selectElectricityService(id,label){
   selectedElectricityService=id;
   document.querySelectorAll("#electricityServices .electricity-service-card").forEach(b=>b.classList.toggle("active",b.dataset.service===id));
   const box=document.getElementById("electricitySelection");
-  if(box)box.textContent=`${label} • ${document.getElementById("electricityType")?.value||"prepaid"}`;
+  if(box)box.textContent=`${label} • ${(document.getElementById("electricityType")?.value||"prepaid").toUpperCase()}`;
 }
-function showElectricitySummary(){
+
+// Explicit touch/click binding prevents provider cards from failing on mobile browsers.
+window.selectElectricityService = selectElectricityService;
+document.querySelectorAll("#electricityServices .electricity-service-card").forEach(card=>{
+  card.addEventListener("click",()=>{
+    const heading=card.querySelector("h3")?.textContent?.trim()||card.dataset.service;
+    selectElectricityService(card.dataset.service,heading);
+  },{passive:true});
+});
+async function showElectricitySummary(){
   const meter=(document.getElementById("electricityMeter")?.value||"").trim();
   const phone=(document.getElementById("electricityPhone")?.value||"").trim();
   const type=document.getElementById("electricityType")?.value||"prepaid";
   const amount=Number(document.getElementById("electricityAmount")?.value||0);
-  const box=document.getElementById("electricitySummary");
   if(!selectedElectricityService){alert("Select an electricity provider first.");return;}
   if(!meter){alert("Enter the meter number.");return;}
   if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
-  if(!Number.isFinite(amount)||amount<100){alert("Enter a valid electricity amount of at least ₦100.");return;}
-  const label=document.querySelector(`#electricityServices [data-service="${CSS.escape(selectedElectricityService)}"] h3`)?.textContent||selectedElectricityService;
-  const item={service:"Electricity",network:selectedElectricityService,phone,plan:type,planValue:type,serviceID:selectedElectricityService,customerID:meter,variationCode:type,amount};
-  currentService="electricity";
-  pendingPurchase={type:"single",items:[item],total:item.amount};
-  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(label)}</strong><span>${escapeHtml(type)} • Meter ${escapeHtml(meter)} • ${escapeHtml(phone)}</span><b>${money(amount)}</b><small>Ready for confirmation.</small><button class="btn primary full" style="margin-top:12px" onclick="openPinForPurchase()">Confirm & Pay</button></div>`;
+  if(!Number.isSafeInteger(amount)||amount<1000||amount>1000000){alert("Enter a total payment between ₦1,000 and ₦1,000,000.");return;}
+  const overlay=document.getElementById("processingOverlay");
+  const progress=document.getElementById("processingProgress");
+  if(overlay)overlay.classList.add("show");
+  if(progress)progress.textContent="Verifying electricity meter…";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-electricity-purchase",{body:{action:"verify",serviceID:selectedElectricityService,customerID:meter,phone,type}});
+    if(error||!data?.success||data.status!=="verified")throw new Error(data?.error||error?.message||"Meter verification failed. No money has been deducted.");
+    const electricityValue=Math.floor(amount*0.9);
+    const sparkleProfit=amount-electricityValue;
+    const label=document.querySelector(`#electricityServices [data-service="${CSS.escape(selectedElectricityService)}"] h3`)?.textContent||selectedElectricityService;
+    const item={service:"Electricity",network:selectedElectricityService,networkLabel:label,phone,plan:type,planValue:type,serviceID:selectedElectricityService,customerID:meter,variationCode:type,type,amount,electricityValue,sparkleProfit,customerName:data.customerName||"Verified customer",address:data.address||""};
+    currentService="electricity";
+    pendingPurchase={type:"single",items:[item],total:amount};
+    try{sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:"electricity",purchase:pendingPurchase}));}catch(e){}
+    const screen=document.getElementById("sparkle-purchase-summary-screen");
+    const content=document.getElementById("sparkle-summary-screen-content");
+    if(!screen||!content)throw new Error("Purchase review is temporarily unavailable. No money has been deducted.");
+    content.innerHTML=`
+      <div class="sparkle-summary-network"><span class="network-card-logo cable">⚡</span><div><div class="sparkle-summary-network-name">${escapeHtml(label)}</div><div class="sparkle-summary-network-label">Electricity bill review</div></div></div>
+      <div class="summary-line"><span>Verified customer</span><strong>${escapeHtml(item.customerName)}</strong></div>
+      ${item.address?`<div class="summary-line"><span>Address</span><strong>${escapeHtml(item.address)}</strong></div>`:""}
+      <div class="summary-line"><span>Meter number</span><strong>${escapeHtml(meter)}</strong></div>
+      <div class="summary-line"><span>Bill type</span><strong>${escapeHtml(type.toUpperCase())}</strong></div>
+      <div class="summary-line"><span>Phone</span><strong>${escapeHtml(phone)}</strong></div>
+      <div class="sparkle-summary-total"><span>Total payment</span><strong>${money(amount)}</strong></div>
+      <p class="electricity-note">Check the meter and customer name carefully. Your wallet is checked before the provider order is sent.</p>
+      <button class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Pay</button>`;
+    screen.scrollTop=0;
+    window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+    try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
+    const roll=document.getElementById("sparkle-continue-roll");
+    if(roll){const mark=roll.querySelector(".sparkle-roll-mark");roll.classList.add("is-visible");roll.setAttribute("aria-hidden","false");if(mark){mark.style.animation="none";void mark.offsetWidth;mark.style.animation="";}window.setTimeout(()=>{roll.classList.remove("is-visible");roll.setAttribute("aria-hidden","true");screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");},700);}
+    else{screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");}
+  }catch(e){alert(e.message||"Could not verify the meter. No money has been deducted.");}
+  finally{if(overlay)overlay.classList.remove("show");}
 }
 
 /* =====================================================
@@ -4883,7 +4973,7 @@ async function confirmTransactionPIN(){
       return;
     }
     if(pendingPurchase){
-      await processPendingPurchase();
+      await processPendingPurchase(pin);
       return;
     }
     alert("Your PIN is correct, but no purchase was queued. Your wallet has not been charged.");
@@ -4894,12 +4984,43 @@ async function confirmTransactionPIN(){
   }
 }
 
-async function processPendingPurchase(){
+async function processPendingPurchase(transactionPin){
   if(!pendingPurchase || !Array.isArray(pendingPurchase.items) || !pendingPurchase.items.length) {
     alert("No purchase is waiting for confirmation.");
     return;
   }
-  // Only airtime is enabled through the secure server-side purchase path for now.
+  if(pendingPurchase.items.length===1 && pendingPurchase.items[0]?.service==="Electricity"){
+    const p=pendingPurchase.items[0];
+    const overlay=document.getElementById("processingOverlay");
+    if(overlay)overlay.classList.add("show");
+    const progress=document.getElementById("processingProgress");
+    if(progress)progress.textContent="Securely processing electricity payment…";
+    try{
+      const {data,error}=await supabaseClient.functions.invoke("sparkle-electricity-purchase",{body:{action:"purchase",serviceID:p.serviceID,customerID:p.customerID,phone:p.phone,type:p.type||p.plan,amount:Number(p.amount),pin:transactionPin}});
+      if(error&&!data)throw new Error(error.message||"Could not reach secure electricity processing.");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(data?.success&&data.status==="successful"){
+        pendingPurchase=null;
+        if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        const providerText=String(data.providerResponse?.api_response||data.providerResponse?.content?.token||data.providerResponse?.token||"");
+        const tokenMatch=providerText.match(/(?:token(?:\s*(?:number|no|is))?\s*[:#-]?\s*)([0-9 ]{12,24})/i);
+        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
+        return;
+      }
+      if(data?.status==="refunded"){
+        pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        alert((data.error||"Electricity order failed and wallet was refunded.")+" Reference: "+(data.reference||"not provided"));return;
+      }
+      if(data?.status==="pending"){
+        pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        alert((data.error||"The provider has not confirmed the electricity order.")+" Reference: "+(data.reference||"not provided")+". Do not retry; check the transaction status first.");return;
+      }
+      throw new Error(data?.error||"Electricity purchase was not completed. Your wallet has not been charged.");
+    }catch(error){console.error("Secure Sparkle electricity purchase:",error);alert("Electricity was not confirmed. Check transaction history before trying again. "+(error.message||""));}
+    finally{if(overlay)overlay.classList.remove("show");}
+    return;
+  }
   // Other services remain paused rather than risking an incorrect wallet debit.
   if(pendingPurchase.items.length!==1 || pendingPurchase.items[0]?.service!=="Airtime") {
     alert("This service is still being connected to secure wallet processing. Your wallet has not been charged.");
@@ -4962,6 +5083,7 @@ function showReceipt(result){
     <div class="receipt-row"><span>Reference</span><strong>${d.reference||"—"}</strong></div>
     <div class="receipt-row"><span>Customer</span><strong>${d.customer||"—"}</strong></div>
     <div class="receipt-row"><span>Amount</span><strong>${money(d.amount||0)}</strong></div>
+    ${d.token?`<div class="receipt-row"><span>Electricity token</span><strong style="word-break:break-word">${escapeHtml(d.token)}</strong></div>`:""}
     <div class="receipt-row"><span>Status</span><strong>Successful</strong></div>
     <div class="receipt-row"><span>Date</span><strong>${new Date().toLocaleString("en-NG")}</strong></div>`;
   document.getElementById("receiptModal").classList.add("show");
