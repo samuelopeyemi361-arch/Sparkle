@@ -4187,12 +4187,10 @@ async function executeSvbPurchase(pin){
     const response=await callSvbOrderFunction("sparkle-svb-buy",{service:quote.serviceCode,country:quote.country,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
     const d=response?.data||response;
     closePinModal();
-    window.sparkleDraftProcessing=false;
     if(d.status==="failed"){
       const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
       if(message)message.textContent=text;
       showSvbOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text});
-      window.sparkleSavePurchaseDraft?.("form");
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
       alert(text);
@@ -4205,7 +4203,6 @@ async function executeSvbPurchase(pin){
     const returnedRequestId=String(d.request_id||d.requestId||d.id||requestId);
     const pendingStatus=String(d.status||"pending").toLowerCase();
     showSvbOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")});
-    window.sparkleSavePurchaseDraft?.("form");
     document.getElementById("svbReviewPanel").style.display="none";
     document.getElementById("svbCatalogPanel").style.display="block";
     const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
@@ -4220,15 +4217,12 @@ async function executeSvbPurchase(pin){
       const pinMessage=document.getElementById("pinMessage");if(pinMessage)pinMessage.textContent="Transaction PIN was not accepted. Please try again. No supplier order was sent.";
       document.querySelectorAll(".pin-box").forEach(x=>x.value="");
       document.querySelector(".pin-box")?.focus();
-      window.sparkleDraftProcessing=false;
-      window.sparkleSavePurchaseDraft?.("pin");
       return;
     }
-    closePinModal();svbAwaitingPin=false;window.sparkleDraftProcessing=false;
+    closePinModal();svbAwaitingPin=false;
     const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED"];
     const definitelyNotStarted=safeNoOrderCodes.includes(String(error?.code||""))||/wallet unchanged|no supplier order was sent|price changed|service is unavailable for this country|choose a valid country|please sign in|session expired|could not verify.*wallet/i.test(text);
     if(definitelyNotStarted){
-      window.sparkleSavePurchaseDraft?.("form");
       if(/PRICE_CHANGED|price changed/i.test(String(error?.code||"")+" "+text)){
         svbCurrentQuote=null;
         const result=document.getElementById("svbPriceResult");if(result)result.textContent="The price changed. Please check the current price again before continuing.";
@@ -4244,7 +4238,6 @@ async function executeSvbPurchase(pin){
     document.getElementById("svbReviewPanel").style.display="none";
     document.getElementById("svbCatalogPanel").style.display="block";
     const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order outcome unknown — check status";buy.style.opacity=".55";}
-    window.sparkleSavePurchaseDraft?.("form");
     if(message)message.textContent=text+" Check order status or transaction history before trying again.";
     alert("US number purchase: "+text+"\nThe outcome may be unknown. Do not submit another order until this reference is checked.");
   }finally{
@@ -6205,290 +6198,10 @@ document.addEventListener("DOMContentLoaded",()=>{
 })();
 </script>
 
-<script id="sparkle-purchase-draft-resume-script">
-(function(){
-  // Device-local draft recovery, scoped to the signed-in user. Never store a PIN or SMS code.
-  const PREFIX="sparkle_purchase_draft_v1_", TTL=24*60*60*1000;
-  const PAGES=["airtimePage","dataPage","cablePage","educationPage","electricityPage","rechargepinPage","smsotpPage"];
-  let restoring=false, restoredUserId="", restoringUserId="";
-  const getUserId=()=>String(window.currentSparkleUser?.id||"");
-  const key=id=>PREFIX+String(id||"");
-  const read=id=>{try{return JSON.parse(localStorage.getItem(key(id))||"null");}catch(_){return null;}};
-  const activeServicePage=()=>{const p=document.querySelector(".page.active");return p&&PAGES.includes(p.id)?p.id:"";};
-  const copy=x=>{try{return JSON.parse(JSON.stringify(x));}catch(_){return null;}};
-  const safePlan=p=>p?({_value:String(p._value??""),_name:String(p._name??""),_price:Number(p._price||0),_duration:String(p._duration??"")}):null;
-  function captureFields(){
-    const out={};
-    PAGES.forEach(pid=>document.getElementById(pid)?.querySelectorAll("input[id],select[id],textarea[id]").forEach(el=>{
-      const id=String(el.id||""),name=String(el.name||""),type=String(el.type||"").toLowerCase();
-      if(type==="password"||/transaction.?pin|pin.?box|password|sms.?code|otp.?code|verification.?code/i.test(id+" "+name))return;
-      out[id]=String(el.value??"");
-    }));
-    return out;
-  }
-  function captureBulk(){
-    const out={};
-    ["data","airtime","cable"].forEach(service=>{
-      const list=document.getElementById(service+"BulkList"); if(!list)return;
-      out[service]=[...list.querySelectorAll(".bulk-row")].map(row=>{
-        const val=f=>String(row.querySelector('[data-field="'+f+'"]')?.value??"");
-        return {network:val("network"),plan:val("plan"),phone:val("phone"),amount:val("amount")};
-      });
-    });
-    return out;
-  }
-  function selected(){
-    const out={dataPlan:null,dataService:null,dataServiceLabel:"",dataCategory:"All",cablePlan:null,educationService:null,electricityService:null};
-    try{out.dataPlan=safePlan(selectedDataPlan);}catch(_){}
-    try{out.dataService=selectedDataService||null;}catch(_){}
-    try{out.dataServiceLabel=selectedDataServiceLabel||"";}catch(_){}
-    try{out.dataCategory=selectedDataCategory||"All";}catch(_){}
-    try{out.cablePlan=safePlan(selectedCablePlan);}catch(_){}
-    try{out.educationService=selectedEducationService||null;}catch(_){}
-    try{out.electricityService=selectedElectricityService||null;}catch(_){}
-    return out;
-  }
-  function modeFor(pageId){
-    const service=String(pageId||"").replace(/Page$/g,"");
-    const active=document.querySelector("#"+service+"Page .data-purchase-tab.active");
-    return active&&/bulk/i.test(active.textContent||"")?"bulk":"single";
-  }
-  function phaseNow(){
-    if(document.getElementById("pinModal")?.classList.contains("show"))return "pin";
-    if(document.getElementById("sparkle-purchase-summary-screen")?.classList.contains("is-open"))return "review";
-    if(window.sparkleDraftProcessing)return "processing";
-    return "form";
-  }
-  function saveDraft(override){
-    if(restoring)return;
-    const id=getUserId(); if(!id)return;
-    const previous=read(id)||{},active=activeServicePage();
-    const phase=override||phaseNow();
-    const purchase=pendingPurchase&&Array.isArray(pendingPurchase.items)?copy(pendingPurchase):(previous.purchase||null);
-    const record={
-      version:1,userId:id,savedAt:Date.now(),servicePage:active||previous.servicePage||"",
-      mode:active?modeFor(active):(previous.mode||"single"),fields:captureFields(),bulk:captureBulk(),selected:selected(),
-      currentService:currentService||previous.currentService||null,purchase,phase,
-      interrupted:phase==="processing"?{service:currentService||previous.currentService||"purchase",requestID:purchase?.requestID||"",savedAt:Date.now()}:(previous.interrupted||null)
-    };
-    try{localStorage.setItem(key(id),JSON.stringify(record));}catch(e){console.warn("Sparkle could not save this purchase draft on this device.",e);}
-  }
-  window.sparkleSavePurchaseDraft=saveDraft;
-  // Expose the existing recovery function to the resume guard below; no purchase logic is changed.
-  window.sparkleRestorePurchaseDraft=restore;
-  window.sparkleClearPurchaseDraft=function(){const id=getUserId();if(id){try{localStorage.removeItem(key(id));}catch(_){}}window.sparkleDraftProcessing=false;};
-  function setFields(fields){
-    Object.entries(fields||{}).forEach(([id,value])=>{
-      const el=document.getElementById(id);if(!el)return;
-      if(el.type==="password"||/transaction.?pin|pin.?box|password|sms.?code|otp.?code|verification.?code/i.test(id))return;
-      if(el.tagName==="SELECT"&&value&&![...el.options].some(o=>o.value===String(value)))return;
-      el.value=String(value??"");
-    });
-  }
-  function restoreBulk(service,rows){
-    if(!Array.isArray(rows)||!Array.isArray(bulkRows[service]))return;
-    bulkRows[service]=rows.map((_,i)=>({index:i+1}));
-    renderBulkRows(service);
-    const domRows=[...(document.getElementById(service+"BulkList")?.querySelectorAll(".bulk-row")||[])];
-    rows.forEach((saved,i)=>{const row=domRows[i];if(!row)return;["network","plan","phone","amount"].forEach(field=>{
-      const el=row.querySelector('[data-field="'+field+'"]');if(!el||saved[field]===undefined)return;
-      const val=String(saved[field]);
-      if(el.tagName==="SELECT"&&val&&![...el.options].some(o=>o.value===val||o.textContent.trim()===val)){const opt=document.createElement("option");opt.value=val;opt.textContent=val;el.appendChild(opt);}
-      el.value=val;
-    });});
-    updateBulkTotal(service);
-  }
-  function addNotice(pageId,message,interrupted){
-    const page=document.getElementById(pageId);if(!page)return;
-    page.querySelector("#sparklePurchaseResumeNotice")?.remove();
-    const box=document.createElement("div");box.id="sparklePurchaseResumeNotice";
-    box.style.cssText="margin:12px 0;padding:13px 14px;border-radius:12px;border:1px solid #bfdbfe;background:#eff6ff;color:#1e3a8a;font-size:13px;line-height:1.5";
-    const title=document.createElement("strong");title.textContent="Payment may have been interrupted";box.appendChild(title);
-    const detail=document.createElement("div");detail.style.marginTop="4px";detail.textContent=message;box.appendChild(detail);
-    if(interrupted){
-      const history=document.createElement("button");history.type="button";history.className="btn primary";history.style.cssText="margin-top:10px;width:100%";history.textContent="Open Transaction History";
-      history.addEventListener("click",()=>{const base=window.__sparkleDraftBaseShowDashPage||showDashPage;base("transactionsPage",document.querySelector(".nav-item"));});box.appendChild(history);
-      const dismiss=document.createElement("button");dismiss.type="button";dismiss.className="btn";dismiss.style.cssText="margin-top:8px;width:100%";dismiss.textContent="I checked — dismiss";
-      dismiss.addEventListener("click",()=>{box.remove();const r=read(getUserId());if(r){r.interrupted=null;r.phase="form";try{localStorage.setItem(key(getUserId()),JSON.stringify(r));}catch(_){}}});box.appendChild(dismiss);
-    }
-    const host=page.querySelector(".service-page")||page;const top=host.querySelector(".data-topbar");
-    if(top)top.insertAdjacentElement("afterend",box);else host.insertBefore(box,host.firstChild);
-  }
-  function renderReview(record){
-    const purchase=record.purchase;if(!purchase||!Array.isArray(purchase.items)||!purchase.items.length)return false;
-    pendingPurchase=copy(purchase);currentService=record.currentService||null;
-    try{sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:currentService,purchase:pendingPurchase}));}catch(_){}
-    const p=pendingPurchase.items[0]||{},service=currentService||"purchase",net=String(p.network||p.provider||p.service||service);
-    const cable=service==="cable"||p.service==="Cable TV",education=service==="education"||p.service==="Education Pin",electricity=service==="electricity"||p.service==="Electricity",recharge=service==="rechargepin"||p.service==="Recharge Pin Printing";
-    const label=cable?"Cable TV":education?"Education PIN":electricity?"Electricity":recharge?"Recharge PIN Printing":(p.service||service);
-    const phoneLabel=cable?"Decoder / IUC number":electricity?"Meter number":"Recipient phone";
-    const phoneValue=electricity?(p.customerID||""):recharge?(p.quantity?String(p.quantity)+" card(s)":"Recharge card printing"):(p.phone||"");
-    const plan=String(p.plan||p.plan_name||p.type||"—");
-    const extra=purchase.items.length>1?purchase.items.map((item,i)=>'<div class="summary-line"><span>Item '+(i+1)+'</span><strong>'+escapeHtml(item.service||label)+' · '+escapeHtml(item.network||"")+' · '+money(item.amount||0)+'</strong></div>').join(""):"";
-    const screen=document.getElementById("sparkle-purchase-summary-screen"),content=document.getElementById("sparkle-summary-screen-content");if(!screen||!content)return false;
-    const total=Number(purchase.total||purchase.items.reduce((n,item)=>n+Number(item.amount||0),0));
-    content.innerHTML='<div class="sparkle-summary-network"><span class="network-card-logo '+(cable?'cable':electricity?'cable':education?'education':'mtn')+'">'+(cable?'TV':education?'PIN':electricity?'⚡':recharge?'PIN':'S')+'</span><div><div class="sparkle-summary-network-name">'+escapeHtml(net)+'</div><div class="sparkle-summary-network-label">'+escapeHtml(label)+' · Purchase review</div></div></div>'+
-      '<div class="summary-line"><span>Service</span><strong>'+escapeHtml(label)+'</strong></div>'+
-      '<div class="summary-line"><span>'+escapeHtml(cable?'TV provider':education?'Examination':electricity?'Bill type':recharge?'Denomination':'Network')+'</span><strong>'+escapeHtml(net)+'</strong></div>'+
-      '<div class="summary-line"><span>'+escapeHtml(phoneLabel)+'</span><strong>'+escapeHtml(phoneValue)+'</strong></div>'+
-      '<div class="summary-line"><span>'+escapeHtml(recharge?'Quantity':electricity?'Phone':cable?'Subscription plan':education?'Exam PIN':'Selected plan')+'</span><strong>'+escapeHtml(recharge?(p.quantity||"—"):electricity?(p.phone||"—"):plan)+'</strong></div>'+extra+
-      '<div class="sparkle-summary-total"><span>Total to pay</span><strong>'+money(total)+'</strong></div>'+
-      '<p class="electricity-note">Review the purchase details carefully before continuing. Sparkle never saves your transaction PIN.</p>'+
-      '<button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">Continue to Transaction PIN</button>';
-    screen.scrollTop=0;screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");
-    window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
-    try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(_){}
-    return true;
-  }
-  async function restore(id,force){
-    if(!id||(!force&&restoredUserId===id)||restoringUserId===id)return;
-    restoringUserId=id;
-    const record=read(id);
-    if(!record||record.userId!==id||!record.savedAt||Date.now()-Number(record.savedAt)>TTL){try{localStorage.removeItem(key(id));}catch(_){}restoredUserId=id;restoringUserId="";return;}
-    restoring=true;
-    try{
-      setFields(record.fields);
-      const pageId=PAGES.includes(record.servicePage)?record.servicePage:"";
-      if(pageId){
-        const base=window.__sparkleDraftBaseShowDashPage||showDashPage;base(pageId,null);
-        const service=pageId.replace(/Page$/g,"");
-        if(["data","airtime","cable"].includes(service)){
-          const mode=record.mode==="bulk"?"bulk":"single",tab=document.querySelector("#"+service+"Page .data-purchase-tab:"+(mode==="bulk"?"nth-child(2)":"first-child"));
-          if(tab)switchServiceMode(service,mode,tab);
-          if(mode==="bulk")restoreBulk(service,record.bulk?.[service]||[]);
-        }
-      }
-      if(pageId==="airtimePage")updateNetworkBadge("airtime");
-      if(pageId==="dataPage"){
-        const network=document.getElementById("dataNetwork")?.value||"";if(network)onDataNetworkChange();
-        const sid=record.selected?.dataService||record.fields?.dataService||"",select=document.getElementById("dataService");
-        if(select&&sid){select.value=sid;selectedDataService=sid;selectedServiceID=sid;selectedDataServiceLabel=record.selected?.dataServiceLabel||select.selectedOptions?.[0]?.textContent||"";await loadDataPlans(sid);}
-        const saved=record.selected?.dataPlan,box=document.getElementById("dataPlans"),plans=box?._shownPlans||[],idx=plans.findIndex(p=>String(p._value)===String(saved?._value));if(idx>=0)selectDataPlan(idx,plans[idx]._value,plans[idx]._price,plans[idx]._name,plans[idx]._duration);
-      }
-      if(pageId==="cablePage"){
-        await loadCablePlans();const saved=record.selected?.cablePlan,plans=document.getElementById("cablePlans")?._plans||[],idx=plans.findIndex(p=>String(p._value)===String(saved?._value));if(idx>=0)selectCablePlan(idx,plans[idx]._value,plans[idx]._price,plans[idx]._name);
-      }
-      if(pageId==="educationPage"){await loadEducationPlans();if(record.selected?.educationService)selectEducationService(record.selected.educationService);}
-      if(pageId==="electricityPage"&&record.selected?.electricityService){const card=document.querySelector('#electricityServices [data-service="'+CSS.escape(record.selected.electricityService)+'"]');selectElectricityService(record.selected.electricityService,card?.querySelector("h3")?.textContent?.trim()||record.selected.electricityService);selectElectricityType(document.getElementById("electricityType")?.value||"prepaid");}
-      if(pageId==="rechargepinPage"){try{await loadRechargePinPrices();updateRechargePinTotal();}catch(_){}}
-      if(pageId==="smsotpPage"){
-        try{
-          await loadSvbCountries();
-          const wantedCountry=String(record.fields?.svbCountrySelect||"us");
-          const countrySelect=document.getElementById("svbCountrySelect");
-          if(countrySelect&&[...countrySelect.options].some(o=>o.value===wantedCountry)){countrySelect.value=wantedCountry;await loadSvbServices();}
-          const wanted=record.fields?.svbAppSelect;
-          if(wanted){const sel=document.getElementById("svbAppSelect");if(sel)sel.value=wanted;}
-          svbCurrentQuote=null;
-          const result=document.getElementById("svbPriceResult");
-          if(result&&wanted)result.textContent="Saved service restored. Check the current Sparkle price before purchase.";
-          const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-        }catch(_){}
-      }
-      if(record.phase==="review"||record.phase==="pin")renderReview(record);
-      else if(record.phase==="processing"){
-        pendingPurchase=null;window.sparkleDraftProcessing=false;
-        const message="A purchase was in progress when you left Sparkle. It has not been submitted again automatically. Check Transaction History before retrying the same purchase.";
-        if(pageId)addNotice(pageId,message,true);else alert(message);
-        const fresh=read(id);if(fresh){fresh.phase="form";fresh.purchase=null;fresh.interrupted={service:record.currentService||"purchase",requestID:record.purchase?.requestID||"",savedAt:record.savedAt};try{localStorage.setItem(key(id),JSON.stringify(fresh));}catch(_){} }
-      }
-      restoredUserId=id;
-    }catch(e){console.warn("Could not fully restore the purchase draft.",e);restoredUserId=id;}
-    finally{restoring=false;restoringUserId="";}
-  }
-  function laterSave(phase,delay){if(restoring)return;window.setTimeout(()=>saveDraft(phase),delay||0);}
 
-  document.addEventListener("input",e=>{
-    if(!e.target?.closest(PAGES.map(id=>"#"+id).join(",")))return;
-    if(/transaction.?pin|pin.?box|password|sms.?code|otp.?code|verification.?code/i.test(String(e.target.id||"")+" "+String(e.target.name||"")))return;
-    window.sparkleDraftProcessing=false;saveDraft("form");
-  });
-  document.addEventListener("change",e=>{
-    if(!e.target?.closest(PAGES.map(id=>"#"+id).join(",")))return;
-    if(/transaction.?pin|pin.?box|password|sms.?code|otp.?code|verification.?code/i.test(String(e.target.id||"")+" "+String(e.target.name||"")))return;
-    window.sparkleDraftProcessing=false;saveDraft("form");
-  });
-  document.addEventListener("click",e=>{if(e.target?.closest(".data-plan-card,.education-service-card,.electricity-service-card,.network-card,.data-purchase-tab"))laterSave("form",10);});
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveDraft();});
-  window.addEventListener("pagehide",()=>saveDraft());window.addEventListener("beforeunload",()=>saveDraft());
-  if(typeof showDashPage==="function"){
-    window.__sparkleDraftBaseShowDashPage=showDashPage;const base=showDashPage;
-    window.showDashPage=function(pageId,button){saveDraft();const result=base(pageId,button);laterSave(null,10);return result;};
-  }
-  if(typeof openServicePage==="function"){const base=openServicePage;window.openServicePage=function(service){const result=base(service);laterSave("form",10);return result;};}
-  if(typeof showDashboard==="function"){const base=showDashboard;window.showDashboard=async function(user){const result=await base(user);await restore(user?.id||getUserId());return result;};}
-  // Backup hook for auth-session callbacks that run before the wrapped dashboard finishes loading.
-  try{if(typeof supabaseClient!=="undefined"&&supabaseClient?.auth?.onAuthStateChange){supabaseClient.auth.onAuthStateChange((_event,session)=>{const id=session?.user?.id;if(id)window.setTimeout(()=>restore(id),0);});}}catch(_){}
-  if(typeof showPurchaseSummary==="function"){const base=showPurchaseSummary;window.showPurchaseSummary=function(service){const result=base(service);laterSave("review",950);return result;};}
-  if(typeof showBulkSummary==="function"){const base=showBulkSummary;window.showBulkSummary=function(service){const result=base(service);saveDraft("pin");return result;};}
-  if(typeof showRechargePinSummary==="function"){const base=showRechargePinSummary;window.showRechargePinSummary=async function(){const result=await base();laterSave("review",950);return result;};}
-  if(typeof showElectricitySummary==="function"){const base=showElectricitySummary;window.showElectricitySummary=async function(){const result=await base();laterSave("review",950);return result;};}
-  if(typeof openPinForPurchase==="function"){const base=openPinForPurchase;window.openPinForPurchase=function(){const result=base();saveDraft("pin");return result;};}
-  if(typeof confirmRechargePinPurchase==="function"){const base=confirmRechargePinPurchase;window.confirmRechargePinPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
-  if(typeof processPendingPurchase==="function"){const base=processPendingPurchase;window.processPendingPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
-  if(typeof executeSvbPurchase==="function"){const base=executeSvbPurchase;window.executeSvbPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
-  if(typeof showReceipt==="function"){const base=showReceipt;window.showReceipt=function(payload){window.sparkleClearPurchaseDraft?.();return base(payload);};}
-  if(typeof logout==="function"){const base=logout;window.logout=async function(){window.sparkleClearPurchaseDraft?.();return await base();};}
-})();
-</script>
-<script id="sparkle-purchase-page-resume-guard">
-(function(){
-  // Restore the last service page after Safari/iOS suspends or reloads the tab.
-  // Verify the live Supabase session before reopening a dashboard hidden by an auth callback.
-  let resumeCheckRunning=false;
-  const PREFIX="sparkle_purchase_draft_v1_";
-  const PAGES=["airtimePage","dataPage","cablePage","educationPage","electricityPage","rechargepinPage","smsotpPage"];
-  const read=id=>{try{return JSON.parse(localStorage.getItem(PREFIX+id)||"null");}catch(_){return null;}};
-  async function resumeIfReset(){
-    if(resumeCheckRunning || document.visibilityState==="hidden") return;
-    const currentUser=window.currentSparkleUser;
-    let userId=String(currentUser?.id||"");
-    let sessionUser=null;
-    // Safari can fire pageshow before the app has repopulated its in-memory user.
-    // Ask Supabase for the current session instead of giving up at that point.
-    if(!userId){
-      try{
-        const sessionResult=await supabaseClient.auth.getSession();
-        sessionUser=sessionResult?.data?.session?.user||null;
-        userId=String(sessionUser?.id||"");
-      }catch(e){console.warn("Sparkle could not read the session while resuming.",e);return;}
-    }
-    if(!userId) return;
-    let record=read(userId);
-    if(!record || record.userId!==userId || !PAGES.includes(record.servicePage) || !record.savedAt || Date.now()-Number(record.savedAt)>24*60*60*1000) return;
-    const dashboard=document.getElementById("dashboard");
-    const active=document.querySelector(".page.active")?.id||"";
-    if(dashboard?.classList.contains("active") && active===record.servicePage) return;
-    resumeCheckRunning=true;
-    try{
-      await new Promise(resolve=>setTimeout(resolve,250));
-      // The app may have finished its own restoration while we waited.
-      const currentActive=document.querySelector(".page.active")?.id||"";
-      if(document.getElementById("dashboard")?.classList.contains("active") && currentActive===record.servicePage) return;
-      try{
-        if(!sessionUser){
-          const result=await supabaseClient.auth.getSession();
-          sessionUser=result?.data?.session?.user||null;
-        }
-      }catch(e){console.warn("Sparkle could not verify the session while resuming.",e);return;}
-      if(!sessionUser?.id || String(sessionUser.id)!==userId) return;
-      window.currentSparkleUser=sessionUser;
-      if(!document.getElementById("dashboard")?.classList.contains("active")){
-        if(typeof window.showDashboard==="function") await window.showDashboard(sessionUser);
-      }
-      // Force retry because an earlier auth callback may have marked this user restored too soon.
-      if(typeof window.sparkleRestorePurchaseDraft==="function") await window.sparkleRestorePurchaseDraft(userId,true);
-      const finalActive=document.querySelector(".page.active")?.id||"";
-      if(finalActive!==record.servicePage && PAGES.includes(record.servicePage)){
-        const nav=document.querySelector('.sidebar-nav .nav-item');
-        if(typeof window.showDashPage==="function") window.showDashPage(record.servicePage,nav);
-      }
-    }catch(e){console.warn("Sparkle page resume check could not complete.",e);}
-    finally{resumeCheckRunning=false;}
-  }
-  window.addEventListener("pageshow",()=>{void resumeIfReset();});
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")void resumeIfReset();});
-})();
+
+<script id="sparkle-remove-old-purchase-drafts">
+(function(){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith("sparkle_purchase_draft_v1_"))localStorage.removeItem(k);}localStorage.removeItem("sparkle_purchase_draft_cleanup_v1");}catch(_){}})();
 </script>
 </body>
 </html>
