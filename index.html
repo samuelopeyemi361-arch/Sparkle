@@ -4639,7 +4639,6 @@ function selectDataPlan(index,value,price,name,duration){
     const cards=box.querySelectorAll(".data-plan-card");
     if(cards[index]) cards[index].classList.add("selected");
   }
-  console.log("Selected data plan:",selectedDataPlan);
 }
 
 function extractPlanDuration(plan){
@@ -4657,10 +4656,10 @@ function extractPlanDuration(plan){
   for(const rawValue of candidates){
     const raw=String(rawValue).trim().toLowerCase();if(!raw)continue;
     if(/^\d+(?:\.\d+)?$/.test(raw)){const n=Number(raw);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
-    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:days?|d)(?=\b|$)/);if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
+    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:days?|d)(?=\b|$)/);if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
     m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/);if(m){const hours=Number(m[1]),n=hours/24;if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
-    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:weeks?|wks?)\b/);if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return {days:n,label:n===7?"7 days":n+" days"};}
-    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:months?|mos?)\b/);if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return {days:n,label:n===30?"30 days":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:weeks?|wks?)\b/);if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return {days:n,label:n===7?"7 days":n+" days"};}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:months?|mos?)\b/);if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return {days:n,label:n===30?"30 days":n+" days"};}
     if(/\bmonthly\b/.test(raw))return {days:30,label:"30 days"};if(/\bweekly\b/.test(raw))return {days:7,label:"7 days"};if(/\bdaily\b/.test(raw))return {days:1,label:"1 day"};
   }return {days:null,label:""};
 }
@@ -4670,43 +4669,40 @@ function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if
 function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
 function splitPlanName(plan){const raw=String(plan?.displayName||plan?.display_name||plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||plan?.package_name||plan?.packageName||plan?.title||"").trim();const duration=planDuration({...plan,displayName:plan?.displayName||plan?.display_name||raw,name:plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||raw});const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
 function sparkleDataPrice(plan){
-  // GSUBZ documents: price = normal customer price; api_price = Sparkle supplier cost.
-  // Sparkle keeps 80% of the spread and leaves customers 20% of that spread below GSUBZ retail.
-  const cost=Number(plan?.api_price ?? plan?.apiPrice);
-  const retail=Number(plan?.price ?? plan?.retail_price ?? plan?.retailPrice);
-  if(!Number.isFinite(cost)||!Number.isFinite(retail)||cost<0||retail<cost) return {cost,retail,profit:NaN,sell:NaN};
-  const profit=Math.round(((retail-cost)*0.8+Number.EPSILON)*100)/100;
-  const sell=Math.round((cost+profit+Number.EPSILON)*100)/100;
-  return {cost,retail,profit,sell};
+  const supplierAmount=Number(plan?.api_price ?? plan?.apiPrice ?? plan?.cost);
+  const retailAmount=Number(plan?.price ?? plan?.retail_price ?? plan?.retailPrice ?? plan?.selling_price ?? plan?.sellingPrice);
+  if(!Number.isFinite(supplierAmount)||!Number.isFinite(retailAmount)||supplierAmount<0||retailAmount<supplierAmount) return {sell:NaN,valid:false};
+  const sell=Math.round((supplierAmount+(retailAmount-supplierAmount)*0.8+Number.EPSILON)*100)/100;
+  return {sell,valid:Number.isFinite(sell)&&sell>=supplierAmount&&sell>=0};
 }
 
 function normalizePlans(result){
-  // GSUBZ wraps live data plans inside data.plans.
+  // Never retain provider cost, retail, or margin fields on customer-facing plan objects.
   const plans=Array.isArray(result?.data?.plans)?result.data.plans:
     (Array.isArray(result?.plans)?result.plans:
     (Array.isArray(result?.data?.data?.plans)?result.data.data.plans:[]));
-  // Supplier pricing and margin are intentionally not written to browser logs.
   return plans.map((p,i)=>{
-    const name=p.displayName||p.display_name||p.name||p.plan_name||p.planName||p.package_name||p.packageName||(p.value?String(p.value):(p.PlanName||("Plan "+(i+1))));
+    if(!p||typeof p!=="object")return null;
+    const value=p.value??p.plan??p.variation_code??p.variationCode??p.code??"";
+    const name=p.displayName||p.display_name||p.name||p.plan_name||p.planName||p.package_name||p.packageName||(value?String(value):(p.PlanName||("Plan "+(i+1))));
     const enriched={...p,displayName:p.displayName||p.display_name||name,name:p.name||p.plan_name||p.planName||p.PlanName||name};
     const durationInfo=extractPlanDuration(enriched);
-    const d=splitPlanName(enriched);
-    const pricing=sparkleDataPrice(p);
+    const split=splitPlanName(enriched);
+    const price=sparkleDataPrice(p);
+    const valid=String(value).trim()!==""&&price.valid&&Number.isFinite(price.sell);
+    if(!valid)return null;
+    const days=durationInfo.days??planDays(enriched);
     return {
-      ...p,
-      _name:name,
-      _value:p.value??p.plan??p.variation_code??"",
-      _providerCost:pricing.cost,
-      _gsubzRetailPrice:pricing.retail,
-      _sparkleProfit:pricing.profit,
-      _price:pricing.sell,
-      _category:planCategory(p),
-      _categoryLabel:planCategoryLabel(p),
-      _duration:durationInfo.label||d.duration||"",
-      _days:durationInfo.days??planDays(enriched),
-      _size:d.size
+      _name:String(name),
+      _value:String(value),
+      _price:price.sell,
+      _category:days===30?"Monthly":days===7?"Weekly":days===1?"Daily":[2,3].includes(days)?"Hot":"Other",
+      _categoryLabel:Number.isFinite(days)&&days>0?(days===1?"1 day":days+" days"):"Other",
+      _duration:durationInfo.label||split.duration||"",
+      _days:days,
+      _size:split.size||String(name)
     };
-  }).filter(p=>p._value!==""&&Number.isFinite(p._providerCost)&&Number.isFinite(p._gsubzRetailPrice)&&Number.isFinite(p._price)&&p._price>=p._providerCost&&p._price>=0);
+  }).filter(Boolean);
 }
 function categoryTabsForPlans(plans){
   const tabs=[{key:"All",label:"All"}];
@@ -4808,7 +4804,7 @@ function normalizeCablePlans(result){
     const price=Number(rawPrice);
     const name=String(rawName||value||("Plan "+(index+1)));
     const duration=planDuration(item)||"";
-    return {...item,_name:name,_value:String(value),_price:price,_duration:duration};
+    return {_name:name,_value:String(value),_price:price,_duration:duration};
   }).filter(p=>p._value!==""&&Number.isFinite(p._price)&&p._price>0);
 }
 async function loadCablePlans(){
@@ -6108,7 +6104,7 @@ document.addEventListener("DOMContentLoaded",()=>{
       '<div class="summary-line"><span>'+escapeHtml(phoneLabel)+'</span><strong>'+escapeHtml(phoneValue)+'</strong></div>'+
       '<div class="summary-line"><span>'+escapeHtml(recharge?'Quantity':electricity?'Phone':cable?'Subscription plan':education?'Exam PIN':'Selected plan')+'</span><strong>'+escapeHtml(recharge?(p.quantity||"—"):electricity?(p.phone||"—"):plan)+'</strong></div>'+extra+
       '<div class="sparkle-summary-total"><span>Total to pay</span><strong>'+money(total)+'</strong></div>'+
-      '<p class="electricity-note">Your purchase details have been restored. Please review them again. Sparkle never saves your transaction PIN.</p>'+
+      '<p class="electricity-note">Review the purchase details carefully before continuing. Sparkle never saves your transaction PIN.</p>'+
       '<button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">Continue to Transaction PIN</button>';
     screen.scrollTop=0;screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");
     window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
