@@ -6235,6 +6235,8 @@ document.addEventListener("DOMContentLoaded",()=>{
     try{localStorage.setItem(key(id),JSON.stringify(record));}catch(e){console.warn("Sparkle could not save this purchase draft on this device.",e);}
   }
   window.sparkleSavePurchaseDraft=saveDraft;
+  // Expose the existing recovery function to the resume guard below; no purchase logic is changed.
+  window.sparkleRestorePurchaseDraft=restore;
   window.sparkleClearPurchaseDraft=function(){const id=getUserId();if(id){try{localStorage.removeItem(key(id));}catch(_){}}window.sparkleDraftProcessing=false;};
   function setFields(fields){
     Object.entries(fields||{}).forEach(([id,value])=>{
@@ -6299,8 +6301,8 @@ document.addEventListener("DOMContentLoaded",()=>{
     try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(_){}
     return true;
   }
-  async function restore(id){
-    if(!id||restoredUserId===id||restoringUserId===id)return;
+  async function restore(id,force){
+    if(!id||(!force&&restoredUserId===id)||restoringUserId===id)return;
     restoringUserId=id;
     const record=read(id);
     if(!record||record.userId!==id||!record.savedAt||Date.now()-Number(record.savedAt)>TTL){try{localStorage.removeItem(key(id));}catch(_){}restoredUserId=id;restoringUserId="";return;}
@@ -6388,6 +6390,45 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(typeof executeSvbPurchase==="function"){const base=executeSvbPurchase;window.executeSvbPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
   if(typeof showReceipt==="function"){const base=showReceipt;window.showReceipt=function(payload){window.sparkleClearPurchaseDraft?.();return base(payload);};}
   if(typeof logout==="function"){const base=logout;window.logout=async function(){window.sparkleClearPurchaseDraft?.();return await base();};}
+})();
+</script>
+<script id="sparkle-purchase-page-resume-guard">
+(function(){
+  // Keep this narrowly scoped: it does not touch checkout, wallet, pricing, or provider code.
+  let resumeCheckRunning=false;
+  async function resumeIfReset(){
+    if(resumeCheckRunning || !document.getElementById("dashboard")?.classList.contains("active")) return;
+    const user=window.currentSparkleUser;
+    const userId=String(user?.id||"");
+    if(!userId || typeof window.sparkleRestorePurchaseDraft!=="function") return;
+    let record=null;
+    try{record=JSON.parse(localStorage.getItem("sparkle_purchase_draft_v1_"+userId)||"null");}catch(_){return;}
+    const pages=["airtimePage","dataPage","cablePage","educationPage","electricityPage","rechargepinPage","smsotpPage"];
+    if(!record || record.userId!==userId || !pages.includes(record.servicePage) || !record.savedAt || Date.now()-Number(record.savedAt)>24*60*60*1000) return;
+    const active=document.querySelector(".page.active")?.id||"";
+    // Normal app switching leaves the current page intact. Recover only if the app reset to Home
+    // or otherwise lost the saved service page after a browser/page lifecycle event.
+    if(active===record.servicePage) return;
+    resumeCheckRunning=true;
+    try{
+      await new Promise(resolve=>setTimeout(resolve,350));
+      if(!document.getElementById("dashboard")?.classList.contains("active")) return;
+      const nowActive=document.querySelector(".page.active")?.id||"";
+      if(nowActive===record.servicePage) return;
+      // Allow a second restoration attempt if an earlier auth callback ran before dashboard setup finished.
+      window.currentSparkleUser=user;
+      await window.sparkleRestorePurchaseDraft(userId,true);
+      // The recovery routine may already have restored the page; make one final route-only safeguard.
+      const finalActive=document.querySelector(".page.active")?.id||"";
+      if(finalActive!==record.servicePage && pages.includes(record.servicePage)){
+        const nav=document.querySelector('.sidebar-nav .nav-item');
+        if(typeof window.showDashPage==="function") window.showDashPage(record.servicePage,nav);
+      }
+    }catch(e){console.warn("Sparkle page resume check could not complete.",e);}
+    finally{resumeCheckRunning=false;}
+  }
+  window.addEventListener("pageshow",()=>{void resumeIfReset();});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")void resumeIfReset();});
 })();
 </script>
 </body>
