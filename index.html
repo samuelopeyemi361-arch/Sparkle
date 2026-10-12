@@ -4894,13 +4894,10 @@ function selectEducationService(id){
 function showEducationSummary(){
   const phone=(document.getElementById("educationPhone")?.value||"").trim();
   const p=educationPlansCache[selectedEducationService];
-  const box=document.getElementById("educationSummary");
-  if(!selectedEducationService||!p){alert("Select a result pin first.");return;}
+  if(!selectedEducationService||!p){alert("Select a result pin first. If the price is still loading, wait a moment and try again.");return;}
   if(!/^0\d{10}$/.test(phone)){alert("Enter a valid 11-digit phone number.");return;}
-  const item={service:"Education Pin",network:selectedEducationService.toUpperCase(),phone,plan:p._name,planValue:p._value,serviceID:selectedEducationService,amount:Number(p._price||0)};
-  currentService="education";
-  pendingPurchase={type:"single",items:[item],total:item.amount};
-  if(box)box.innerHTML=`<div class="summary-inner"><strong>${escapeHtml(p._name)}</strong><span>${escapeHtml(phone)}</span><b>${money(p._price)}</b><small>Ready for confirmation.</small><button class="btn primary full" style="margin-top:12px" onclick="openPinForPurchase()">Confirm & Buy</button></div>`;
+  if(!p._value||!Number.isFinite(Number(p._price))||Number(p._price)<=0){alert("The current exam PIN plan or price could not be verified. Refresh the plans and try again.");return;}
+  showPurchaseSummary("education");
 }
 function selectElectricityType(type){
   if(!["prepaid","postpaid"].includes(type))return;
@@ -4939,7 +4936,7 @@ async function sparkleFunctionErrorMessage(error, fallback="The request could no
         }
       }else if(typeof context==="object") payload=context;
       const message=String(payload?.message||payload?.error_description||payload?.error||payload?.msg||payload?.api_response||payload?.details||payload?.hint||"").trim();
-      if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
+      if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient Sparkle wallet balance. Your wallet has not been charged. Please fund your wallet and try again.";
       if(message) return message;
       const status=Number(context.status||error?.status||0);
       if(status===429) return "Too many incorrect PIN attempts. Please wait before trying again.";
@@ -4948,7 +4945,7 @@ async function sparkleFunctionErrorMessage(error, fallback="The request could no
     }
   }catch(e){}
   const message=String(error?.message||"").trim();
-  if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient funds. Please fund your wallet to continue.";
+  if(/insufficient funds|insufficient balance|not enough funds/i.test(message)) return "Insufficient Sparkle wallet balance. Your wallet has not been charged. Please fund your wallet and try again.";
   if(/429|too many attempts|temporarily locked/i.test(message)) return "Too many attempts. Please wait before trying your transaction PIN again.";
   if(message && !/edge function returned a non-2xx status code/i.test(message)) return message;
   return fallback;
@@ -5126,20 +5123,27 @@ async function confirmRechargePinPurchase(pin){
     const {data,error}=await supabaseClient.functions.invoke("sparkle-recharge-pins",{body:{request_id:requestId,network,denomination,quantity,pin}});
     if(error){
       let errorData=null;
-      try{if(error.context&&typeof error.context.json==="function")errorData=await error.context.json();}catch(e){}
-      if(errorData?.status==="unknown"||error.status===502||!error.context){
+      try{
+        const context=error.context;
+        if(context&&typeof context.clone==="function")errorData=await context.clone().json();
+        else if(context&&typeof context.json==="function")errorData=await context.json();
+      }catch(e){}
+      const serverMessage=String(errorData?.error||errorData?.message||errorData?.details||errorData?.hint||"").trim();
+      const httpStatus=Number(errorData?.statusCode||error.status||error.context?.status||0);
+      if(errorData?.status==="unknown"||errorData?.status==="pending"||httpStatus===502||(!error.context&&!serverMessage)){
         button.textContent="Order status needs checking";
-        resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p></div>';
+        resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p>'+(serverMessage?'<p>'+escapeHtml(serverMessage)+'</p>':'')+'</div>';
         return;
       }
-      throw new Error(errorData?.message||error.message||"Purchase could not be completed.");
+      if(/insufficient/i.test(serverMessage))throw new Error("Insufficient Sparkle wallet balance. Your wallet has not been charged. Required amount: "+money(Number(errorData?.required_amount||total))+". Please fund your wallet and try again.");
+      throw new Error(serverMessage||await sparkleFunctionErrorMessage(error,"Recharge PIN purchase failed. Please check the details and try again."));
     }
     if(data?.status==="unknown"){
       button.textContent="Order status needs checking";
       resultBox.innerHTML='<div class="gsubz-error"><strong>Order status could not be confirmed.</strong><p>Do not submit again. Contact Sparkle Support with reference '+escapeHtml(data.reference||requestId)+'.</p></div>';
       return;
     }
-    if(!data?.success||data?.status!=="success")throw new Error(data?.message||"The order was not confirmed successful. Check with support before retrying.");
+    if(!data?.success||data?.status!=="success")throw new Error(data?.error||data?.message||"The order was not confirmed successful. Check with support before retrying.");
     const pins=data.pins||data.data?.pins||data.data;
     resultBox.innerHTML=`<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charge: ${money(total)}</p><p>Order reference: ${escapeHtml(data.reference||requestId)}</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">${escapeHtml(JSON.stringify(pins,null,2))}</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadWallet(&quot;${userId}&quot;);loadTransactions(&quot;${userId}&quot;)">Done</button></div>`;
     button.style.display="none";
@@ -5182,9 +5186,11 @@ function getSinglePurchase(service){
     const type=document.getElementById("electricityType")?.value||"prepaid";
     return {service:"Electricity",network:selectedElectricityService||"",phone:document.getElementById("electricityPhone")?.value.trim()||"",customerID:document.getElementById("electricityMeter")?.value.trim()||"",plan:type,planValue:type,variationCode:type,serviceID:selectedElectricityService||"",amount:Number(document.getElementById("electricityAmount")?.value||0)};
   }
+  const cableProvider=document.getElementById("cableProvider").value;
   return {
     service:"Cable TV",
-    network:document.getElementById("cableProvider").value,
+    network:cableProvider,
+    serviceID:String(cableProvider||"").toLowerCase(),
     phone:document.getElementById("cableNumber").value.trim(),
     plan:selectedCablePlan?._name || "",
     planValue:selectedCablePlan?._value || "",
@@ -5210,19 +5216,19 @@ function showPurchaseSummary(service){
   if(["data","cable","education"].includes(service)) pendingPurchase.requestID="WEB-"+crypto.randomUUID();
   try { sessionStorage.setItem("sparklePendingPurchase", JSON.stringify({service, purchase:pendingPurchase})); } catch(e) {}
   const networkName=String(p.network||p.service);
-  const networkKey=service==="cable"?"cable":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
-  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV"}[networkKey];
-  const summaryLabel=service==="data"?"Data purchase":service==="airtime"?"Airtime purchase":"Cable TV subscription";
+  const networkKey=service==="cable"?"cable":service==="education"?"education":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
+  const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV",education:"PIN"}[networkKey];
+  const summaryLabel=service==="data"?"Data purchase":service==="airtime"?"Airtime purchase":service==="education"?"Education PIN purchase":"Cable TV subscription";
   const summaryMarkup=`
     <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${summaryLabel}</div></div></div>
     <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
-    <div class="summary-line"><span>${service==="cable"?"TV provider":"Network"}</span><strong>${escapeHtml(p.network)}</strong></div>
+    <div class="summary-line"><span>${service==="cable"?"TV provider":service==="education"?"Examination":"Network"}</span><strong>${escapeHtml(p.network)}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
     ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>`}
-    <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
+    <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":service==="education"?"Exam PIN":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
     <div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(p.amount)}</strong></div>
-    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="cable"?"Confirm & Pay":service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
+    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="cable"?"Confirm & Pay":service==="education"?"Review & Pay":service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
   const screen=document.getElementById("sparkle-purchase-summary-screen");
   const content=document.getElementById("sparkle-summary-screen-content");
   if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
@@ -5462,112 +5468,98 @@ async function processPendingPurchase(transactionPin){
     finally{if(overlay)overlay.classList.remove("show");}
     return;
   }
-  // All supported purchases use authenticated, server-side PIN checks and wallet reservations.
-  const items = pendingPurchase.items;
-  const isBulk = pendingPurchase.type === "bulk" || items.length > 1;
-  const allowed = ["Airtime", "Data", "Cable TV", "Education Pin"];
-  if(items.some(item => !allowed.includes(String(item.service)))) {
-    alert("This order contains a service that is not enabled for secure bulk processing. No new order was sent.");
+  // Cable TV and Education PINs use the secure server-side bill purchase flow.
+  if(pendingPurchase.items.length===1 && ["Cable TV","Education Pin"].includes(pendingPurchase.items[0]?.service)){
+    const p=pendingPurchase.items[0];
+    const isCable=p.service==="Cable TV";
+    const overlay=document.getElementById("processingOverlay");
+    if(overlay)overlay.classList.add("show");
+    const progress=document.getElementById("processingProgress");
+    if(progress)progress.textContent=isCable?"Verifying and processing Cable TV payment…":"Securely processing Education PIN purchase…";
+    try{
+      const requestID=pendingPurchase.requestID||("WEB-"+crypto.randomUUID());
+      pendingPurchase.requestID=requestID;
+      const {data,error}=await supabaseClient.functions.invoke("sparkle-secure-bill-purchase",{body:{action:"purchase",serviceID:p.serviceID||(isCable?String(p.network||"").toLowerCase():String(p.network||"").toLowerCase()),phone:p.phone,customerID:isCable?p.phone:undefined,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID}});
+      if(error&&!data)throw new Error(await sparkleFunctionErrorMessage(error,isCable?"Cable TV purchase could not be confirmed.":"Education PIN purchase could not be confirmed."));
+      const authResult=await supabaseClient.auth.getUser();
+      const userId=authResult?.data?.user?.id;
+      if(data?.success&&data.status==="successful"){
+        pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){}
+        if(overlay)overlay.classList.remove("show");
+        if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        showReceipt({service:isCable?"Cable TV":"Education Pin",reference:data.reference||"—",customer:isCable?(data.customerName||p.phone):p.phone,provider:isCable?p.network:p.network,plan:p.plan,phone:p.phone,amount:Number(data.amount||p.amount),status:"successful"});
+        return;
+      }
+      if(data?.status==="refunded"||data?.status==="not_started"){
+        if(data?.status==="refunded"){pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){} if(userId){await loadWallet(userId);await loadTransactions(userId);}}
+        throw new Error(String(data?.error||data?.message||(data?.status==="refunded"?"Purchase failed and your wallet was refunded.":"Purchase was not started; no money was deducted.")));
+      }
+      if(data?.status==="pending"){
+        pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){}
+        if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        alert((data.error||"Provider has not confirmed this order yet.")+" Reference: "+(data.reference||requestID)+". Do not submit again until status is checked.");
+        return;
+      }
+      throw new Error(String(data?.error||data?.message||"The provider did not confirm the purchase. Check transaction history before retrying."));
+    }catch(error){
+      console.error("Secure Sparkle bill purchase:",error);
+      const message=await sparkleFunctionErrorMessage(error,"Purchase could not be completed. Check transaction history before retrying.");
+      alert(message+"\n\nIf a reference was displayed, keep it for support. Do not retry if the transaction is pending.");
+    }finally{if(overlay)overlay.classList.remove("show");}
     return;
   }
-  // Bulk data currently uses manually entered plans/prices. Do not send these to a supplier
-  // until every row can select a live plan and the server can validate its exact price.
-  if(isBulk && items.some(item => item.service === "Data")) {
-    alert("Bulk data is paused for security because its rows do not yet select a live verified plan. No bulk order was sent. Use Single Data Purchase for now.");
+  // Secure data purchases now use the dedicated wallet-reserving Edge Function.
+  if(pendingPurchase.items.length!==1 || !["Airtime","Data"].includes(pendingPurchase.items[0]?.service)) {
+    alert("This service is still being connected to secure wallet processing. Your wallet has not been charged.");
     return;
   }
-  if(!isBulk && items.length === 1 && items[0].service === "Data") {
-    if(!items[0].serviceID || !items[0].planValue) {
-      alert("The selected data plan is missing its provider code. Refresh the plans and select it again. No money was deducted.");
-      return;
-    }
-  }
+  const p=pendingPurchase.items[0];
+  const isData=p.service==="Data";
   const overlay=document.getElementById("processingOverlay");
   if(overlay) overlay.classList.add("show");
   const progress=document.getElementById("processingProgress");
-  const userResult=await supabaseClient.auth.getUser();
-  const userId=userResult?.data?.user?.id;
-  const results=[];
-  if(!userId) {
-    if(overlay) overlay.classList.remove("show");
-    alert("Your session expired. Sign in again before purchasing. No order was sent.");
-    return;
-  }
-  if(!Array.isArray(pendingPurchase.requestIDs)) pendingPurchase.requestIDs=[];
-  if(!pendingPurchase.requestID && !isBulk) pendingPurchase.requestID="WEB-"+crypto.randomUUID();
-  try {
-    for(let i=0;i<items.length;i++) {
-      const p=items[i];
-      if(!p.phone || !Number.isFinite(Number(p.amount)) || Number(p.amount)<=0) {
-        results.push({index:i+1,status:"not_started",error:"Invalid recipient or amount"});
-        if(!isBulk) break;
-        continue;
-      }
-      if(isBulk && p.service === "Cable TV" && (!p.plan || !Number(p.amount))) {
-        results.push({index:i+1,status:"not_started",error:"Cable plan or price is missing"});
-        continue;
-      }
-      const requestID=pendingPurchase.requestIDs[i] || ("WEB-"+crypto.randomUUID());
-      pendingPurchase.requestIDs[i]=requestID;
-      try { sessionStorage.setItem("sparklePendingPurchase",JSON.stringify({service:currentService,purchase:pendingPurchase})); } catch(e) {}
-      if(progress) progress.textContent=(isBulk?`Securely processing item ${i+1} of ${items.length}…`:(p.service==="Cable TV"?"Verifying subscriber and processing Cable TV…":p.service==="Education Pin"?"Securely processing Education PIN…":p.service==="Data"?"Securely processing data purchase…":"Securely processing airtime…"));
-      let data=null, error=null;
-      if(p.service === "Airtime") {
-        ({data,error}=await supabaseClient.functions.invoke("sparkle-airtime-purchase",{body:{network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin,requestID}}));
-      } else if(p.service === "Data") {
-        ({data,error}=await supabaseClient.functions.invoke("sparkle-data-purchase",{body:{serviceID:p.serviceID,phone:p.phone,plan:(p.planValue||p.plan),amount:Number(p.amount),pin:transactionPin,requestID}}));
-      } else {
-        const serviceID = p.service === "Education Pin" ? String(p.serviceID||p.network||"").toLowerCase() : ({"DSTV":"dstv","GOtv":"gotv","Startimes":"startimes","STARTIMES":"startimes","GOTV":"gotv"}[String(p.network||"")] || String(p.network||"").toLowerCase());
-        if(!serviceID || !(p.planValue || p.plan)) {
-          results.push({index:i+1,status:"not_started",error:"Provider or plan code is missing"});
-          if(!isBulk) break;
-          continue;
-        }
-        ({data,error}=await supabaseClient.functions.invoke("sparkle-secure-bill-purchase",{body:{serviceID,phone:p.phone,customerID:p.service==="Cable TV"?p.phone:undefined,plan:(p.planValue||p.plan),amount:Number(p.amount),pin:transactionPin,requestID}}));
-      }
-      if(error && !data) {
-        const message=await sparkleFunctionErrorMessage(error,"Could not confirm this order status.");
-        results.push({index:i+1,status:"unknown",reference:requestID,error:message,service:p.service,amount:Number(p.amount)});
-        // Stop at an unknown result; retrying or proceeding blindly can cause duplicate charges.
-        break;
-      }
-      const status=String(data?.status||"").toLowerCase();
-      if(data?.success===true && ["successful","success","completed"].includes(status)) {
-        results.push({index:i+1,status:"successful",reference:data.reference||requestID,service:p.service,phone:p.phone,network:p.network,plan:p.plan||p.serviceLabel,amount:Number(data.amount||p.amount),provider:data.provider});
-      } else if(["refunded","failed","cancelled"].includes(status)) {
-        results.push({index:i+1,status:"refunded",reference:data.reference||requestID,service:p.service,amount:Number(data.amount||p.amount),error:data?.error||"Purchase failed and refund status was returned."});
-      } else if(status==="pending" || status==="unknown" || status==="processing") {
-        results.push({index:i+1,status:"pending",reference:data.reference||requestID,service:p.service,amount:Number(data.amount||p.amount),error:data?.error||"Provider status is not final."});
-        break;
-      } else {
-        results.push({index:i+1,status:"not_confirmed",reference:data?.reference||requestID,service:p.service,amount:Number(p.amount),error:data?.error||data?.message||"Provider did not confirm success."});
-        if(!isBulk) break;
-      }
-      if(!isBulk) break;
-    }
-    await loadWallet(userId);
-    await loadTransactions(userId);
-    if(results.length===1 && results[0].status==="successful") {
-      const r=results[0];
+  if(progress) progress.textContent=isData?"Securely processing data purchase…":"Securely processing airtime…";
+  try{
+    const {data,error}=isData
+      ? await supabaseClient.functions.invoke("sparkle-data-purchase",{
+          body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
+        })
+      : await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
+          body:{network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin}
+        });
+    if(error && !data) throw new Error(await sparkleFunctionErrorMessage(error,"Could not reach secure airtime/data processing. No purchase was confirmed."));
+    if(data?.success && data.status==="successful"){
       pendingPurchase=null;
-      try { sessionStorage.removeItem("sparklePendingPurchase"); } catch(e) {}
       if(overlay) overlay.classList.remove("show");
-      showReceipt({service:r.service,reference:r.reference,customer:r.phone,provider:r.network,plan:r.plan,type:r.service==="Data"?r.plan:undefined,amount:r.amount});
+      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:isData?(p.serviceLabel||p.serviceID):undefined,type:isData?p.plan:undefined,phone:p.phone,amount:Number(data.amount||p.amount)});
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
       return;
     }
-    const successful=results.filter(r=>r.status==="successful").length;
-    const refunded=results.filter(r=>r.status==="refunded").length;
-    const pending=results.find(r=>["pending","unknown"].includes(r.status));
-    const details=results.map(r=>`Item ${r.index}: ${r.status.toUpperCase()}${r.reference?" · "+r.reference:""}${r.error?" · "+r.error:""}`).join("\n");
-    if(!pending) {
+    if(data?.status==="refunded"){
       pendingPurchase=null;
-      try { sessionStorage.removeItem("sparklePendingPurchase"); } catch(e) {}
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||(isData?"Data purchase failed.":"Airtime purchase failed."))+" Reference: "+(data.reference||"not provided"));
+      return;
     }
-    alert((isBulk?`Bulk order finished: ${successful} successful, ${refunded} refunded, ${pending?"at least 1 awaiting confirmation":"no unresolved orders"}.`:(pending?"The purchase is awaiting provider confirmation.":"The purchase was not confirmed successful."))+"\n\n"+details+(pending?"\n\nDo not submit this order again. Keep the reference and check status with Sparkle Support.":""));
-  } catch(error) {
-    console.error("Secure Sparkle purchase:",error);
-    alert("Purchase processing was interrupted. Check transaction history before trying again. Do not retry any order marked pending.");
-  } finally {
+    if(data?.status==="pending"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert((data.error||(isData?"The provider has not confirmed the data order yet.":"The provider has not confirmed the airtime order yet."))+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
+      return;
+    }
+    throw new Error(data?.error||(isData?"Data purchase was not completed.":"Airtime purchase was not completed."));
+  }catch(error){
+    console.error(isData?"Secure Sparkle data purchase:":"Secure Sparkle airtime purchase:",error);
+    alert((isData?"Data purchase":"Airtime purchase")+" was not confirmed. Check your transaction history before trying again. "+(error.message||""));
+  }finally{
     if(overlay) overlay.classList.remove("show");
   }
 }
