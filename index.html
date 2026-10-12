@@ -3894,6 +3894,8 @@ let svbServicesCache = [];
 let svbCountriesLoadPromise = null;
 let svbCurrentQuote = null;
 let svbCurrentOrder = null;
+let svbAutoCheckTimer = null;
+let svbAutoCheckBusy = false;
 let svbPurchaseInProgress = false;
 let svbAwaitingPin = false;
 const SVB_LIVE_PURCHASES_ENABLED = true;
@@ -4104,6 +4106,22 @@ function showSvbOrder(order){
   order={...order,status:normalizedStatus,smsCode,message:statusMessage};
   svbCurrentOrder=order;
   void saveSvbOrderSnapshot(order);
+  // Automatically reconcile active SoftViralBoost orders while Sparkle is open.
+  // Terminal orders stop polling; the server-side finalizer prevents duplicate refunds.
+  if(["success","failed","cancelled","canceled","expired"].includes(normalizedStatus)){
+    if(svbAutoCheckTimer){clearInterval(svbAutoCheckTimer);svbAutoCheckTimer=null;}
+  }else if(!svbAutoCheckTimer){
+    svbAutoCheckTimer=setInterval(async()=>{
+      if(svbAutoCheckBusy || document.hidden || !svbCurrentOrder?.requestId)return;
+      const status=String(svbCurrentOrder.status||"pending").toLowerCase();
+      if(["success","failed","cancelled","canceled","expired"].includes(status)){
+        clearInterval(svbAutoCheckTimer);svbAutoCheckTimer=null;return;
+      }
+      svbAutoCheckBusy=true;
+      try{await checkSvbOrder({silent:true});}catch(e){console.warn("Sparkle automatic SMS order reconciliation:",e);}
+      finally{svbAutoCheckBusy=false;}
+    },20000);
+  }
   const card=document.getElementById("svbOrderCard");if(!card)return;
   card.style.display="block";
   document.getElementById("svbOrderService").textContent=order.serviceName||"US number";
@@ -4234,9 +4252,10 @@ async function executeSvbPurchase(pin){
     if(button){button.disabled=false;button.textContent="Buy US Number";}
   }
 }
-async function checkSvbOrder(){
-  if(!svbCurrentOrder?.requestId){alert("No active US number order to check.");return;}
-  const msg=document.getElementById("svbOrderMessage");if(msg)msg.textContent="Checking for SMS…";
+async function checkSvbOrder(options={}){
+  const silent=Boolean(options?.silent);
+  if(!svbCurrentOrder?.requestId){if(!silent)alert("No active US number order to check.");return;}
+  const msg=document.getElementById("svbOrderMessage");if(msg&&!silent)msg.textContent="Checking for SMS…";
   try{
     const response=await callSvbOrderFunction("sparkle-svb-check",{request_id:svbCurrentOrder.requestId});
     const d=response?.data||response;
@@ -4250,7 +4269,7 @@ async function checkSvbOrder(){
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
     }
-  }catch(error){if(msg)msg.textContent="Could not check order: "+String(error.message||error);}
+  }catch(error){if(msg&&!silent)msg.textContent="Could not check order: "+String(error.message||error);}
 }
 async function cancelSvbOrder(){
   if(!svbCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
