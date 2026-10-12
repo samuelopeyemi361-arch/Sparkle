@@ -6247,5 +6247,183 @@ document.addEventListener("DOMContentLoaded",()=>{
 <script id="sparkle-remove-old-purchase-drafts">
 (function(){try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith("sparkle_purchase_draft_v1_"))localStorage.removeItem(k);}localStorage.removeItem("sparkle_purchase_draft_cleanup_v1");}catch(_){}})();
 </script>
+<script id="sparkle-preserve-current-page">
+(function(){
+  "use strict";
+  const KEY_PREFIX="sparkle_page_state_v1_";
+  const MAX_AGE=7*24*60*60*1000;
+  let restoring=false;
+  let booting=false;
+  let saveTimer=null;
+  let lastUserId="";
+
+  function userId(){return String(window.currentSparkleUser?.id||"");}
+  function key(id){return KEY_PREFIX+id;}
+  function activePage(){return document.querySelector("#dashboard .page.active")?.id||"home";}
+  function read(id){
+    if(!id)return null;
+    try{
+      const x=JSON.parse(localStorage.getItem(key(id))||"null");
+      if(!x||x.userId!==id||!x.savedAt||Date.now()-Number(x.savedAt)>MAX_AGE)return null;
+      return x;
+    }catch(_){return null;}
+  }
+  function safeField(el){
+    if(!el||!el.matches("input,select,textarea")||el.disabled)return false;
+    const type=String(el.type||"").toLowerCase();
+    if(["password","file","submit","button","reset","hidden"].includes(type))return false;
+    const label=String((el.id||"")+" "+(el.name||"")+" "+(el.autocomplete||"")).toLowerCase();
+    if(/transaction.?pin|password|secret|token|verification.?code|one.?time.?code|otp.?code|code.?otp/.test(label))return false;
+    return true;
+  }
+  function captureFields(page){
+    const root=document.getElementById(page);
+    if(!root)return {};
+    const fields={};
+    root.querySelectorAll("input,select,textarea").forEach((el,i)=>{
+      if(!safeField(el))return;
+      const id=el.id?"#"+el.id:(el.name?"name:"+el.name+":"+i:"index:"+i);
+      const item={tag:el.tagName.toLowerCase(),type:String(el.type||"")};
+      if(el.type==="checkbox"||el.type==="radio")item.checked=!!el.checked;
+      else item.value=el.value;
+      fields[id]=item;
+    });
+    return fields;
+  }
+  function saveNow(){
+    if(restoring||booting)return;
+    const id=userId();
+    if(!id||!document.getElementById("dashboard")?.classList.contains("active"))return;
+    const page=activePage();
+    const state={version:1,userId:id,page,scrollY:Number(window.scrollY||0),savedAt:Date.now(),fields:captureFields(page)};
+    try{localStorage.setItem(key(id),JSON.stringify(state));}catch(e){console.warn("Sparkle could not save the current page state.",e);}
+    lastUserId=id;
+  }
+  function scheduleSave(){
+    if(restoring||booting)return;
+    if(saveTimer)clearTimeout(saveTimer);
+    saveTimer=setTimeout(saveNow,120);
+  }
+  function restoreFields(page,fields){
+    if(!fields||typeof fields!=="object")return;
+    const root=document.getElementById(page);
+    if(!root)return;
+    const controls=Array.from(root.querySelectorAll("input,select,textarea"));
+    Object.entries(fields).forEach(([locator,item])=>{
+      let el=null;
+      if(locator.startsWith("#"))el=document.getElementById(locator.slice(1));
+      else if(locator.startsWith("name:")){
+        const bits=locator.split(":");
+        const name=bits[1];
+        const candidates=controls.filter(c=>c.name===name);
+        el=candidates[Number(bits[2])]||candidates[0]||null;
+      }else if(locator.startsWith("index:"))el=controls[Number(locator.slice(6))]||null;
+      if(!el||!safeField(el)||el.tagName.toLowerCase()!==item.tag)return;
+      if(el.type==="checkbox"||el.type==="radio")el.checked=!!item.checked;
+      else if(typeof item.value==="string")el.value=item.value;
+      el.dispatchEvent(new Event("input",{bubbles:true}));
+      el.dispatchEvent(new Event("change",{bubbles:true}));
+    });
+  }
+  function navButtonFor(page){
+    return Array.from(document.querySelectorAll(".nav-item")).find(b=>{
+      const onclick=b.getAttribute("onclick")||"";
+      return onclick.includes("'"+page+"'")||onclick.includes('"'+page+'"');
+    })||null;
+  }
+  async function restoreState(id,state){
+    if(!id||!state||state.userId!==id||!document.getElementById("dashboard")?.classList.contains("active"))return;
+    const validPage=state.page&&document.getElementById(state.page)?.classList.contains("page");
+    if(!validPage)return;
+    restoring=true;
+    try{
+      await new Promise(resolve=>setTimeout(resolve,80));
+      if(!document.getElementById("dashboard")?.classList.contains("active")||userId()!==id)return;
+      const page=state.page;
+      if(page!=="home"&&typeof window.showDashPage==="function")window.showDashPage(page,navButtonFor(page));
+      else if(page==="home"&&typeof window.showDashPage==="function")window.showDashPage("home",navButtonFor("home"));
+      await new Promise(resolve=>setTimeout(resolve,80));
+      restoreFields(page,state.fields);
+      window.scrollTo({top:Math.max(0,Number(state.scrollY)||0),behavior:"auto"});
+    }finally{
+      restoring=false;
+      saveNow();
+    }
+  }
+
+  // Track route changes made through either dashboard navigation path.
+  if(typeof window.showDashPage==="function"){
+    const original=window.showDashPage;
+    window.showDashPage=function(pageId,button){
+      const result=original.apply(this,arguments);
+      if(!booting&&!restoring)saveNow();
+      return result;
+    };
+  }
+  if(typeof window.openServicePage==="function"){
+    const original=window.openServicePage;
+    window.openServicePage=function(service){
+      const result=original.apply(this,arguments);
+      if(!booting&&!restoring)saveNow();
+      return result;
+    };
+  }
+
+  // showDashboard always opens Home during initialization. Suppress that temporary route,
+  // then restore the last page for this same signed-in user after initialization completes.
+  if(typeof window.showDashboard==="function"){
+    const original=window.showDashboard;
+    window.showDashboard=async function(user){
+      const id=String(user?.id||"");
+      const saved=read(id);
+      booting=true;
+      try{return await original.apply(this,arguments);}
+      finally{
+        booting=false;
+        if(id&&saved&&saved.page){
+          lastUserId=id;
+          await restoreState(id,saved);
+        }else if(id){
+          lastUserId=id;
+          saveNow();
+        }
+      }
+    };
+  }
+
+  document.addEventListener("input",e=>{if(e.target?.closest?.("#dashboard"))scheduleSave();},true);
+  document.addEventListener("change",e=>{if(e.target?.closest?.("#dashboard"))scheduleSave();},true);
+  window.addEventListener("scroll",scheduleSave,{passive:true});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="hidden")saveNow();else{
+    const id=userId();const saved=read(id);
+    if(id&&saved&&activePage()==="home"&&saved.page!=="home")void restoreState(id,saved);
+  }});
+  window.addEventListener("pagehide",saveNow);
+  window.addEventListener("pageshow",()=>{
+    const id=userId();const saved=read(id);
+    if(id&&saved&&activePage()==="home"&&saved.page!=="home")void restoreState(id,saved);
+  });
+
+  // Never carry the previous user's route into a later login after signing out.
+  if(typeof window.logout==="function"){
+    const original=window.logout;
+    window.logout=async function(){
+      const id=userId();
+      try{if(id)localStorage.removeItem(key(id));}catch(_){}
+      return await original.apply(this,arguments);
+    };
+  }
+  if(window.supabaseClient?.auth?.onAuthStateChange){
+    window.supabaseClient.auth.onAuthStateChange((event,session)=>{
+      if(event==="SIGNED_OUT"){
+        const id=lastUserId||userId();
+        try{if(id)localStorage.removeItem(key(id));}catch(_){}
+        lastUserId="";
+      }
+      if(session?.user?.id)lastUserId=String(session.user.id);
+    });
+  }
+})();
+</script>
 </body>
 </html>
