@@ -3943,7 +3943,14 @@ function normalizeSvbCountries(response){
     if(code==="usa")code="us";
     const name=String((typeof item==="string"?item:(item?.name??item?.country_name??item?.countryName??item?.label))||(code==="us"?"United States":code.toUpperCase())).trim();
     if(!/^[a-z]{2,3}$/.test(code)||!name)return null;
-    return {code,name,flag:String(item?.flag||((code==="us"||code==="usa")?"🇺🇸":"")),dial:String(item?.dial||item?.dial_code||"")};
+    // Country dropdowns cannot render an image URL inside an <option>.
+    // Always derive a real emoji flag from the ISO country code instead of
+    // accidentally showing a supplier flag/logo URL as literal text.
+    const flagCode=code==="uk"?"gb":code;
+    const flag= /^[a-z]{2}$/.test(flagCode)
+      ? String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0)))
+      : "🌐";
+    return {code,name,flag,dial:String(item?.dial||item?.dial_code||"")};
   }).filter(Boolean);
   // Keep the requested US option usable even if the provider country list omits it.
   if(!items.some(x=>x.code==="us"))items.push({code:"us",name:"United States",flag:"🇺🇸",dial:"+1"});
