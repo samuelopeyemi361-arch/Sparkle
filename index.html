@@ -1845,7 +1845,7 @@ Privacy Policy
             <div class="service" onclick="openServicePage('electricity')"><span>⚡</span>Electricity<small>Power Bills</small></div>
             <div class="service" onclick="openServicePage('education')"><span>🎟️</span>Education Pins<small>WAEC • NECO • NABTEB</small></div>
             <div class="service" onclick="openServicePage('rechargepin')"><span>🪪</span>Recharge Pin Printing<small>Print recharge cards</small></div>
-            <div class="service" onclick="openServicePage('smsotp');loadFleexaApps()"><span>🇺🇸</span>Buy US Number<small>Temporary verification numbers</small></div>
+            <div class="service" onclick="openServicePage('smsotp');loadSvbCountries()"><span>🇺🇸</span>Buy US Number<small>Temporary verification numbers</small></div>
           </div>
 
           <div class="txbox">
@@ -1858,40 +1858,42 @@ Privacy Policy
         <section class="page" id="smsotpPage">
           <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Buy US Number</h1></div>
           <p class="dashboard-subtitle">Choose a service, review the selling price, then manage your activation here.</p>
-          <div id="fleexaCatalogPanel" class="service-page" style="padding:18px;margin-top:14px">
-            <label for="fleexaAppSearch" style="display:block;font-weight:800;margin-bottom:8px">Search services</label>
-            <input id="fleexaAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterFleexaApps()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;margin-bottom:14px">
-            <label for="fleexaAppSelect" style="display:block;font-weight:800;margin-bottom:8px">Select service</label>
-            <select id="fleexaAppSelect" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="">Loading services…</option></select>
-            <button class="btn primary full" type="button" onclick="checkFleexaPrice()">Check price</button>
-            <div id="fleexaPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
-            <button id="fleexaBuyButton" class="btn primary full" type="button" onclick="buyFleexaNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
-            <p id="fleexaSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are enabled for testing. Check the price in naira before buying; real wallet funds may be deducted.</p>
+          <div id="svbCatalogPanel" class="service-page" style="padding:18px;margin-top:14px">
+            <label for="svbCountrySelect" style="display:block;font-weight:800;margin-bottom:8px">Choose country</label>
+            <select id="svbCountrySelect" onchange="onSvbCountryChange()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="us">🇺🇸 United States</option></select>
+            <label for="svbAppSearch" style="display:block;font-weight:800;margin-bottom:8px">Search services</label>
+            <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;margin-bottom:14px">
+            <label for="svbAppSelect" style="display:block;font-weight:800;margin-bottom:8px">Choose verification service</label>
+            <select id="svbAppSelect" onchange="onSvbServiceChange()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="">Select a country first</option></select>
+            <button class="btn primary full" type="button" onclick="checkSvbPrice()">Check price</button>
+            <div id="svbPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
+            <button id="svbBuyButton" class="btn primary full" type="button" onclick="buySvbNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
+            <p id="svbSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are enabled for testing. Check the price in naira before buying; real wallet funds may be deducted.</p>
           </div>
-          <div id="fleexaReviewPanel" class="service-page" style="display:none;padding:18px;margin-top:14px">
-            <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromFleexaReview()">‹</button><h2 style="margin:0">Review number purchase</h2></div>
+          <div id="svbReviewPanel" class="service-page" style="display:none;padding:18px;margin-top:14px">
+            <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromSvbReview()">‹</button><h2 style="margin:0">Review number purchase</h2></div>
             <p style="color:var(--muted);margin-top:0">Check your order and total carefully. You will not be charged until you confirm with your Transaction PIN.</p>
-            <div class="summary-line"><span>Service</span><strong id="fleexaReviewService">—</strong></div>
-            <div class="summary-line"><span>Wallet charge</span><strong id="fleexaReviewTotal">—</strong></div>
-            <div class="sparkle-summary-total"><span>Total</span><strong id="fleexaReviewGrandTotal">—</strong></div>
-            <p style="font-size:12px;color:var(--muted)">US numbers depend on service availability. Tap Buy US Number once; if the request is pending, check its status instead of buying again.</p>
-            <button id="fleexaReviewConfirm" class="btn primary full" type="button" onclick="confirmFleexaReviewPurchase()">Buy US Number</button>
-            <button class="btn full" type="button" style="margin-top:8px" onclick="backFromFleexaReview()">Go back and edit</button>
-            <div id="fleexaReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
+            <div class="summary-line"><span>Service</span><strong id="svbReviewService">—</strong></div>
+            <div class="summary-line"><span>Wallet charge</span><strong id="svbReviewTotal">—</strong></div>
+            <div class="sparkle-summary-total"><span>Total</span><strong id="svbReviewGrandTotal">—</strong></div>
+            <p style="font-size:12px;color:var(--muted)">Numbers depend on country and service availability. If an order is pending, check its status instead of buying again.</p>
+            <button id="svbReviewConfirm" class="btn primary full" type="button" onclick="confirmSvbReviewPurchase()">Buy US Number</button>
+            <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
+            <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
           </div>
-          <div id="fleexaOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
+          <div id="svbOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <h3 style="margin:0 0 12px">Your US number order</h3>
             <div style="display:grid;gap:10px">
-              <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="fleexaOrderService">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="fleexaOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Verification code</div><strong id="fleexaOrderOtp" style="font-size:24px;overflow-wrap:anywhere">Waiting for SMS…</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Status</div><strong id="fleexaOrderStatus">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Order reference</div><span id="fleexaOrderReference" style="overflow-wrap:anywhere">—</span></div>
+              <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="svbOrderService">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="svbOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Verification code</div><strong id="svbOrderOtp" style="font-size:24px;overflow-wrap:anywhere">Waiting for SMS…</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Status</div><strong id="svbOrderStatus">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Order reference</div><span id="svbOrderReference" style="overflow-wrap:anywhere">—</span></div>
             </div>
-            <div id="fleexaOrderMessage" role="status" style="margin-top:12px;color:var(--muted)"></div>
+            <div id="svbOrderMessage" role="status" style="margin-top:12px;color:var(--muted)"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-              <button class="btn primary" type="button" onclick="checkFleexaOrder()">Check OTP</button>
-              <button class="btn" type="button" onclick="cancelFleexaOrder()">Cancel order</button>
+              <button class="btn primary" type="button" onclick="checkSvbOrder()">Check OTP</button>
+              <button class="btn" type="button" onclick="cancelSvbOrder()">Cancel order</button>
             </div>
           </div>
         </section>
@@ -2078,6 +2080,7 @@ Privacy Policy
         </select>
       </div>
 
+      <p class="duration-filter-hint" style="font-size:12px;color:var(--muted);margin:8px 0 12px">Choose a duration to show plans valid for that many days or less.</p>
       <div class="data-categories" id="dataCategories"></div>
 
       <div id="dataPlanError"></div>
@@ -3886,207 +3889,357 @@ function openServicePage(service){
   if(service==="education") loadEducationPlans();
 }
 
-let fleexaAppsCache = [];
-let fleexaCurrentQuote = null;
-let fleexaCurrentOrder = null;
-let fleexaPurchaseInProgress = false;
-let fleexaAwaitingPin = false;
-// Live purchase is available, but purchase execution starts only after review and PIN verification.
-const FLEEXA_LIVE_PURCHASES_ENABLED = true;
+let svbCountriesCache = [];
+let svbServicesCache = [];
+let svbCountriesLoadPromise = null;
+let svbCurrentQuote = null;
+let svbCurrentOrder = null;
+let svbPurchaseInProgress = false;
+let svbAwaitingPin = false;
+const SVB_LIVE_PURCHASES_ENABLED = true;
 
-async function callFleexaCatalog(payload){
-  const { data, error } = await supabaseClient.functions.invoke("sparkle-fleexa-catalog", { body: payload });
-  if(error) throw new Error(error.message || "Could not load Fleexa catalogue");
-  if(data && data.success === false) throw new Error(data.message || data.error || "Fleexa request failed");
-  return data;
-}
-async function callFleexaOrderFunction(name,payload){
-  const { data, error } = await supabaseClient.functions.invoke(name,{body:payload});
-  const isLowFunds=(value)=>/insufficient\s+(funds|balance)|not enough\s+(funds|balance)|wallet.{0,30}(low|insufficient|not enough)|balance.{0,30}(low|insufficient)|insufficient_wallet_balance/i.test(String(value||""));
-  const friendlyFundsError=()=>{const e=new Error("Insufficient funds. Please fund your Sparkle wallet and try again.");e.code="INSUFFICIENT_FUNDS";return e;};
+async function callSvbCatalog(payload){
+  const {data,error}=await supabaseClient.functions.invoke("sparkle-svb-catalog",{body:payload});
   if(error){
-    let detail="", raw="";
-    try{
-      const context=error.context;
-      if(context && typeof context.clone==="function"){
-        const response=context.clone();
-        raw=await response.text();
-        try{const body=JSON.parse(raw);detail=String(body?.message||body?.error||body?.details||body?.hint||body?.code||"");}
-        catch(_){detail=raw;}
-      }
-    }catch(_){/* Fall back to the SDK message when no response body is available. */}
-    const combined=[detail,raw,error.message].filter(Boolean).join(" ");
-    if(isLowFunds(combined)||/INSUFFICIENT_FUNDS/i.test(combined)) throw friendlyFundsError();
-    throw new Error(detail||error.message||"Could not contact the US number service");
+    const detail=await sparkleFunctionErrorMessage(error,"Could not load the Soft Viral Boost catalogue.");
+    throw new Error(detail);
   }
-  if(data && data.success === false){
-    const reason=String(data.message||data.error||data.details||data.code||"US number request failed");
-    if(data.code==="INSUFFICIENT_FUNDS"||isLowFunds(reason)) throw friendlyFundsError();
-    throw new Error(reason);
+  if(data?.success===false)throw new Error(String(data.message||data.error||"Soft Viral Boost could not load this catalogue."));
+  return data||{};
+}
+async function callSvbOrderFunction(name,payload){
+  const {data,error}=await supabaseClient.functions.invoke(name,{body:payload});
+  if(!error){
+    if(data&&data.success===false&&!["pending","unknown","failed","cancelled"].includes(String(data.status||"")))
+      throw new Error(String(data.message||data.error||"The number purchase request failed."));
+    return data||{};
   }
-  return data || {};
-}
-function normalizeFleexaApps(data){
-  const raw = data?.data;
-  if(Array.isArray(raw)) return raw;
-  if(raw && Array.isArray(raw.apps)) return raw.apps;
-  if(raw && typeof raw === "object") return Object.entries(raw).map(([key,value]) => typeof value === "object" ? ({serviceName:key,...value}) : ({serviceName:key,name:String(value)}));
-  return [];
-}
-async function loadFleexaApps(){
-  const select=document.getElementById("fleexaAppSelect");
-  const result=document.getElementById("fleexaPriceResult");
-  if(!select || (fleexaAppsCache.length && select.options.length>1)) return;
-  select.innerHTML='<option value="">Loading services…</option>';
-  result.textContent="Loading services from Fleexa…";
+  let body=null;
   try{
-    const data=await callFleexaCatalog({action:"apps"});
-    fleexaAppsCache=normalizeFleexaApps(data).map(item=>{
-      const name=String(item.serviceName||item.service_name||item.name||item.title||item.code||item.id||"").trim();
-      const code=String(item.serviceName||item.service_name||item.code||item.id||name).trim();
-      return {name,code};
-    }).filter(item=>item.name && item.code);
-    fleexaAppsCache.sort((a,b)=>a.name.localeCompare(b.name));
-    renderFleexaApps(fleexaAppsCache);
-    result.textContent=fleexaAppsCache.length ? "Choose a service and check its current price." : "Fleexa returned no services in a format this page can display. Please check the API response format.";
-  }catch(e){
-    select.innerHTML='<option value="">Could not load services</option>';
-    result.textContent="Could not load Fleexa services: "+e.message;
-  }
+    const context=error.context;
+    if(context&&typeof context.clone==="function"){
+      const response=context.clone();
+      const raw=await response.text();
+      try{body=JSON.parse(raw);}catch(_){body={message:raw};}
+    }
+  }catch(_){}
+  // A non-2xx response can still mean the supplier order is pending/unknown.
+  // Preserve it so the page can tell the customer not to submit a duplicate order.
+  if(body&&["pending","unknown","failed","cancelled"].includes(String(body.status||"")))return body;
+  const reason=String(body?.message||body?.error||body?.details||body?.code||error.message||"Could not reach Soft Viral Boost.");
+  const err=new Error(/INSUFFICIENT_FUNDS|insufficient.*balance|not enough.*balance/i.test(reason)
+    ?"Insufficient Sparkle wallet balance. Please fund your wallet and try again."
+    :reason);
+  err.code=body?.code||(/insufficient.*balance|not enough.*balance/i.test(reason)?"INSUFFICIENT_FUNDS":"SVB_REQUEST_FAILED");
+  err.httpStatus=Number(error?.context?.status||error?.status||0);
+  err.payload=body;
+  throw err;
 }
-function renderFleexaApps(items){
-  const select=document.getElementById("fleexaAppSelect");
-  if(!select) return;
+function normalizeSvbCountries(response){
+  const raw=response?.data?.countries??response?.countries??response?.data?.data?.countries??[];
+  const items=(Array.isArray(raw)?raw:[]).map(item=>{
+    const rawCode=typeof item==="string"?item:(item?.code??item?.country_code??item?.countryCode??item?.iso2??item?.iso_code??item?.value??"");
+    let code=String(rawCode||"").trim().toLowerCase();
+    if(code==="usa")code="us";
+    const name=String((typeof item==="string"?item:(item?.name??item?.country_name??item?.countryName??item?.label))||(code==="us"?"United States":code.toUpperCase())).trim();
+    if(!/^[a-z]{2,3}$/.test(code)||!name)return null;
+    return {code,name,flag:String(item?.flag||((code==="us"||code==="usa")?"🇺🇸":"")),dial:String(item?.dial||item?.dial_code||"")};
+  }).filter(Boolean);
+  // Keep the requested US option usable even if the provider country list omits it.
+  if(!items.some(x=>x.code==="us"))items.push({code:"us",name:"United States",flag:"🇺🇸",dial:"+1"});
+  const unique=new Map();items.forEach(item=>{if(!unique.has(item.code))unique.set(item.code,item);});
+  return [...unique.values()].sort((a,b)=>a.code==="us"?-1:b.code==="us"?1:a.name.localeCompare(b.name));
+}
+function normalizeSvbServices(response){
+  const raw=response?.data?.services??response?.services??response?.data?.data?.services??[];
+  return (Array.isArray(raw)?raw:[]).map(item=>{
+    const code=String(item?.code??item?.service??item?.serviceName??item?.service_name??"").trim();
+    const name=String(item?.name??item?.service_name??item?.serviceName??item?.title??code).trim();
+    if(!code||!name)return null;
+    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0)};
+  }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
+}
+function renderSvbCountries(){
+  const select=document.getElementById("svbCountrySelect");if(!select)return;
+  const current=select.value||"us";
+  select.innerHTML=svbCountriesCache.map(c=>`<option value="${escapeHtml(c.code)}">${escapeHtml((c.flag?c.flag+" ":"")+c.name)}</option>`).join("");
+  select.value=svbCountriesCache.some(c=>c.code===current)?current:(svbCountriesCache.some(c=>c.code==="us")?"us":svbCountriesCache[0]?.code||"us");
+}
+function renderSvbApps(items){
+  const select=document.getElementById("svbAppSelect");if(!select)return;
   const current=select.value;
   select.innerHTML='<option value="">Choose a service</option>';
-  items.forEach(item=>{
-    const opt=document.createElement("option"); opt.value=item.code; opt.textContent=item.name;
-    select.appendChild(opt);
-  });
-  if(items.some(item=>item.code===current)) select.value=current;
+  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name;select.appendChild(option);});
+  if(items.some(item=>item.code===current))select.value=current;
 }
-function filterFleexaApps(){
-  const q=(document.getElementById("fleexaAppSearch")?.value||"").toLowerCase().trim();
-  renderFleexaApps(fleexaAppsCache.filter(item=>item.name.toLowerCase().includes(q)||item.code.toLowerCase().includes(q)));
+async function loadSvbCountries(force=false){
+  const select=document.getElementById("svbCountrySelect");
+  const result=document.getElementById("svbPriceResult");
+  if(!select)return;
+  if(svbCountriesLoadPromise&&!force)return svbCountriesLoadPromise;
+  if(!force&&svbCountriesCache.length&&select.options.length>1){if(!svbServicesCache.length)await loadSvbServices();await restoreSavedSvbOrder();return;}
+  select.innerHTML='<option value="us">🇺🇸 United States</option>';
+  if(result)result.textContent="Loading available countries…";
+  svbCountriesLoadPromise=(async()=>{
+    try{
+      const response=await callSvbCatalog({action:"countries"});
+      svbCountriesCache=normalizeSvbCountries(response);
+    }catch(error){
+      // US remains available as a fallback; the service function will show any real provider error.
+      svbCountriesCache=normalizeSvbCountries({data:{countries:[]}});
+    }
+    renderSvbCountries();
+    await loadSvbServices();
+    await restoreSavedSvbOrder();
+  })();
+  try{await svbCountriesLoadPromise;}finally{svbCountriesLoadPromise=null;}
 }
-async function checkFleexaPrice(){
-  const serviceName=document.getElementById("fleexaAppSelect")?.value||"";
-  const result=document.getElementById("fleexaPriceResult");
-  const buy=document.getElementById("fleexaBuyButton");
-  if(!serviceName){result.textContent="Select a service first.";return;}
-  result.textContent="Checking current price…";
-  buy.disabled=true; buy.textContent="Checking price…"; buy.style.opacity=".55";
-  fleexaCurrentQuote=null;
+async function onSvbCountryChange(){
+  svbCurrentQuote=null;
+  svbServicesCache=[];
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  await loadSvbServices();
+}
+async function loadSvbServices(){
+  const country=document.getElementById("svbCountrySelect")?.value||"us";
+  const select=document.getElementById("svbAppSelect");
+  const result=document.getElementById("svbPriceResult");
+  if(!select)return;
+  svbCurrentQuote=null;
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  select.innerHTML='<option value="">Loading services…</option>';
+  if(result)result.textContent="Loading Soft Viral Boost services for this country…";
   try{
-    const data=await callFleexaCatalog({action:"price",serviceName});
-    const d=data?.data||{};
-    const amount=Number(d.price_ngn ?? d.rate ?? d.price);
-    if(!Number.isFinite(amount)||amount<=0){result.textContent="Price response received, but the NGN price format could not be verified.";buy.disabled=true;buy.textContent="Check price first";return;}
-    const selling=Number((amount*1.75).toFixed(2));
-    fleexaCurrentQuote={serviceName,providerCost:amount,sellingPrice:selling};
-    buy.disabled=false; buy.textContent="Review purchase"; buy.style.opacity="1";
-    result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+selling.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the total price you will pay on Sparkle.</div></div>';
-    document.getElementById("fleexaSafetyNote").textContent="Live purchases are enabled for testing. Check your Sparkle price carefully before buying; this uses real wallet funds.";
-  }catch(e){result.textContent="Could not check price: "+e.message;buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-  finally{if(!fleexaCurrentQuote){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}}
+    const response=await callSvbCatalog({action:"services",country});
+    svbServicesCache=normalizeSvbServices(response);
+    renderSvbApps(svbServicesCache);
+    if(result)result.textContent=svbServicesCache.length?"Choose a service and check its current Sparkle price.":"No services are currently listed for this country. Choose another country and try again.";
+  }catch(error){
+    svbServicesCache=[];
+    select.innerHTML='<option value="">Could not load services</option>';
+    if(result)result.textContent="Could not load Soft Viral Boost services: "+String(error.message||error);
+  }
 }
-function showFleexaOrder(order){
-  fleexaCurrentOrder=order;
-  const card=document.getElementById("fleexaOrderCard");
+function filterSvbApps(){
+  const query=(document.getElementById("svbAppSearch")?.value||"").toLowerCase().trim();
+  renderSvbApps(svbServicesCache.filter(item=>item.name.toLowerCase().includes(query)||item.code.toLowerCase().includes(query)));
+  svbCurrentQuote=null;
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+}
+function onSvbServiceChange(){
+  svbCurrentQuote=null;
+  const result=document.getElementById("svbPriceResult");
+  if(result)result.textContent="Choose a service and check its current Sparkle price.";
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+}
+async function checkSvbPrice(){
+  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
+  const country=document.getElementById("svbCountrySelect")?.value||"us";
+  const result=document.getElementById("svbPriceResult");
+  const buy=document.getElementById("svbBuyButton");
+  if(!serviceCode){if(result)result.textContent="Choose a country and service first.";return;}
+  if(result)result.textContent="Checking the current Sparkle price…";
+  if(buy){buy.disabled=true;buy.textContent="Checking price…";buy.style.opacity=".55";}
+  svbCurrentQuote=null;
+  try{
+    const response=await callSvbCatalog({action:"price",country,serviceName:serviceCode});
+    const quote=response?.data||response;
+    const sellingPrice=Number(quote?.selling_price_ngn);
+    if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw new Error("Sparkle could not verify the current selling price. Please try another service or country.");
+    const selected=svbServicesCache.find(item=>item.code===serviceCode);
+    svbCurrentQuote={serviceCode,country,serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:Math.round((sellingPrice+Number.EPSILON)*100)/100,network:String(quote.network||selected?.network||"")};
+    if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the full amount charged by Sparkle. Supplier costs and profit are not shown.</div></div>';
+    if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
+  }catch(error){
+    if(result)result.textContent="Could not check price: "+String(error.message||error);
+    if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  }
+}
+function svbOrderStorageKey(userId){return "sparkle_svb_active_order_"+String(userId||"");}
+async function saveSvbOrderSnapshot(order){
+  try{
+    const auth=await supabaseClient.auth.getUser();
+    const userId=auth?.data?.user?.id;
+    if(!userId||!order?.requestId)return;
+    const safe={requestId:String(order.requestId),serviceName:String(order.serviceName||"US number"),phoneNumber:String(order.phoneNumber||""),status:String(order.status||"unknown"),message:String(order.message||""),savedAt:Date.now()};
+    localStorage.setItem(svbOrderStorageKey(userId),JSON.stringify(safe));
+  }catch(_){}
+}
+async function restoreSavedSvbOrder(){
+  try{
+    const auth=await supabaseClient.auth.getUser();
+    const userId=auth?.data?.user?.id;
+    if(!userId)return;
+    const saved=JSON.parse(localStorage.getItem(svbOrderStorageKey(userId))||"null");
+    if(!saved?.requestId)return;
+    showSvbOrder({...saved,smsCode:""});
+    const status=String(saved.status||"unknown").toLowerCase();
+    if(!["success","failed","cancelled","expired"].includes(status)){
+      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order active — check status";buy.style.opacity=".55";}
+    }
+  }catch(_){}
+}
+function showSvbOrder(order){
+  svbCurrentOrder=order;
+  void saveSvbOrderSnapshot(order);
+  const card=document.getElementById("svbOrderCard");if(!card)return;
   card.style.display="block";
-  document.getElementById("fleexaOrderService").textContent=order.serviceName||"US number";
-  document.getElementById("fleexaOrderPhone").textContent=order.phoneNumber||"Waiting for phone number…";
-  document.getElementById("fleexaOrderOtp").textContent=order.smsCode||"Waiting for SMS…";
-  document.getElementById("fleexaOrderStatus").textContent=order.status||"pending";
-  document.getElementById("fleexaOrderReference").textContent=order.requestId||"—";
-  document.getElementById("fleexaOrderMessage").textContent=order.message||"Check again in 20–30 seconds for the OTP.";
+  document.getElementById("svbOrderService").textContent=order.serviceName||"US number";
+  document.getElementById("svbOrderPhone").textContent=order.phoneNumber||"Waiting for phone number…";
+  document.getElementById("svbOrderOtp").textContent=order.smsCode||"Waiting for SMS…";
+  document.getElementById("svbOrderStatus").textContent=order.status||"pending";
+  document.getElementById("svbOrderReference").textContent=order.requestId||"—";
+  document.getElementById("svbOrderMessage").textContent=order.message||"Check again shortly for the SMS code.";
 }
-async function buyFleexaNumber(){
-  const serviceName=document.getElementById("fleexaAppSelect")?.value||"";
-  if(!FLEEXA_LIVE_PURCHASES_ENABLED){alert("US number purchases are temporarily unavailable.");return;}
-  if(!serviceName){alert("Select a service first.");return;}
-  if(!fleexaCurrentQuote||fleexaCurrentQuote.serviceName!==serviceName){alert("Check the current price first.");return;}
-  document.getElementById("fleexaReviewService").textContent=serviceName;
-  const total="₦"+fleexaCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById("fleexaReviewTotal").textContent=total;
-  document.getElementById("fleexaReviewGrandTotal").textContent=total;
-  document.getElementById("fleexaReviewMessage").textContent="";
-  document.getElementById("fleexaCatalogPanel").style.display="none";
-  document.getElementById("fleexaReviewPanel").style.display="block";
-  document.getElementById("fleexaOrderCard").style.display="none";
+function buySvbNumber(){
+  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
+  const country=document.getElementById("svbCountrySelect")?.value||"us";
+  if(!SVB_LIVE_PURCHASES_ENABLED){alert("US number purchases are temporarily unavailable.");return;}
+  if(!serviceCode){alert("Choose a verification service first.");return;}
+  const previousStatus=String(svbCurrentOrder?.status||"").toLowerCase();
+  if(svbCurrentOrder?.requestId&&! ["success","failed","cancelled","expired"].includes(previousStatus)){
+    alert("You already have a number order that may still be active. Check or cancel that order before buying another number.");return;
+  }
+  if(!svbCurrentQuote||svbCurrentQuote.serviceCode!==serviceCode||svbCurrentQuote.country!==country){alert("Check the current price first.");return;}
+  const countryName=svbCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
+  document.getElementById("svbReviewService").textContent=svbCurrentQuote.serviceName+" · "+countryName;
+  const total="₦"+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  document.getElementById("svbReviewTotal").textContent=total;
+  document.getElementById("svbReviewGrandTotal").textContent=total;
+  document.getElementById("svbReviewMessage").textContent="";
+  document.getElementById("svbCatalogPanel").style.display="none";
+  document.getElementById("svbReviewPanel").style.display="block";
+  document.getElementById("svbOrderCard").style.display="none";
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function backFromFleexaReview(){
-  if(fleexaPurchaseInProgress) return;
-  document.getElementById("fleexaReviewPanel").style.display="none";
-  document.getElementById("fleexaCatalogPanel").style.display="block";
+function backFromSvbReview(){
+  if(svbPurchaseInProgress)return;
+  document.getElementById("svbReviewPanel").style.display="none";
+  document.getElementById("svbCatalogPanel").style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function confirmFleexaReviewPurchase(){
-  if(fleexaPurchaseInProgress) return;
-  const serviceName=document.getElementById("fleexaAppSelect")?.value||"";
-  if(!fleexaCurrentQuote||fleexaCurrentQuote.serviceName!==serviceName){alert("The price quote has changed or expired. Go back and check the price again.");return;}
+function confirmSvbReviewPurchase(){
+  if(svbPurchaseInProgress)return;
+  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
+  const country=document.getElementById("svbCountrySelect")?.value||"us";
+  if(!svbCurrentQuote||svbCurrentQuote.serviceCode!==serviceCode||svbCurrentQuote.country!==country){alert("The price quote has changed. Go back and check the current price again.");return;}
   currentService="smsotp";
-  fleexaAwaitingPin=true;
+  svbAwaitingPin=true;
   openPinForPurchase();
 }
-async function executeFleexaPurchase(pin){
-  if(fleexaPurchaseInProgress) return;
-  if(!fleexaCurrentQuote){alert("Please check the US number price again.");return;}
-  fleexaPurchaseInProgress=true;
-  const button=document.getElementById("fleexaReviewConfirm");
-  const message=document.getElementById("fleexaReviewMessage");
+async function executeSvbPurchase(pin){
+  if(svbPurchaseInProgress)return;
+  if(!svbCurrentQuote){alert("Please check the US number price again.");return;}
+  if(!/^\d{4}$/.test(String(pin||""))){alert("Enter your 4-digit transaction PIN.");return;}
+  svbPurchaseInProgress=true;
+  const button=document.getElementById("svbReviewConfirm");
+  const message=document.getElementById("svbReviewMessage");
   if(button){button.disabled=true;button.textContent="Processing purchase…";}
-  if(message) message.textContent="Submitting your order once. Please do not close this page or tap again.";
+  if(message)message.textContent="Submitting your order once. Please do not close this page or tap again.";
+  const quote={...svbCurrentQuote};
+  const requestId="SPK-SVB-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
   try{
-    const serviceName=fleexaCurrentQuote.serviceName;
-    if(!/^\d{4}$/.test(String(pin||""))) throw new Error("Enter your 4-digit transaction PIN before buying.");
-    // Create one stable reference for this attempt so the backend can reserve and reconcile safely.
-    const requestId="SPK-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
-    const data=await callFleexaOrderFunction("sparkle-fleexa-buy",{serviceName,request_id:requestId,pin:String(pin)});
-    const d=data.data||data;
-    const returnedRequestId=String(d.requestId||d.request_id||d.id||requestId);
-    showFleexaOrder({requestId:returnedRequestId,serviceName,phoneNumber:d.phoneNumber||d.phone||"",status:d.status||"pending",message:d.message||"Number reserved. Check again for the OTP."});
-    document.getElementById("fleexaReviewPanel").style.display="none";
-    document.getElementById("fleexaCatalogPanel").style.display="block";
-    document.getElementById("fleexaBuyButton").disabled=true;
-    document.getElementById("fleexaBuyButton").textContent="Order started — check status";
-    document.getElementById("fleexaBuyButton").style.opacity=".55";
-    document.getElementById("fleexaSafetyNote").textContent="An order has been started. Check its status before making another purchase.";
-  }catch(e){
-    const isInsufficientFunds=e?.code==="INSUFFICIENT_FUNDS"||/insufficient\s+(funds|balance)|not enough (funds|balance)|wallet balance too low/i.test(String(e?.message||""));
-    if(isInsufficientFunds){
-      const friendly="Insufficient funds. Please fund your Sparkle wallet and try again.";
-      if(message) message.textContent=friendly;
-      alert(friendly);
-    }else{
-      if(message) message.textContent="Purchase could not be confirmed: "+e.message+" Check order status before trying again.";
-      alert("US number purchase: "+e.message+"\nCheck order status before trying again to avoid paying twice.");
+    const response=await callSvbOrderFunction("sparkle-svb-buy",{service:quote.serviceCode,country:quote.country,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
+    const d=response?.data||response;
+    closePinModal();
+    window.sparkleDraftProcessing=false;
+    if(d.status==="failed"){
+      const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
+      if(message)message.textContent=text;
+      showSvbOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text});
+      window.sparkleSavePurchaseDraft?.("form");
+      const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert(text);
+      document.getElementById("svbReviewPanel").style.display="none";
+      document.getElementById("svbCatalogPanel").style.display="block";
+      svbCurrentQuote=null;
+      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      return;
     }
+    const returnedRequestId=String(d.request_id||d.requestId||d.id||requestId);
+    const pendingStatus=String(d.status||"pending").toLowerCase();
+    showSvbOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")});
+    window.sparkleSavePurchaseDraft?.("form");
+    document.getElementById("svbReviewPanel").style.display="none";
+    document.getElementById("svbCatalogPanel").style.display="block";
+    const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
+    document.getElementById("svbSafetyNote").textContent="This order is active. Check its status before starting another purchase.";
+    const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+    if(userId){await loadWallet(userId);await loadTransactions(userId);}
+  }catch(error){
+    const text=String(error?.message||"Purchase could not be confirmed.");
+    if(/incorrect|wrong pin|invalid pin|transaction pin verification failed/i.test(text)){
+      svbAwaitingPin=true;
+      document.getElementById("pinModal")?.classList.add("show");
+      const pinMessage=document.getElementById("pinMessage");if(pinMessage)pinMessage.textContent="Transaction PIN was not accepted. Please try again. No supplier order was sent.";
+      document.querySelectorAll(".pin-box").forEach(x=>x.value="");
+      document.querySelector(".pin-box")?.focus();
+      window.sparkleDraftProcessing=false;
+      window.sparkleSavePurchaseDraft?.("pin");
+      return;
+    }
+    closePinModal();svbAwaitingPin=false;window.sparkleDraftProcessing=false;
+    const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED"];
+    const definitelyNotStarted=safeNoOrderCodes.includes(String(error?.code||""))||/wallet unchanged|no supplier order was sent|price changed|service is unavailable for this country|choose a valid country|please sign in|session expired|could not verify.*wallet/i.test(text);
+    if(definitelyNotStarted){
+      window.sparkleSavePurchaseDraft?.("form");
+      if(/PRICE_CHANGED|price changed/i.test(String(error?.code||"")+" "+text)){
+        svbCurrentQuote=null;
+        const result=document.getElementById("svbPriceResult");if(result)result.textContent="The price changed. Please check the current price again before continuing.";
+        const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      }
+      if(message)message.textContent=text+" No supplier order was sent.";
+      alert("US number purchase: "+text);
+      return;
+    }
+    // A network failure can hide a response after the supplier has accepted an order.
+    // Treat it as unknown and block another purchase until the reference is checked.
+    showSvbOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."});
+    document.getElementById("svbReviewPanel").style.display="none";
+    document.getElementById("svbCatalogPanel").style.display="block";
+    const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order outcome unknown — check status";buy.style.opacity=".55";}
+    window.sparkleSavePurchaseDraft?.("form");
+    if(message)message.textContent=text+" Check order status or transaction history before trying again.";
+    alert("US number purchase: "+text+"\nThe outcome may be unknown. Do not submit another order until this reference is checked.");
   }finally{
-    fleexaPurchaseInProgress=false;
+    svbPurchaseInProgress=false;
     if(button){button.disabled=false;button.textContent="Buy US Number";}
   }
 }
-async function checkFleexaOrder(){
-  if(!fleexaCurrentOrder?.requestId){alert("No active US number order to check.");return;}
-  const msg=document.getElementById("fleexaOrderMessage"); msg.textContent="Checking for SMS…";
+async function checkSvbOrder(){
+  if(!svbCurrentOrder?.requestId){alert("No active US number order to check.");return;}
+  const msg=document.getElementById("svbOrderMessage");if(msg)msg.textContent="Checking for SMS…";
   try{
-    const data=await callFleexaOrderFunction("sparkle-fleexa-check",{requestId:fleexaCurrentOrder.requestId});
-    const d=data.data||data; const provider=d.provider||d;
-    const code=provider.sms_code||provider.smsCode||provider.code||d.sms_code||"";
-    showFleexaOrder({...fleexaCurrentOrder,phoneNumber:d.phoneNumber||d.phone||provider.phone||fleexaCurrentOrder.phoneNumber,status:d.status||provider.status||fleexaCurrentOrder.status,smsCode:code||fleexaCurrentOrder.smsCode,message:d.message||(code?"OTP received. Copy it into the service you are verifying.":"No OTP received yet. Check again in 20–30 seconds.")});
-  }catch(e){msg.textContent="Could not check order: "+e.message;}
+    const response=await callSvbOrderFunction("sparkle-svb-check",{request_id:svbCurrentOrder.requestId});
+    const d=response?.data||response;
+    const status=String(d.status||svbCurrentOrder.status||"pending").toLowerCase();
+    const code=String(d.sms_code||d.smsCode||d.code||"");
+    const phone=String(d.phone_number||d.phoneNumber||d.phone||svbCurrentOrder.phoneNumber||"");
+    showSvbOrder({...svbCurrentOrder,phoneNumber:phone,status,smsCode:code||svbCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Check again shortly.")});
+    if(["success","failed","cancelled","expired"].includes(status)){
+      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      svbCurrentQuote=null;
+      const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+    }
+  }catch(error){if(msg)msg.textContent="Could not check order: "+String(error.message||error);}
 }
-async function cancelFleexaOrder(){
-  if(!fleexaCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
-  if(!confirm("Cancel this US number order? Only cancel if the provider still allows cancellation.")) return;
-  const msg=document.getElementById("fleexaOrderMessage"); msg.textContent="Requesting cancellation…";
+async function cancelSvbOrder(){
+  if(!svbCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
+  if(!confirm("Cancel this US number order? Only cancel if the provider still allows cancellation."))return;
+  const msg=document.getElementById("svbOrderMessage");if(msg)msg.textContent="Requesting cancellation…";
   try{
-    const data=await callFleexaOrderFunction("sparkle-fleexa-cancel",{requestId:fleexaCurrentOrder.requestId});
-    const d=data.data||data;
-    showFleexaOrder({...fleexaCurrentOrder,status:d.status||"cancellation requested",message:d.message||"Cancellation request sent. Check status before placing another order."});
-  }catch(e){msg.textContent="Could not cancel order: "+e.message;}
+    const response=await callSvbOrderFunction("sparkle-svb-cancel",{request_id:svbCurrentOrder.requestId});
+    const d=response?.data||response;
+    showSvbOrder({...svbCurrentOrder,status:String(d.status||"cancellation requested"),message:d.message||"Cancellation request sent. Check its status before buying again."});
+    if(String(d.status||"").toLowerCase()==="cancelled"){
+      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      svbCurrentQuote=null;
+      const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+    }
+  }catch(error){if(msg)msg.textContent="Could not cancel order: "+String(error.message||error);}
 }
 
 function switchServiceMode(service, mode, button){
@@ -4590,7 +4743,7 @@ function renderDataPlans(plans){
   if(selectedDataCategory && selectedDataCategory!=="All"){
     if(String(selectedDataCategory).startsWith("duration:")){
       const requestedDays=Number(String(selectedDataCategory).split(":")[1]);
-      filtered=safePlans.filter(p=>Number.isFinite(p._days)&&p._days===requestedDays);
+      filtered=safePlans.filter(p=>Number.isFinite(p._days)&&p._days>0&&p._days<=requestedDays);
     }
   }
 
@@ -4600,7 +4753,7 @@ function renderDataPlans(plans){
     const match=String(selectedDataCategory||"").match(/^duration:(\d+(?:\.\d+)?)$/);
     if(match){
       const days=Number(match[1]);
-      box.innerHTML='<div class="data-empty">No '+days+'-day plans are available for this network and service. Choose another duration or select All.</div>';
+      box.innerHTML='<div class="data-empty">No plans with validity of '+days+' day'+(days===1?'':'s')+' or less are available for this network and service. Choose another duration or select All.</div>';
     }else{
       box.innerHTML='<div class="data-empty">No valid live plans were returned by GSUBZ for this service.</div>';
     }
@@ -4612,7 +4765,7 @@ function renderDataPlans(plans){
     <button type="button" class="data-plan-card ${selectedDataPlan?._value===p._value?"selected":""}" data-plan-index="${i}" data-plan-value="${escapeHtml(p._value)}">
       <div class="data-plan-size">${escapeHtml(p._size||p._name)}</div>
       <div class="data-plan-validity">${escapeHtml(p._duration||"Validity varies")}</div>
-      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})}</div>
+      <div class="data-plan-price">₦${p._price.toLocaleString("en-NG",{maximumFractionDigits:0})}</div>
       <div class="data-plan-service">${escapeHtml(selectedDataServiceLabel||document.getElementById("dataService")?.selectedOptions?.[0]?.textContent||"")}</div>
     </button>`).join("");
   box.querySelectorAll(".data-plan-card").forEach(card=>{
@@ -4642,26 +4795,45 @@ function selectDataPlan(index,value,price,name,duration){
 }
 
 function extractPlanDuration(plan){
-  const candidates=[];
+  const formatDays=days=>({days,label:days===1?"1 day":days+" days"});
+  const parseText=rawValue=>{
+    const raw=String(rawValue??"").trim().toLowerCase();if(!raw)return null;
+    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:days?|d)(?=\b|$|[,)])/);
+    if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return formatDays(n);}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/);
+    if(m){const n=Number(m[1])/24;if(Number.isFinite(n)&&n>0)return formatDays(n);}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:weeks?|wks?)\b/);
+    if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return formatDays(n);}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:months?|mos?)\b/);
+    if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return formatDays(n);}
+    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:years?|yrs?)\b/);
+    if(m){const n=Number(m[1])*365;if(Number.isFinite(n)&&n>0)return formatDays(n);}
+    if(/\bmonthly\b/.test(raw))return formatDays(30);
+    if(/\bweekly\b/.test(raw))return formatDays(7);
+    if(/\bdaily\b/.test(raw))return formatDays(1);
+    return null;
+  };
   if(plan&&typeof plan==="object"){
-    [
-      plan.duration,plan.duration_label,plan.durationLabel,plan.duration_text,plan.durationText,
-      plan.validity,plan.validityPeriod,plan.validity_period,plan.validity_label,plan.validityLabel,
-      plan.validity_text,plan.validityText,plan.days,plan.durationDays,plan.duration_days,
-      plan.duration_in_days,plan.validityDays,plan.validity_days,plan.displayName,plan.display_name,
-      plan.name,plan.PlanName,plan.plan_name,plan.planName,plan.package_name,plan.packageName,
-      plan.title,plan.description,plan._duration
-    ].forEach(v=>{if(v!==undefined&&v!==null&&String(v).trim()!=="")candidates.push(String(v));});
-  }else if(plan!==undefined&&plan!==null)candidates.push(String(plan));
-  for(const rawValue of candidates){
-    const raw=String(rawValue).trim().toLowerCase();if(!raw)continue;
-    if(/^\d+(?:\.\d+)?$/.test(raw)){const n=Number(raw);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
-    let m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:days?|d)(?=\b|$)/);if(m){const n=Number(m[1]);if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
-    m=raw.match(/\b(\d+(?:\.\d+)?)\s*(?:hours?|hrs?|h)\b/);if(m){const hours=Number(m[1]),n=hours/24;if(Number.isFinite(n)&&n>0)return {days:n,label:n===1?"1 day":n+" days"};}
-    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:weeks?|wks?)\b/);if(m){const n=Number(m[1])*7;if(Number.isFinite(n)&&n>0)return {days:n,label:n===7?"7 days":n+" days"};}
-    m=raw.match(/\b(\d+(?:\.\d+)?)\s*[-–]?\s*(?:months?|mos?)\b/);if(m){const n=Number(m[1])*30;if(Number.isFinite(n)&&n>0)return {days:n,label:n===30?"30 days":n+" days"};}
-    if(/\bmonthly\b/.test(raw))return {days:30,label:"30 days"};if(/\bweekly\b/.test(raw))return {days:7,label:"7 days"};if(/\bdaily\b/.test(raw))return {days:1,label:"1 day"};
-  }return {days:null,label:""};
+    // Numeric duration fields are unambiguous. Do these before parsing names.
+    const explicit=[plan.days,plan.durationDays,plan.duration_days,plan.duration_in_days,plan.validityDays,plan.validity_days];
+    for(const value of explicit){
+      if(value!==undefined&&value!==null&&String(value).trim()!==""){
+        const n=Number(value);if(Number.isFinite(n)&&n>0)return formatDays(n);
+        const parsed=parseText(value);if(parsed)return parsed;
+      }
+    }
+    const explicitText=[plan.duration,plan.duration_label,plan.durationLabel,plan.duration_text,plan.durationText,plan.validity,plan.validityPeriod,plan.validity_period,plan.validity_label,plan.validityLabel,plan.validity_text,plan.validityText,plan._duration];
+    for(const value of explicitText){
+      if(value!==undefined&&value!==null&&/^\s*\d+(?:\.\d+)?\s*$/.test(String(value))){const n=Number(value);if(Number.isFinite(n)&&n>0)return formatDays(n);}
+      const parsed=parseText(value);if(parsed)return parsed;
+    }
+    const descriptive=[plan.displayName,plan.display_name,plan.name,plan.PlanName,plan.plan_name,plan.planName,plan.package_name,plan.packageName,plan.title,plan.description,plan.variation_code,plan.variationCode,plan.value,plan.plan];
+    for(const value of descriptive){const parsed=parseText(value);if(parsed)return parsed;}
+  }else if(plan!==undefined&&plan!==null){
+    const parsed=parseText(plan);if(parsed)return parsed;
+    const n=Number(plan);if(Number.isFinite(n)&&n>0&&/^\s*\d+(?:\.\d+)?\s*$/.test(String(plan)))return formatDays(n);
+  }
+  return {days:null,label:""};
 }
 function planDuration(plan){return extractPlanDuration(plan).label;}
 function planDays(plan){return extractPlanDuration(plan).days;}
@@ -4672,8 +4844,11 @@ function sparkleDataPrice(plan){
   const supplierAmount=Number(plan?.api_price ?? plan?.apiPrice ?? plan?.cost);
   const retailAmount=Number(plan?.price ?? plan?.retail_price ?? plan?.retailPrice ?? plan?.selling_price ?? plan?.sellingPrice);
   if(!Number.isFinite(supplierAmount)||!Number.isFinite(retailAmount)||supplierAmount<0||retailAmount<supplierAmount) return {sell:NaN,valid:false};
-  const sell=Math.round((supplierAmount+(retailAmount-supplierAmount)*0.8+Number.EPSILON)*100)/100;
-  return {sell,valid:Number.isFinite(sell)&&sell>=supplierAmount&&sell>=0};
+  // The secure data-purchase Edge Function requires a whole-naira charge.
+  // Round UP to the next naira so Sparkle never sells below its calculated price.
+  const calculated=supplierAmount+(retailAmount-supplierAmount)*0.8;
+  const sell=Math.ceil(calculated-1e-8);
+  return {sell,valid:Number.isSafeInteger(sell)&&sell>=supplierAmount&&sell>0};
 }
 
 function normalizePlans(result){
@@ -5176,7 +5351,7 @@ function getSinglePurchase(service){
       serviceID:selectedDataService || document.getElementById("dataService")?.value || "",
       serviceLabel:selectedDataServiceLabel || document.getElementById("dataService")?.selectedOptions?.[0]?.textContent || "",
       validity:selectedDataPlan?._duration || "",
-      amount:Number(selectedDataPlan?._price || 0)
+      amount:Math.ceil(Number(selectedDataPlan?._price || 0)-1e-8)
     };
   }
   if(service==="education"){
@@ -5394,17 +5569,17 @@ async function confirmTransactionPIN(){
   const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
   if(button){button.disabled=true;button.textContent="Verifying PIN…";}
   try{
+    if(currentService==="smsotp" && svbAwaitingPin){
+      svbAwaitingPin=false;
+      await executeSvbPurchase(pin);
+      return;
+    }
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
     if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Could not verify your transaction PIN."));
     if(!data?.success) throw new Error(String(data?.message||data?.error||"Transaction PIN verification failed."));
     closePinModal();
     if(currentService==="rechargepin" && window.sparkleRechargePinPending){
       await confirmRechargePinPurchase(pin);
-      return;
-    }
-    if(currentService==="smsotp" && fleexaAwaitingPin){
-      fleexaAwaitingPin=false;
-      await executeFleexaPurchase(pin);
       return;
     }
     if(pendingPurchase){
@@ -5521,6 +5696,12 @@ async function processPendingPurchase(transactionPin){
   const progress=document.getElementById("processingProgress");
   if(progress) progress.textContent=isData?"Securely processing data purchase…":"Securely processing airtime…";
   try{
+    if(isData){
+      const rawDataAmount=Number(p.amount);
+      if(!Number.isFinite(rawDataAmount)||rawDataAmount<=0)throw new Error("The selected data plan price is invalid. Please go back, refresh the plans, and select the plan again. No purchase was sent.");
+      p.amount=Math.ceil(rawDataAmount-1e-8);
+      pendingPurchase.total=p.amount;
+    }
     const {data,error}=isData
       ? await supabaseClient.functions.invoke("sparkle-data-purchase",{
           body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
@@ -6143,7 +6324,18 @@ document.addEventListener("DOMContentLoaded",()=>{
       if(pageId==="electricityPage"&&record.selected?.electricityService){const card=document.querySelector('#electricityServices [data-service="'+CSS.escape(record.selected.electricityService)+'"]');selectElectricityService(record.selected.electricityService,card?.querySelector("h3")?.textContent?.trim()||record.selected.electricityService);selectElectricityType(document.getElementById("electricityType")?.value||"prepaid");}
       if(pageId==="rechargepinPage"){try{await loadRechargePinPrices();updateRechargePinTotal();}catch(_){}}
       if(pageId==="smsotpPage"){
-        try{await loadFleexaApps();const wanted=record.fields?.fleexaAppSelect;if(wanted){const sel=document.getElementById("fleexaAppSelect");if(sel)sel.value=wanted;}fleexaCurrentQuote=null;const result=document.getElementById("fleexaPriceResult");if(result&&wanted)result.textContent="Service restored. Check the current NGN price before purchase.";const buy=document.getElementById("fleexaBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";}}catch(_){}
+        try{
+          await loadSvbCountries();
+          const wantedCountry=String(record.fields?.svbCountrySelect||"us");
+          const countrySelect=document.getElementById("svbCountrySelect");
+          if(countrySelect&&[...countrySelect.options].some(o=>o.value===wantedCountry)){countrySelect.value=wantedCountry;await loadSvbServices();}
+          const wanted=record.fields?.svbAppSelect;
+          if(wanted){const sel=document.getElementById("svbAppSelect");if(sel)sel.value=wanted;}
+          svbCurrentQuote=null;
+          const result=document.getElementById("svbPriceResult");
+          if(result&&wanted)result.textContent="Saved service restored. Check the current Sparkle price before purchase.";
+          const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+        }catch(_){}
       }
       if(record.phase==="review"||record.phase==="pin")renderReview(record);
       else if(record.phase==="processing"){
@@ -6186,7 +6378,7 @@ document.addEventListener("DOMContentLoaded",()=>{
   if(typeof openPinForPurchase==="function"){const base=openPinForPurchase;window.openPinForPurchase=function(){const result=base();saveDraft("pin");return result;};}
   if(typeof confirmRechargePinPurchase==="function"){const base=confirmRechargePinPurchase;window.confirmRechargePinPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
   if(typeof processPendingPurchase==="function"){const base=processPendingPurchase;window.processPendingPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
-  if(typeof executeFleexaPurchase==="function"){const base=executeFleexaPurchase;window.executeFleexaPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
+  if(typeof executeSvbPurchase==="function"){const base=executeSvbPurchase;window.executeSvbPurchase=async function(pin){window.sparkleDraftProcessing=true;saveDraft("processing");return await base(pin);};}
   if(typeof showReceipt==="function"){const base=showReceipt;window.showReceipt=function(payload){window.sparkleClearPurchaseDraft?.();return base(payload);};}
   if(typeof logout==="function"){const base=logout;window.logout=async function(){window.sparkleClearPurchaseDraft?.();return await base();};}
 })();
