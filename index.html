@@ -1773,6 +1773,7 @@ Privacy Policy
     <nav class="sidebar-nav">
       <button class="nav-item active" onclick="showDashPage('home',this)"><span class="nav-icon">⌂</span>Home</button>
       <button class="nav-item" onclick="showDashPage('transactionsPage',this)"><span class="nav-icon">↔</span>Transactions</button>
+      <button class="nav-item" onclick="openSvbOrderPage(this)"><span class="nav-icon">📩</span>US Number Orders</button>
       <button class="nav-item" onclick="showDashPage('marketPage',this)"><span class="nav-icon">🛍</span>Market</button>
       <button class="nav-item" onclick="showDashPage('earnPage',this)"><span class="nav-icon">₦</span>Earn</button>
       <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
@@ -1881,8 +1882,19 @@ Privacy Policy
             <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
             <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
           </div>
+        </section>
+
+        <!-- Dedicated US Number order page: separate from price preview and purchase form. -->
+        <section class="page" id="usNumberOrderPage">
+          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadSvbCountries()">‹</button><h1>Your US Number Order</h1></div>
+          <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest US Number purchase.</p>
+          <div id="svbOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
+            <h3 style="margin-top:0">No US Number order to display</h3>
+            <p style="color:var(--muted)">After you confirm a US Number purchase with your transaction PIN, its order details will appear on this page.</p>
+            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadSvbCountries()">Buy a US Number</button>
+          </div>
           <div id="svbOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
-            <h3 style="margin:0 0 12px">Your US number order</h3>
+            <h2 style="margin:0 0 16px">Order details</h2>
             <div style="display:grid;gap:10px">
               <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="svbOrderService">—</strong></div>
               <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="svbOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
@@ -1896,6 +1908,7 @@ Privacy Policy
               <button class="btn" type="button" onclick="cancelSvbOrder()">Cancel order</button>
             </div>
           </div>
+          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadSvbCountries()">Back to Buy US Number</button>
         </section>
 
         <!-- TRANSACTIONS -->
@@ -4088,7 +4101,17 @@ async function restoreSavedSvbOrder(){
     }
   }catch(_){}
 }
-function showSvbOrder(order){
+function openSvbOrderPage(button){
+  showDashPage("usNumberOrderPage",button||document.querySelector('.sidebar-nav .nav-item[onclick*="openSvbOrderPage"]'));
+  if(svbCurrentOrder){
+    showSvbOrder(svbCurrentOrder);
+    return;
+  }
+  const card=document.getElementById("svbOrderCard");if(card)card.style.display="none";
+  const empty=document.getElementById("svbOrderEmpty");if(empty)empty.style.display="block";
+  void restoreSavedSvbOrder();
+}
+function showSvbOrder(order,options={}){
   const normalizedStatus=String(order?.status||"pending").toLowerCase();
   const terminalStatuses=["success","failed","cancelled","canceled","expired"];
   const terminal=terminalStatuses.includes(normalizedStatus);
@@ -4124,12 +4147,16 @@ function showSvbOrder(order){
   }
   const card=document.getElementById("svbOrderCard");if(!card)return;
   card.style.display="block";
+  const empty=document.getElementById("svbOrderEmpty");if(empty)empty.style.display="none";
   document.getElementById("svbOrderService").textContent=order.serviceName||"US number";
   document.getElementById("svbOrderPhone").textContent=order.phoneNumber||"No phone number available";
   document.getElementById("svbOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
   document.getElementById("svbOrderStatus").textContent=normalizedStatus;
   document.getElementById("svbOrderReference").textContent=order.requestId||"—";
   document.getElementById("svbOrderMessage").textContent=statusMessage;
+  if(options?.navigate){
+    showDashPage("usNumberOrderPage",document.querySelector('.sidebar-nav .nav-item[onclick*="openSvbOrderPage"]'));
+  }
   if(terminal){
     const buy=document.getElementById("svbBuyButton");
     if(buy){buy.disabled=false;buy.textContent="Check price first";buy.style.opacity="1";}
@@ -4154,7 +4181,6 @@ function buySvbNumber(){
   document.getElementById("svbReviewMessage").textContent="";
   document.getElementById("svbCatalogPanel").style.display="none";
   document.getElementById("svbReviewPanel").style.display="block";
-  document.getElementById("svbOrderCard").style.display="none";
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function backFromSvbReview(){
@@ -4190,7 +4216,7 @@ async function executeSvbPurchase(pin){
     if(d.status==="failed"){
       const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
       if(message)message.textContent=text;
-      showSvbOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text});
+      showSvbOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text},{navigate:true});
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
       alert(text);
@@ -4202,7 +4228,7 @@ async function executeSvbPurchase(pin){
     }
     const returnedRequestId=String(d.request_id||d.requestId||d.id||requestId);
     const pendingStatus=String(d.status||"pending").toLowerCase();
-    showSvbOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")});
+    showSvbOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")},{navigate:true});
     document.getElementById("svbReviewPanel").style.display="none";
     document.getElementById("svbCatalogPanel").style.display="block";
     const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
@@ -4234,7 +4260,7 @@ async function executeSvbPurchase(pin){
     }
     // A network failure can hide a response after the supplier has accepted an order.
     // Treat it as unknown and block another purchase until the reference is checked.
-    showSvbOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."});
+    showSvbOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."},{navigate:true});
     document.getElementById("svbReviewPanel").style.display="none";
     document.getElementById("svbCatalogPanel").style.display="block";
     const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order outcome unknown — check status";buy.style.opacity=".55";}
