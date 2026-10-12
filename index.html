@@ -4068,7 +4068,7 @@ async function saveSvbOrderSnapshot(order){
     const auth=await supabaseClient.auth.getUser();
     const userId=auth?.data?.user?.id;
     if(!userId||!order?.requestId)return;
-    const safe={requestId:String(order.requestId),serviceName:String(order.serviceName||"US number"),phoneNumber:String(order.phoneNumber||""),status:String(order.status||"unknown"),message:String(order.message||""),savedAt:Date.now()};
+    const safe={requestId:String(order.requestId),serviceName:String(order.serviceName||"US number"),phoneNumber:String(order.phoneNumber||""),smsCode:String(order.smsCode||""),status:String(order.status||"unknown"),message:String(order.message||""),savedAt:Date.now()};
     localStorage.setItem(svbOrderStorageKey(userId),JSON.stringify(safe));
   }catch(_){}
 }
@@ -4087,16 +4087,36 @@ async function restoreSavedSvbOrder(){
   }catch(_){}
 }
 function showSvbOrder(order){
+  const normalizedStatus=String(order?.status||"pending").toLowerCase();
+  const terminalStatuses=["success","failed","cancelled","canceled","expired"];
+  const terminal=terminalStatuses.includes(normalizedStatus);
+  const smsCode=String(order?.smsCode||order?.sms_code||"");
+  let statusMessage=String(order?.message||"");
+  if(!smsCode && ["cancelled","canceled"].includes(normalizedStatus)){
+    statusMessage="This order is cancelled. No SMS code will arrive for this order. Check transaction history to confirm the refund.";
+  }else if(!smsCode && normalizedStatus==="expired"){
+    statusMessage="This order has expired. No further SMS is expected. Check transaction history for the final payment/refund status.";
+  }else if(!smsCode && normalizedStatus==="failed"){
+    statusMessage="This order failed. Check transaction history to confirm the final payment/refund status.";
+  }else if(!statusMessage || statusMessage==="Check again shortly for the SMS code." || statusMessage==="No SMS code yet. Check again shortly."){
+    statusMessage=smsCode?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Check again shortly.";
+  }
+  order={...order,status:normalizedStatus,smsCode,message:statusMessage};
   svbCurrentOrder=order;
   void saveSvbOrderSnapshot(order);
   const card=document.getElementById("svbOrderCard");if(!card)return;
   card.style.display="block";
   document.getElementById("svbOrderService").textContent=order.serviceName||"US number";
-  document.getElementById("svbOrderPhone").textContent=order.phoneNumber||"Waiting for phone number…";
-  document.getElementById("svbOrderOtp").textContent=order.smsCode||"Waiting for SMS…";
-  document.getElementById("svbOrderStatus").textContent=order.status||"pending";
+  document.getElementById("svbOrderPhone").textContent=order.phoneNumber||"No phone number available";
+  document.getElementById("svbOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
+  document.getElementById("svbOrderStatus").textContent=normalizedStatus;
   document.getElementById("svbOrderReference").textContent=order.requestId||"—";
-  document.getElementById("svbOrderMessage").textContent=order.message||"Check again shortly for the SMS code.";
+  document.getElementById("svbOrderMessage").textContent=statusMessage;
+  if(terminal){
+    const buy=document.getElementById("svbBuyButton");
+    if(buy){buy.disabled=false;buy.textContent="Check price first";buy.style.opacity="1";}
+    if(normalizedStatus!=="success")svbCurrentQuote=null;
+  }
 }
 function buySvbNumber(){
   const serviceCode=document.getElementById("svbAppSelect")?.value||"";
@@ -6394,33 +6414,53 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 <script id="sparkle-purchase-page-resume-guard">
 (function(){
-  // Keep this narrowly scoped: it does not touch checkout, wallet, pricing, or provider code.
+  // Restore the last service page after Safari/iOS suspends or reloads the tab.
+  // Verify the live Supabase session before reopening a dashboard hidden by an auth callback.
   let resumeCheckRunning=false;
+  const PREFIX="sparkle_purchase_draft_v1_";
+  const PAGES=["airtimePage","dataPage","cablePage","educationPage","electricityPage","rechargepinPage","smsotpPage"];
+  const read=id=>{try{return JSON.parse(localStorage.getItem(PREFIX+id)||"null");}catch(_){return null;}};
   async function resumeIfReset(){
-    if(resumeCheckRunning || !document.getElementById("dashboard")?.classList.contains("active")) return;
-    const user=window.currentSparkleUser;
-    const userId=String(user?.id||"");
-    if(!userId || typeof window.sparkleRestorePurchaseDraft!=="function") return;
-    let record=null;
-    try{record=JSON.parse(localStorage.getItem("sparkle_purchase_draft_v1_"+userId)||"null");}catch(_){return;}
-    const pages=["airtimePage","dataPage","cablePage","educationPage","electricityPage","rechargepinPage","smsotpPage"];
-    if(!record || record.userId!==userId || !pages.includes(record.servicePage) || !record.savedAt || Date.now()-Number(record.savedAt)>24*60*60*1000) return;
+    if(resumeCheckRunning || document.visibilityState==="hidden") return;
+    const currentUser=window.currentSparkleUser;
+    let userId=String(currentUser?.id||"");
+    let sessionUser=null;
+    // Safari can fire pageshow before the app has repopulated its in-memory user.
+    // Ask Supabase for the current session instead of giving up at that point.
+    if(!userId){
+      try{
+        const sessionResult=await supabaseClient.auth.getSession();
+        sessionUser=sessionResult?.data?.session?.user||null;
+        userId=String(sessionUser?.id||"");
+      }catch(e){console.warn("Sparkle could not read the session while resuming.",e);return;}
+    }
+    if(!userId) return;
+    let record=read(userId);
+    if(!record || record.userId!==userId || !PAGES.includes(record.servicePage) || !record.savedAt || Date.now()-Number(record.savedAt)>24*60*60*1000) return;
+    const dashboard=document.getElementById("dashboard");
     const active=document.querySelector(".page.active")?.id||"";
-    // Normal app switching leaves the current page intact. Recover only if the app reset to Home
-    // or otherwise lost the saved service page after a browser/page lifecycle event.
-    if(active===record.servicePage) return;
+    if(dashboard?.classList.contains("active") && active===record.servicePage) return;
     resumeCheckRunning=true;
     try{
-      await new Promise(resolve=>setTimeout(resolve,350));
-      if(!document.getElementById("dashboard")?.classList.contains("active")) return;
-      const nowActive=document.querySelector(".page.active")?.id||"";
-      if(nowActive===record.servicePage) return;
-      // Allow a second restoration attempt if an earlier auth callback ran before dashboard setup finished.
-      window.currentSparkleUser=user;
-      await window.sparkleRestorePurchaseDraft(userId,true);
-      // The recovery routine may already have restored the page; make one final route-only safeguard.
+      await new Promise(resolve=>setTimeout(resolve,250));
+      // The app may have finished its own restoration while we waited.
+      const currentActive=document.querySelector(".page.active")?.id||"";
+      if(document.getElementById("dashboard")?.classList.contains("active") && currentActive===record.servicePage) return;
+      try{
+        if(!sessionUser){
+          const result=await supabaseClient.auth.getSession();
+          sessionUser=result?.data?.session?.user||null;
+        }
+      }catch(e){console.warn("Sparkle could not verify the session while resuming.",e);return;}
+      if(!sessionUser?.id || String(sessionUser.id)!==userId) return;
+      window.currentSparkleUser=sessionUser;
+      if(!document.getElementById("dashboard")?.classList.contains("active")){
+        if(typeof window.showDashboard==="function") await window.showDashboard(sessionUser);
+      }
+      // Force retry because an earlier auth callback may have marked this user restored too soon.
+      if(typeof window.sparkleRestorePurchaseDraft==="function") await window.sparkleRestorePurchaseDraft(userId,true);
       const finalActive=document.querySelector(".page.active")?.id||"";
-      if(finalActive!==record.servicePage && pages.includes(record.servicePage)){
+      if(finalActive!==record.servicePage && PAGES.includes(record.servicePage)){
         const nav=document.querySelector('.sidebar-nav .nav-item');
         if(typeof window.showDashPage==="function") window.showDashPage(record.servicePage,nav);
       }
