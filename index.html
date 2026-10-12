@@ -5360,6 +5360,7 @@ async function confirmRechargePinPurchase(pin){
     }
     if(!data?.success||data?.status!=="success")throw new Error(data?.error||data?.message||"The order was not confirmed successful. Check with support before retrying.");
     const pins=data.pins||data.data?.pins||data.data;
+    clearCompletedPurchaseInputs("rechargepin");
     resultBox.innerHTML=`<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charge: ${money(total)}</p><p>Order reference: ${escapeHtml(data.reference||requestId)}</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">${escapeHtml(JSON.stringify(pins,null,2))}</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadWallet(&quot;${userId}&quot;);loadTransactions(&quot;${userId}&quot;)">Done</button></div>`;
     button.style.display="none";
     await loadWallet(userId);await loadTransactions(userId);
@@ -5646,6 +5647,46 @@ async function confirmTransactionPIN(){
   }
 }
 
+/* Clear completed purchase form details only after supplier-confirmed success.
+   Keep receipts and live SMS OTP order results visible; never clear pending orders. */
+function clearCompletedPurchaseInputs(service){
+  const clearValue=(id)=>{const el=document.getElementById(id);if(el && 'value' in el)el.value='';};
+  const resetValue=(id,value)=>{const el=document.getElementById(id);if(el && 'value' in el)el.value=value;};
+  const removeSelection=(selector,cls='selected')=>document.querySelectorAll(selector).forEach(el=>el.classList.remove(cls));
+  const kind=String(service||'').toLowerCase();
+  try{sessionStorage.removeItem('sparklePendingPurchase');}catch(_){}
+  try{
+    const params=new URLSearchParams(window.location.search);
+    if(params.get('page')==='confirm')window.history.replaceState({},'',window.location.pathname+window.location.hash);
+  }catch(_){}
+  if(kind==='data'){
+    clearValue('dataPhone');
+    if(typeof selectedDataPlan!=='undefined')selectedDataPlan=null;
+    removeSelection('#dataPlans .data-plan-card');
+    if(typeof clearDataPlans==='function')clearDataPlans('Select a data plan to continue.');
+  }else if(kind==='airtime'){
+    clearValue('airtimePhone');clearValue('airtimeAmount');
+  }else if(kind==='cable'){
+    clearValue('cableNumber');
+    if(typeof selectedCablePlan!=='undefined')selectedCablePlan=null;
+    removeSelection('#cablePlans .data-plan-card');
+  }else if(kind==='electricity'){
+    clearValue('electricityMeter');clearValue('electricityPhone');clearValue('electricityAmount');
+    if(typeof selectedElectricityService!=='undefined')selectedElectricityService=null;
+    removeSelection('#electricityServices .electricity-service-card','active');
+    resetValue('electricityType','prepaid');
+    const box=document.getElementById('electricitySelection');if(box)box.textContent='Select an electricity provider';
+  }else if(kind==='education'){
+    clearValue('educationPhone');
+    if(typeof selectedEducationService!=='undefined')selectedEducationService=null;
+    removeSelection('#educationServices .education-service-card','active');
+    const box=document.getElementById('educationSelection');if(box)box.textContent='Select an exam PIN';
+  }else if(kind==='rechargepin'){
+    resetValue('rechargePinNetwork','MTN');resetValue('rechargePinDenomination','100');resetValue('rechargePinQuantity','10');
+    if(typeof updateRechargePinTotal==='function')updateRechargePinTotal();
+  }
+}
+
 async function processPendingPurchase(transactionPin){
   if(!pendingPurchase || !Array.isArray(pendingPurchase.items) || !pendingPurchase.items.length) {
     alert("No purchase is waiting for confirmation.");
@@ -5663,6 +5704,7 @@ async function processPendingPurchase(transactionPin){
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(data?.success&&data.status==="successful"){
+        clearCompletedPurchaseInputs("electricity");
         pendingPurchase=null;
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
         const providerText=String(data.providerResponse?.api_response||data.providerResponse?.content?.token||data.providerResponse?.token||"");
@@ -5699,6 +5741,7 @@ async function processPendingPurchase(transactionPin){
       const authResult=await supabaseClient.auth.getUser();
       const userId=authResult?.data?.user?.id;
       if(data?.success&&data.status==="successful"){
+        clearCompletedPurchaseInputs(isCable?"cable":"education");
         pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){}
         if(overlay)overlay.classList.remove("show");
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
@@ -5750,6 +5793,7 @@ async function processPendingPurchase(transactionPin){
         });
     if(error && !data) throw new Error(await sparkleFunctionErrorMessage(error,"Could not reach secure airtime/data processing. No purchase was confirmed."));
     if(data?.success && data.status==="successful"){
+      clearCompletedPurchaseInputs(isData?"data":"airtime");
       pendingPurchase=null;
       if(overlay) overlay.classList.remove("show");
       showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:isData?(p.serviceLabel||p.serviceID):undefined,type:isData?p.plan:undefined,phone:p.phone,amount:Number(data.amount||p.amount)});
