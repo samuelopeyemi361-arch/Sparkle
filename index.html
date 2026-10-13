@@ -1453,6 +1453,379 @@ body.dark-mode #profilePage .profile-logout-row{background:#2b1727;border-color:
 }
 
 </style>
+
+<style id="sparkle-approved-blue-dashboard">
+:root{--sparkle-blue:#1768f5;--sparkle-navy:#102454;--sparkle-muted:#6b82ab;--sparkle-soft:#eaf4ff;--sparkle-border:#e4efff}
+#dashboard{background:linear-gradient(180deg,#f6faff 0,#fff 34%,#fff 100%);color:var(--sparkle-navy)}
+#dashboard .dashnav{background:rgba(255,255,255,.96);border-bottom:1px solid rgba(225,237,255,.62);padding:10px 0;backdrop-filter:blur(14px)}
+#dashboard .dashnav .wrap{max-width:1180px;padding-left:20px;padding-right:20px}
+#dashboard .dashnav-inner{min-height:48px}
+#dashboard .dashnav .brand{display:flex;align-items:center;gap:8px;color:#0b2869;font-size:26px;font-weight:950;letter-spacing:-.9px}
+#dashboard .logo.sparkle-logo-mark{width:45px;height:45px;flex:0 0 45px;border-radius:0;background:transparent;color:#1671ff;display:grid;place-items:center;font-size:43px;line-height:1;text-shadow:0 5px 12px rgba(23,104,245,.25);box-shadow:none}
+#dashboard .icon-btn{width:38px;height:38px;background:transparent;border:0;border-radius:50%;color:#0d2a68}
+#dashboard .icon-btn:hover{background:#eff6ff}
+#dashboard .dashbody{padding:16px 0 28px}
+#dashboard .dashbody>.wrap{max-width:1180px;padding-left:20px;padding-right:20px}
+#dashboard #home{max-width:100%;margin:0 auto}
+#dashboard #home .dashboard-title{font-size:clamp(25px,3.2vw,32px);line-height:1.16;letter-spacing:-.7px;font-weight:900;color:#102454;margin:4px 0 5px}
+#dashboard #home .dashboard-subtitle{font-size:14px;line-height:1.45;color:#6c85b1;margin:0 0 20px;font-weight:550}
+#dashboard .wallet-card{position:relative;isolation:isolate;overflow:hidden;display:block;background:linear-gradient(112deg,#e8f3ff 0%,#d8eaff 58%,#cce5ff 100%);color:#122954;border:1px solid #cfe3ff;border-radius:23px;padding:22px 25px;margin:0 0 18px;box-shadow:0 7px 22px rgba(53,113,205,.075)}
+#dashboard .wallet-card:before{content:"";position:absolute;z-index:-1;width:430px;height:250px;right:-92px;top:10px;border-radius:50%;background:rgba(255,255,255,.3);transform:rotate(-24deg)}
+#dashboard .wallet-card:after{content:"";position:absolute;z-index:-1;width:270px;height:210px;right:14%;bottom:-160px;border-radius:50%;background:rgba(111,172,255,.14)}
+#dashboard .wallet-card-top{display:flex;align-items:center;justify-content:space-between;gap:14px;position:relative;z-index:1}
+#dashboard .wallet-balance-block{min-width:0}
+#dashboard .wallet-card-label{display:flex;align-items:center;gap:9px;color:#5b75a3;font-size:13px;letter-spacing:0;font-weight:800;text-transform:none;opacity:1}
+#dashboard .wallet-card-icon{width:28px;height:28px;border-radius:10px;background:rgba(255,255,255,.75);color:#2769db;font-size:15px;display:grid;place-items:center}
+#dashboard .wallet-balance{font-size:clamp(28px,5vw,39px);line-height:1.13;letter-spacing:-1px;font-weight:950;color:#101f4d;margin:9px 0 0;overflow-wrap:anywhere}
+#dashboard .wallet-card-action{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:7px;max-width:48%}
+#dashboard .wallet-card .fund-wallet-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:linear-gradient(135deg,#267cff,#075df1);color:#fff;border:0;border-radius:999px;min-height:47px;padding:12px 18px;font-size:14px;font-weight:850;white-space:nowrap;box-shadow:0 8px 18px rgba(23,104,245,.2);position:relative;z-index:1;transition:transform .16s ease,box-shadow .16s ease}
+#dashboard .wallet-card .fund-wallet-btn:hover{transform:translateY(-1px);box-shadow:0 11px 24px rgba(23,104,245,.27)}
+#dashboard .wallet-fee-note{display:block;margin:0;max-width:185px;text-align:right;font-size:10px;line-height:1.3;color:#657ca4;font-weight:550;position:relative;z-index:1}
+#dashboard #homeFundingDetails{display:none!important}
+/* Five rotating promotional slides */
+#dashboard .sparkle-promo-carousel{margin:15px 0 24px;position:relative;width:100%}
+#dashboard .sparkle-promo-track{height:220px;position:relative;overflow:hidden;border-radius:23px;isolation:isolate;background:#075ef3;box-shadow:0 9px 25px rgba(22,85,201,.1)}
+#dashboard .sparkle-promo-slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;gap:5px;padding:22px 24px;color:#fff;opacity:0;visibility:hidden;transform:translateX(18px);transition:opacity .45s ease,transform .45s ease,visibility .45s;pointer-events:none;overflow:hidden}
+#dashboard .sparkle-promo-slide:before{content:"";position:absolute;z-index:-1;width:70%;height:170%;right:-10%;top:-55%;border-radius:50%;background:rgba(255,255,255,.055);transform:rotate(19deg)}
+#dashboard .sparkle-promo-slide:after{content:"";position:absolute;z-index:-1;width:44%;height:140%;right:3%;bottom:-86%;border-radius:50%;background:rgba(4,31,120,.22)}
+#dashboard .sparkle-promo-slide.is-active{opacity:1;visibility:visible;transform:translateX(0);pointer-events:auto}
+#dashboard .promo-bills{background:linear-gradient(112deg,#0754d4 0%,#075eee 52%,#087eff 100%)}
+#dashboard .promo-wallet{background:linear-gradient(112deg,#071f66 0%,#104fc6 55%,#248bff 100%)}
+#dashboard .promo-connect{background:linear-gradient(112deg,#0646bc 0%,#075fea 52%,#12a1ff 100%)}
+#dashboard .promo-recharge{background:linear-gradient(112deg,#09296f 0%,#134fd2 55%,#4654f5 100%)}
+#dashboard .promo-market{background:linear-gradient(112deg,#102a80 0%,#175bec 53%,#7547ee 100%)}
+#dashboard .sparkle-promo-copy{flex:1 1 58%;min-width:0;max-width:61%;position:relative;z-index:4}
+#dashboard .sparkle-promo-kicker{display:block;margin-bottom:8px;font-size:9px;line-height:1.2;font-weight:900;letter-spacing:1.2px;color:#c9e3ff}
+#dashboard .sparkle-promo-copy h2{margin:0 0 8px;color:#fff;font-weight:950;font-size:clamp(22px,3.1vw,32px);line-height:1.04;letter-spacing:-.7px}
+#dashboard .sparkle-promo-copy p{max-width:355px;margin:0;color:rgba(255,255,255,.86);font-size:12px;line-height:1.45;font-weight:550}
+#dashboard .sparkle-promo-cta{display:inline-flex;align-items:center;justify-content:center;gap:12px;margin-top:14px;min-height:38px;border:0;border-radius:11px;background:#fff;color:#0a2a77;padding:10px 14px;font-size:12px;font-weight:900;box-shadow:0 7px 16px rgba(0,19,82,.13);transition:transform .16s ease}
+#dashboard .sparkle-promo-cta:hover{transform:translateY(-1px)}
+#dashboard .sparkle-promo-art{position:relative;flex:0 1 41%;height:100%;min-width:0;display:flex;align-items:center;justify-content:center}
+#dashboard .promo-orbit{position:absolute;width:190px;height:100px;border:1px solid rgba(255,255,255,.23);border-radius:50%;transform:rotate(-32deg)}
+#dashboard .promo-orbit.orbit-b{width:155px;height:82px;transform:rotate(34deg);border-color:rgba(100,210,255,.55)}
+#dashboard .promo-phone{position:relative;width:74px;height:126px;border:2px solid rgba(183,237,255,.95);border-radius:19px;background:linear-gradient(155deg,#2fe0ff,#0871f7 70%);box-shadow:inset 0 0 0 3px rgba(0,50,168,.25),0 12px 25px rgba(0,16,89,.24);display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(7deg)}
+#dashboard .promo-phone-speaker{position:absolute;top:7px;width:20px;height:3px;border-radius:3px;background:rgba(0,52,147,.55)}
+#dashboard .promo-phone strong{color:#fff;font-size:38px;text-shadow:0 3px 12px rgba(0,25,131,.4)}
+#dashboard .promo-phone small{color:#eaf8ff;font-size:6px;letter-spacing:1.2px;font-weight:900}
+#dashboard .promo-float{position:absolute;z-index:2;width:43px;height:43px;display:grid;place-items:center;border:1px solid rgba(255,255,255,.55);border-radius:14px;color:white;font-weight:950;font-size:20px;background:linear-gradient(145deg,#45dcff,#1676ff);box-shadow:inset 0 1px 3px rgba(255,255,255,.7),0 9px 16px rgba(0,25,110,.22);transform:rotate(-8deg)}
+#dashboard .float-wifi{left:0;top:24%;font-size:26px}
+#dashboard .float-bolt{left:22%;bottom:13%;background:linear-gradient(145deg,#ffda66,#ff9a00);color:#fff;transform:rotate(8deg)}
+#dashboard .float-tv{right:0;bottom:18%;background:linear-gradient(145deg,#a88cff,#6636f3);transform:rotate(8deg)}
+#dashboard .float-bulb{right:5%;top:10%;background:linear-gradient(145deg,#ffec87,#ffb52e);color:#fff}
+#dashboard .promo-wallet-visual{position:relative;width:130px;height:88px;border-radius:17px;background:linear-gradient(135deg,#87ccff,#1471fa 70%);border:1px solid rgba(255,255,255,.65);box-shadow:inset 0 2px 4px rgba(255,255,255,.55),0 13px 25px rgba(0,20,94,.24);transform:rotate(-8deg);padding:12px;color:#fff}
+#dashboard .promo-wallet-visual span{font-size:23px}
+#dashboard .promo-wallet-visual i{position:absolute;right:13px;top:14px;width:27px;height:22px;border-radius:6px;background:linear-gradient(135deg,#fff,#c8e6ff)}
+#dashboard .promo-wallet-visual b{position:absolute;left:13px;bottom:27px;width:37px;height:5px;border-radius:3px;background:rgba(255,255,255,.72)}
+#dashboard .promo-wallet-visual small{position:absolute;bottom:10px;left:13px;font-size:6px;letter-spacing:1px;font-weight:900}
+#dashboard .float-coin{left:0;top:17%;background:linear-gradient(145deg,#fff2aa,#ffb800);color:#845000;border-radius:50%}
+#dashboard .float-check{right:1%;bottom:15%;background:linear-gradient(145deg,#7cffdc,#10b981);border-radius:50%}
+#dashboard .promo-data-visual{width:88px;height:88px;border-radius:26px;display:grid;place-items:center;align-content:center;gap:0;background:linear-gradient(145deg,#5ce3ff,#0872ff 72%);border:1px solid rgba(255,255,255,.8);box-shadow:inset 0 1px 4px rgba(255,255,255,.72),0 12px 26px rgba(0,20,94,.25);transform:rotate(-7deg)}
+#dashboard .promo-data-visual span{font-size:42px;line-height:1}
+#dashboard .promo-data-visual b{font-size:9px;letter-spacing:2px}
+#dashboard .float-phone{left:0;bottom:12%;background:linear-gradient(145deg,#5effda,#00a99e)}
+#dashboard .float-signal{right:0;top:14%;background:linear-gradient(145deg,#9cefff,#1577ff);font-size:26px}
+#dashboard .promo-pin-visual{width:94px;height:116px;border-radius:12px;background:linear-gradient(145deg,#fff,#dbe9ff);box-shadow:0 13px 24px rgba(0,18,87,.23);transform:rotate(7deg);display:flex;flex-direction:column;align-items:flex-start;padding:12px;color:#1551bf;gap:7px}
+#dashboard .promo-pin-visual span{font-size:20px;align-self:flex-end;color:#0d68f5}
+#dashboard .promo-pin-visual b{font-size:17px;letter-spacing:3px}
+#dashboard .promo-pin-visual i{display:block;width:60%;height:4px;border-radius:4px;background:#a9c8ff}
+#dashboard .float-ticket{left:0;top:16%;background:linear-gradient(145deg,#b6a3ff,#7149ed)}
+#dashboard .promo-gift-visual{width:91px;height:91px;border-radius:25px;display:grid;place-items:center;font-size:52px;background:linear-gradient(145deg,#ffdf8d,#ff9e22);box-shadow:inset 0 2px 4px rgba(255,255,255,.7),0 12px 26px rgba(0,20,94,.24);transform:rotate(7deg)}
+#dashboard .float-bag{left:0;bottom:14%;background:linear-gradient(145deg,#80f8ff,#058cf5)}
+#dashboard .float-star{right:0;top:12%;background:linear-gradient(145deg,#d9caff,#7951fa)}
+#dashboard .sparkle-promo-pagination{display:flex;align-items:center;justify-content:center;gap:8px;padding:10px 0 0}
+#dashboard .sparkle-promo-dot{border:0;width:8px;height:8px;min-width:8px;padding:0;border-radius:50%;background:#cfdbef;transition:width .2s ease,background .2s ease}
+#dashboard .sparkle-promo-dot.is-active{width:23px;border-radius:999px;background:#1768f5}
+#dashboard .sparkle-section-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:19px 0 12px}
+#dashboard .sparkle-section-heading h2,#dashboard .sparkle-section-heading h3{margin:0;color:#102454;font-size:20px;line-height:1.2;font-weight:900;letter-spacing:-.35px}
+#dashboard .sparkle-section-heading button{border:0;background:transparent;color:#1768f5;font-size:13px;font-weight:850;white-space:nowrap;padding:5px 0}
+#dashboard .sparkle-section-heading button span{font-size:19px;vertical-align:-1px;margin-left:2px}
+#dashboard .sparkle-home-service-grid{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:10px 7px!important;margin-top:8px!important}
+#dashboard .sparkle-home-service-grid .service{min-width:0;min-height:83px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:0;padding:4px 2px 7px!important;border:0!important;border-radius:14px!important;background:transparent!important;box-shadow:none!important;color:#152854!important;text-align:center;font-size:11.5px!important;font-weight:800!important;line-height:1.25!important;cursor:pointer;overflow-wrap:anywhere;transition:transform .16s ease}
+#dashboard .sparkle-home-service-grid .service>span{display:flex!important;align-items:center;justify-content:center;width:54px!important;height:54px!important;min-width:54px;flex:0 0 54px;margin:0 auto 8px!important;border:1px solid #e5f0ff;border-radius:50%!important;background:linear-gradient(145deg,#f0f7ff 0%,#dcecff 100%)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.95),0 3px 10px rgba(36,103,198,.06)!important;font-size:26px!important;line-height:1!important;text-shadow:none!important}
+#dashboard .sparkle-home-service-grid .service>div{max-width:100%;font-weight:800}
+#dashboard .sparkle-home-service-grid .service:hover,#dashboard .sparkle-home-service-grid .service:focus-visible{transform:translateY(-2px);outline:0}
+#dashboard .sparkle-home-service-grid .service:focus-visible>span{box-shadow:0 0 0 3px rgba(23,104,245,.18)!important}
+#dashboard .sparkle-more-services{margin-top:11px;padding:14px;border:1px solid #e2ecff;border-radius:18px;background:#fff;box-shadow:0 8px 23px rgba(28,77,151,.055)}
+#dashboard .sparkle-more-services[hidden]{display:none!important}
+#dashboard .sparkle-more-heading{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;color:#142a5b}
+#dashboard .sparkle-more-heading button{border:0;background:#f1f6ff;border-radius:50%;width:28px;height:28px;font-size:20px;color:#56709e}
+#dashboard .sparkle-more-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+#dashboard .sparkle-transaction-section{margin-top:24px}
+#dashboard .sparkle-transaction-section .sparkle-section-heading{margin-bottom:12px}
+#dashboard .txbox{margin:0;background:#fff;border:1px solid #e7efff;border-radius:19px;padding:7px 14px;box-shadow:0 7px 22px rgba(28,77,151,.035)}
+#dashboard .txbox h3{margin:0 0 10px;color:#102454;font-size:18px;font-weight:900}
+#dashboard .sparkle-tx-row{display:flex;align-items:center;gap:11px;min-width:0;padding:13px 0!important;border-bottom:1px solid #edf2fb!important;font-size:13px!important;color:#132754;cursor:pointer;transition:background .15s ease}
+#dashboard .sparkle-tx-row:last-child{border-bottom:0!important}
+#dashboard .sparkle-tx-row:hover{background:#f8fbff}
+#dashboard .sparkle-tx-icon{width:45px;height:45px;flex:0 0 45px;border-radius:50%;display:grid;place-items:center;background:linear-gradient(145deg,#f0f7ff,#dcecff);font-size:22px;box-shadow:inset 0 1px 2px #fff}
+#dashboard .sparkle-tx-main{display:block;flex:1 1 auto;min-width:0}
+#dashboard .sparkle-tx-main strong{display:block;font-size:12.5px;line-height:1.35;font-weight:850;color:#142858;overflow-wrap:anywhere}
+#dashboard .sparkle-tx-main small{display:block;margin-top:5px;font-size:10.5px;color:#6d83a9;line-height:1.25}
+#dashboard .sparkle-tx-trailing{display:flex;flex:0 0 auto;flex-direction:column;align-items:flex-end;gap:5px;max-width:40%}
+#dashboard .sparkle-tx-trailing>strong{font-size:13px;line-height:1.2;white-space:nowrap;color:#142858!important;font-weight:900}
+#dashboard .sparkle-tx-status{display:inline-flex;align-items:center;gap:4px;max-width:100%;border-radius:999px;padding:4px 7px;font-size:9px;font-weight:800;line-height:1.1;white-space:nowrap;background:#edf5ff;color:#45638f}
+#dashboard .sparkle-tx-status i{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:currentColor}
+#dashboard .sparkle-tx-status.success{background:#dcfce7;color:#079455}
+#dashboard .sparkle-tx-status.failed,#dashboard .sparkle-tx-status.refund{background:#fff0f0;color:#c23737}
+#dashboard .sparkle-tx-status.pending{background:#fff7df;color:#946800}
+#dashboard .mobile-bottom-nav{height:70px;padding:7px 6px max(7px,env(safe-area-inset-bottom));background:rgba(255,255,255,.97);border-top:1px solid #e6efff;box-shadow:0 -7px 22px rgba(38,83,148,.035);backdrop-filter:blur(14px)}
+#dashboard .mobile-bottom-nav button{position:relative;display:flex;flex:1 1 20%;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;border-radius:12px;background:transparent;color:#617596;font-size:10px;font-weight:750;line-height:1.1;padding:3px 0 6px;transition:color .15s ease}
+#dashboard .mobile-bottom-nav button span{display:block;font-size:22px;line-height:1.15;margin:0;font-weight:500}
+#dashboard .mobile-bottom-nav button.active{color:#1768f5;background:transparent}
+#dashboard .mobile-bottom-nav button.active:after{content:"";position:absolute;bottom:0;left:calc(50% - 11px);width:22px;height:3px;border-radius:99px;background:#1768f5}
+#dashboard .mobile-bottom-nav button:focus-visible{outline:2px solid rgba(23,104,245,.35);outline-offset:-1px}
+#dashboard #transactionsPage .dashboard-title{font-size:25px;color:#102454;font-weight:900;letter-spacing:-.5px}
+#dashboard #transactionsPage .dashboard-subtitle{font-size:13px;color:#6c85b1;line-height:1.5}
+#dashboard #transactionsPage .txbox{margin-top:20px}
+#dashboard .data-back{box-shadow:0 3px 10px rgba(20,70,150,.06)}
+body.dark-mode #dashboard{background:linear-gradient(180deg,#07111f,#091525 42%,#07111f);color:#eef4ff}
+body.dark-mode #dashboard .dashnav,body.dark-mode #dashboard .mobile-bottom-nav{background:rgba(10,23,41,.97);border-color:#213149}
+body.dark-mode #dashboard .dashnav .brand,body.dark-mode #dashboard #home .dashboard-title,body.dark-mode #dashboard .sparkle-section-heading h2,body.dark-mode #dashboard .sparkle-section-heading h3{color:#edf4ff}
+body.dark-mode #dashboard .wallet-card{background:linear-gradient(112deg,#10264a,#173d78 58%,#164f92);border-color:#294b7a;color:#eef4ff}
+body.dark-mode #dashboard .wallet-card-label,body.dark-mode #dashboard .wallet-fee-note{color:#c5d9ff}
+body.dark-mode #dashboard .wallet-balance{color:#fff}
+body.dark-mode #dashboard .txbox,body.dark-mode #dashboard .sparkle-more-services{background:#0e1b2d;border-color:#213149}
+body.dark-mode #dashboard .sparkle-home-service-grid .service{color:#e7efff!important}
+body.dark-mode #dashboard .sparkle-home-service-grid .service>span,body.dark-mode #dashboard .sparkle-tx-icon{background:linear-gradient(145deg,#162b49,#122238)!important;border-color:#213149}
+body.dark-mode #dashboard .sparkle-tx-main strong,body.dark-mode #dashboard .sparkle-more-heading{color:#e7efff}
+body.dark-mode #dashboard .sparkle-tx-row{border-color:#213149!important;color:#e7efff}
+body.dark-mode #dashboard .sparkle-tx-row:hover{background:#102238}
+body.dark-mode #dashboard .sparkle-tx-main small{color:#a7bad9}
+body.dark-mode #dashboard .mobile-bottom-nav button{color:#9db0ce}
+body.dark-mode #dashboard .mobile-bottom-nav button.active{color:#70a3ff}
+@media(max-width:900px){
+  #dashboard .dashnav{position:relative;padding:9px 0}
+  #dashboard .dashnav .wrap{padding-left:18px;padding-right:18px}
+  #dashboard .dashbody{padding-top:14px;padding-bottom:28px}
+  #dashboard .dashbody>.wrap{padding-left:18px;padding-right:18px}
+  #dashboard .sparkle-promo-track{height:206px;border-radius:20px}
+  #dashboard .sparkle-promo-slide{padding:19px 17px}
+  #dashboard .sparkle-promo-copy{flex-basis:60%;max-width:62%}
+  #dashboard .sparkle-promo-copy h2{font-size:clamp(21px,5.5vw,28px)}
+  #dashboard .sparkle-promo-copy p{font-size:11px;line-height:1.4}
+  #dashboard .sparkle-promo-cta{margin-top:12px;padding:9px 11px;min-height:35px;font-size:11px;gap:8px}
+  #dashboard .sparkle-promo-art{flex-basis:39%;transform:scale(.92);transform-origin:center right;margin-right:-5px}
+  #dashboard .promo-orbit{width:150px;height:83px}
+  #dashboard .promo-orbit.orbit-b{width:125px;height:70px}
+  #dashboard .promo-phone{width:62px;height:108px}
+  #dashboard .promo-float{width:37px;height:37px;border-radius:12px;font-size:17px}
+  #dashboard .promo-wallet-visual{width:112px;height:77px}
+  #dashboard .promo-data-visual{width:75px;height:75px}
+  #dashboard .promo-pin-visual{width:79px;height:101px;padding:9px}
+  #dashboard .promo-gift-visual{width:77px;height:77px;font-size:43px;border-radius:21px}
+}
+@media(max-width:480px){
+  #dashboard .dashnav .brand{font-size:23px;gap:5px}
+  #dashboard .logo.sparkle-logo-mark{width:40px;height:40px;flex-basis:40px;font-size:38px}
+  #dashboard .dash-actions{gap:2px}
+  #dashboard .dash-actions .icon-btn{width:34px;height:34px;font-size:16px}
+  #dashboard #home .dashboard-title{font-size:25px;margin-top:2px}
+  #dashboard #home .dashboard-subtitle{font-size:12.5px;margin-bottom:17px}
+  #dashboard .wallet-card{padding:18px 15px;border-radius:20px;margin-bottom:14px}
+  #dashboard .wallet-card-top{gap:8px}
+  #dashboard .wallet-card-label{gap:6px;font-size:11px}
+  #dashboard .wallet-card-icon{width:25px;height:25px;flex-basis:25px;font-size:13px;border-radius:8px}
+  #dashboard .wallet-balance{font-size:clamp(25px,7.4vw,31px);letter-spacing:-.8px;margin-top:8px}
+  #dashboard .wallet-card-action{max-width:45%;gap:6px}
+  #dashboard .wallet-card .fund-wallet-btn{min-height:42px;padding:10px 12px;font-size:12px;gap:5px}
+  #dashboard .wallet-fee-note{font-size:8.5px;max-width:142px}
+  #dashboard .sparkle-promo-carousel{margin-top:12px;margin-bottom:18px}
+  #dashboard .sparkle-promo-track{height:192px;border-radius:19px}
+  #dashboard .sparkle-promo-slide{padding:16px 13px;gap:0}
+  #dashboard .sparkle-promo-copy{flex-basis:63%;max-width:64%}
+  #dashboard .sparkle-promo-kicker{font-size:7.5px;letter-spacing:.8px;margin-bottom:7px}
+  #dashboard .sparkle-promo-copy h2{font-size:clamp(19px,5.3vw,23px);line-height:1.06;letter-spacing:-.45px;margin-bottom:7px}
+  #dashboard .sparkle-promo-copy p{font-size:10px;line-height:1.36}
+  #dashboard .sparkle-promo-cta{min-height:32px;margin-top:10px;border-radius:9px;padding:8px 9px;font-size:10px;gap:6px}
+  #dashboard .sparkle-promo-art{flex-basis:36%;transform:scale(.79);margin-right:-10px}
+  #dashboard .promo-phone{width:56px;height:98px;border-radius:16px}
+  #dashboard .promo-phone strong{font-size:30px}
+  #dashboard .promo-phone small{font-size:5px}
+  #dashboard .promo-float{width:32px;height:32px;min-width:32px;border-radius:10px;font-size:15px}
+  #dashboard .promo-wallet-visual{width:98px;height:69px;padding:9px}
+  #dashboard .promo-wallet-visual span{font-size:19px}
+  #dashboard .promo-wallet-visual i{right:9px;top:11px;width:21px;height:17px}
+  #dashboard .promo-wallet-visual small{left:10px;bottom:8px;font-size:5px}
+  #dashboard .promo-data-visual{width:66px;height:66px;border-radius:20px}
+  #dashboard .promo-data-visual span{font-size:32px}
+  #dashboard .promo-pin-visual{width:70px;height:90px;border-radius:9px;padding:8px;gap:5px}
+  #dashboard .promo-pin-visual b{font-size:14px}
+  #dashboard .promo-gift-visual{width:66px;height:66px;font-size:36px}
+  #dashboard .sparkle-promo-pagination{padding-top:9px;gap:7px}
+  #dashboard .sparkle-section-heading{margin-top:17px;margin-bottom:10px}
+  #dashboard .sparkle-section-heading h2,#dashboard .sparkle-section-heading h3{font-size:18px}
+  #dashboard .sparkle-section-heading button{font-size:12px}
+  #dashboard .sparkle-home-service-grid{gap:9px 4px!important;margin-top:4px!important}
+  #dashboard .sparkle-home-service-grid .service{min-height:77px;padding:2px 0 5px!important;font-size:10.5px!important}
+  #dashboard .sparkle-home-service-grid .service>span{width:48px!important;height:48px!important;min-width:48px;flex-basis:48px;font-size:23px!important;margin-bottom:6px!important}
+  #dashboard .sparkle-more-services{padding:11px;border-radius:15px}
+  #dashboard .sparkle-more-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+  #dashboard .sparkle-transaction-section{margin-top:21px}
+  #dashboard .txbox{border-radius:17px;padding:5px 10px}
+  #dashboard .sparkle-tx-row{gap:8px;padding:12px 0!important}
+  #dashboard .sparkle-tx-icon{width:38px;height:38px;flex-basis:38px;font-size:19px}
+  #dashboard .sparkle-tx-main strong{font-size:11px}
+  #dashboard .sparkle-tx-main small{font-size:9.5px;margin-top:4px}
+  #dashboard .sparkle-tx-trailing{gap:4px;max-width:39%}
+  #dashboard .sparkle-tx-trailing>strong{font-size:11.5px}
+  #dashboard .sparkle-tx-status{font-size:8px;padding:4px 5px;gap:3px}
+  #dashboard .sparkle-tx-status i{width:5px;height:5px;flex-basis:5px}
+  #dashboard .mobile-bottom-nav{height:calc(67px + env(safe-area-inset-bottom));padding-bottom:max(8px,env(safe-area-inset-bottom))}
+  #dashboard .mobile-bottom-nav button{font-size:9px}
+  #dashboard .mobile-bottom-nav button span{font-size:20px}
+}
+@media(max-width:360px){
+  #dashboard .sparkle-promo-track{height:184px}
+  #dashboard .sparkle-promo-copy h2{font-size:18px}
+  #dashboard .sparkle-promo-copy p{font-size:9.5px}
+  #dashboard .sparkle-promo-art{transform:scale(.7);margin-right:-12px}
+  #dashboard .wallet-card{padding:16px 12px}
+  #dashboard .wallet-card .fund-wallet-btn{padding:9px 10px;font-size:11px}
+  #dashboard .wallet-balance{font-size:25px}
+  #dashboard .sparkle-tx-icon{width:34px;height:34px;flex-basis:34px}
+  #dashboard .sparkle-tx-trailing>strong{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){#dashboard .sparkle-promo-slide,#dashboard .sparkle-promo-dot,#dashboard .sparkle-promo-cta{transition:none!important}}
+</style>
+
+
+<style id="sparkle-preview-polish-fixes">
+#dashboard .logo.sparkle-logo-mark{font-size:0;text-shadow:none;overflow:visible}
+#dashboard .logo.sparkle-logo-mark svg{display:block;width:100%;height:100%;filter:drop-shadow(0 5px 9px rgba(23,104,245,.2))}
+#dashboard .wallet-card-icon svg{display:block;width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#dashboard .fund-button-icon{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px}
+#dashboard .fund-button-icon svg{width:20px;height:20px;display:block;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+@media(max-width:480px){
+ #dashboard .wallet-card{padding:14px 13px}
+ #dashboard .wallet-card .fund-wallet-btn{min-height:38px;padding:9px 11px}
+ #dashboard .wallet-fee-note{font-size:8px;max-width:135px}
+ #dashboard .sparkle-promo-track{height:168px}
+ #dashboard .sparkle-promo-slide{padding:12px 12px}
+ #dashboard .sparkle-promo-copy h2{font-size:clamp(18px,5vw,21px)}
+ #dashboard .sparkle-promo-copy p{font-size:9.5px;line-height:1.33}
+ #dashboard .sparkle-promo-cta{min-height:29px;padding:7px 8px;font-size:9.5px;margin-top:8px}
+ #dashboard .sparkle-promo-art{transform:scale(.72);margin-right:-13px}
+ #dashboard .sparkle-home-service-grid .service{min-height:71px}
+ #dashboard .sparkle-home-service-grid .service>span{width:46px!important;height:46px!important;min-width:46px;flex-basis:46px;margin-bottom:5px!important}
+ #sparkle-support-widget{right:13px;bottom:82px;z-index:1100}
+ #sparkle-support-toggle{width:44px;height:44px;box-shadow:0 7px 18px rgba(10,66,165,.2)}
+ #sparkle-support-toggle svg{width:24px;height:24px}
+}
+</style>
+
+
+<style id="sparkle-mobile-final-polish">
+#dashboard .sparkle-more-tools{margin-top:12px;padding-top:11px;border-top:1px solid #e9f0fc;display:flex;align-items:center;justify-content:space-between;gap:12px}
+#dashboard .sparkle-more-tools>span{font-size:9px;font-weight:900;letter-spacing:1px;color:#8798b6}
+#dashboard .sparkle-more-tools button{border:1px solid #e1ebfb;border-radius:11px;background:#f7faff;color:#224475;padding:9px 11px;font-size:11px;font-weight:800}
+#dashboard .sparkle-more-tools button span{margin-right:4px;color:#1768f5}
+@media(max-width:900px){#dashboard #themeButton{display:none!important}}
+@media(max-width:480px){
+ #dashboard .sparkle-promo-carousel{margin-bottom:12px}
+ #dashboard .sparkle-home-service-grid .service{min-height:66px}
+ #sparkle-support-widget{right:13px;top:83px;bottom:auto;z-index:1100}
+ #sparkle-support-toggle{width:40px;height:40px}
+ #sparkle-support-toggle svg{width:22px;height:22px}
+}
+body.dark-mode #dashboard .sparkle-more-tools{border-color:#213149}
+body.dark-mode #dashboard .sparkle-more-tools>span{color:#9fb0c8}
+body.dark-mode #dashboard .sparkle-more-tools button{background:#122238;border-color:#243852;color:#e7efff}
+</style>
+
+
+<style id="sparkle-digital-services-style">
+/* Additive, scoped styling for new Bulk SMS and Social Media Market features. */
+#dashboard .sparkle-digital-page-head{margin-bottom:18px}
+#dashboard .sparkle-digital-eyebrow{display:inline-block;color:#1768f5;font-size:10px;letter-spacing:.14em;font-weight:900;margin-bottom:7px}
+#dashboard .sparkle-market-hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+#dashboard .sparkle-market-hub-card{padding:20px;border:1px solid #e2ebff;border-radius:23px;background:#fff;box-shadow:0 14px 36px rgba(21,68,154,.06);min-width:0}
+#dashboard .sparkle-market-hub-card h2{font-size:20px;line-height:1.2;color:#0b1f51;margin:2px 0 10px}
+#dashboard .sparkle-market-hub-card p{color:#667694;font-size:13px;line-height:1.65;margin:0 0 17px}
+#dashboard .sparkle-market-hub-art{height:120px;border-radius:18px;margin-bottom:17px;position:relative;overflow:hidden;display:grid;place-items:center;background:radial-gradient(circle at 70% 18%,#61c5ff,transparent 33%),linear-gradient(135deg,#0c43cb,#0b8cff 72%,#30d1ff);color:#fff}
+#dashboard .sparkle-market-hub-art span{font-size:57px;font-weight:900;position:absolute;right:17%;top:14%;text-shadow:0 8px 20px #0641a8}
+#dashboard .sparkle-market-hub-art i,#dashboard .sparkle-market-hub-art b,#dashboard .sparkle-market-hub-art em{font-style:normal;position:absolute;border:1px solid rgba(255,255,255,.55);background:rgba(255,255,255,.2);backdrop-filter:blur(6px);width:34px;height:34px;display:grid;place-items:center;border-radius:12px;box-shadow:0 9px 20px rgba(2,35,104,.18)}
+#dashboard .sparkle-market-hub-art i{left:18%;top:22%}#dashboard .sparkle-market-hub-art b{left:32%;bottom:17%}#dashboard .sparkle-market-hub-art em{right:13%;bottom:17%}
+#dashboard .sparkle-market-hub-store .sparkle-market-hub-art{background:radial-gradient(circle at 70% 18%,#c6b7ff,transparent 33%),linear-gradient(135deg,#2415a3,#5c47e9 65%,#7e9fff)}
+#dashboard .sparkle-market-soon-note{font-size:12px;font-weight:750;color:#5f7193;background:#f4f7ff;border-radius:12px;padding:12px;display:flex;gap:8px;align-items:center}
+#dashboard .sparkle-market-promo-note{display:flex;align-items:flex-start;gap:12px;padding:15px 16px;margin-top:16px;background:#f0f6ff;border:1px solid #dfebff;border-radius:17px;color:#27456e}
+#dashboard .sparkle-market-promo-note>span{font-size:22px}#dashboard .sparkle-market-promo-note strong{font-size:13px}#dashboard .sparkle-market-promo-note p{font-size:12px;line-height:1.6;color:#687b9b;margin:4px 0 0}
+#dashboard .sparkle-digital-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;overflow:hidden;border-radius:24px;background:linear-gradient(118deg,#073fca 0%,#0969f6 58%,#21b8ff 100%);padding:22px;color:#fff;margin:5px 0 17px;min-height:175px}
+#dashboard .sparkle-digital-hero:before{content:"";position:absolute;width:240px;height:240px;right:-80px;top:-110px;border:1px solid rgba(255,255,255,.18);border-radius:50%;box-shadow:0 0 0 22px rgba(255,255,255,.04),0 0 0 48px rgba(255,255,255,.035)}
+#dashboard .sparkle-digital-hero>div:first-child{position:relative;z-index:1;max-width:62%}
+#dashboard .sparkle-digital-hero .sparkle-digital-eyebrow{color:#b9e4ff}
+#dashboard .sparkle-digital-hero h2{font-size:25px;line-height:1.08;margin:0 0 8px;letter-spacing:-.025em}
+#dashboard .sparkle-digital-hero p{font-size:12px;line-height:1.55;margin:0;color:rgba(255,255,255,.88);max-width:350px}
+#dashboard .sparkle-social-hero-art,#dashboard .sparkle-sms-hero-art{position:relative;z-index:1;flex:0 0 115px;width:115px;height:115px;border-radius:26px;background:linear-gradient(145deg,rgba(255,255,255,.32),rgba(255,255,255,.1));border:1px solid rgba(255,255,255,.38);box-shadow:0 18px 35px rgba(0,34,111,.22);transform:rotate(5deg);display:grid;place-items:center}
+#dashboard .sparkle-social-hero-art span,#dashboard .sparkle-sms-hero-art span{font-size:54px;font-weight:850;text-shadow:0 6px 18px rgba(0,30,100,.22)}
+#dashboard .sparkle-social-hero-art b,#dashboard .sparkle-social-hero-art i,#dashboard .sparkle-social-hero-art em,#dashboard .sparkle-sms-hero-art b,#dashboard .sparkle-sms-hero-art i,#dashboard .sparkle-sms-hero-art em{position:absolute;font-style:normal;font-weight:900;display:grid;place-items:center;width:34px;height:34px;border:1px solid rgba(255,255,255,.55);background:#fff;color:#1768f5;border-radius:12px;box-shadow:0 7px 18px rgba(0,38,121,.2);font-size:15px}
+#dashboard .sparkle-social-hero-art b{right:-9px;top:7px}#dashboard .sparkle-social-hero-art i{left:-9px;bottom:14px;color:#ee3293}#dashboard .sparkle-social-hero-art em{right:7px;bottom:-8px;color:#00a870}
+#dashboard .sparkle-sms-hero-art{transform:rotate(-5deg)}#dashboard .sparkle-sms-hero-art b{right:-8px;top:7px;font-size:10px}#dashboard .sparkle-sms-hero-art i{left:-8px;bottom:13px;color:#00a870}#dashboard .sparkle-sms-hero-art em{right:8px;bottom:-7px;color:#1768f5;letter-spacing:1px}
+#dashboard .sparkle-digital-card{border:1px solid #e3ecff;border-radius:22px;background:#fff;padding:18px;box-shadow:0 14px 36px rgba(21,68,154,.055);min-width:0}
+#dashboard .sparkle-digital-section-title{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:16px}
+#dashboard .sparkle-digital-section-title h2{font-size:18px;line-height:1.25;color:#0c2051;margin:0 0 5px}
+#dashboard .sparkle-digital-section-title p{font-size:12px;line-height:1.5;color:#71809b;margin:0}
+#dashboard .sparkle-refresh-button{border:1px solid #dbe8ff;background:#f6f9ff;color:#1768f5;font-size:12px;font-weight:800;border-radius:11px;padding:10px 12px;white-space:nowrap;cursor:pointer}
+#dashboard .sparkle-digital-status-pill{flex-shrink:0;padding:6px 9px;border-radius:100px;background:#e7f8f0;color:#078454;font-size:10px;font-weight:850;white-space:nowrap}
+#dashboard .sparkle-platform-filters{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:11px;scrollbar-width:thin}
+#dashboard .sparkle-platform-filters button{border:1px solid #e2eaff;background:#f8faff;color:#657594;padding:8px 11px;font-size:11px;font-weight:800;white-space:nowrap;border-radius:100px;cursor:pointer}
+#dashboard .sparkle-platform-filters button.active{background:#1768f5;border-color:#1768f5;color:#fff;box-shadow:0 5px 12px rgba(23,104,245,.15)}
+#dashboard .sparkle-digital-label{display:block;font-size:12px;font-weight:850;color:#1a2f58;margin:13px 0 7px}
+#dashboard .sparkle-digital-input{box-sizing:border-box;width:100%;min-height:46px;border:1px solid #dce6f7;border-radius:13px;background:#fbfdff;color:#14213d;padding:12px 13px;font:inherit;font-size:14px;outline:none;transition:border-color .15s ease,box-shadow .15s ease}
+#dashboard .sparkle-digital-input:focus{border-color:#4388ff;box-shadow:0 0 0 3px rgba(23,104,245,.1)}
+#dashboard .sparkle-digital-textarea{min-height:100px;resize:vertical;line-height:1.5}
+#dashboard .sparkle-digital-help{display:block;color:#7b89a2;font-size:11px;line-height:1.55;margin-top:6px}
+#dashboard .sparkle-digital-fields{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:12px}
+#dashboard .sparkle-social-selected-plan{margin-top:12px;padding:13px;border-radius:14px;background:linear-gradient(125deg,#eff6ff,#f5f3ff);border:1px solid #dfebff;color:#31517f;font-size:12px;line-height:1.5;min-height:36px}
+#dashboard .sparkle-social-selected-plan strong{display:block;color:#102960;font-size:13px;margin-bottom:4px}
+#dashboard .sparkle-digital-primary{margin-top:17px;min-height:48px;border-radius:14px!important;background:linear-gradient(110deg,#1768f5,#078aff)!important;box-shadow:0 9px 22px rgba(23,104,245,.17)}
+#dashboard .sparkle-digital-quote{margin-top:13px;border:1px solid #dfeaff;border-radius:15px;padding:14px;background:#f8fbff}
+#dashboard .sparkle-quote-topline{font-size:11px;font-weight:850;text-transform:uppercase;letter-spacing:.08em;color:#637798;margin-bottom:9px}
+#dashboard .sparkle-quote-line{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #e7eefb;color:#657693;font-size:12px}
+#dashboard .sparkle-quote-line strong{color:#132a59;font-size:13px;text-align:right}
+#dashboard .sparkle-quote-total{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:13px 0 2px;color:#172b56;font-size:13px;font-weight:850}
+#dashboard .sparkle-quote-total strong{font-size:22px;color:#075be7;letter-spacing:-.02em}
+#dashboard .sparkle-quote-note{font-size:11px;color:#6d7e9b;line-height:1.55;margin:10px 0 0}
+#dashboard .sparkle-sms-count-row{display:flex;justify-content:space-between;align-items:flex-start;gap:9px;margin-top:6px;color:#7b89a2;font-size:10px;line-height:1.45}
+#dashboard .sparkle-sms-count-row strong{color:#3d5f96;font-size:11px;white-space:nowrap}
+#dashboard .sparkle-sms-rules{margin-top:15px;border:1px solid #ffebc6;background:#fffaf0;padding:13px;border-radius:14px;color:#7b5611}
+#dashboard .sparkle-sms-rules strong{font-size:12px}#dashboard .sparkle-sms-rules p{font-size:11px;line-height:1.6;margin:6px 0 0;color:#876d3a}
+#dashboard .sparkle-digital-policy{display:flex;gap:9px;align-items:flex-start;margin-top:15px;padding-top:13px;border-top:1px solid #edf1f8}
+#dashboard .sparkle-digital-policy>span{font-size:18px}#dashboard .sparkle-digital-policy p{font-size:11px;line-height:1.6;margin:1px 0 0;color:#7887a0}
+#dashboard .sparkle-digital-result{margin-top:14px;border-radius:15px;padding:14px;background:#f4f8ff;border:1px solid #dbe8ff;color:#304d79;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+#dashboard .sparkle-digital-result.success{background:#f0fbf6;border-color:#c8f2df;color:#126e4e}#dashboard .sparkle-digital-result.error{background:#fff5f5;border-color:#ffdada;color:#9b3030}#dashboard .sparkle-digital-result.pending{background:#fff9ed;border-color:#f7e1b4;color:#85601c}
+#dashboard .sparkle-digital-result strong{display:block;font-size:14px;margin-bottom:4px}
+#dashboard .sparkle-digital-result button{margin-top:10px;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit;padding:8px 12px;font-weight:800;font-size:12px;cursor:pointer}
+#dashboard .sparkle-digital-spinner{display:inline-block;width:15px;height:15px;border-radius:50%;border:2px solid #cfe0ff;border-top-color:#1768f5;animation:sparkleDigitalSpin .75s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes sparkleDigitalSpin{to{transform:rotate(360deg)}}
+@media(max-width:700px){
+ #dashboard .sparkle-market-hub-grid{grid-template-columns:1fr;gap:12px}
+ #dashboard .sparkle-market-hub-card{padding:16px;border-radius:19px}
+ #dashboard .sparkle-market-hub-art{height:105px}
+ #dashboard .sparkle-digital-hero{min-height:155px;padding:18px;border-radius:20px;gap:10px}
+ #dashboard .sparkle-digital-hero h2{font-size:22px}
+ #dashboard .sparkle-digital-hero>div:first-child{max-width:64%}
+ #dashboard .sparkle-social-hero-art,#dashboard .sparkle-sms-hero-art{flex-basis:94px;width:94px;height:94px;border-radius:22px}
+ #dashboard .sparkle-social-hero-art span,#dashboard .sparkle-sms-hero-art span{font-size:44px}
+ #dashboard .sparkle-digital-card{padding:15px;border-radius:19px}
+ #dashboard .sparkle-digital-fields{grid-template-columns:1fr;gap:0}
+ #dashboard .sparkle-digital-section-title h2{font-size:17px}
+}
+@media(max-width:380px){
+ #dashboard .sparkle-digital-hero{padding:15px}
+ #dashboard .sparkle-digital-hero h2{font-size:20px}
+ #dashboard .sparkle-social-hero-art,#dashboard .sparkle-sms-hero-art{flex-basis:80px;width:80px;height:80px}
+ #dashboard .sparkle-digital-status-pill{font-size:9px;padding:5px 7px}
+}
+body.dark-mode #dashboard .sparkle-market-hub-card,body.dark-mode #dashboard .sparkle-digital-card{background:#0e1b2d;border-color:#233957;color:#eef4ff}
+body.dark-mode #dashboard .sparkle-market-hub-card h2,body.dark-mode #dashboard .sparkle-digital-section-title h2,body.dark-mode #dashboard .sparkle-digital-label{color:#eef4ff}
+body.dark-mode #dashboard .sparkle-market-hub-card p,body.dark-mode #dashboard .sparkle-digital-section-title p,body.dark-mode #dashboard .sparkle-digital-help{color:#a6b8d6}
+body.dark-mode #dashboard .sparkle-digital-input{background:#0a1423;color:#eef4ff;border-color:#2b405e}
+body.dark-mode #dashboard .sparkle-social-selected-plan,body.dark-mode #dashboard .sparkle-digital-quote{background:#10233b;border-color:#2a4367;color:#b7c8e5}
+body.dark-mode #dashboard .sparkle-quote-line{border-color:#293c57;color:#a8bbd8}
+body.dark-mode #dashboard .sparkle-quote-line strong,body.dark-mode #dashboard .sparkle-quote-total{color:#ecf4ff}
+body.dark-mode #dashboard .sparkle-market-promo-note{background:#10233b;border-color:#2b4364;color:#dceaff}
+</style>
+
 </head>
 
 <body>
@@ -1907,7 +2280,7 @@ Privacy Policy
 
   <aside class="dash-sidebar">
     <div class="sidebar-brand">
-      <div class="brand"><span class="logo">S</span> Sparkle</div>
+      <div class="brand"><span class="logo sparkle-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M32 2 40.7 23.3 62 32 40.7 40.7 32 62 23.3 40.7 2 32 23.3 23.3Z" fill="#1768f5"/><path d="M32 13 38.2 25.8 51 32 38.2 38.2 32 51 25.8 38.2 13 32 25.8 25.8Z" fill="#49a5ff" opacity=".9"/></svg></span> Sparkle</div>
     </div>
 
     <nav class="sidebar-nav">
@@ -1926,7 +2299,7 @@ Privacy Policy
     <header class="dashnav">
       <div class="wrap dashnav-inner">
         <div class="brand">
-          <span class="logo">S</span> Sparkle
+          <span class="logo sparkle-logo-mark" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M32 2 40.7 23.3 62 32 40.7 40.7 32 62 23.3 40.7 2 32 23.3 23.3Z" fill="#1768f5"/><path d="M32 13 38.2 25.8 51 32 38.2 38.2 32 51 25.8 38.2 13 32 25.8 25.8Z" fill="#49a5ff" opacity=".9"/></svg></span> Sparkle
         </div>
 
         <div class="dash-actions">
@@ -1947,23 +2320,27 @@ Privacy Policy
     <main class="dashbody">
       <div class="wrap">
 
-        <!-- HOME -->
+        <!-- HOME: approved Sparkle blue-gradient dashboard presentation -->
         <section class="page active" id="home">
-          <h1 class="dashboard-title">Welcome to Sparkle 👋</h1>
-          <p class="dashboard-subtitle">Manage your bills, wallet and everyday payments in one place.</p>
+          <h1 class="dashboard-title">Welcome back <span class="welcome-wave" aria-hidden="true">👋</span></h1>
+          <p class="dashboard-subtitle">Everything you need, in one place.</p>
 
           <div class="wallet-card">
             <div class="wallet-card-top">
-              <div class="wallet-card-label"><span class="wallet-card-icon">₦</span> AVAILABLE WALLET BALANCE</div>
-              <span aria-hidden="true" style="font-size:22px;opacity:.75">✦</span>
+              <div class="wallet-balance-block">
+                <div class="wallet-card-label"><span class="wallet-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12"/><path d="M16 12h5"/><circle cx="16.5" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></span><span>Available Balance</span></div>
+                <div class="wallet-balance" id="walletBalance">₦0.00</div>
+              </div>
+              <div class="wallet-card-action">
+                <button class="btn fund-wallet-btn" type="button" onclick="showFundWallet()"><span class="fund-button-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12"/><path d="M16 12h5"/><circle cx="16.5" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></span> Fund Wallet</button>
+                <small class="wallet-fee-note">Small amount will be deducted for the bank fee.</small>
+              </div>
             </div>
-            <p class="wallet-card-caption">Your Sparkle balance, ready for everyday payments.</p>
-            <div class="wallet-balance" id="walletBalance">₦0.00</div>
-            <button class="btn fund-wallet-btn" onclick="showFundWallet()">＋ &nbsp; Fund Wallet</button>
-            <small class="wallet-fee-note">Small amount will be deducted for the bank fee.</small>
           </div>
 
-          <div class="dva-card">
+          <!-- Kept in the DOM for the existing Paystack dedicated-account funding flow.
+               The account details remain available in the Fund Wallet modal. -->
+          <div class="dva-card" id="homeFundingDetails">
             <div class="dva-head">
               <div>
                 <h3 class="dva-title">Your Sparkle Funding Account</h3>
@@ -1976,25 +2353,120 @@ Privacy Policy
               <div class="dva-item"><label>ACCOUNT NUMBER</label><strong id="dvaAccountNumber">Loading…</strong></div>
               <div class="dva-item"><label>BANK</label><strong id="dvaBankName">Loading…</strong></div>
             </div>
-            <button class="btn copy-account" onclick="copyDVA()">Copy Account Number</button>
+            <button class="btn copy-account" type="button" onclick="copyDVA()">Copy Account Number</button>
           </div>
 
-          <h2>Quick Services</h2>
-          <p class="service-section-caption">Everything you need, in one place.</p>
-          <div class="service-grid">
-            <div class="service" onclick="openServicePage('airtime')"><span>📱</span>Airtime<small>Recharge</small></div>
-            <div class="service" onclick="openServicePage('data')"><span>🌐</span>Data<small>Bundles</small></div>
-            <div class="service" onclick="openServicePage('cable')"><span>📺</span>Cable TV<small>Subscriptions</small></div>
-            <div class="service" onclick="openServicePage('electricity')"><span>⚡</span>Electricity<small>Power Bills</small></div>
-            <div class="service" onclick="openServicePage('education')"><span>🎟️</span>Education Pins<small>WAEC • NECO • NABTEB</small></div>
-            <div class="service" onclick="openServicePage('rechargepin')"><span>🪪</span>Recharge Pin Printing<small>Print recharge cards</small></div>
-            <div class="service" onclick="openServicePage('smsotp');loadSvbCountries()"><span>🇺🇸</span>Buy US Number<small>Temporary verification numbers</small></div>
+          <section class="sparkle-promo-carousel" id="sparklePromoCarousel" aria-label="Sparkle promotions" aria-roledescription="carousel">
+            <div class="sparkle-promo-track">
+              <article class="sparkle-promo-slide promo-bills is-active" data-promo-slide="0" aria-hidden="false">
+                <div class="sparkle-promo-copy">
+                  <span class="sparkle-promo-kicker">SPARKLE EVERYDAY</span>
+                  <h2>Bills made easy<br>with Sparkle</h2>
+                  <p>Airtime, data, electricity and more — all in one place.</p>
+                  <button type="button" class="sparkle-promo-cta" onclick="sparklePromoAction('services')">Explore services <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="sparkle-promo-art" aria-hidden="true">
+                  <div class="promo-orbit orbit-a"></div><div class="promo-orbit orbit-b"></div>
+                  <div class="promo-phone"><span class="promo-phone-speaker"></span><strong>✦</strong><small>SPARKLE</small></div>
+                  <span class="promo-float float-wifi">◔</span><span class="promo-float float-bolt">⚡</span><span class="promo-float float-tv">▣</span><span class="promo-float float-bulb">✧</span>
+                </div>
+              </article>
+              <article class="sparkle-promo-slide promo-wallet" data-promo-slide="1" aria-hidden="true">
+                <div class="sparkle-promo-copy">
+                  <span class="sparkle-promo-kicker">SIMPLE & CONVENIENT</span>
+                  <h2>Your wallet,<br>always ready</h2>
+                  <p>Fund Sparkle securely and get back to what matters.</p>
+                  <button type="button" class="sparkle-promo-cta" onclick="sparklePromoAction('fund')">Fund Wallet <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="sparkle-promo-art" aria-hidden="true">
+                  <div class="promo-orbit orbit-a"></div><div class="promo-orbit orbit-b"></div>
+                  <div class="promo-wallet-visual"><span>✦</span><i></i><b></b><small>SPARKLE WALLET</small></div>
+                  <span class="promo-float float-coin">₦</span><span class="promo-float float-check">✓</span>
+                </div>
+              </article>
+              <article class="sparkle-promo-slide promo-connect" data-promo-slide="2" aria-hidden="true">
+                <div class="sparkle-promo-copy">
+                  <span class="sparkle-promo-kicker">STAY CONNECTED</span>
+                  <h2>Never run out<br>of data</h2>
+                  <p>Buy airtime and data bundles in just a few taps.</p>
+                  <button type="button" class="sparkle-promo-cta" onclick="sparklePromoAction('data')">Buy Data <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="sparkle-promo-art" aria-hidden="true">
+                  <div class="promo-orbit orbit-a"></div><div class="promo-orbit orbit-b"></div>
+                  <div class="promo-data-visual"><span>◉</span><b>4G</b></div>
+                  <span class="promo-float float-wifi">⌁</span><span class="promo-float float-phone">▯</span><span class="promo-float float-signal">◔</span>
+                </div>
+              </article>
+              <article class="sparkle-promo-slide promo-recharge" data-promo-slide="3" aria-hidden="true">
+                <div class="sparkle-promo-copy">
+                  <span class="sparkle-promo-kicker">DIGITAL ESSENTIALS</span>
+                  <h2>Recharge in<br>a flash</h2>
+                  <p>Print recharge PINs and manage everyday payments with ease.</p>
+                  <button type="button" class="sparkle-promo-cta" onclick="sparklePromoAction('rechargepin')">Get Recharge PIN <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="sparkle-promo-art" aria-hidden="true">
+                  <div class="promo-orbit orbit-a"></div><div class="promo-orbit orbit-b"></div>
+                  <div class="promo-pin-visual"><span>✦</span><b>PIN</b><i></i><i></i><i></i></div>
+                  <span class="promo-float float-ticket">▤</span><span class="promo-float float-check">✓</span>
+                </div>
+              </article>
+              <article class="sparkle-promo-slide promo-market" data-promo-slide="4" aria-hidden="true">
+                <div class="sparkle-promo-copy">
+                  <span class="sparkle-promo-kicker">MORE WITH SPARKLE</span>
+                  <h2>Shop, share<br>and earn</h2>
+                  <p>Discover Market, rewards and referral opportunities.</p>
+                  <button type="button" class="sparkle-promo-cta" onclick="sparklePromoAction('market')">Explore Market <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="sparkle-promo-art" aria-hidden="true">
+                  <div class="promo-orbit orbit-a"></div><div class="promo-orbit orbit-b"></div>
+                  <div class="promo-gift-visual">🎁</div><span class="promo-float float-bag">▱</span><span class="promo-float float-star">✦</span>
+                </div>
+              </article>
+            </div>
+            <div class="sparkle-promo-pagination" role="group" aria-label="Choose a promotion">
+              <button type="button" class="sparkle-promo-dot" aria-label="Show banner 1" aria-pressed="true" onclick="showSparklePromo(0,true)"></button>
+              <button type="button" class="sparkle-promo-dot" aria-label="Show banner 2" aria-pressed="false" onclick="showSparklePromo(1,true)"></button>
+              <button type="button" class="sparkle-promo-dot" aria-label="Show banner 3" aria-pressed="false" onclick="showSparklePromo(2,true)"></button>
+              <button type="button" class="sparkle-promo-dot" aria-label="Show banner 4" aria-pressed="false" onclick="showSparklePromo(3,true)"></button>
+              <button type="button" class="sparkle-promo-dot" aria-label="Show banner 5" aria-pressed="false" onclick="showSparklePromo(4,true)"></button>
+            </div>
+          </section>
+
+          <div class="sparkle-section-heading" id="quickServicesSection">
+            <h2>Quick Services</h2>
+            <button type="button" onclick="toggleSparkleMoreServices()">See all <span aria-hidden="true">›</span></button>
+          </div>
+          <div class="service-grid sparkle-home-service-grid">
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('airtime')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('airtime')}"><span aria-hidden="true">📱</span><div>Buy Airtime</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('data')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('data')}"><span aria-hidden="true">📶</span><div>Buy Data</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('electricity')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('electricity')}"><span aria-hidden="true">💡</span><div>Electricity</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('cable')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('cable')}"><span aria-hidden="true">📺</span><div>Cable TV</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🎟️</span><div>Recharge PIN</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadSvbCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadSvbCountries()}"><span aria-hidden="true">💬</span><div>SMS OTP</div></div>
+            <div class="service" role="button" tabindex="0" onclick="showDashPage('marketPage')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showDashPage('marketPage')}"><span aria-hidden="true">🛍️</span><div>Market</div></div>
+            <div class="service" role="button" tabindex="0" aria-expanded="false" aria-controls="moreServicesPanel" onclick="toggleSparkleMoreServices()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSparkleMoreServices()}"><span aria-hidden="true">✣</span><div>More</div></div>
+          </div>
+          <div class="sparkle-more-services" id="moreServicesPanel" hidden>
+            <div class="sparkle-more-heading"><strong>More Services</strong><button type="button" onclick="toggleSparkleMoreServices()" aria-label="Close more services">×</button></div>
+            <div class="service-grid sparkle-home-service-grid sparkle-more-grid">
+              <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education Pins</div></div>
+              <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🪪</span><div>Recharge PIN Printing</div></div>
+              <div class="service" role="button" tabindex="0" onclick="openSvbOrderPage()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSvbOrderPage()}"><span aria-hidden="true">📲</span><div>US Number Orders</div></div>
+              <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
+              <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
+            </div>
+            <div class="sparkle-more-tools"><span>DISPLAY</span><button type="button" onclick="toggleTheme()"><span aria-hidden="true">◐</span> Switch appearance</button></div>
           </div>
 
-          <div class="txbox">
-            <h3>Recent Transactions</h3>
-            <div id="transactions"><p style="color:#64748b">Loading transactions...</p></div>
-          </div>
+          <section class="sparkle-transaction-section">
+            <div class="sparkle-section-heading">
+              <h2>Recent Transactions</h2>
+              <button type="button" onclick="showDashPage('transactionsPage')">View all <span aria-hidden="true">›</span></button>
+            </div>
+            <div class="txbox">
+              <div id="transactions"><p style="color:#64748b">Loading transactions...</p></div>
+            </div>
+          </section>
         </section>
 
         <!-- US number purchase page: secure Edge Functions. -->
@@ -2060,19 +2532,93 @@ Privacy Policy
           <div class="txbox"><div id="allTransactions"><p style="color:#64748b">Loading transactions...</p></div></div>
         </section>
 
-        <!-- MARKET -->
+        <!-- MARKET HUB: existing product-store placeholder retained; new Social Media Market added. -->
         <section class="page" id="marketPage">
-          <h1 class="dashboard-title">Sparkle Market</h1>
-          <p class="dashboard-subtitle">A new way to shop is coming to Sparkle.</p>
-          <div class="market-card">
-            <div class="market-icon">🛍️</div>
-            <h2>Coming Soon</h2>
-            <p style="color:var(--muted);max-width:600px;margin:auto;line-height:1.7">
-              We are preparing Sparkle Market — a future marketplace where you can buy gadgets,
-              accessories and other useful products directly through Sparkle.
-            </p>
-            <p style="font-weight:800;margin-top:18px">Stay tuned. Something exciting is coming.</p>
+          <div class="sparkle-digital-page-head">
+            <div class="sparkle-digital-eyebrow">SPARKLE MARKETPLACE</div>
+            <h1 class="dashboard-title">Sparkle Market</h1>
+            <p class="dashboard-subtitle">Grow your audience today, with more ways to shop coming soon.</p>
           </div>
+          <div class="sparkle-market-hub-grid">
+            <article class="sparkle-market-hub-card sparkle-market-hub-social">
+              <div class="sparkle-market-hub-art" aria-hidden="true"><span>↗</span><i>◎</i><b>▶</b><em>♡</em></div>
+              <div class="sparkle-digital-eyebrow">LIVE SERVICE</div>
+              <h2>Social Media Market</h2>
+              <p>Browse available social-media services, choose a plan, enter your profile or post link, and review the live naira price before confirming.</p>
+              <button class="btn primary full" type="button" onclick="openServicePage('socialMarket')">Explore social services <span aria-hidden="true">→</span></button>
+            </article>
+            <article class="sparkle-market-hub-card sparkle-market-hub-store">
+              <div class="sparkle-market-hub-art" aria-hidden="true"><span>▱</span><i>✦</i><b>◇</b><em>+</em></div>
+              <div class="sparkle-digital-eyebrow">COMING SOON</div>
+              <h2>Product Store</h2>
+              <p>We are preparing a place for gadgets, accessories and useful products to complement your everyday Sparkle services.</p>
+              <div class="sparkle-market-soon-note"><span aria-hidden="true">✦</span> More shopping options are on the way.</div>
+            </article>
+          </div>
+          <div class="sparkle-market-promo-note"><span aria-hidden="true">🛡️</span><div><strong>Know what you’re ordering</strong><p>Every social-media plan shows its available quantity limits and current price before you approve it with your Transaction PIN.</p></div></div>
+        </section>
+
+        <!-- SOCIAL MEDIA MARKET: provider-driven catalogue and server-priced orders. -->
+        <section class="page" id="socialMarketPage">
+          <div class="data-topbar"><button class="data-back" type="button" onclick="showDashPage('marketPage',null)">‹</button><h1>Social Media Market</h1></div>
+          <p class="dashboard-subtitle">Choose from the services currently available through Sparkle. Review the price and target link before confirming.</p>
+          <div class="sparkle-digital-hero sparkle-social-hero">
+            <div><span class="sparkle-digital-eyebrow">GROW WITH SPARKLE</span><h2>Your audience.<br>Your next step.</h2><p>Discover available growth and engagement services across supported platforms.</p></div>
+            <div class="sparkle-social-hero-art" aria-hidden="true"><span>◎</span><b>▶</b><i>♡</i><em>↗</em></div>
+          </div>
+          <div class="sparkle-digital-card">
+            <div class="sparkle-digital-section-title"><div><h2>Choose a service</h2><p>Prices and plans load from GSubz. Availability can change.</p></div><button type="button" class="sparkle-refresh-button" onclick="loadSparkleSocialPlans(true)">↻ Refresh</button></div>
+            <div class="sparkle-platform-filters" id="sparkleSocialPlatformFilters" role="group" aria-label="Filter social-media platform">
+              <button type="button" class="active" data-platform="all" onclick="filterSparkleSocialPlans('all',this)">All</button>
+              <button type="button" data-platform="instagram" onclick="filterSparkleSocialPlans('instagram',this)">Instagram</button>
+              <button type="button" data-platform="tiktok" onclick="filterSparkleSocialPlans('tiktok',this)">TikTok</button>
+              <button type="button" data-platform="facebook" onclick="filterSparkleSocialPlans('facebook',this)">Facebook</button>
+              <button type="button" data-platform="youtube" onclick="filterSparkleSocialPlans('youtube',this)">YouTube</button>
+              <button type="button" data-platform="telegram" onclick="filterSparkleSocialPlans('telegram',this)">Telegram</button>
+              <button type="button" data-platform="x" onclick="filterSparkleSocialPlans('x',this)">X / Twitter</button>
+              <button type="button" data-platform="other" onclick="filterSparkleSocialPlans('other',this)">Other</button>
+            </div>
+            <label class="sparkle-digital-label" for="sparkleSocialSearch">Search services</label>
+            <input id="sparkleSocialSearch" class="sparkle-digital-input" type="search" placeholder="Search followers, likes, views…" oninput="renderSparkleSocialPlanOptions()" autocomplete="off">
+            <label class="sparkle-digital-label" for="sparkleSocialPlan">Available service</label>
+            <select id="sparkleSocialPlan" class="sparkle-digital-input" onchange="onSparkleSocialPlanChange()"><option value="">Loading live plans…</option></select>
+            <div class="sparkle-social-selected-plan" id="sparkleSocialPlanInfo"><span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading live GSubz plans…</div>
+            <div class="sparkle-digital-fields">
+              <div><label class="sparkle-digital-label" for="sparkleSocialQuantity">Quantity</label><input id="sparkleSocialQuantity" class="sparkle-digital-input" type="number" inputmode="numeric" min="1" step="1" value="100" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help" id="sparkleSocialQuantityHelp">Choose a plan to see its permitted range.</small></div>
+              <div><label class="sparkle-digital-label" for="sparkleSocialLink">Profile or post link</label><input id="sparkleSocialLink" class="sparkle-digital-input" type="url" placeholder="https://…" inputmode="url" autocomplete="url" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help">Use the exact public profile, post or video link requested by the selected service.</small></div>
+            </div>
+            <button type="button" class="btn primary full sparkle-digital-primary" onclick="quoteSparkleSocialOrder()">Check price</button>
+            <div id="sparkleSocialQuote" class="sparkle-digital-quote" hidden aria-live="polite"></div>
+            <div class="sparkle-digital-policy"><span aria-hidden="true">🛡️</span><p>Only order for accounts or posts you are authorized to promote. Services may have provider-specific delivery limits; no platform metric is guaranteed beyond the selected plan terms.</p></div>
+          </div>
+          <div class="sparkle-digital-result" id="sparkleSocialResult" hidden role="status" aria-live="polite"></div>
+        </section>
+
+        <!-- BULK SMS: provider-compliant sender/recipient/message form and transparent estimate. -->
+        <section class="page" id="bulkSmsPage">
+          <div class="data-topbar"><button class="data-back" type="button" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Bulk SMS</h1></div>
+          <p class="dashboard-subtitle">Reach your customers with one message, sent to many Nigerian numbers at once.</p>
+          <div class="sparkle-digital-hero sparkle-sms-hero">
+            <div><span class="sparkle-digital-eyebrow">FOR YOUR BUSINESS</span><h2>One message.<br>Many customers.</h2><p>Send updates, promotions and customer notices from Sparkle.</p></div>
+            <div class="sparkle-sms-hero-art" aria-hidden="true"><span>✉</span><b>SMS</b><i>↗</i><em>•••</em></div>
+          </div>
+          <div class="sparkle-digital-card">
+            <div class="sparkle-digital-section-title"><div><h2>Compose your message</h2><p>Use a sender name your business is authorized to use.</p></div><span class="sparkle-digital-status-pill">Live pricing</span></div>
+            <label class="sparkle-digital-label" for="sparkleSmsSender">Sender ID</label>
+            <input id="sparkleSmsSender" class="sparkle-digital-input" maxlength="11" minlength="3" pattern="[A-Za-z]{3,11}" placeholder="e.g. MyShop" autocomplete="off" oninput="invalidateSparkleSmsQuote()">
+            <small class="sparkle-digital-help">3–11 letters only — no spaces, digits or symbols. Banks, payment companies, telecoms and government bodies cannot be used as sender names.</small>
+            <label class="sparkle-digital-label" for="sparkleSmsRecipients">Recipient numbers</label>
+            <textarea id="sparkleSmsRecipients" class="sparkle-digital-input sparkle-digital-textarea" rows="4" placeholder="08031234567, 08021234568&#10;You can separate up to 5,000 unique Nigerian numbers with commas or new lines." oninput="invalidateSparkleSmsQuote()"></textarea>
+            <div class="sparkle-sms-count-row"><span>Supported format: 080…, 234… or +234…</span><strong id="sparkleSmsRecipientCount">0 recipients</strong></div>
+            <label class="sparkle-digital-label" for="sparkleSmsMessage">Message</label>
+            <textarea id="sparkleSmsMessage" class="sparkle-digital-input sparkle-digital-textarea" rows="5" maxlength="905" placeholder="Type the SMS you want to send…" oninput="invalidateSparkleSmsQuote()"></textarea>
+            <div class="sparkle-sms-count-row"><span>Maximum 905 characters</span><strong id="sparkleSmsCharacterCount">0 / 905</strong></div>
+            <div class="sparkle-sms-rules"><strong>Please review GSubz network rules</strong><p>Messages may be blocked for bank or payment-company names, international brands such as WhatsApp or Facebook, OTP or verification-code wording, bank credit/debit alert wording, or long digit sequences. GSubz notes that years such as 2026 are allowed and amounts should use commas (for example, 5,000). DND numbers may not be delivered.</p></div>
+            <button type="button" class="btn primary full sparkle-digital-primary" onclick="quoteSparkleBulkSms()">Calculate price</button>
+            <div id="sparkleSmsQuote" class="sparkle-digital-quote" hidden aria-live="polite"></div>
+            <div class="sparkle-digital-policy"><span aria-hidden="true">🛡️</span><p>Only message recipients who have agreed to receive communication from your business. Do not use Bulk SMS for unsolicited spam, impersonation, fraudulent alerts or verification-code delivery.</p></div>
+          </div>
+          <div class="sparkle-digital-result" id="sparkleSmsResult" hidden role="status" aria-live="polite"></div>
         </section>
 
         <!-- EARN -->
@@ -2429,12 +2975,12 @@ Privacy Policy
     </main>
   </div>
 
-  <div class="mobile-bottom-nav">
-    <button onclick="showDashPage('home',this)"><span>⌂</span>Home</button>
-    <button onclick="showDashPage('transactionsPage',this)"><span>↔</span>Transactions</button>
-    <button onclick="showDashPage('marketPage',this)"><span>🛍</span>Market</button>
-    <button onclick="showDashPage('earnPage',this)"><span>₦</span>Earn</button>
-    <button onclick="showDashPage('profilePage',this)"><span>◉</span>Profile</button>
+  <div class="mobile-bottom-nav" aria-label="Main navigation">
+    <button class="active" data-page="home" onclick="showDashPage('home',this)"><span aria-hidden="true">⌂</span>Home</button>
+    <button data-page="transactionsPage" onclick="showDashPage('transactionsPage',this)"><span aria-hidden="true">↻</span>Transaction</button>
+    <button data-page="marketPage" onclick="showDashPage('marketPage',this)"><span aria-hidden="true">▱</span>Market</button>
+    <button data-page="earnPage" onclick="showDashPage('earnPage',this)"><span aria-hidden="true">♧</span>Earn</button>
+    <button data-page="profilePage" onclick="showDashPage('profilePage',this)"><span aria-hidden="true">♙</span>Profile</button>
   </div>
 </div>
 
@@ -4030,6 +4576,7 @@ function showDashPage(pageId, button){
   if(page) page.classList.add("active");
   document.querySelectorAll(".nav-item").forEach(b=>b.classList.remove("active"));
   if(button && button.classList.contains("nav-item")) button.classList.add("active");
+  document.querySelectorAll(".mobile-bottom-nav button").forEach(b=>b.classList.toggle("active", b.dataset.page===pageId || (pageId!=="transactionsPage" && pageId!=="marketPage" && pageId!=="earnPage" && pageId!=="profilePage" && b.dataset.page==="home")));
   if(pageId==="transactionsPage") loadAllTransactions();
   if(pageId==="earnPage") loadReferralStats();
   window.scrollTo({top:0,behavior:"smooth"});
@@ -6082,7 +6629,7 @@ async function loadAllTransactions(){
     box.innerHTML=data.map(tx=>{
       const amount=Number(tx.amount||0),cls=tx.type==="credit"?"credit":"debit",sign=tx.type==="credit"?"+":"-";
       const payload=encodeURIComponent(JSON.stringify(tx));
-      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+      return renderSparkleTransactionRow(tx, amount, sign, cls, payload);
     }).join("");
   }catch(error){
     console.error("Transaction history failed:",error);
@@ -6141,6 +6688,28 @@ maximumFractionDigits:2
    TRANSACTIONS
    ===================================================== */
 
+/* Visual-only transaction row formatter. Transaction records and receipt actions remain unchanged. */
+function renderSparkleTransactionRow(tx, amount, sign, cls, payload){
+  const serviceText=String(tx.service||"Wallet transaction");
+  const serviceKey=serviceText.toLowerCase();
+  const icon=/electric|power|utility/.test(serviceKey)?"⚡":/data|internet|bundle/.test(serviceKey)?"〰️":/airtime|recharge/.test(serviceKey)?"📱":/cable|dstv|gotv|tv/.test(serviceKey)?"📺":/pin|education|waec|neco/.test(serviceKey)?"🎟️":/fund|deposit|wallet|credit|refund|reward/.test(serviceKey)?"👛":"✦";
+  const rawStatus=String(tx.status||"unknown").trim();
+  const statusKey=rawStatus.toLowerCase();
+  const statusClass=/success|complete|paid/.test(statusKey)?"success":/refund|revers/.test(statusKey)?"refund":/fail|cancel|declin|expired/.test(statusKey)?"failed":"pending";
+  const statusLabel=rawStatus?rawStatus.replace(/[_-]+/g," ").replace(/\b\w/g,ch=>ch.toUpperCase()):"Status unavailable";
+  const date=tx.created_at?new Date(tx.created_at):new Date();
+  const today=new Date();
+  const yesterday=new Date(); yesterday.setDate(today.getDate()-1);
+  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  const time=date.toLocaleTimeString("en-NG",{hour:"numeric",minute:"2-digit"});
+  const dateLabel=sameDay(date,today)?`Today, ${time}`:sameDay(date,yesterday)?`Yesterday, ${time}`:date.toLocaleDateString("en-NG",{day:"numeric",month:"short"})+`, ${time}`;
+  return `<div class="tx sparkle-tx-row" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}">
+    <span class="sparkle-tx-icon" aria-hidden="true">${icon}</span>
+    <span class="sparkle-tx-main"><strong>${escapeHtml(serviceText)}</strong><small>${escapeHtml(dateLabel)}</small></span>
+    <span class="sparkle-tx-trailing"><strong class="${cls}">${sign}${money(amount)}</strong><span class="sparkle-tx-status ${statusClass}"><i aria-hidden="true"></i>${escapeHtml(statusLabel)}</span></span>
+  </div>`;
+}
+
 async function loadTransactions(userId){
   const box=document.getElementById("transactions");
   if(!box)return;
@@ -6159,7 +6728,7 @@ async function loadTransactions(userId){
     box.innerHTML=data.map(tx=>{
       const amount=Number(tx.amount||0),sign=tx.type==="credit"?"+":"-",cls=tx.type==="credit"?"credit":"debit";
       const payload=encodeURIComponent(JSON.stringify(tx));
-      return `<div class="tx" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}" style="cursor:pointer"><div><strong>${escapeHtml(tx.service||"Wallet transaction")}</strong><br><small>${new Date(tx.created_at).toLocaleString("en-NG")} · ${escapeHtml(tx.status||"")}</small></div><strong class="${cls}">${sign}${money(amount)}</strong></div>`;
+      return renderSparkleTransactionRow(tx, amount, sign, cls, payload);
     }).join("");
   }catch(error){
     console.error("Recent transactions failed:",error);
@@ -6715,5 +7284,342 @@ document.addEventListener("DOMContentLoaded",()=>{
   }
 })();
 </script>
+
+<script id="sparkle-promo-carousel-behavior">
+(function(){
+  const root=document.getElementById('sparklePromoCarousel');
+  if(!root)return;
+  const slides=Array.from(root.querySelectorAll('[data-promo-slide]'));
+  const dots=Array.from(root.querySelectorAll('.sparkle-promo-dot'));
+  let current=0;
+  let timer=null;
+  function showSparklePromo(index,manual){
+    if(!slides.length)return;
+    current=((Number(index)||0)%slides.length+slides.length)%slides.length;
+    slides.forEach((slide,i)=>{
+      const active=i===current;
+      slide.classList.toggle('is-active',active);
+      slide.setAttribute('aria-hidden',active?'false':'true');
+    });
+    dots.forEach((dot,i)=>{
+      const active=i===current;
+      dot.classList.toggle('is-active',active);
+      dot.setAttribute('aria-pressed',active?'true':'false');
+    });
+    if(manual)restart();
+  }
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  function start(){stop();timer=setInterval(()=>showSparklePromo(current+1,false),5000);}
+  function restart(){start();}
+  window.showSparklePromo=showSparklePromo;
+  root.addEventListener('mouseenter',stop);
+  root.addEventListener('mouseleave',start);
+  root.addEventListener('focusin',stop);
+  root.addEventListener('focusout',start);
+  document.addEventListener('visibilitychange',()=>{if(document.hidden)stop();else start();});
+  showSparklePromo(0,false);
+  start();
+})();
+function sparklePromoAction(action){
+  if(action==='fund'){showFundWallet();return;}
+  if(action==='data'){openServicePage('data');return;}
+  if(action==='rechargepin'){openServicePage('rechargepin');return;}
+  if(action==='market'){showDashPage('marketPage');return;}
+  const target=document.getElementById('quickServicesSection');
+  if(target)target.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function toggleSparkleMoreServices(){
+  const panel=document.getElementById('moreServicesPanel');
+  if(!panel)return;
+  const opening=panel.hidden;
+  panel.hidden=!opening;
+  document.querySelectorAll('#quickServicesSection [aria-controls="moreServicesPanel"],.sparkle-home-service-grid [aria-controls="moreServicesPanel"]').forEach(el=>el.setAttribute('aria-expanded',opening?'true':'false'));
+  if(opening)panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+</script>
+
+
+<script id="sparkle-digital-services">
+(function(){
+  const FUNCTION_NAME = "sparkle-digital-services";
+  const fmt = value => new Intl.NumberFormat("en-NG", {style:"currency",currency:"NGN",minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);
+  const esc = value => typeof escapeHtml === "function" ? escapeHtml(String(value ?? "")) : String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
+  let socialPlans = [];
+  let socialFilter = "all";
+  let socialQuote = null;
+  let smsQuote = null;
+  let socialLoading = false;
+  let smsLoading = false;
+  let activeDigitalRequest = null;
+
+  async function call(payload){
+    const result = await supabaseClient.functions.invoke(FUNCTION_NAME, {body:payload});
+    if(result.error){
+      const detail = typeof sparkleFunctionErrorMessage === "function" ? await sparkleFunctionErrorMessage(result.error, "Sparkle could not complete this request.") : result.error.message;
+      throw new Error(detail || "Sparkle could not complete this request.");
+    }
+    if(!result.data) throw new Error("Sparkle did not return a response. Check your transaction history before retrying.");
+    return result.data;
+  }
+  function setResult(id, kind, title, message, reference){
+    const box = document.getElementById(id);
+    if(!box)return;
+    box.hidden = false;
+    box.className = "sparkle-digital-result " + (kind || "");
+    box.innerHTML = `<strong>${esc(title || "Sparkle update")}</strong><div>${esc(message || "")}</div>` + (reference ? `<div style="font-size:11px;margin-top:8px;opacity:.8">Reference: ${esc(reference)}</div>` : "") + (kind === "pending" && reference ? `<button type="button" onclick="checkSparkleDigitalOrder('${esc(reference)}','${id}')">Check order status</button>` : "");
+  }
+  function setLoading(id, text){
+    const box=document.getElementById(id);if(!box)return;box.hidden=false;box.className="sparkle-digital-result";box.innerHTML=`<span class="sparkle-digital-spinner" aria-hidden="true"></span>${esc(text)}`;
+  }
+  function socialPlatform(name){
+    const n=String(name||"").toLowerCase();
+    if(/instagram|\big\b|insta/.test(n))return "instagram";
+    if(/tiktok|tik tok/.test(n))return "tiktok";
+    if(/facebook|\bfb\b/.test(n))return "facebook";
+    if(/youtube|\byt\b|shorts/.test(n))return "youtube";
+    if(/telegram|\btg\b/.test(n))return "telegram";
+    if(/twitter|\bx\.com\b/.test(n))return "x";
+    return "other";
+  }
+  function visibleSocialPlans(){
+    const query=(document.getElementById("sparkleSocialSearch")?.value||"").trim().toLowerCase();
+    return socialPlans.filter(p=>{
+      const platform=socialPlatform(p.displayName+" "+p.category);
+      return (socialFilter==="all"||platform===socialFilter||socialFilter==="other"&&platform==="other") && (!query||String(p.displayName+" "+p.category+" "+p.description).toLowerCase().includes(query));
+    });
+  }
+  function renderSparkleSocialPlanOptions(){
+    const select=document.getElementById("sparkleSocialPlan");if(!select)return;
+    const prior=select.value;const items=visibleSocialPlans();
+    select.innerHTML='<option value="">Choose a social-media service</option>'+items.map(p=>`<option value="${esc(p.value)}">${esc(p.displayName)} — ${fmt(p.retailRatePerThousand)} / 1,000</option>`).join("");
+    if(items.some(p=>p.value===prior))select.value=prior;
+    if(!select.value&&items.length)select.value=items[0].value;
+    onSparkleSocialPlanChange(false);
+    if(!items.length&&socialPlans.length){
+      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No live plans match your filter. Try another search or refresh the catalogue.";
+    }
+  }
+  async function loadSparkleSocialPlans(force){
+    if(socialLoading)return;
+    if(socialPlans.length&&!force){renderSparkleSocialPlanOptions();return;}
+    socialLoading=true;setLoading("sparkleSocialResult","Loading the live social-media catalogue…");
+    const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.innerHTML='<span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current plans and prices from GSubz…';
+    try{
+      const data=await call({action:"social_plans"});
+      if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"No social-media plans are available right now.");
+      socialPlans=data.plans;
+      const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
+      renderSparkleSocialPlanOptions();
+      if(info&&!socialPlans.length)info.textContent="GSubz has no social-media plans available at the moment. Please check again later.";
+    }catch(e){
+      if(info)info.textContent=e.message||"Could not load live plans.";
+      setResult("sparkleSocialResult","error","Catalogue unavailable",e.message||"Could not load live social-media prices.");
+    }finally{socialLoading=false;}
+  }
+  function filterSparkleSocialPlans(platform,button){
+    socialFilter=platform||"all";
+    document.querySelectorAll("#sparkleSocialPlatformFilters button").forEach(b=>b.classList.toggle("active",b===button));
+    renderSparkleSocialPlanOptions();
+  }
+  function selectedSocialPlan(){
+    const code=document.getElementById("sparkleSocialPlan")?.value;
+    return socialPlans.find(p=>String(p.value)===String(code))||null;
+  }
+  function onSparkleSocialPlanChange(clearQuote=true){
+    const plan=selectedSocialPlan();const info=document.getElementById("sparkleSocialPlanInfo");const help=document.getElementById("sparkleSocialQuantityHelp");
+    if(info){
+      if(plan)info.innerHTML=`<strong>${esc(plan.displayName)}</strong><div>Current Sparkle rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div><div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
+      else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"The live catalogue has not loaded yet.";
+    }
+    const qty=document.getElementById("sparkleSocialQuantity");if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
+    if(help)help.textContent=plan?`Enter a whole number between ${Number(plan.min||1).toLocaleString("en-NG")} and ${Number(plan.max||1000000).toLocaleString("en-NG")}.`:"Choose a plan to see its permitted range.";
+    if(clearQuote)invalidateSparkleSocialQuote();
+  }
+  function invalidateSparkleSocialQuote(){
+    socialQuote=null;const box=document.getElementById("sparkleSocialQuote");if(box){box.hidden=true;box.innerHTML="";}
+    const result=document.getElementById("sparkleSocialResult");if(result)result.hidden=true;
+  }
+  async function quoteSparkleSocialOrder(){
+    const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);
+    if(!plan){setResult("sparkleSocialResult","error","Choose a service","Select an available social-media plan first.");return;}
+    if(!Number.isSafeInteger(quantity)||quantity<Number(plan.min||1)||quantity>Number(plan.max||1000000)){setResult("sparkleSocialResult","error","Check quantity",`Choose a whole number between ${plan.min} and ${plan.max}.`);return;}
+    socialQuote=null;setLoading("sparkleSocialResult","Checking the current plan price…");
+    try{
+      const data=await call({action:"social_quote",plan:plan.value,quantity});
+      if(data.success!==true)throw new Error(data.error||"Could not calculate this plan price.");
+      socialQuote={...data,plan:plan.value,quantity};
+      const box=document.getElementById("sparkleSocialQuote");if(!box)return;
+      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Order review</div><div class="sparkle-quote-line"><span>Service</span><strong>${esc(data.planName||plan.displayName)}</strong></div><div class="sparkle-quote-line"><span>Quantity</span><strong>${Number(quantity).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Rate per 1,000</span><strong>${fmt(data.retailRatePerThousand)}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Before the supplier confirms, Sparkle temporarily reserves up to ${fmt(data.maximumReserve)}. Your final charge is based on the supplier’s confirmed cost; any unused reserve is returned to your wallet. Confirm the target link before proceeding.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleSocialPurchase()">Continue to secure checkout</button>`;
+      const res=document.getElementById("sparkleSocialResult");if(res)res.hidden=true;
+    }catch(e){setResult("sparkleSocialResult","error","Price check failed",e.message||"Could not check the current price.");}
+  }
+  function validateSocialLink(link, plan){
+    let u;try{u=new URL(String(link||""));}catch(_){return "Enter a valid profile or post URL.";}
+    if(u.protocol!=="https:"||!u.hostname||u.username||u.password)return "Enter a public HTTPS profile or post link.";
+    const n=String(plan?.displayName||"").toLowerCase();
+    const host=u.hostname.toLowerCase().replace(/^www\./,"");
+    const groups=[
+      {r:/instagram|\big\b|insta/,d:["instagram.com"]},
+      {r:/tiktok|tik tok/,d:["tiktok.com"]},
+      {r:/facebook|\bfb\b/,d:["facebook.com","fb.watch"]},
+      {r:/youtube|\byt\b|shorts/,d:["youtube.com","youtu.be"]},
+      {r:/telegram|\btg\b/,d:["t.me","telegram.me"]},
+      {r:/twitter|\bx\.com\b/,d:["x.com","twitter.com"]}
+    ];
+    const group=groups.find(g=>g.r.test(n));
+    if(group&&!group.d.some(d=>host===d||host.endsWith("."+d)))return "That service expects a link from its matching platform. Check the URL and try again.";
+    if(host==="localhost"||host.endsWith(".local"))return "Use a public profile or post link.";
+    return "";
+  }
+  function prepareSparkleSocialPurchase(){
+    const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);const link=document.getElementById("sparkleSocialLink")?.value.trim();
+    if(!socialQuote||socialQuote.plan!==plan?.value||socialQuote.quantity!==quantity){setResult("sparkleSocialResult","error","Review the price again","The plan or quantity changed. Check the current price before continuing.");return;}
+    const linkError=validateSocialLink(link,plan);if(linkError){setResult("sparkleSocialResult","error","Check target link",linkError);return;}
+    activeDigitalRequest={kind:"social",payload:{action:"buy_social",plan:plan.value,quantity,link,expectedTotal:socialQuote.estimatedRetail,requestID:crypto.randomUUID()}};
+    currentService="socialMarket";
+    openPinForPurchase();
+    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your social-media order with your 4-digit Transaction PIN.";
+  }
+  function recipientsForCount(raw){
+    const arr=String(raw||"").split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);const valid=[];
+    for(const x of arr){const clean=x.replace(/[().-]/g,"");let n=null;if(/^0\d{10}$/.test(clean))n=clean;else if(/^\+?234\d{10}$/.test(clean))n="0"+clean.replace(/^\+?234/,"");if(n)valid.push(n);}
+    return [...new Set(valid)];
+  }
+  function updateSmsCounts(){
+    const recipients=document.getElementById("sparkleSmsRecipients")?.value||"";const message=document.getElementById("sparkleSmsMessage")?.value||"";
+    const count=document.getElementById("sparkleSmsRecipientCount");if(count)count.textContent=`${recipientsForCount(recipients).length.toLocaleString("en-NG")} recipients`;
+    const chars=document.getElementById("sparkleSmsCharacterCount");if(chars)chars.textContent=`${message.length} / 905`;
+  }
+  function invalidateSparkleSmsQuote(){
+    smsQuote=null;updateSmsCounts();const box=document.getElementById("sparkleSmsQuote");if(box){box.hidden=true;box.innerHTML="";}
+    const result=document.getElementById("sparkleSmsResult");if(result)result.hidden=true;
+  }
+  async function quoteSparkleBulkSms(){
+    const sender=document.getElementById("sparkleSmsSender")?.value.trim()||"";
+    const recipients=document.getElementById("sparkleSmsRecipients")?.value||"";
+    const message=document.getElementById("sparkleSmsMessage")?.value||"";
+    updateSmsCounts();smsQuote=null;setLoading("sparkleSmsResult","Calculating pages, recipient count and current estimated price…");
+    try{
+      const data=await call({action:"sms_quote",sender,recipients,message});
+      if(data.success!==true)throw new Error(data.error||"Could not calculate the SMS price.");
+      smsQuote={...data,sender,recipients,message};
+      const box=document.getElementById("sparkleSmsQuote");if(!box)return;
+      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Bulk SMS estimate</div><div class="sparkle-quote-line"><span>Valid unique recipients</span><strong>${Number(data.recipientCount).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Pages per recipient</span><strong>${Number(data.pagesPerRecipient)}</strong></div><div class="sparkle-quote-line"><span>Estimated delivered pages</span><strong>${(Number(data.recipientCount)*Number(data.pagesPerRecipient)).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Sparkle may temporarily reserve up to ${fmt(data.maximumReserve)}. After GSubz confirms delivery, your final charge is based on the supplier’s actual charge; unused reservation is returned. ${Number(data.skippedCount)>0?`${Number(data.skippedCount)} invalid or duplicate entry/entries will be skipped from the estimate. `:""}Message content and sender ID remain subject to the networks’ restrictions.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleBulkSmsPurchase()">Continue to secure checkout</button>`;
+      const res=document.getElementById("sparkleSmsResult");if(res)res.hidden=true;
+    }catch(e){setResult("sparkleSmsResult","error","Could not calculate price",e.message||"Check your sender name, recipients and message.");}
+  }
+  function prepareSparkleBulkSmsPurchase(){
+    const sender=document.getElementById("sparkleSmsSender")?.value.trim()||"";
+    const recipients=document.getElementById("sparkleSmsRecipients")?.value||"";
+    const message=document.getElementById("sparkleSmsMessage")?.value||"";
+    if(!smsQuote||smsQuote.sender!==sender||smsQuote.recipients!==recipients||smsQuote.message!==message){setResult("sparkleSmsResult","error","Review the price again","The sender, recipients or message changed. Calculate the current price again before continuing.");return;}
+    activeDigitalRequest={kind:"sms",payload:{action:"send_bulk_sms",sender,recipients,message,expectedTotal:smsQuote.estimatedRetail,requestID:crypto.randomUUID()}};
+    currentService="bulkSms";openPinForPurchase();
+    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm this Bulk SMS send with your 4-digit Transaction PIN.";
+  }
+  async function executePendingDigitalPurchase(pin){
+    if(!activeDigitalRequest)throw new Error("No digital-service order is waiting for confirmation.");
+    const pending=activeDigitalRequest;
+    const payload={...pending.payload,pin};
+    const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
+    if(button){button.disabled=true;button.textContent="Processing securely…";}
+    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Checking PIN and securing your order…";
+    try{
+      const data=await call(payload);
+      if(data.status==="pending"){
+        closePinModal();
+        const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
+        setResult(target,"pending","Order is being checked",data.error||data.message||"Do not try again until the status is checked.",data.reference);
+        return;
+      }
+      if(data.success===true&&data.status==="successful"){
+        closePinModal();
+        const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
+        const detail=pending.kind==="sms"?`${data.message||"Bulk SMS has been processed."}${data.provider?.sent!=null?` Sent: ${data.provider.sent}. Failed: ${data.provider.failed||0}. Skipped: ${data.provider.skipped||0}.`:""} Final charge: ${fmt(data.amount)}.`:`${data.message||"Social-media order placed."} Final charge: ${fmt(data.amount)}.`;
+        setResult(target,"success","Order confirmed",detail,data.reference);
+        if(pending.kind==="sms"){
+          const rec=document.getElementById("sparkleSmsRecipients");const msgBox=document.getElementById("sparkleSmsMessage");if(rec)rec.value="";if(msgBox)msgBox.value="";invalidateSparkleSmsQuote();
+        }else{
+          const link=document.getElementById("sparkleSocialLink");if(link)link.value="";invalidateSparkleSocialQuote();
+        }
+        activeDigitalRequest=null;
+        if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}
+        if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}
+        return;
+      }
+      closePinModal();
+      const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
+      setResult(target,"error",data.status==="refunded"?"Order not completed — refunded":"Order was not completed",data.message||data.error||"The supplier did not accept the order. Check your Sparkle transaction history.",data.reference);
+      activeDigitalRequest=null;
+    }catch(e){
+      const detail=e.message||"Sparkle could not confirm the supplier response.";
+      if(/pin.{0,30}(not set|not created|missing|does not exist)|create.{0,20}pin|no transaction pin/i.test(detail)){
+        sparklePinRequiredForPendingPurchase=true;
+        const setMsg=document.getElementById("setPinMessage");if(setMsg)setMsg.textContent="You have not created a Transaction PIN yet. Create one to continue.";
+        const setModal=document.getElementById("setPinModal");if(setModal)setModal.classList.add("show");
+        ["currentTransactionPin","newTransactionPin","confirmTransactionPin"].forEach(id=>{const el=document.getElementById(id);if(el)el.value="";});
+        if(msg)msg.textContent="Create your Transaction PIN to continue.";
+      }else if(/incorrect|invalid pin|wrong pin/i.test(detail)){
+        if(msg)msg.textContent="Incorrect Transaction PIN. Please try again. No order was processed.";
+      }else if(/price changed|calculate the current price|plan is no longer available/i.test(detail)){
+        if(msg)msg.textContent=detail;
+        const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";setResult(target,"error","Price changed",detail);
+      }else{
+        if(msg)msg.textContent=detail+" If the request may have reached the supplier, check transaction history before trying again.";
+      }
+    }finally{if(button){button.disabled=false;button.textContent="MAKE PAYMENT";}}
+  }
+  async function checkSparkleDigitalOrder(reference,targetId){
+    setLoading(targetId,"Checking the supplier status. Do not submit a duplicate order…");
+    try{
+      const data=await call({action:"check_order",reference});
+      if(data.status==="pending")setResult(targetId,"pending","Still pending",data.error||data.message||"The supplier has not confirmed yet. Please check again shortly.",reference);
+      else if(data.status==="successful")setResult(targetId,"success","Order confirmed",data.message||`Order completed. Final charge: ${fmt(data.amount)}.`,reference);
+      else setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order status",data.message||data.error||"The order has been resolved.",reference);
+      if(data.status==="successful"||data.status==="refunded"){if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}}
+    }catch(e){setResult(targetId,"pending","Status check unavailable",e.message||"Try the status check again shortly. Do not place a duplicate order.",reference);}
+  }
+
+  // Add a safe dispatcher in front of the existing PIN flow; all other purchases continue unchanged.
+  const originalConfirm = window.confirmTransactionPIN;
+  if(typeof originalConfirm==="function"){
+    window.confirmTransactionPIN = async function(){
+      if(activeDigitalRequest && (currentService==="bulkSms"||currentService==="socialMarket")){
+        const pin=[...document.querySelectorAll("#pinModal .pin-box")].map(x=>x.value).join("");
+        const msg=document.getElementById("pinMessage");
+        if(!/^\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
+        await executePendingDigitalPurchase(pin);return;
+      }
+      return originalConfirm.apply(this,arguments);
+    };
+  }
+
+  // Preserve existing navigation and service logic; only trigger loaders for the two new pages.
+  const originalOpenServicePage=window.openServicePage;
+  if(typeof originalOpenServicePage==="function"){
+    window.openServicePage=function(service){
+      const result=originalOpenServicePage.apply(this,arguments);
+      if(service==="socialMarket")void loadSparkleSocialPlans(false);
+      if(service==="bulkSms")updateSmsCounts();
+      return result;
+    };
+  }
+
+  window.loadSparkleSocialPlans=loadSparkleSocialPlans;
+  window.filterSparkleSocialPlans=filterSparkleSocialPlans;
+  window.renderSparkleSocialPlanOptions=renderSparkleSocialPlanOptions;
+  window.onSparkleSocialPlanChange=onSparkleSocialPlanChange;
+  window.invalidateSparkleSocialQuote=invalidateSparkleSocialQuote;
+  window.quoteSparkleSocialOrder=quoteSparkleSocialOrder;
+  window.prepareSparkleSocialPurchase=prepareSparkleSocialPurchase;
+  window.invalidateSparkleSmsQuote=invalidateSparkleSmsQuote;
+  window.quoteSparkleBulkSms=quoteSparkleBulkSms;
+  window.prepareSparkleBulkSmsPurchase=prepareSparkleBulkSmsPurchase;
+  window.checkSparkleDigitalOrder=checkSparkleDigitalOrder;
+  document.addEventListener("DOMContentLoaded",updateSmsCounts);
+  updateSmsCounts();
+})();
+</script>
+
 </body>
 </html>
