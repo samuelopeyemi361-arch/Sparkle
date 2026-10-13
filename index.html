@@ -1826,6 +1826,99 @@ body.dark-mode #dashboard .sparkle-quote-line strong,body.dark-mode #dashboard .
 body.dark-mode #dashboard .sparkle-market-promo-note{background:#10233b;border-color:#2b4364;color:#dceaff}
 </style>
 
+<style id="sparkle-crypto-trade-style">
+#dashboard #cryptoTradePage{--ct-ink:#11284a;--ct-muted:#71829d;--ct-blue:#155eef;--ct-line:#e2eaf6;--ct-panel:#fff;color:var(--ct-ink)}
+#dashboard #cryptoTradePage .sparkle-crypto-hero{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;overflow:hidden;border-radius:25px;background:radial-gradient(circle at 85% 16%,rgba(91,183,255,.55),transparent 30%),linear-gradient(118deg,#071b4a 0%,#0b5cff 59%,#18aaf5 100%);padding:25px;color:#fff;margin:5px 0 16px;min-height:178px;box-shadow:0 16px 34px rgba(11,92,255,.13)}
+#dashboard #cryptoTradePage .sparkle-crypto-hero:after{content:"";position:absolute;width:230px;height:230px;right:-105px;bottom:-170px;border-radius:50%;border:1px solid rgba(255,255,255,.34);box-shadow:0 0 0 24px rgba(255,255,255,.05),0 0 0 50px rgba(255,255,255,.035);pointer-events:none}
+#dashboard #cryptoTradePage .sparkle-crypto-hero-copy{position:relative;z-index:1;max-width:70%}
+#dashboard #cryptoTradePage .sparkle-crypto-eyebrow{display:inline-block;color:#4684f4;font-size:10px;letter-spacing:.15em;font-weight:900;margin-bottom:8px}
+#dashboard #cryptoTradePage .sparkle-crypto-hero .sparkle-crypto-eyebrow{color:#bfddff}
+#dashboard #cryptoTradePage .sparkle-crypto-hero h2{font-size:clamp(23px,3.6vw,31px);line-height:1.08;letter-spacing:-.035em;margin:0 0 9px;color:#fff}
+#dashboard #cryptoTradePage .sparkle-crypto-hero p{font-size:13px;line-height:1.55;margin:0;color:rgba(255,255,255,.83);max-width:400px}
+#dashboard #cryptoTradePage .sparkle-crypto-live-status{display:flex;align-items:center;gap:7px;margin-top:15px;font-size:11px;color:#e3efff;font-weight:750}
+#dashboard #cryptoTradePage .sparkle-crypto-live-dot{width:7px;height:7px;border-radius:50%;background:#63e1b0;box-shadow:0 0 0 4px rgba(99,225,176,.14);flex:0 0 auto}
+#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol{width:122px;height:122px;flex:0 0 122px;position:relative;z-index:1;display:grid;place-items:center;border:1px solid rgba(255,255,255,.45);border-radius:30px;background:linear-gradient(145deg,rgba(255,255,255,.25),rgba(255,255,255,.08));box-shadow:0 16px 30px rgba(1,24,86,.22);backdrop-filter:blur(8px);transform:rotate(4deg)}
+#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol>span{font-size:61px;font-weight:900;text-shadow:0 7px 19px rgba(1,24,86,.35)}
+#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol i,#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol b{position:absolute;display:grid;place-items:center;width:33px;height:33px;border:1px solid #fff;border-radius:11px;background:#fff;color:#155eef;font-size:15px;font-style:normal;font-weight:900;box-shadow:0 6px 14px rgba(1,24,86,.18)}
+#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol i{top:10px;left:-13px}#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol b{bottom:8px;right:-11px;color:#13a884}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-shell{overflow:hidden;border:1px solid #dce8fb;border-radius:19px;background:#fff;padding:14px 0;margin-bottom:17px;box-shadow:0 10px 27px rgba(25,74,160,.045)}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-label{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px 12px;font-size:10px;letter-spacing:.1em;font-weight:900;color:#245080}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-label small{font-size:9px;letter-spacing:.06em;color:#8a9ab3}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-window{overflow:hidden;position:relative;width:100%;mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent)}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-track{display:flex;width:max-content;animation:sparkleCryptoMarquee 48s linear infinite}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-window:hover .sparkle-crypto-ticker-track{animation-play-state:paused}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-set{display:flex;align-items:stretch;flex:0 0 auto;gap:9px;padding-right:9px}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-item{min-width:123px;padding:10px 12px;border:1px solid #edf2fb;border-radius:13px;background:linear-gradient(145deg,#fff,#f7faff);display:grid;gap:5px}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-head{display:flex;align-items:center;gap:7px;font-size:11px;font-weight:900;color:#243c60}
+#dashboard #cryptoTradePage .sparkle-crypto-mini-symbol{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;background:#e8f1ff;color:#155eef;font-size:13px;font-weight:900}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-price{font-size:12px;font-weight:900;color:#10294f;white-space:nowrap}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-change{font-size:10px;font-weight:800;color:#0b9a6d}.sparkle-crypto-ticker-change.down{color:#d84c5a}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-loading{padding:11px 16px;color:#7386a2;font-size:12px}
+#dashboard #cryptoTradePage .sparkle-crypto-ticker-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px 0;color:#8798b1;font-size:10px}
+#dashboard #cryptoTradePage .sparkle-crypto-refresh{background:#f4f8ff;border:1px solid #dce8fb;border-radius:9px;color:#155eef;font-weight:850;font-size:10px;padding:7px 10px;cursor:pointer;white-space:nowrap}
+#dashboard #cryptoTradePage .sparkle-crypto-card{border:1px solid #e0e9f6;border-radius:24px;padding:22px;background:#fff;box-shadow:0 14px 36px rgba(21,68,154,.055);min-width:0}
+#dashboard #cryptoTradePage .sparkle-crypto-card-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:17px}
+#dashboard #cryptoTradePage .sparkle-crypto-card-heading h2{font-size:21px;line-height:1.22;letter-spacing:-.025em;color:#11284a;margin:0 0 5px}
+#dashboard #cryptoTradePage .sparkle-crypto-card-heading p{color:#71829d;font-size:12px;line-height:1.5;margin:0}
+#dashboard #cryptoTradePage .sparkle-crypto-heading-icon{width:47px;height:47px;display:grid;place-items:center;flex:0 0 auto;border-radius:15px;background:linear-gradient(145deg,#eaf2ff,#d9eaff);color:#155eef;font-size:25px;font-weight:900}
+#dashboard #cryptoTradePage .sparkle-crypto-pill{display:flex;align-items:center;gap:4px;padding:5px;border-radius:999px;background:#edf2f9;margin-bottom:21px}
+#dashboard #cryptoTradePage .sparkle-crypto-pill button{flex:1;display:flex;justify-content:center;align-items:center;gap:8px;min-height:45px;padding:11px 12px;border:1px solid transparent;border-radius:999px;background:transparent;color:#657793;font-size:12px;font-weight:850;cursor:pointer;transition:background .18s,color .18s,box-shadow .18s}
+#dashboard #cryptoTradePage .sparkle-crypto-pill button.active{background:#155eef;color:#fff;border-color:#337cff;box-shadow:0 5px 14px rgba(21,94,239,.24)}
+#dashboard #cryptoTradePage .sparkle-crypto-label{display:block;color:#344866;font-size:12px;font-weight:850;margin:15px 0 8px}
+#dashboard #cryptoTradePage .sparkle-crypto-coin-select{width:100%;display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid #dce5f2;border-radius:16px;background:#fff;text-align:left;cursor:pointer;transition:border .18s,box-shadow .18s}
+#dashboard #cryptoTradePage .sparkle-crypto-coin-select:hover,#dashboard #cryptoTradePage .sparkle-crypto-coin-select[aria-expanded="true"]{border-color:#74a5ff;box-shadow:0 0 0 3px rgba(21,94,239,.07)}
+#dashboard #cryptoTradePage .sparkle-crypto-coin-symbol{width:43px;height:43px;display:grid;place-items:center;flex:0 0 auto;border-radius:14px;background:linear-gradient(145deg,#edf4ff,#dbeaff);font-size:20px;font-weight:900;color:#155eef}
+#dashboard #cryptoTradePage .sparkle-crypto-selected-name{display:grid;gap:3px;min-width:0;flex:1}
+#dashboard #cryptoTradePage .sparkle-crypto-selected-name strong{font-size:13px;color:#172d4e;overflow-wrap:anywhere}
+#dashboard #cryptoTradePage .sparkle-crypto-selected-name small{font-size:11px;color:#8797ae}
+#dashboard #cryptoTradePage .sparkle-crypto-select-chevron{font-size:22px;line-height:1;color:#6c7f9a}
+#dashboard #cryptoTradePage .sparkle-crypto-picker{margin-top:8px;padding:10px;border:1px solid #dfe8f6;border-radius:16px;background:#fbfdff;box-shadow:0 12px 26px rgba(14,50,108,.06)}
+#dashboard #cryptoTradePage .sparkle-crypto-picker[hidden],#dashboard #cryptoTradePage .sparkle-crypto-review-result[hidden]{display:none!important}
+#dashboard #cryptoTradePage .sparkle-crypto-input{width:100%;min-width:0;border:1px solid #dce5f2;border-radius:13px;background:#fff;color:#13294b;padding:13px;font:inherit;outline:none}
+#dashboard #cryptoTradePage .sparkle-crypto-input:focus{border-color:#72a3ff;box-shadow:0 0 0 3px rgba(21,94,239,.08)}
+#dashboard #cryptoTradePage .sparkle-crypto-search{padding:11px 12px;font-size:12px;margin-bottom:8px}
+#dashboard #cryptoTradePage .sparkle-crypto-coin-options{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-height:290px;overflow:auto}
+#dashboard #cryptoTradePage .sparkle-crypto-option{display:flex;align-items:center;gap:8px;min-width:0;padding:9px 8px;border:1px solid transparent;border-radius:12px;background:#fff;text-align:left;cursor:pointer}
+#dashboard #cryptoTradePage .sparkle-crypto-option:hover,#dashboard #cryptoTradePage .sparkle-crypto-option.selected{border-color:#a9c9ff;background:#edf4ff}
+#dashboard #cryptoTradePage .sparkle-crypto-option .sparkle-crypto-mini-symbol{flex:0 0 28px}
+#dashboard #cryptoTradePage .sparkle-crypto-option-copy{display:grid;gap:3px;min-width:0;flex:1}
+#dashboard #cryptoTradePage .sparkle-crypto-option-copy strong{font-size:11px;color:#233b60;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#dashboard #cryptoTradePage .sparkle-crypto-option-copy small{font-size:10px;color:#8292ab}
+#dashboard #cryptoTradePage .sparkle-crypto-option-check{color:#155eef;font-size:13px;font-weight:900}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-shell{border:1px solid #dce5f2;border-radius:16px;padding:14px 15px;background:#fff}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-top,#dashboard #cryptoTradePage .sparkle-crypto-amount-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;color:#8594ac;font-size:10px}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-top strong{color:#155eef;font-size:10px;white-space:nowrap}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-input{padding:11px 0;border:0!important;box-shadow:none!important;border-radius:0;font-size:25px!important;font-weight:900;letter-spacing:-.03em;color:#11284a}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-input::placeholder{color:#bac5d5;font-size:15px;font-weight:650;letter-spacing:0}
+#dashboard #cryptoTradePage .sparkle-crypto-amount-bottom button{border:0;background:transparent;color:#155eef;font-size:10px;font-weight:850;cursor:pointer;padding:5px 0}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-panel{display:grid;gap:14px;margin-top:16px;padding:16px;border:1px solid #e5edf7;border-radius:16px;background:linear-gradient(145deg,#f8faff,#f3f7fe)}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-row,#dashboard #cryptoTradePage .sparkle-crypto-quote-total{display:flex;align-items:center;justify-content:space-between;gap:14px}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-row>span,#dashboard #cryptoTradePage .sparkle-crypto-quote-total>span{font-size:12px;color:#71829d;line-height:1.4}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-row>strong{color:#203956;font-size:12px;text-align:right;overflow-wrap:anywhere}
+#dashboard #cryptoTradePage .sparkle-crypto-output-row{padding:13px 0;border-top:1px solid #e1e9f4;border-bottom:1px solid #e1e9f4}
+#dashboard #cryptoTradePage .sparkle-crypto-output-row>strong{font-size:17px;color:#155eef}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-total{padding-top:1px}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-total>span{font-weight:900;color:#203956}
+#dashboard #cryptoTradePage .sparkle-crypto-quote-total>strong{font-size:20px;letter-spacing:-.03em;color:#155eef;text-align:right;overflow-wrap:anywhere}
+#dashboard #cryptoTradePage .sparkle-crypto-review{margin-top:15px;min-height:48px;border-radius:14px;box-shadow:0 8px 16px rgba(21,94,239,.14);font-weight:850}
+#dashboard #cryptoTradePage .sparkle-crypto-review:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+#dashboard #cryptoTradePage .sparkle-crypto-review-result{margin-top:12px;padding:14px;border:1px solid #dce8fa;border-radius:14px;background:#f4f8ff;color:#344d70;font-size:12px;line-height:1.6}
+#dashboard #cryptoTradePage .sparkle-crypto-disclaimer{display:flex;align-items:flex-start;gap:10px;margin-top:15px;padding:13px;border:1px solid #e1eaf8;border-radius:14px;background:#f8faff;color:#6d809c}
+#dashboard #cryptoTradePage .sparkle-crypto-disclaimer>span{font-size:17px;color:#155eef;line-height:1.2}
+#dashboard #cryptoTradePage .sparkle-crypto-disclaimer p{font-size:11px;line-height:1.55;margin:0}
+#dashboard #cryptoTradePage .sparkle-crypto-disclaimer strong{color:#2b4365}
+#dashboard #cryptoTradePage .sparkle-crypto-attribution{margin-top:11px;color:#8a99b0;font-size:10px;line-height:1.5;text-align:center}
+#dashboard #cryptoTradePage .sparkle-crypto-attribution a{color:#5376aa;text-decoration:underline}
+body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-ticker-shell,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-card{background:#0e1b2d;border-color:#213149;color:#edf4ff}
+body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-ticker-item,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-coin-select,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-amount-shell,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-input,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-option{background:#0b1727;border-color:#243852;color:#edf4ff}
+body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-card-heading h2,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-ticker-price,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-selected-name strong,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-quote-row>strong,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-option-copy strong{color:#edf4ff}
+body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-quote-panel,body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-disclaimer{background:#0b1727;border-color:#213149}
+body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-disclaimer strong{color:#e5efff}
+@keyframes sparkleCryptoMarquee{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@media(max-width:600px){#dashboard #cryptoTradePage .sparkle-crypto-hero{min-height:150px;padding:18px 16px;border-radius:21px;gap:10px}#dashboard #cryptoTradePage .sparkle-crypto-hero-copy{max-width:calc(100% - 82px)}#dashboard #cryptoTradePage .sparkle-crypto-hero h2{font-size:22px}#dashboard #cryptoTradePage .sparkle-crypto-hero p{font-size:11px}#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol{width:76px;height:76px;flex-basis:76px;border-radius:22px}#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol>span{font-size:42px}#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol i,#dashboard #cryptoTradePage .sparkle-crypto-hero-symbol b{width:25px;height:25px;font-size:11px;border-radius:8px}#dashboard #cryptoTradePage .sparkle-crypto-card{padding:16px;border-radius:20px}#dashboard #cryptoTradePage .sparkle-crypto-card-heading h2{font-size:19px}#dashboard #cryptoTradePage .sparkle-crypto-heading-icon{width:39px;height:39px;border-radius:12px}#dashboard #cryptoTradePage .sparkle-crypto-pill button{min-height:42px;padding:10px 8px;font-size:11px;gap:5px}#dashboard #cryptoTradePage .sparkle-crypto-coin-options{grid-template-columns:1fr}#dashboard #cryptoTradePage .sparkle-crypto-ticker-item{min-width:116px;padding:9px 10px}#dashboard #cryptoTradePage .sparkle-crypto-amount-input{font-size:23px!important}}
+@media(prefers-reduced-motion:reduce){#dashboard #cryptoTradePage .sparkle-crypto-ticker-track{animation:none!important}}
+</style>
+
 </head>
 
 <body>
@@ -2445,6 +2538,7 @@ Privacy Policy
             <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education PIN</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
+            <div class="service sparkle-crypto-home-tile" role="button" tabindex="0" onclick="openServicePage('cryptoTrade');sparkleCryptoTradeInit()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('cryptoTrade');sparkleCryptoTradeInit()}"><span aria-hidden="true">₿</span><div>Crypto Trade</div></div>
           </div>
 
           <section class="sparkle-transaction-section">
@@ -2512,6 +2606,58 @@ Privacy Policy
             </div>
           </div>
           <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadSvbCountries()">Back to Buy US Number</button>
+        </section>
+
+        <!-- CRYPTO TRADE: live reference pricing only; no wallet debits or crypto payouts are enabled. -->
+        <section class="page" id="cryptoTradePage">
+          <div class="data-topbar"><button class="data-back" type="button" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to homepage">‹</button><h1>Crypto Trade</h1></div>
+          <div class="sparkle-crypto-hero">
+            <div class="sparkle-crypto-hero-copy">
+              <span class="sparkle-crypto-eyebrow">SPARKLE DIGITAL ASSETS</span>
+              <h2>Trade at a glance.</h2>
+              <p>Follow live market prices and view indicative buy and sell estimates in naira.</p>
+              <div class="sparkle-crypto-live-status"><span class="sparkle-crypto-live-dot"></span><span id="sparkleCryptoLiveStatus" aria-live="polite">Connecting to live market data…</span></div>
+            </div>
+            <div class="sparkle-crypto-hero-symbol" aria-hidden="true"><span>₿</span><i>◆</i><b>₮</b></div>
+          </div>
+          <div class="sparkle-crypto-ticker-shell" aria-label="Live cryptocurrency prices in naira">
+            <div class="sparkle-crypto-ticker-label"><span>LIVE MARKET</span><small>NGN · INDICATIVE</small></div>
+            <div class="sparkle-crypto-ticker-window"><div id="sparkleCryptoTickerTrack" class="sparkle-crypto-ticker-track"><div class="sparkle-crypto-ticker-set" id="sparkleCryptoTickerPrimary"><span class="sparkle-crypto-ticker-loading">Loading live prices…</span></div><div class="sparkle-crypto-ticker-set" id="sparkleCryptoTickerDuplicate" aria-hidden="true"><span class="sparkle-crypto-ticker-loading">Loading live prices…</span></div></div></div>
+            <div class="sparkle-crypto-ticker-foot"><span id="sparkleCryptoLastUpdated">Waiting for live price feed</span><button type="button" class="sparkle-crypto-refresh" onclick="refreshSparkleCryptoPrices(true)">↻ Refresh</button></div>
+          </div>
+
+          <div class="sparkle-crypto-card">
+            <div class="sparkle-crypto-card-heading"><div><span class="sparkle-crypto-eyebrow">YOUR NEXT MOVE</span><h2>Buy or sell crypto</h2><p>Choose a coin to view its latest naira estimate.</p></div><div class="sparkle-crypto-heading-icon" aria-hidden="true">↗</div></div>
+            <div class="sparkle-crypto-pill" role="group" aria-label="Choose trade type">
+              <button type="button" id="sparkleCryptoBuyTab" class="active" aria-pressed="true" onclick="setSparkleCryptoMode('buy')"><span aria-hidden="true">＋</span> Buy Crypto</button>
+              <button type="button" id="sparkleCryptoSellTab" aria-pressed="false" onclick="setSparkleCryptoMode('sell')"><span aria-hidden="true">↗</span> Sell Crypto</button>
+            </div>
+
+            <label class="sparkle-crypto-label" for="sparkleCryptoCoinButton">Cryptocurrency</label>
+            <button type="button" id="sparkleCryptoCoinButton" class="sparkle-crypto-coin-select" aria-expanded="false" aria-controls="sparkleCryptoCoinPicker" onclick="toggleSparkleCryptoCoinPicker()">
+              <span class="sparkle-crypto-coin-symbol" id="sparkleCryptoSelectedIcon">₿</span>
+              <span class="sparkle-crypto-selected-name"><strong id="sparkleCryptoSelectedName">Select cryptocurrency</strong><small id="sparkleCryptoSelectedTicker">Tap to choose a coin</small></span>
+              <span class="sparkle-crypto-select-chevron" aria-hidden="true">⌄</span>
+            </button>
+            <div id="sparkleCryptoCoinPicker" class="sparkle-crypto-picker" hidden>
+              <input id="sparkleCryptoCoinSearch" class="sparkle-crypto-input sparkle-crypto-search" type="search" placeholder="Search coin or symbol…" autocomplete="off" oninput="renderSparkleCryptoCoinOptions()" aria-label="Search cryptocurrency">
+              <div id="sparkleCryptoCoinOptions" class="sparkle-crypto-coin-options"></div>
+            </div>
+
+            <label class="sparkle-crypto-label" id="sparkleCryptoAmountLabel" for="sparkleCryptoAmount">You want to spend</label>
+            <div class="sparkle-crypto-amount-shell"><div class="sparkle-crypto-amount-top"><span id="sparkleCryptoAmountContext">Amount in Nigerian naira</span><strong id="sparkleCryptoAmountUnit">NGN · ₦</strong></div><input id="sparkleCryptoAmount" class="sparkle-crypto-input sparkle-crypto-amount-input" type="number" inputmode="decimal" min="0" step="any" placeholder="Enter amount in naira" oninput="updateSparkleCryptoQuote()" autocomplete="off"><div class="sparkle-crypto-amount-bottom"><span id="sparkleCryptoAmountHint">Enter how much you want to spend.</span><button type="button" onclick="document.getElementById('sparkleCryptoAmount').value='';updateSparkleCryptoQuote()">Clear</button></div></div>
+
+            <div class="sparkle-crypto-quote-panel" aria-live="polite">
+              <div class="sparkle-crypto-quote-row"><span>Current <span id="sparkleCryptoRateType">buy</span> rate</span><strong id="sparkleCryptoRate">₦ —</strong></div>
+              <div class="sparkle-crypto-quote-row sparkle-crypto-output-row"><span id="sparkleCryptoReceivedLabel">Estimated crypto received</span><strong id="sparkleCryptoReceived">—</strong></div>
+              <div class="sparkle-crypto-quote-row"><span>Sparkle service fee</span><strong id="sparkleCryptoFee">Included in displayed rate</strong></div>
+              <div class="sparkle-crypto-quote-total"><span id="sparkleCryptoTotalLabel">Total to pay</span><strong id="sparkleCryptoTotal">₦ —</strong></div>
+            </div>
+            <button type="button" id="sparkleCryptoReviewButton" class="btn primary full sparkle-crypto-review" onclick="reviewSparkleCryptoQuote()" disabled>Review quote <span aria-hidden="true">→</span></button>
+            <div id="sparkleCryptoReviewResult" class="sparkle-crypto-review-result" role="status" aria-live="polite" hidden></div>
+            <div class="sparkle-crypto-disclaimer"><span aria-hidden="true">ⓘ</span><p><strong>Market preview only.</strong> Rates are indicative market estimates, not a guaranteed execution price. Real crypto purchases, wallet debits and payouts are not active until a trading provider and settlement safeguards are connected. This screen will not charge your Sparkle wallet.</p></div>
+            <div class="sparkle-crypto-attribution">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noopener noreferrer">CoinGecko</a> · FX reference: <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener noreferrer">ExchangeRate-API / open.er-api</a></div>
+          </div>
         </section>
 
         <!-- TRANSACTIONS -->
@@ -7607,6 +7753,205 @@ function toggleSparkleMoreServices(){
   window.checkSparkleDigitalOrder=checkSparkleDigitalOrder;
   document.addEventListener("DOMContentLoaded",updateSmsCounts);
   updateSmsCounts();
+})();
+</script>
+
+<script id="sparkle-crypto-trade-script">
+(function(){
+  "use strict";
+  const ASSETS = [
+    {symbol:"BTC",name:"Bitcoin",id:"bitcoin",icon:"₿"},
+    {symbol:"ETH",name:"Ethereum",id:"ethereum",icon:"◆"},
+    {symbol:"TRX",name:"TRON",id:"tron",icon:"T"},
+    {symbol:"SOL",name:"Solana",id:"solana",icon:"◎"},
+    {symbol:"USDT",name:"Tether",id:"tether",icon:"₮"},
+    {symbol:"USDC",name:"USD Coin",id:"usd-coin",icon:"＄"},
+    {symbol:"BNB",name:"BNB",id:"binancecoin",icon:"◆"},
+    {symbol:"TON",name:"Toncoin",id:"the-open-network",icon:"◈"},
+    {symbol:"XRP",name:"XRP",id:"ripple",icon:"✕"},
+    {symbol:"BCH",name:"Bitcoin Cash",id:"bitcoin-cash",icon:"Ƀ"}
+  ];
+  const BUY_MARGIN_NGN_PER_USD = 40;
+  const PRICE_REFRESH_MS = 60 * 1000;
+  const FX_REFRESH_MS = 6 * 60 * 60 * 1000;
+  const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:""};
+  const $ = id => document.getElementById(id);
+  const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
+  const naira = value => Number.isFinite(Number(value)) ? "₦" + Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}) : "₦ —";
+  const coinQuantity = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:8}) : "—";
+  function priceFor(asset, mode=state.mode){
+    const p=state.prices[asset.symbol];
+    if(!p || !Number.isFinite(p.usd) || !Number.isFinite(state.fxNgn)) return null;
+    const fx = state.fxNgn + (mode === "buy" ? BUY_MARGIN_NGN_PER_USD : 0);
+    return p.usd * fx;
+  }
+  function renderTicker(){
+    const primary=$("sparkleCryptoTickerPrimary"), duplicate=$("sparkleCryptoTickerDuplicate");
+    if(!primary || !duplicate) return;
+    const cards=ASSETS.map(asset=>{
+      const p=state.prices[asset.symbol], value=priceFor(asset);
+      const change=p && Number.isFinite(p.change)?p.change:null;
+      const changeLabel=change===null?"Market feed":`${change>=0?"↑":"↓"} ${Math.abs(change).toFixed(2)}%`;
+      const changeClass=change!==null&&change<0?"sparkle-crypto-ticker-change down":"sparkle-crypto-ticker-change";
+      return `<div class="sparkle-crypto-ticker-item"><div class="sparkle-crypto-ticker-head"><span class="sparkle-crypto-mini-symbol">${asset.icon}</span><span>${asset.symbol}</span></div><strong class="sparkle-crypto-ticker-price">${value===null?"₦ —":naira(value)}</strong><span class="${changeClass}">${changeLabel}</span></div>`;
+    }).join("");
+    primary.innerHTML=cards;
+    duplicate.innerHTML=cards;
+    const track=$("sparkleCryptoTickerTrack");
+    if(track) track.style.animationPlayState=state.loading?"paused":"running";
+  }
+  function renderCoinSelection(){
+    const selected=ASSETS.find(asset=>asset.symbol===state.selected);
+    if($("sparkleCryptoSelectedIcon")) $("sparkleCryptoSelectedIcon").textContent=selected?selected.icon:"₿";
+    if($("sparkleCryptoSelectedName")) $("sparkleCryptoSelectedName").textContent=selected?selected.name:"Select cryptocurrency";
+    if($("sparkleCryptoSelectedTicker")) $("sparkleCryptoSelectedTicker").textContent=selected?selected.symbol:"Tap to choose a coin";
+    renderSparkleCryptoCoinOptions();
+    updateSparkleCryptoQuote();
+  }
+  function renderStatus(){
+    const status=$("sparkleCryptoLiveStatus");
+    if(status){
+      if(state.loading) status.textContent="Updating live market data…";
+      else if(state.pricesUpdatedAt&&state.fxNgn){
+        const age=Date.now()-state.pricesUpdatedAt;
+        status.textContent=age<2*PRICE_REFRESH_MS?"Live prices connected · refreshes about every minute":"Showing latest retrieved prices";
+      } else status.textContent=state.lastError||"Live market data unavailable. Try refresh.";
+    }
+    const updated=$("sparkleCryptoLastUpdated");
+    if(updated){
+      if(state.pricesUpdatedAt){
+        const priceTime=new Date(state.pricesUpdatedAt).toLocaleTimeString("en-NG",{hour:"2-digit",minute:"2-digit"});
+        const fxTime=state.fxUpdatedAt?new Date(state.fxUpdatedAt).toLocaleDateString("en-NG",{day:"2-digit",month:"short"}):"—";
+        updated.textContent=`Prices checked ${priceTime} · USD/NGN reference dated ${fxTime}`;
+      } else updated.textContent=state.lastError||"Waiting for live price feed";
+    }
+  }
+  async function fetchFx(force){
+    if(!force && state.fxNgn && Date.now()-state.fxFetchedAt<FX_REFRESH_MS) return;
+    const response=await fetch("https://open.er-api.com/v6/latest/USD",{cache:"no-store"});
+    if(!response.ok) throw new Error("The USD/NGN reference-rate feed did not respond.");
+    const data=await response.json();
+    const rate=Number(data?.rates?.NGN);
+    if(data?.result!=="success" || !Number.isFinite(rate) || rate<=0) throw new Error("The USD/NGN reference rate is currently unavailable.");
+    state.fxNgn=rate;
+    state.fxUpdatedAt=(Number(data.time_last_update_unix)>0?Number(data.time_last_update_unix)*1000:Date.now());
+    state.fxFetchedAt=Date.now();
+  }
+  async function fetchCoinPrices(){
+    const ids=ASSETS.map(asset=>asset.id).join(",");
+    const url="https://api.coingecko.com/api/v3/simple/price?ids="+encodeURIComponent(ids)+"&vs_currencies=usd&include_24hr_change=true&include_last_updated_at=true";
+    const response=await fetch(url,{cache:"no-store",headers:{accept:"application/json"}});
+    if(!response.ok) throw new Error(response.status===429?"Market data is busy. Please wait a moment and refresh.":"The crypto price feed is temporarily unavailable.");
+    const data=await response.json();
+    let received=0;
+    ASSETS.forEach(asset=>{
+      const record=data && data[asset.id];
+      const usd=Number(record?.usd);
+      if(Number.isFinite(usd)&&usd>0){
+        state.prices[asset.symbol]={usd,change:Number.isFinite(Number(record.usd_24h_change))?Number(record.usd_24h_change):null,providerUpdatedAt:Number(record.last_updated_at)||null};
+        received++;
+      }
+    });
+    if(received<ASSETS.length) throw new Error("Some coin prices are missing from the live feed. Refresh again shortly.");
+    state.pricesUpdatedAt=Date.now();
+  }
+  async function refreshPrices(forceFx=false){
+    if(state.loading) return;
+    state.loading=true; state.lastError=""; renderStatus(); renderTicker();
+    try{
+      await fetchFx(!!forceFx);
+      await fetchCoinPrices();
+    }catch(error){
+      state.lastError=String(error?.message||"Live rates could not be updated.");
+    }finally{
+      state.loading=false;
+      renderStatus(); renderTicker(); updateSparkleCryptoQuote();
+      if(!state.timer) state.timer=setInterval(()=>{if(document.visibilityState!=="hidden") refreshPrices(false);},PRICE_REFRESH_MS);
+    }
+  }
+  window.refreshSparkleCryptoPrices = forceFx => refreshPrices(!!forceFx);
+  window.sparkleCryptoTradeInit = function(){
+    state.initialized=true;
+    if(!state.selected) state.selected="BTC";
+    renderCoinSelection();
+    if(!state.pricesUpdatedAt || Date.now()-state.pricesUpdatedAt>PRICE_REFRESH_MS) refreshPrices(false);
+  };
+  window.setSparkleCryptoMode = function(mode){
+    if(mode!=="buy"&&mode!=="sell") return;
+    state.mode=mode;
+    const buy=$("sparkleCryptoBuyTab"),sell=$("sparkleCryptoSellTab");
+    if(buy){buy.classList.toggle("active",mode==="buy");buy.setAttribute("aria-pressed",String(mode==="buy"));}
+    if(sell){sell.classList.toggle("active",mode==="sell");sell.setAttribute("aria-pressed",String(mode==="sell"));}
+    if($("sparkleCryptoAmountLabel")) $("sparkleCryptoAmountLabel").textContent=mode==="buy"?"You want to spend":"Crypto amount to sell";
+    if($("sparkleCryptoAmountContext")) $("sparkleCryptoAmountContext").textContent=mode==="buy"?"Amount in Nigerian naira":"Amount of selected cryptocurrency";
+    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent=mode==="buy"?"NGN · ₦":(state.selected||"COIN");
+    if($("sparkleCryptoAmount")){ $("sparkleCryptoAmount").value=""; $("sparkleCryptoAmount").placeholder=mode==="buy"?"Enter amount in naira":"Enter crypto quantity"; }
+    if($("sparkleCryptoAmountHint")) $("sparkleCryptoAmountHint").textContent=mode==="buy"?"The quote estimates how much crypto your naira could buy.":"The quote estimates how much naira the crypto could sell for.";
+    if($("sparkleCryptoRateType")) $("sparkleCryptoRateType").textContent=mode;
+    if($("sparkleCryptoReceivedLabel")) $("sparkleCryptoReceivedLabel").textContent=mode==="buy"?"Estimated crypto received":"Estimated naira payout";
+    if($("sparkleCryptoTotalLabel")) $("sparkleCryptoTotalLabel").textContent=mode==="buy"?"Total to pay":"Total to receive";
+    if($("sparkleCryptoFee")) $("sparkleCryptoFee").textContent=mode==="buy"?"Included in displayed rate":"No additional Sparkle fee shown";
+    if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
+    renderTicker(); updateSparkleCryptoQuote();
+  };
+  window.toggleSparkleCryptoCoinPicker = function(){
+    const picker=$("sparkleCryptoCoinPicker"),button=$("sparkleCryptoCoinButton");
+    if(!picker||!button) return;
+    const opening=picker.hidden;
+    picker.hidden=!opening; button.setAttribute("aria-expanded",String(opening));
+    if(opening){if($("sparkleCryptoCoinSearch")){$("sparkleCryptoCoinSearch").value="";renderSparkleCryptoCoinOptions();setTimeout(()=>$("sparkleCryptoCoinSearch")?.focus(),0);}}
+  };
+  window.renderSparkleCryptoCoinOptions = function(){
+    const host=$("sparkleCryptoCoinOptions"),query=String($("sparkleCryptoCoinSearch")?.value||"").trim().toLowerCase();
+    if(!host) return;
+    const list=ASSETS.filter(asset=>(asset.name+" "+asset.symbol).toLowerCase().includes(query));
+    if(!list.length){host.innerHTML='<p style="grid-column:1/-1;color:#71829d;font-size:12px;padding:10px">No matching cryptocurrency found.</p>';return;}
+    host.innerHTML=list.map(asset=>{
+      const price=priceFor(asset);
+      return `<button type="button" class="sparkle-crypto-option${state.selected===asset.symbol?" selected":""}" onclick="selectSparkleCryptoCoin('${asset.symbol}')"><span class="sparkle-crypto-mini-symbol">${asset.icon}</span><span class="sparkle-crypto-option-copy"><strong>${escapeHTML(asset.name)}</strong><small>${asset.symbol} · ${price===null?"Rate loading":naira(price)}</small></span>${state.selected===asset.symbol?'<span class="sparkle-crypto-option-check" aria-label="Selected">✓</span>':""}</button>`;
+    }).join("");
+  };
+  window.selectSparkleCryptoCoin = function(symbol){
+    if(!ASSETS.some(asset=>asset.symbol===symbol)) return;
+    state.selected=symbol;
+    const picker=$("sparkleCryptoCoinPicker"),button=$("sparkleCryptoCoinButton");
+    if(picker) picker.hidden=true;
+    if(button) button.setAttribute("aria-expanded","false");
+    if($("sparkleCryptoCoinSearch")) $("sparkleCryptoCoinSearch").value="";
+    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent=state.mode==="buy"?"NGN · ₦":symbol;
+    if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
+    renderCoinSelection(); renderTicker();
+  };
+  window.updateSparkleCryptoQuote = function(){
+    const asset=ASSETS.find(item=>item.symbol===state.selected),amount=Number($("sparkleCryptoAmount")?.value||0),unitRate=asset?priceFor(asset):null;
+    if($("sparkleCryptoRate")) $("sparkleCryptoRate").textContent=unitRate===null?"₦ —":`${naira(unitRate)} / ${asset.symbol}`;
+    if($("sparkleCryptoReceived")) $("sparkleCryptoReceived").textContent="—";
+    if($("sparkleCryptoTotal")) $("sparkleCryptoTotal").textContent="₦ —";
+    const valid=!!asset&&unitRate!==null&&Number.isFinite(amount)&&amount>0;
+    if(valid){
+      if(state.mode==="buy"){
+        const received=amount/unitRate;
+        $("sparkleCryptoReceived").textContent=`${coinQuantity(received)} ${asset.symbol}`;
+        $("sparkleCryptoTotal").textContent=naira(amount);
+      }else{
+        const payout=amount*unitRate;
+        $("sparkleCryptoReceived").textContent=naira(payout);
+        $("sparkleCryptoTotal").textContent=naira(payout);
+      }
+    }
+    const button=$("sparkleCryptoReviewButton");if(button) button.disabled=!valid;
+    if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
+    renderSparkleCryptoCoinOptions();
+  };
+  window.reviewSparkleCryptoQuote = function(){
+    const asset=ASSETS.find(item=>item.symbol===state.selected),amount=Number($("sparkleCryptoAmount")?.value||0),unitRate=asset?priceFor(asset):null,host=$("sparkleCryptoReviewResult");
+    if(!asset||!Number.isFinite(amount)||amount<=0||unitRate===null){if(host){host.hidden=false;host.textContent="Select a coin and enter a valid amount after live rates have loaded.";}return;}
+    let line="";
+    if(state.mode==="buy") line=`You are previewing a spend of ${naira(amount)} for approximately ${coinQuantity(amount/unitRate)} ${asset.symbol}.`;
+    else line=`You are previewing a sale of ${coinQuantity(amount)} ${asset.symbol} for approximately ${naira(amount*unitRate)}.`;
+    if(host){host.innerHTML=`<strong>Quote preview · ${escapeHTML(asset.name)}</strong><br>${escapeHTML(line)}<br><br><strong>No transaction has been submitted.</strong> Crypto execution is not connected; Sparkle will not deduct your wallet or promise a crypto payout from this preview.`;host.hidden=false;}
+  };
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.initialized&&(!state.pricesUpdatedAt||Date.now()-state.pricesUpdatedAt>PRICE_REFRESH_MS)) refreshPrices(false);});
 })();
 </script>
 
