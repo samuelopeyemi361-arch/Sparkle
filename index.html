@@ -1723,9 +1723,9 @@ body.dark-mode #dashboard .mobile-bottom-nav button.active{color:#70a3ff}
 @media(max-width:480px){
  #dashboard .sparkle-promo-carousel{margin-bottom:12px}
  #dashboard .sparkle-home-service-grid .service{min-height:66px}
- #sparkle-support-widget{right:13px;top:83px;bottom:auto;z-index:1100}
- #sparkle-support-toggle{width:40px;height:40px}
- #sparkle-support-toggle svg{width:22px;height:22px}
+ #sparkle-support-widget{right:13px;top:auto;bottom:calc(78px + env(safe-area-inset-bottom));z-index:1100}
+ #sparkle-support-toggle{width:36px;height:36px}
+ #sparkle-support-toggle svg{width:20px;height:20px}
 }
 body.dark-mode #dashboard .sparkle-more-tools{border-color:#213149}
 body.dark-mode #dashboard .sparkle-more-tools>span{color:#9fb0c8}
@@ -2434,28 +2434,17 @@ Privacy Policy
 
           <div class="sparkle-section-heading" id="quickServicesSection">
             <h2>Quick Services</h2>
-            <button type="button" onclick="toggleSparkleMoreServices()">See all <span aria-hidden="true">›</span></button>
           </div>
-          <div class="service-grid sparkle-home-service-grid">
+          <div class="service-grid sparkle-home-service-grid" aria-label="Sparkle Quick Services">
             <div class="service" role="button" tabindex="0" onclick="openServicePage('airtime')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('airtime')}"><span aria-hidden="true">📱</span><div>Buy Airtime</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('data')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('data')}"><span aria-hidden="true">📶</span><div>Buy Data</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('electricity')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('electricity')}"><span aria-hidden="true">💡</span><div>Electricity</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('cable')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('cable')}"><span aria-hidden="true">📺</span><div>Cable TV</div></div>
-            <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🎟️</span><div>Recharge PIN</div></div>
-            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadSvbCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadSvbCountries()}"><span aria-hidden="true">💬</span><div>SMS OTP</div></div>
-            <div class="service" role="button" tabindex="0" onclick="showDashPage('marketPage')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showDashPage('marketPage')}"><span aria-hidden="true">🛍️</span><div>Market</div></div>
-            <div class="service" role="button" tabindex="0" aria-expanded="false" aria-controls="moreServicesPanel" onclick="toggleSparkleMoreServices()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleSparkleMoreServices()}"><span aria-hidden="true">✣</span><div>More</div></div>
-          </div>
-          <div class="sparkle-more-services" id="moreServicesPanel" hidden>
-            <div class="sparkle-more-heading"><strong>More Services</strong><button type="button" onclick="toggleSparkleMoreServices()" aria-label="Close more services">×</button></div>
-            <div class="service-grid sparkle-home-service-grid sparkle-more-grid">
-              <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education Pins</div></div>
-              <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🪪</span><div>Recharge PIN Printing</div></div>
-              <div class="service" role="button" tabindex="0" onclick="openSvbOrderPage()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openSvbOrderPage()}"><span aria-hidden="true">📲</span><div>US Number Orders</div></div>
-              <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
-              <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
-            </div>
-            <div class="sparkle-more-tools"><span>DISPLAY</span><button type="button" onclick="toggleTheme()"><span aria-hidden="true">◐</span> Switch appearance</button></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🎟️</span><div>Recharge PIN Printing</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadSvbCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadSvbCountries()}"><span aria-hidden="true">🇺🇸</span><div>Buy US Number</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education PIN</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
           </div>
 
           <section class="sparkle-transaction-section">
