@@ -7546,7 +7546,7 @@ function toggleSparkleMoreServices(){
       const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
       renderSparkleSocialPlanOptions();
       if(!socialPlans.length){
-        if(info)info.textContent="Sparkle has no social-media services with a verified price available right now. Please refresh later. No money has been reserved.";
+        if(info)info.textContent="The supplier catalogue loaded, but Sparkle could not verify a usable price for its social-media services. Tap Refresh later. No money has been reserved.";
         setResult("sparkleSocialResult","error","Live prices unavailable","Sparkle could not verify a live price for the currently listed social-media services. No money has been reserved. Please refresh later.");
       }
     }catch(e){
@@ -7567,7 +7567,7 @@ function toggleSparkleMoreServices(){
     const plan=selectedSocialPlan();const info=document.getElementById("sparkleSocialPlanInfo");const help=document.getElementById("sparkleSocialQuantityHelp");
     if(info){
       if(plan)info.innerHTML=`<strong>${esc(plan.displayName)}</strong><div>Current Sparkle rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div><div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
-      else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"The live catalogue has not loaded yet.";
+      else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"No priced services are available in this view yet. Tap Refresh to check the live catalogue again. If Sparkle cannot verify a price, checkout stays disabled and no money is reserved.";
     }
     const qty=document.getElementById("sparkleSocialQuantity");if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
     if(help)help.textContent=plan?`Enter a whole number between ${Number(plan.min||1).toLocaleString("en-NG")} and ${Number(plan.max||1000000).toLocaleString("en-NG")}.`:"Choose a plan to see its permitted range.";
