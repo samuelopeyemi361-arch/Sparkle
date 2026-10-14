@@ -1,8 +1,10 @@
+
 {
-“rewrites”: [
-{
-“source”: “/admin”,
-“destination”: “/index.html”
-}
-]
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
+    {
+      "source": "/admin",
+      "destination": "/index.html"
+    }
+  ]
 }
