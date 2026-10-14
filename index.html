@@ -1943,6 +1943,47 @@ body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-disclaimer strong{col
 @media(min-width:700px){#adminPage .sparkle-owner-editor-grid{grid-template-columns:1fr 1fr}#adminPage .sparkle-owner-editor-grid .wide{grid-column:1/-1}}
 </style>
 
+
+<style id="sparkle-midnight-approved-polish">
+/* Approved midnight updates: scoped presentation-only refinements. */
+#home .wallet-card{
+  position:relative;overflow:hidden;isolation:isolate;
+  background:radial-gradient(circle at 92% 8%,rgba(99,190,255,.32),transparent 34%),linear-gradient(122deg,#071a46 0%,#0b4fd4 56%,#078ce8 100%);
+  border:1px solid rgba(255,255,255,.28);border-radius:26px;padding:26px 28px;
+  box-shadow:0 20px 42px rgba(11,76,190,.22),inset 0 1px 0 rgba(255,255,255,.16);
+}
+#home .wallet-card:before{content:"";position:absolute;z-index:-1;width:260px;height:260px;right:-100px;bottom:-185px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 24px rgba(255,255,255,.035),0 0 0 50px rgba(255,255,255,.025);pointer-events:none}
+#home .wallet-card-label{color:#e5f1ff;font-size:12px;letter-spacing:1.05px;opacity:1}
+#home .wallet-card-icon{width:44px;height:44px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.17);box-shadow:inset 0 1px 0 rgba(255,255,255,.1)}
+#home .wallet-balance{color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.11);font-weight:900;letter-spacing:-1px;font-variant-numeric:tabular-nums}
+#home .wallet-card .fund-wallet-btn{min-height:46px;padding:12px 19px;background:linear-gradient(180deg,#fff 0%,#eaf3ff 100%);color:#0b4fc8;border:1px solid rgba(255,255,255,.9);border-radius:14px;font-weight:900;box-shadow:0 8px 20px rgba(0,21,83,.2);white-space:nowrap}
+#home .wallet-card .fund-wallet-btn:focus-visible{outline:3px solid #b7e4ff;outline-offset:3px}
+#home .wallet-fee-note{max-width:220px;color:#e0edff;font-size:11px;line-height:1.5;text-align:right;margin-left:auto}
+#sparkle-support-toggle{width:82px;height:82px;box-shadow:0 14px 32px rgba(10,66,165,.3)}
+#sparkle-support-toggle svg{width:41px;height:41px}
+.sparkle-crypto-summary-line,.sparkle-crypto-summary-total{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding:9px 0;border-bottom:1px solid rgba(130,153,184,.18);font-size:13px}
+.sparkle-crypto-summary-line span,.sparkle-crypto-summary-total span{color:#687b97}
+.sparkle-crypto-summary-line strong,.sparkle-crypto-summary-total strong{text-align:right;color:#142b4d;font-weight:800;max-width:62%;overflow-wrap:anywhere}
+.sparkle-crypto-summary-total{border-bottom:0;border-top:1px solid #dce8f8;margin-top:5px;padding-top:14px;font-size:15px}
+.sparkle-crypto-summary-total span,.sparkle-crypto-summary-total strong{color:#1259cf;font-weight:900}
+.sparkle-crypto-summary-title{font-size:14px;font-weight:900;color:#124fae;margin-bottom:8px}
+.sparkle-crypto-summary-note{font-size:11px;line-height:1.6;color:#6c7d97;margin:11px 0 14px}
+.sparkle-crypto-make-payment{min-height:46px}
+@media(max-width:600px){
+  #home .wallet-card{padding:20px 17px;border-radius:22px}
+  #home .wallet-card-top{align-items:flex-start;gap:12px}
+  #home .wallet-card-label{font-size:10px;letter-spacing:.75px;gap:8px}
+  #home .wallet-card-icon{width:38px;height:38px;flex:0 0 38px}
+  #home .wallet-balance{font-size:clamp(25px,7vw,34px);overflow-wrap:anywhere;margin:11px 0 18px}
+  #home .wallet-card-action{max-width:48%;display:flex;align-items:flex-end;flex-direction:column}
+  #home .wallet-card .fund-wallet-btn{font-size:12px;padding:11px 12px;min-height:43px}
+  #home .wallet-fee-note{font-size:10px;max-width:170px}
+  #sparkle-support-widget{right:16px}
+  #sparkle-support-toggle{width:68px;height:68px}
+  #sparkle-support-toggle svg{width:35px;height:35px}
+}
+</style>
+
 </head>
 
 <body>
@@ -2445,7 +2486,7 @@ Privacy Policy
           <div class="wallet-card">
             <div class="wallet-card-top">
               <div class="wallet-balance-block">
-                <div class="wallet-card-label"><span class="wallet-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12"/><path d="M16 12h5"/><circle cx="16.5" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></span><span>Available Balance</span></div>
+                <div class="wallet-card-label"><span class="wallet-card-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M4 7.5h15a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3h12"/><path d="M16 12h5"/><circle cx="16.5" cy="12" r=".7" fill="currentColor" stroke="none"/></svg></span><span>Available Wallet Balance</span></div>
                 <div class="wallet-balance" id="walletBalance">₦0.00</div>
               </div>
               <div class="wallet-card-action">
@@ -2668,18 +2709,18 @@ Privacy Policy
               <div id="sparkleCryptoCoinOptions" class="sparkle-crypto-coin-options"></div>
             </div>
 
-            <label class="sparkle-crypto-label" id="sparkleCryptoAmountLabel" for="sparkleCryptoAmount">You want to spend</label>
-            <div class="sparkle-crypto-amount-shell"><div class="sparkle-crypto-amount-top"><span id="sparkleCryptoAmountContext">Amount in Nigerian naira</span><strong id="sparkleCryptoAmountUnit">NGN · ₦</strong></div><input id="sparkleCryptoAmount" class="sparkle-crypto-input sparkle-crypto-amount-input" type="number" inputmode="decimal" min="0" step="any" placeholder="Enter amount in naira" oninput="updateSparkleCryptoQuote()" autocomplete="off"><div class="sparkle-crypto-amount-bottom"><span id="sparkleCryptoAmountHint">Enter how much you want to spend.</span><button type="button" onclick="document.getElementById('sparkleCryptoAmount').value='';updateSparkleCryptoQuote()">Clear</button></div></div>
+            <label class="sparkle-crypto-label" id="sparkleCryptoAmountLabel" for="sparkleCryptoAmount">Purchase amount (NGN)</label>
+            <div class="sparkle-crypto-amount-shell"><div class="sparkle-crypto-amount-top"><span id="sparkleCryptoAmountContext">Amount before Sparkle and sending fees</span><strong id="sparkleCryptoAmountUnit">NGN · ₦</strong></div><input id="sparkleCryptoAmount" class="sparkle-crypto-input sparkle-crypto-amount-input" type="number" inputmode="decimal" min="5000" step="any" placeholder="Minimum ₦5,000" oninput="updateSparkleCryptoQuote()" autocomplete="off"><div class="sparkle-crypto-amount-bottom"><span id="sparkleCryptoAmountHint">Minimum buy is ₦5,000. Sparkle adds 3% plus the selected coin’s sending fee.</span><button type="button" onclick="document.getElementById('sparkleCryptoAmount').value='';updateSparkleCryptoQuote()">Clear</button></div></div>
 
             <div class="sparkle-crypto-quote-panel" aria-live="polite">
               <div class="sparkle-crypto-quote-row"><span>Current <span id="sparkleCryptoRateType">buy</span> rate</span><strong id="sparkleCryptoRate">₦ —</strong></div>
               <div class="sparkle-crypto-quote-row sparkle-crypto-output-row"><span id="sparkleCryptoReceivedLabel">Estimated crypto received</span><strong id="sparkleCryptoReceived">—</strong></div>
-              <div class="sparkle-crypto-quote-row"><span>Sparkle service fee</span><strong id="sparkleCryptoFee">Included in displayed rate</strong></div>
+              <div class="sparkle-crypto-quote-row"><span>Sparkle fee</span><strong id="sparkleCryptoFee">3% of purchase amount</strong></div><div class="sparkle-crypto-quote-row"><span id="sparkleCryptoSendingFeeLabel">BTC sending fee</span><strong id="sparkleCryptoSendingFee">US$5.00 → ₦ —</strong></div>
               <div class="sparkle-crypto-quote-total"><span id="sparkleCryptoTotalLabel">Total to pay</span><strong id="sparkleCryptoTotal">₦ —</strong></div>
             </div>
-            <button type="button" id="sparkleCryptoReviewButton" class="btn primary full sparkle-crypto-review" onclick="reviewSparkleCryptoQuote()" disabled>Review quote <span aria-hidden="true">→</span></button>
+            <button type="button" id="sparkleCryptoReviewButton" class="btn primary full sparkle-crypto-review" onclick="reviewSparkleCryptoQuote()" disabled>Review transaction <span aria-hidden="true">→</span></button>
             <div id="sparkleCryptoReviewResult" class="sparkle-crypto-review-result" role="status" aria-live="polite" hidden></div>
-            <div class="sparkle-crypto-disclaimer"><span aria-hidden="true">ⓘ</span><p><strong>Market preview only.</strong> Rates are indicative market estimates, not a guaranteed execution price. Real crypto purchases, wallet debits and payouts are not active until a trading provider and settlement safeguards are connected. This screen will not charge your Sparkle wallet.</p></div>
+            <div class="sparkle-crypto-disclaimer"><span aria-hidden="true">ⓘ</span><p><strong>WhatsApp-assisted crypto service.</strong> Market rates are indicative estimates. After reviewing your fees and transaction summary, tap Make Payment to open WhatsApp Customer Service at +234 808 920 6869 with the request pre-filled. You send the message and Sparkle handles the crypto manually. No automatic wallet debit or blockchain transfer is made from this screen.</p></div>
             <div class="sparkle-crypto-attribution">Market data: <a href="https://www.coingecko.com/" target="_blank" rel="noopener noreferrer">CoinGecko</a> · FX reference: <a href="https://www.exchangerate-api.com/" target="_blank" rel="noopener noreferrer">ExchangeRate-API / open.er-api</a></div>
           </div>
         </section>
@@ -2764,8 +2805,8 @@ Privacy Policy
           <div class="sparkle-digital-card">
             <div class="sparkle-digital-section-title"><div><h2>Compose your message</h2><p>Use a sender name your business is authorized to use.</p></div><span class="sparkle-digital-status-pill">Live pricing</span></div>
             <label class="sparkle-digital-label" for="sparkleSmsSender">Sender ID</label>
-            <input id="sparkleSmsSender" class="sparkle-digital-input" value="Sparkle" maxlength="11" minlength="3" pattern="[A-Za-z]{3,11}" readonly aria-readonly="true" autocomplete="off">
-            <small class="sparkle-digital-help">Messages use Sparkle as the sender name. Delivery depends on sender-ID approval and recipient-network rules.</small>
+            <input id="sparkleSmsSender" class="sparkle-digital-input" type="text" placeholder="Type your Sender ID (3–11 letters)" maxlength="11" minlength="3" pattern="[A-Za-z]{3,11}" autocomplete="off" oninput="invalidateSparkleSmsQuote()" aria-describedby="sparkleSmsSenderHelp">
+            <small class="sparkle-digital-help" id="sparkleSmsSenderHelp">Type the sender name you are approved to use. Sender IDs must contain 3–11 letters only and are subject to network approval.</small>
             <label class="sparkle-digital-label" for="sparkleSmsRecipients">Recipient numbers</label>
             <textarea id="sparkleSmsRecipients" class="sparkle-digital-input sparkle-digital-textarea" rows="4" placeholder="08031234567, 08021234568&#10;You can separate up to 5,000 unique Nigerian numbers with commas or new lines." oninput="invalidateSparkleSmsQuote()"></textarea>
             <div class="sparkle-sms-count-row"><span>Supported format: 080…, 234… or +234…</span><strong id="sparkleSmsRecipientCount">0 recipients</strong></div>
@@ -7664,7 +7705,7 @@ function toggleSparkleMoreServices(){
       if(data.success!==true)throw new Error(data.error||"Could not calculate this plan price.");
       socialQuote={...data,plan:plan.value,quantity};
       const box=document.getElementById("sparkleSocialQuote");if(!box)return;
-      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Order review</div><div class="sparkle-quote-line"><span>Service</span><strong>${esc(data.planName||plan.displayName)}</strong></div><div class="sparkle-quote-line"><span>Quantity</span><strong>${Number(quantity).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Rate per 1,000</span><strong>${fmt(data.retailRatePerThousand)}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Before the supplier confirms, Sparkle temporarily reserves up to ${fmt(data.maximumReserve)}. Your final charge is based on the supplier’s confirmed cost; any unused reserve is returned to your wallet. Confirm the target link before proceeding.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleSocialPurchase()">Continue to secure checkout</button>`;
+      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Order review · Confirm before payment</div><div class="sparkle-quote-line"><span>Service</span><strong>${esc(data.planName||plan.displayName)}</strong></div><div class="sparkle-quote-line"><span>Target link</span><strong style="text-align:right;overflow-wrap:anywhere;word-break:break-word;max-width:68%">${esc(document.getElementById("sparkleSocialLink")?.value.trim()||"Not entered")}</strong></div><div class="sparkle-quote-line"><span>Quantity</span><strong>${Number(quantity).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Rate per 1,000</span><strong>${fmt(data.retailRatePerThousand)}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Review the service, target link, quantity and price carefully. Your 4-digit Transaction PIN is required before an order is sent. Sparkle may temporarily reserve up to ${fmt(data.maximumReserve)}. Your final charge is based on the supplier’s confirmed cost; unused reserved funds are returned to your wallet.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleSocialPurchase()">Continue to secure checkout</button>`;
       const res=document.getElementById("sparkleSocialResult");if(res)res.hidden=true;
     }catch(e){setResult("sparkleSocialResult","error","Price check failed",e.message||"Could not check the current price.");}
   }
@@ -7843,22 +7884,24 @@ function toggleSparkleMoreServices(){
     {symbol:"BTC",name:"Bitcoin",id:"bitcoin",icon:"₿"},
     {symbol:"ETH",name:"Ethereum",id:"ethereum",icon:"◆"},
     {symbol:"TRX",name:"TRON",id:"tron",icon:"T"},
+    {symbol:"USDC",name:"USD Coin",id:"usd-coin",icon:"＄"},
     {symbol:"SOL",name:"Solana",id:"solana",icon:"◎"},
     {symbol:"USDT",name:"Tether",id:"tether",icon:"₮"},
-    {symbol:"USDC",name:"USD Coin",id:"usd-coin",icon:"＄"},
     {symbol:"BNB",name:"BNB",id:"binancecoin",icon:"◆"},
     {symbol:"TON",name:"Toncoin",id:"the-open-network",icon:"◈"},
     {symbol:"XRP",name:"XRP",id:"ripple",icon:"✕"},
     {symbol:"BCH",name:"Bitcoin Cash",id:"bitcoin-cash",icon:"Ƀ"}
   ];
-  // Sparkle crypto pricing uses its pricing policy separately; no flat per-USD add-on is applied here.
+  const SENDING_FEES_USD = Object.freeze({BTC:5, ETH:1.5, TRX:0.8, USDC:0.8, SOL:0.8, USDT:1, BNB:0.7, TON:1.5, XRP:0.8, BCH:1});
   const PRICE_REFRESH_MS = 60 * 1000;
   const FX_REFRESH_MS = 6 * 60 * 60 * 1000;
-  const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:""};
+  const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:"",pendingWhatsAppMessage:""};
   const $ = id => document.getElementById(id);
   const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const naira = value => Number.isFinite(Number(value)) ? "₦" + Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}) : "₦ —";
   const coinQuantity = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:8}) : "—";
+  const usd = value => new Intl.NumberFormat("en-US",{style:"currency",currency:"USD",minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);
+  function sparkleCryptoSellFeeRate(amount){ if(amount < 50000) return 0.05; if(amount <= 250000) return 0.03; return 0.02; }
   function priceFor(asset){
     const p=state.prices[asset.symbol];
     if(!p || !Number.isFinite(p.usd) || !Number.isFinite(state.fxNgn)) return null;
@@ -7958,20 +8001,21 @@ function toggleSparkleMoreServices(){
   };
   window.setSparkleCryptoMode = function(mode){
     if(mode!=="buy"&&mode!=="sell") return;
-    state.mode=mode;
+    state.mode=mode; state.pendingWhatsAppMessage="";
     const buy=$("sparkleCryptoBuyTab"),sell=$("sparkleCryptoSellTab");
     if(buy){buy.classList.toggle("active",mode==="buy");buy.setAttribute("aria-pressed",String(mode==="buy"));}
     if(sell){sell.classList.toggle("active",mode==="sell");sell.setAttribute("aria-pressed",String(mode==="sell"));}
-    if($("sparkleCryptoAmountLabel")) $("sparkleCryptoAmountLabel").textContent=mode==="buy"?"You want to spend":"Crypto amount to sell";
-    if($("sparkleCryptoAmountContext")) $("sparkleCryptoAmountContext").textContent=mode==="buy"?"Amount in Nigerian naira":"Amount of selected cryptocurrency";
-    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent=mode==="buy"?"NGN · ₦":(state.selected||"COIN");
-    if($("sparkleCryptoAmount")){ $("sparkleCryptoAmount").value=""; $("sparkleCryptoAmount").placeholder=mode==="buy"?"Enter amount in naira":"Enter crypto quantity"; }
-    if($("sparkleCryptoAmountHint")) $("sparkleCryptoAmountHint").textContent=mode==="buy"?"The quote estimates how much crypto your naira could buy.":"The quote estimates how much naira the crypto could sell for.";
-    if($("sparkleCryptoRateType")) $("sparkleCryptoRateType").textContent=mode;
-    if($("sparkleCryptoReceivedLabel")) $("sparkleCryptoReceivedLabel").textContent=mode==="buy"?"Estimated crypto received":"Estimated naira payout";
-    if($("sparkleCryptoTotalLabel")) $("sparkleCryptoTotalLabel").textContent=mode==="buy"?"Total to pay":"Total to receive";
-    if($("sparkleCryptoFee")) $("sparkleCryptoFee").textContent=mode==="buy"?"Included in displayed rate":"No additional Sparkle fee shown";
-    if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
+    if($("sparkleCryptoAmountLabel")) $("sparkleCryptoAmountLabel").textContent=mode==="buy"?"Purchase amount (NGN)":"Sale amount (NGN)";
+    if($("sparkleCryptoAmountContext")) $("sparkleCryptoAmountContext").textContent=mode==="buy"?"Amount before Sparkle and sending fees":"Sale value before Sparkle fee";
+    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent="NGN · ₦";
+    if($("sparkleCryptoAmount")){ $("sparkleCryptoAmount").value=""; $("sparkleCryptoAmount").min="5000"; $("sparkleCryptoAmount").placeholder="Minimum ₦5,000"; }
+    if($("sparkleCryptoAmountHint")) $("sparkleCryptoAmountHint").textContent=mode==="buy"?"Minimum buy ₦5,000. Sparkle adds 3% plus the selected coin’s sending fee.":"Minimum sell ₦5,000. Sparkle fee is tiered; you cover the network fee.";
+    if($("sparkleCryptoRateType")) $("sparkleCryptoRateType").textContent=mode==="buy"?"buy":"sell";
+    if($("sparkleCryptoReceivedLabel")) $("sparkleCryptoReceivedLabel").textContent=mode==="buy"?"Estimated crypto received":"Estimated crypto amount";
+    if($("sparkleCryptoTotalLabel")) $("sparkleCryptoTotalLabel").textContent=mode==="buy"?"Total to pay":"Estimated after Sparkle fee";
+    if($("sparkleCryptoSendingFeeLabel")) $("sparkleCryptoSendingFeeLabel").textContent=mode==="buy"?`${state.selected||"Selected coin"} sending fee`:"Network fee on sale";
+    if($("sparkleCryptoFee")) $("sparkleCryptoFee").textContent=mode==="buy"?"3% of purchase amount":"5% / 3% / 2% by sale amount";
+    if($("sparkleCryptoReviewResult")){ $("sparkleCryptoReviewResult").hidden=true; $("sparkleCryptoReviewResult").innerHTML=""; }
     renderTicker(); updateSparkleCryptoQuote();
   };
   window.toggleSparkleCryptoCoinPicker = function(){
@@ -7998,38 +8042,77 @@ function toggleSparkleMoreServices(){
     if(picker) picker.hidden=true;
     if(button) button.setAttribute("aria-expanded","false");
     if($("sparkleCryptoCoinSearch")) $("sparkleCryptoCoinSearch").value="";
-    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent=state.mode==="buy"?"NGN · ₦":symbol;
+    if($("sparkleCryptoAmountUnit")) $("sparkleCryptoAmountUnit").textContent="NGN · ₦";
     if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
     renderCoinSelection(); renderTicker();
   };
   window.updateSparkleCryptoQuote = function(){
     const asset=ASSETS.find(item=>item.symbol===state.selected),amount=Number($("sparkleCryptoAmount")?.value||0),unitRate=asset?priceFor(asset):null;
+    const sendUsd=asset?(SENDING_FEES_USD[asset.symbol]||0):0,fx=Number(state.fxNgn);
+    const baseValid=Number.isFinite(amount)&&amount>=5000;
+    const buyFee=amount*0.03, sellPct=sparkleCryptoSellFeeRate(amount), sellFee=amount*sellPct;
+    const sendNgn=Number.isFinite(fx)&&fx>0?sendUsd*fx:null;
     if($("sparkleCryptoRate")) $("sparkleCryptoRate").textContent=unitRate===null?"₦ —":`${naira(unitRate)} / ${asset.symbol}`;
     if($("sparkleCryptoReceived")) $("sparkleCryptoReceived").textContent="—";
     if($("sparkleCryptoTotal")) $("sparkleCryptoTotal").textContent="₦ —";
-    const valid=!!asset&&unitRate!==null&&Number.isFinite(amount)&&amount>0;
+    if($("sparkleCryptoFee")) $("sparkleCryptoFee").textContent=state.mode==="buy"?`${naira(buyFee)} (3%)`:`${naira(sellFee)} (${Math.round(sellPct*100)}%)`;
+    if($("sparkleCryptoSendingFeeLabel")) $("sparkleCryptoSendingFeeLabel").textContent=state.mode==="buy"?`${asset?asset.symbol:"Coin"} sending fee`:"Network fee (customer-paid)";
+    if($("sparkleCryptoSendingFee")) $("sparkleCryptoSendingFee").textContent=state.mode==="buy"?(sendNgn===null?`${usd(sendUsd)} equivalent in NGN`:`${usd(sendUsd)} ≈ ${naira(sendNgn)}`):"No additional Sparkle fee; user covers network fee";
+    const valid=!!asset&&unitRate!==null&&baseValid&&(state.mode==="sell"||(sendNgn!==null&&Number.isFinite(sendNgn)));
     if(valid){
       if(state.mode==="buy"){
-        const received=amount/unitRate;
-        $("sparkleCryptoReceived").textContent=`${coinQuantity(received)} ${asset.symbol}`;
-        $("sparkleCryptoTotal").textContent=naira(amount);
+        const received=amount/unitRate,total=amount+buyFee+sendNgn;
+        if($("sparkleCryptoReceived")) $("sparkleCryptoReceived").textContent=`${coinQuantity(received)} ${asset.symbol}`;
+        if($("sparkleCryptoTotal")) $("sparkleCryptoTotal").textContent=naira(total);
       }else{
-        const payout=amount*unitRate;
-        $("sparkleCryptoReceived").textContent=naira(payout);
-        $("sparkleCryptoTotal").textContent=naira(payout);
+        const cryptoAmount=amount/unitRate,payout=amount-sellFee;
+        if($("sparkleCryptoReceived")) $("sparkleCryptoReceived").textContent=`${coinQuantity(cryptoAmount)} ${asset.symbol}`;
+        if($("sparkleCryptoTotal")) $("sparkleCryptoTotal").textContent=naira(payout);
       }
     }
     const button=$("sparkleCryptoReviewButton");if(button) button.disabled=!valid;
-    if($("sparkleCryptoReviewResult")) $("sparkleCryptoReviewResult").hidden=true;
+    if($("sparkleCryptoReviewResult")){ $("sparkleCryptoReviewResult").hidden=true; $("sparkleCryptoReviewResult").innerHTML=""; }
     renderSparkleCryptoCoinOptions();
   };
   window.reviewSparkleCryptoQuote = function(){
-    const asset=ASSETS.find(item=>item.symbol===state.selected),amount=Number($("sparkleCryptoAmount")?.value||0),unitRate=asset?priceFor(asset):null,host=$("sparkleCryptoReviewResult");
-    if(!asset||!Number.isFinite(amount)||amount<=0||unitRate===null){if(host){host.hidden=false;host.textContent="Select a coin and enter a valid amount after live rates have loaded.";}return;}
-    let line="";
-    if(state.mode==="buy") line=`You are previewing a spend of ${naira(amount)} for approximately ${coinQuantity(amount/unitRate)} ${asset.symbol}.`;
-    else line=`You are previewing a sale of ${coinQuantity(amount)} ${asset.symbol} for approximately ${naira(amount*unitRate)}.`;
-    if(host){host.innerHTML=`<strong>Quote preview · ${escapeHTML(asset.name)}</strong><br>${escapeHTML(line)}<br><br><strong>No transaction has been submitted.</strong> Crypto execution is not connected; Sparkle will not deduct your wallet or promise a crypto payout from this preview.`;host.hidden=false;}
+    const asset=ASSETS.find(item=>item.symbol===state.selected),amount=Number($("sparkleCryptoAmount")?.value||0),unitRate=asset?priceFor(asset):null,host=$("sparkleCryptoReviewResult"),fx=Number(state.fxNgn);
+    if(!asset||!Number.isFinite(amount)||amount<5000||unitRate===null){if(host){host.hidden=false;host.textContent=amount<5000?"The minimum buy and sell amount is ₦5,000. Enter ₦5,000 or more to continue.":"Select a coin and wait for its live reference rate to load.";}return;}
+    const buy=state.mode==="buy",sendUsd=SENDING_FEES_USD[asset.symbol]||0,sendNgn=sendUsd*fx;
+    if(buy&&(!Number.isFinite(fx)||fx<=0)){if(host){host.hidden=false;host.textContent="The USD-to-NGN reference rate is not available, so the sending fee cannot be calculated safely. Refresh the rates and try again.";}return;}
+    const sparklePct=buy?0.03:sparkleCryptoSellFeeRate(amount),sparkleFee=amount*sparklePct;
+    const total=buy?amount+sparkleFee+sendNgn:amount-sparkleFee;
+    const approxCrypto=amount/unitRate;
+    const pctText=`${(sparklePct*100).toFixed(0)}%`;
+    const summaryLines=buy?[
+      "SPARKLE CRYPTO — BUY REQUEST",
+      `Coin: ${asset.name} (${asset.symbol})`,
+      `Purchase amount: ${naira(amount)}`,
+      `Sparkle fee (${pctText}): ${naira(sparkleFee)}`,
+      `Sending fee: ${usd(sendUsd)} (approx. ${naira(sendNgn)})`,
+      `USD/NGN reference rate: ₦${fx.toLocaleString("en-NG",{maximumFractionDigits:4})}`,
+      `Estimated crypto: ${coinQuantity(approxCrypto)} ${asset.symbol}`,
+      `Estimated total to pay: ${naira(total)}`,
+      "Please confirm the final rate and network before payment. I understand Sparkle handles this manually."
+    ].join("\n"):[
+      "SPARKLE CRYPTO — SELL REQUEST",
+      `Coin: ${asset.name} (${asset.symbol})`,
+      `Sale value before Sparkle fee: ${naira(amount)}`,
+      `Sparkle fee (${pctText}): ${naira(sparkleFee)}`,
+      `Estimated amount after Sparkle fee: ${naira(total)}`,
+      `Estimated crypto equivalent: ${coinQuantity(approxCrypto)} ${asset.symbol}`,
+      "No extra sending fee is charged by Sparkle. I cover the network fee myself.",
+      "Please confirm the final rate, wallet/address, and network before proceeding. I understand Sparkle handles this manually."
+    ].join("\n");
+    state.pendingWhatsAppMessage=summaryLines;
+    const detailRows=buy?
+      `<div class="sparkle-crypto-summary-line"><span>Purchase amount</span><strong>${naira(amount)}</strong></div><div class="sparkle-crypto-summary-line"><span>Sparkle fee (3%)</span><strong>${naira(sparkleFee)}</strong></div><div class="sparkle-crypto-summary-line"><span>${asset.symbol} sending fee</span><strong>${usd(sendUsd)} · ${naira(sendNgn)}</strong></div><div class="sparkle-crypto-summary-line"><span>Estimated crypto</span><strong>${coinQuantity(approxCrypto)} ${asset.symbol}</strong></div><div class="sparkle-crypto-summary-total"><span>Estimated total to pay</span><strong>${naira(total)}</strong></div>`:
+      `<div class="sparkle-crypto-summary-line"><span>Sale value</span><strong>${naira(amount)}</strong></div><div class="sparkle-crypto-summary-line"><span>Sparkle fee (${pctText})</span><strong>${naira(sparkleFee)}</strong></div><div class="sparkle-crypto-summary-line"><span>Estimated crypto equivalent</span><strong>${coinQuantity(approxCrypto)} ${asset.symbol}</strong></div><div class="sparkle-crypto-summary-line"><span>Network fee</span><strong>Paid by you</strong></div><div class="sparkle-crypto-summary-total"><span>Estimated amount after fee</span><strong>${naira(total)}</strong></div>`;
+    if(host){host.innerHTML=`<div class="sparkle-crypto-summary-title">Transaction summary · ${escapeHTML(buy?"Buy":"Sell")} ${escapeHTML(asset.symbol)}</div>${detailRows}<p class="sparkle-crypto-summary-note">Market rates are estimates, not a locked quote. No Sparkle wallet debit or automatic crypto transfer will happen here. Tap Make Payment to open WhatsApp Customer Service, then send the pre-filled summary to request manual handling.</p><button type="button" class="btn primary full sparkle-crypto-make-payment" onclick="openSparkleCryptoWhatsApp()">Make Payment · Open WhatsApp</button>`;host.hidden=false;}
+  };
+  window.openSparkleCryptoWhatsApp = function(){
+    if(!state.pendingWhatsAppMessage)return;
+    const url="https://wa.me/2348089206869?text="+encodeURIComponent(state.pendingWhatsAppMessage);
+    window.open(url,"_blank","noopener,noreferrer");
   };
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.initialized&&(!state.pricesUpdatedAt||Date.now()-state.pricesUpdatedAt>PRICE_REFRESH_MS)) refreshPrices(false);});
 })();
