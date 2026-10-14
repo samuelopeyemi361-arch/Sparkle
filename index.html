@@ -7046,14 +7046,13 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
     // A rebuild always routes to Home first, which is the reset users were experiencing.
     if(dashboardActive && currentUserId===sessionUserId){
       window.currentSparkleUser=session.user;
-      if(window.location.pathname.replace(/\/+$/, '') === '/admin' && !document.getElementById('adminPage')?.classList.contains('active')) sparkleAdminOpen();
       return;
     }
     if(dashboardActive && !currentUserId && event!=="SIGNED_IN"){
       window.currentSparkleUser=session.user;
       return;
     }
-    showDashboard(session.user).then(()=>{ if(window.location.pathname.replace(/\/+$/, '') === '/admin') sparkleAdminOpen(); });
+    showDashboard(session.user);
     return;
   }
   // Only a real sign-out should switch an already-open dashboard to the public homepage.
@@ -7592,12 +7591,16 @@ function toggleSparkleMoreServices(){
   function renderSparkleSocialPlanOptions(){
     const select=document.getElementById("sparkleSocialPlan");if(!select)return;
     const prior=select.value;const items=visibleSocialPlans();
-    select.innerHTML='<option value="">Choose a social-media service</option>'+items.map(p=>`<option value="${esc(p.value)}">${esc(p.displayName)} — ${fmt(p.retailRatePerThousand)} / 1,000</option>`).join("");
-    if(items.some(p=>p.value===prior))select.value=prior;
-    // Require the customer to choose a priced service explicitly; never silently preselect a plan.
+    select.innerHTML='<option value="">Choose a social-media service</option>'+items.map(p=>{
+      const priced=p.priceAvailable===true&&Number.isFinite(Number(p.retailRatePerThousand))&&Number(p.retailRatePerThousand)>0;
+      const priceLabel=priced?` — ${fmt(p.retailRatePerThousand)} / 1,000`:' — Price unavailable';
+      return `<option value="${esc(p.value)}">${esc(p.displayName)}${priceLabel}</option>`;
+    }).join("");
+    if(items.some(p=>String(p.value)===String(prior)))select.value=prior;
+    // Show live supplier services even when the supplier omits API prices, but never enable checkout without verified pricing.
     onSparkleSocialPlanChange(false);
     if(!items.length&&socialPlans.length){
-      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No priced services match your filter. Try another search or refresh the catalogue.";
+      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No services match your search or platform filter. Try another filter or refresh the catalogue.";
     }
   }
   async function loadSparkleSocialPlans(force){
@@ -7608,12 +7611,17 @@ function toggleSparkleMoreServices(){
     try{
       const data=await call({action:"social_plans"});
       if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"No social-media plans are available right now.");
-      socialPlans=data.plans.filter(p=>p && p.priceAvailable===true && Number.isFinite(Number(p.apiPricePerThousand)) && Number(p.apiPricePerThousand)>0 && Number.isFinite(Number(p.retailRatePerThousand)) && Number(p.retailRatePerThousand)>0);
+      // Keep every real supplier plan visible, including plans whose API-price field is missing.
+      // This is display-only: quoteSparkleSocialOrder and the server both reject unpriced plans.
+      socialPlans=data.plans.filter(p=>p && p.value!=null && String(p.value).trim()!=="" && p.displayName!=null && String(p.displayName).trim()!=="");
       const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
       renderSparkleSocialPlanOptions();
+      const pricedCount=socialPlans.filter(p=>p.priceAvailable===true&&Number.isFinite(Number(p.apiPricePerThousand))&&Number(p.apiPricePerThousand)>0&&Number.isFinite(Number(p.retailRatePerThousand))&&Number(p.retailRatePerThousand)>0).length;
       if(!socialPlans.length){
-        if(info)info.textContent="The supplier catalogue loaded, but Sparkle could not verify a usable price for its social-media services. Tap Refresh later. No money has been reserved.";
-        setResult("sparkleSocialResult","error","Live prices unavailable","Sparkle could not verify a live price for the currently listed social-media services. No money has been reserved. Please refresh later.");
+        if(info)info.textContent="GSubz returned no usable social-media service names. Tap Refresh to try again. No money has been reserved.";
+      }else if(!pricedCount){
+        if(info)info.textContent=`${socialPlans.length.toLocaleString("en-NG")} live services loaded. GSubz has not supplied verified API prices, so checkout is disabled until pricing is fixed. No money has been reserved.`;
+        setResult("sparkleSocialResult","error","Supplier pricing needs attention",`${socialPlans.length.toLocaleString("en-NG")} services are visible, but GSubz did not return verified API prices. Sparkle will not guess a cost or reserve your money. Please try again after the supplier pricing feed is corrected.`);
       }
     }catch(e){
       if(info)info.textContent=e.message||"Could not load live plans.";
@@ -7632,8 +7640,10 @@ function toggleSparkleMoreServices(){
   function onSparkleSocialPlanChange(clearQuote=true){
     const plan=selectedSocialPlan();const info=document.getElementById("sparkleSocialPlanInfo");const help=document.getElementById("sparkleSocialQuantityHelp");
     if(info){
-      if(plan)info.innerHTML=`<strong>${esc(plan.displayName)}</strong><div>Current Sparkle rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div><div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
-      else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"No priced services are available in this view yet. Tap Refresh to check the live catalogue again. If Sparkle cannot verify a price, checkout stays disabled and no money is reserved.";
+      if(plan){
+        const hasVerifiedPrice=plan.priceAvailable===true&&Number.isFinite(Number(plan.apiPricePerThousand))&&Number(plan.apiPricePerThousand)>0&&Number.isFinite(Number(plan.retailRatePerThousand))&&Number(plan.retailRatePerThousand)>0;
+        info.innerHTML=`<strong>${esc(plan.displayName)}</strong>${hasVerifiedPrice?`<div>Current Sparkle rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div>`:'<div><b>Price unavailable</b></div><div>This service is visible, but checkout stays disabled until GSubz supplies a verified API price. No money will be reserved.</div>'}<div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
+      }else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"No live social-media services are available in this view yet. Tap Refresh to check the supplier catalogue again.";
     }
     const qty=document.getElementById("sparkleSocialQuantity");if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
     if(help)help.textContent=plan?`Enter a whole number between ${Number(plan.min||1).toLocaleString("en-NG")} and ${Number(plan.max||1000000).toLocaleString("en-NG")}.`:"Choose a plan to see its permitted range.";
@@ -8032,7 +8042,7 @@ const sparkleAdminMoney = value => '₦' + Number(value || 0).toLocaleString('en
 function sparkleAdminSetVisible(isAdmin){const entry=document.getElementById('sparkleAdminProfileEntry');if(entry)entry.style.display=isAdmin?'flex':'none';if(!isAdmin&&document.getElementById('adminPage')?.classList.contains('active'))showDashPage('profilePage',null);}
 function sparkleAdminNotice(message,type=''){const el=document.getElementById('sparkleAdminNotice');if(el){el.textContent=message;el.className='sparkle-admin-notice'+(type?' '+type:'');}}
 async function sparkleAdminCall(action,payload={}){const {data,error}=await supabaseClient.functions.invoke('sparkle-admin',{body:{action,...payload}});if(error){let message=error.message||'Admin request failed.';try{if(error.context?.json){const j=await error.context.json();message=j.error||message;}}catch(_){}throw new Error(message);}if(!data?.success)throw new Error(data?.error||'Admin request failed.');return data;}
-async function sparkleAdminOpen(){try{await sparkleAdminCall('dashboard');showDashPage('adminPage',null);sparkleAdminNotice('Owner access verified. Loading Sparkle controls…','success');await sparkleAdminRefresh();}catch(e){showDashPage('home',document.querySelector('.sidebar-nav .nav-item'));alert('Sparkle Owner Dashboard: '+(e.message||'Administrator access required.'));}}
+function sparkleAdminOpen(){showDashPage('adminPage',null);sparkleAdminNotice('Verifying administrator access…');sparkleAdminRefresh();}
 async function sparkleAdminRefresh(){try{const data=await sparkleAdminCall('dashboard');document.getElementById('sparkleAdminCustomerCount').textContent=Number(data.stats?.customers||0).toLocaleString('en-NG');document.getElementById('sparkleAdminWalletCount').textContent=Number(data.stats?.wallets||0).toLocaleString('en-NG');document.getElementById('sparkleAdminWalletTotal').textContent=sparkleAdminMoney(data.stats?.totalWalletBalance);document.getElementById('sparkleAdminTxCount').textContent=Number(data.stats?.transactionCount||0).toLocaleString('en-NG');sparkleAdminNotice('Secure admin access confirmed for '+String(data.admin?.email||'your account')+'.','success');if(sparkleAdminCurrentTab==='users')await sparkleAdminLoadUsers(sparkleAdminUserPage);else if(sparkleAdminCurrentTab==='transactions')await sparkleAdminLoadTransactions(sparkleAdminTxPage);else if(sparkleAdminCurrentTab==='audit')await sparkleAdminLoadAudit();else sparkleOwnerEditorPreview();}catch(e){sparkleAdminNotice(e.message||'Unable to load the admin panel.','error');}}
 function sparkleAdminTab(tab,button){sparkleAdminCurrentTab=tab;document.querySelectorAll('#adminPage .sparkle-admin-tabs button').forEach(b=>b.classList.toggle('active',b===button));document.getElementById('sparkleAdminUsersPane').style.display=tab==='users'?'':'none';document.getElementById('sparkleAdminTransactionsPane').style.display=tab==='transactions'?'':'none';document.getElementById('sparkleAdminAuditPane').style.display=tab==='audit'?'':'none';document.getElementById('sparkleAdminEditorPane').style.display=tab==='editor'?'':'none';if(tab==='users')sparkleAdminLoadUsers(1);if(tab==='transactions')sparkleAdminLoadTransactions(1);if(tab==='audit')sparkleAdminLoadAudit();if(tab==='editor')sparkleOwnerEditorPreview();}
 function sparkleAdminEscape(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
