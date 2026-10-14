@@ -2702,7 +2702,7 @@ Privacy Policy
             <div class="sparkle-social-hero-art" aria-hidden="true"><span>◎</span><b>▶</b><i>♡</i><em>↗</em></div>
           </div>
           <div class="sparkle-digital-card">
-            <div class="sparkle-digital-section-title"><div><h2>Choose a service</h2><p>Prices and plans load from GSubz. Availability can change.</p></div><button type="button" class="sparkle-refresh-button" onclick="loadSparkleSocialPlans(true)">↻ Refresh</button></div>
+            <div class="sparkle-digital-section-title"><div><h2>Choose a service</h2><p>Prices and plans load from Sparkle’s live supplier feed. Availability can change.</p></div><button type="button" class="sparkle-refresh-button" onclick="loadSparkleSocialPlans(true)">↻ Refresh</button></div>
             <div class="sparkle-platform-filters" id="sparkleSocialPlatformFilters" role="group" aria-label="Filter social-media platform">
               <button type="button" class="active" data-platform="all" onclick="filterSparkleSocialPlans('all',this)">All</button>
               <button type="button" data-platform="instagram" onclick="filterSparkleSocialPlans('instagram',this)">Instagram</button>
@@ -2717,7 +2717,7 @@ Privacy Policy
             <input id="sparkleSocialSearch" class="sparkle-digital-input" type="search" placeholder="Search followers, likes, views…" oninput="renderSparkleSocialPlanOptions()" autocomplete="off">
             <label class="sparkle-digital-label" for="sparkleSocialPlan">Available service</label>
             <select id="sparkleSocialPlan" class="sparkle-digital-input" onchange="onSparkleSocialPlanChange()"><option value="">Loading live plans…</option></select>
-            <div class="sparkle-social-selected-plan" id="sparkleSocialPlanInfo"><span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading live GSubz plans…</div>
+            <div class="sparkle-social-selected-plan" id="sparkleSocialPlanInfo"><span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current Sparkle plans and prices…</div>
             <div class="sparkle-digital-fields">
               <div><label class="sparkle-digital-label" for="sparkleSocialQuantity">Quantity</label><input id="sparkleSocialQuantity" class="sparkle-digital-input" type="number" inputmode="numeric" min="1" step="1" value="100" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help" id="sparkleSocialQuantityHelp">Choose a plan to see its permitted range.</small></div>
               <div><label class="sparkle-digital-label" for="sparkleSocialLink">Profile or post link</label><input id="sparkleSocialLink" class="sparkle-digital-input" type="url" placeholder="https://…" inputmode="url" autocomplete="url" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help">Use the exact public profile, post or video link requested by the selected service.</small></div>
@@ -2740,15 +2740,15 @@ Privacy Policy
           <div class="sparkle-digital-card">
             <div class="sparkle-digital-section-title"><div><h2>Compose your message</h2><p>Use a sender name your business is authorized to use.</p></div><span class="sparkle-digital-status-pill">Live pricing</span></div>
             <label class="sparkle-digital-label" for="sparkleSmsSender">Sender ID</label>
-            <input id="sparkleSmsSender" class="sparkle-digital-input" maxlength="11" minlength="3" pattern="[A-Za-z]{3,11}" placeholder="e.g. MyShop" autocomplete="off" oninput="invalidateSparkleSmsQuote()">
-            <small class="sparkle-digital-help">3–11 letters only — no spaces, digits or symbols. Banks, payment companies, telecoms and government bodies cannot be used as sender names.</small>
+            <input id="sparkleSmsSender" class="sparkle-digital-input" value="Sparkle" maxlength="11" minlength="3" pattern="[A-Za-z]{3,11}" readonly aria-readonly="true" autocomplete="off">
+            <small class="sparkle-digital-help">Messages use Sparkle as the sender name. Delivery depends on sender-ID approval and recipient-network rules.</small>
             <label class="sparkle-digital-label" for="sparkleSmsRecipients">Recipient numbers</label>
             <textarea id="sparkleSmsRecipients" class="sparkle-digital-input sparkle-digital-textarea" rows="4" placeholder="08031234567, 08021234568&#10;You can separate up to 5,000 unique Nigerian numbers with commas or new lines." oninput="invalidateSparkleSmsQuote()"></textarea>
             <div class="sparkle-sms-count-row"><span>Supported format: 080…, 234… or +234…</span><strong id="sparkleSmsRecipientCount">0 recipients</strong></div>
             <label class="sparkle-digital-label" for="sparkleSmsMessage">Message</label>
             <textarea id="sparkleSmsMessage" class="sparkle-digital-input sparkle-digital-textarea" rows="5" maxlength="905" placeholder="Type the SMS you want to send…" oninput="invalidateSparkleSmsQuote()"></textarea>
             <div class="sparkle-sms-count-row"><span>Maximum 905 characters</span><strong id="sparkleSmsCharacterCount">0 / 905</strong></div>
-            <div class="sparkle-sms-rules"><strong>Please review GSubz network rules</strong><p>Messages may be blocked for bank or payment-company names, international brands such as WhatsApp or Facebook, OTP or verification-code wording, bank credit/debit alert wording, or long digit sequences. GSubz notes that years such as 2026 are allowed and amounts should use commas (for example, 5,000). DND numbers may not be delivered.</p></div>
+            <div class="sparkle-sms-rules"><strong>Please review Sparkle Bulk SMS rules</strong><p>Networks may block messages containing bank or payment-company names, international brands such as WhatsApp or Facebook, OTP or verification-code wording, bank credit/debit alert wording, or long digit sequences. A year such as 2026 is allowed, and amounts should use commas (for example, 5,000). Messages to DND numbers may not be delivered. These restrictions apply before delivery, and Sparkle cannot guarantee delivery to every number.</p></div>
             <button type="button" class="btn primary full sparkle-digital-primary" onclick="quoteSparkleBulkSms()">Calculate price</button>
             <div id="sparkleSmsQuote" class="sparkle-digital-quote" hidden aria-live="polite"></div>
             <div class="sparkle-digital-policy"><span aria-hidden="true">🛡️</span><p>Only message recipients who have agreed to receive communication from your business. Do not use Bulk SMS for unsolicited spam, impersonation, fraudulent alerts or verification-code delivery.</p></div>
@@ -7528,24 +7528,27 @@ function toggleSparkleMoreServices(){
     const prior=select.value;const items=visibleSocialPlans();
     select.innerHTML='<option value="">Choose a social-media service</option>'+items.map(p=>`<option value="${esc(p.value)}">${esc(p.displayName)} — ${fmt(p.retailRatePerThousand)} / 1,000</option>`).join("");
     if(items.some(p=>p.value===prior))select.value=prior;
-    if(!select.value&&items.length)select.value=items[0].value;
+    // Require the customer to choose a priced service explicitly; never silently preselect a plan.
     onSparkleSocialPlanChange(false);
     if(!items.length&&socialPlans.length){
-      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No live plans match your filter. Try another search or refresh the catalogue.";
+      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No priced services match your filter. Try another search or refresh the catalogue.";
     }
   }
   async function loadSparkleSocialPlans(force){
     if(socialLoading)return;
     if(socialPlans.length&&!force){renderSparkleSocialPlanOptions();return;}
     socialLoading=true;setLoading("sparkleSocialResult","Loading the live social-media catalogue…");
-    const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.innerHTML='<span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current plans and prices from GSubz…';
+    const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.innerHTML='<span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current Sparkle plans and prices…';
     try{
       const data=await call({action:"social_plans"});
       if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"No social-media plans are available right now.");
-      socialPlans=data.plans;
+      socialPlans=data.plans.filter(p=>p && p.priceAvailable===true && Number.isFinite(Number(p.apiPricePerThousand)) && Number(p.apiPricePerThousand)>0 && Number.isFinite(Number(p.retailRatePerThousand)) && Number(p.retailRatePerThousand)>0);
       const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
       renderSparkleSocialPlanOptions();
-      if(info&&!socialPlans.length)info.textContent="GSubz has no social-media plans available at the moment. Please check again later.";
+      if(!socialPlans.length){
+        if(info)info.textContent="Sparkle has no social-media services with a verified price available right now. Please refresh later. No money has been reserved.";
+        setResult("sparkleSocialResult","error","Live prices unavailable","Sparkle could not verify a live price for the currently listed social-media services. No money has been reserved. Please refresh later.");
+      }
     }catch(e){
       if(info)info.textContent=e.message||"Could not load live plans.";
       setResult("sparkleSocialResult","error","Catalogue unavailable",e.message||"Could not load live social-media prices.");
@@ -7576,7 +7579,8 @@ function toggleSparkleMoreServices(){
   }
   async function quoteSparkleSocialOrder(){
     const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);
-    if(!plan){setResult("sparkleSocialResult","error","Choose a service","Select an available social-media plan first.");return;}
+    if(!plan){setResult("sparkleSocialResult","error","Choose a service","Select a price-confirmed social-media plan first.");return;}
+    if(plan.priceAvailable!==true||!Number.isFinite(Number(plan.apiPricePerThousand))||Number(plan.apiPricePerThousand)<=0){setResult("sparkleSocialResult","error","Live price unavailable","Sparkle could not verify a live supplier price. No money has been reserved. Choose another priced service or refresh later.");return;}
     if(!Number.isSafeInteger(quantity)||quantity<Number(plan.min||1)||quantity>Number(plan.max||1000000)){setResult("sparkleSocialResult","error","Check quantity",`Choose a whole number between ${plan.min} and ${plan.max}.`);return;}
     socialQuote=null;setLoading("sparkleSocialResult","Checking the current plan price…");
     try{
@@ -7639,7 +7643,7 @@ function toggleSparkleMoreServices(){
       if(data.success!==true)throw new Error(data.error||"Could not calculate the SMS price.");
       smsQuote={...data,sender,recipients,message};
       const box=document.getElementById("sparkleSmsQuote");if(!box)return;
-      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Bulk SMS estimate</div><div class="sparkle-quote-line"><span>Valid unique recipients</span><strong>${Number(data.recipientCount).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Pages per recipient</span><strong>${Number(data.pagesPerRecipient)}</strong></div><div class="sparkle-quote-line"><span>Estimated delivered pages</span><strong>${(Number(data.recipientCount)*Number(data.pagesPerRecipient)).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Sparkle may temporarily reserve up to ${fmt(data.maximumReserve)}. After GSubz confirms delivery, your final charge is based on the supplier’s actual charge; unused reservation is returned. ${Number(data.skippedCount)>0?`${Number(data.skippedCount)} invalid or duplicate entry/entries will be skipped from the estimate. `:""}Message content and sender ID remain subject to the networks’ restrictions.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleBulkSmsPurchase()">Continue to secure checkout</button>`;
+      box.hidden=false;box.innerHTML=`<div class="sparkle-quote-topline">Bulk SMS estimate</div><div class="sparkle-quote-line"><span>Valid unique recipients</span><strong>${Number(data.recipientCount).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-line"><span>Pages per recipient</span><strong>${Number(data.pagesPerRecipient)}</strong></div><div class="sparkle-quote-line"><span>Estimated delivered pages</span><strong>${(Number(data.recipientCount)*Number(data.pagesPerRecipient)).toLocaleString("en-NG")}</strong></div><div class="sparkle-quote-total"><span>Estimated price</span><strong>${fmt(data.estimatedRetail)}</strong></div><p class="sparkle-quote-note">Sparkle may temporarily reserve up to ${fmt(data.maximumReserve)}. After the SMS network confirms delivery, your final charge is based on the confirmed supplier cost; unused reservation is returned to your Sparkle wallet. ${Number(data.skippedCount)>0?`${Number(data.skippedCount)} invalid or duplicate entry/entries will be skipped from the estimate. `:""}Message content and sender ID remain subject to the networks’ restrictions.</p><button type="button" class="btn primary full" style="margin-top:12px" onclick="prepareSparkleBulkSmsPurchase()">Continue to secure checkout</button>`;
       const res=document.getElementById("sparkleSmsResult");if(res)res.hidden=true;
     }catch(e){setResult("sparkleSmsResult","error","Could not calculate price",e.message||"Check your sender name, recipients and message.");}
   }
@@ -7771,7 +7775,7 @@ function toggleSparkleMoreServices(){
     {symbol:"XRP",name:"XRP",id:"ripple",icon:"✕"},
     {symbol:"BCH",name:"Bitcoin Cash",id:"bitcoin-cash",icon:"Ƀ"}
   ];
-  const BUY_MARGIN_NGN_PER_USD = 40;
+  // Sparkle crypto pricing uses its pricing policy separately; no flat per-USD add-on is applied here.
   const PRICE_REFRESH_MS = 60 * 1000;
   const FX_REFRESH_MS = 6 * 60 * 60 * 1000;
   const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:""};
@@ -7779,11 +7783,11 @@ function toggleSparkleMoreServices(){
   const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const naira = value => Number.isFinite(Number(value)) ? "₦" + Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}) : "₦ —";
   const coinQuantity = value => Number.isFinite(Number(value)) ? Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:8}) : "—";
-  function priceFor(asset, mode=state.mode){
+  function priceFor(asset){
     const p=state.prices[asset.symbol];
     if(!p || !Number.isFinite(p.usd) || !Number.isFinite(state.fxNgn)) return null;
-    const fx = state.fxNgn + (mode === "buy" ? BUY_MARGIN_NGN_PER_USD : 0);
-    return p.usd * fx;
+    // Show the live market × USD/NGN reference rate. The former flat ₦40/USD markup is removed.
+    return p.usd * state.fxNgn;
   }
   function renderTicker(){
     const primary=$("sparkleCryptoTickerPrimary"), duplicate=$("sparkleCryptoTickerDuplicate");
