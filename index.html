@@ -6805,6 +6805,8 @@ function showReceipt(result){
     <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id)}</strong></div>
     ${d.customer?`<div class="receipt-row"><span>Customer</span><strong>${safe(d.customer)}</strong></div>`:""}
     ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${safe(d.provider)}</strong></div>`:""}
+    ${d.targetLink?`<div class="receipt-row"><span>Target link</span><strong style="overflow-wrap:anywhere;word-break:break-word">${safe(d.targetLink)}</strong></div>`:""}
+    ${d.quantity!==undefined&&d.quantity!==null&&d.quantity!==""?`<div class="receipt-row"><span>Quantity</span><strong>${safe(Number(d.quantity).toLocaleString("en-NG"))}</strong></div>`:""}
     ${d.meter?`<div class="receipt-row"><span>Meter / Smartcard</span><strong>${safe(d.meter)}</strong></div>`:""}
     ${d.type_detail||d.plan||d.type?`<div class="receipt-row"><span>Type / Plan</span><strong>${safe(d.type_detail||d.plan||(d.type==="credit"||d.type==="debit"?"":d.type))}</strong></div>`:""}
     ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${safe(d.phone)}</strong></div>`:""}
@@ -6829,8 +6831,10 @@ function showTransactionReceipt(encoded){
       phone:m.phone||m.phone_number||m.recipient_phone||"",
       provider:m.provider||m.provider_service||m.serviceID||m.service_id||"",
       meter:m.meter||m.meter_number||m.customerID||m.customer_id||m.smartcard||m.iuc||"",
-      plan:m.plan||m.plan_name||m.variation_code||"",
-      type_detail:m.plan||m.plan_name||m.provider_service||m.service_type||"",
+      plan:m.planName||m.plan||m.plan_name||m.variation_code||"",
+      type_detail:m.planName||m.plan_name||m.plan||m.provider_service||m.service_type||"",
+      targetLink:m.link||m.targetLink||m.target_link||"",
+      quantity:m.quantity??"",
       token:m.token||m.electricity_token||m.pin||"",
       status:status||"unknown"
     };
@@ -7609,6 +7613,16 @@ function toggleSparkleMoreServices(){
     box.className = "sparkle-digital-result " + (kind || "");
     box.innerHTML = `<strong>${esc(title || "Sparkle update")}</strong><div>${esc(message || "")}</div>` + (reference ? `<div style="font-size:11px;margin-top:8px;opacity:.8">Reference: ${esc(reference)}</div>` : "") + (kind === "pending" && reference ? `<button type="button" onclick="checkSparkleDigitalOrder('${esc(reference)}','${id}')">Check order status</button>` : "");
   }
+  function attachSocialReceiptButton(targetId, receipt){
+    const box=document.getElementById(targetId);if(!box||!receipt)return;
+    const existing=box.querySelector('[data-social-receipt-action="true"]');if(existing)existing.remove();
+    const button=document.createElement("button");
+    button.type="button";button.dataset.socialReceiptAction="true";
+    button.textContent="Generate receipt";
+    button.setAttribute("aria-label","Generate Social Media Market transaction receipt");
+    button.addEventListener("click",()=>showReceipt(receipt));
+    box.appendChild(button);
+  }
   function setLoading(id, text){
     const box=document.getElementById(id);if(!box)return;box.hidden=false;box.className="sparkle-digital-result";box.innerHTML=`<span class="sparkle-digital-spinner" aria-hidden="true"></span>${esc(text)}`;
   }
@@ -7796,6 +7810,9 @@ function toggleSparkleMoreServices(){
         if(pending.kind==="sms"){
           const rec=document.getElementById("sparkleSmsRecipients");const msgBox=document.getElementById("sparkleSmsMessage");if(rec)rec.value="";if(msgBox)msgBox.value="";invalidateSparkleSmsQuote();
         }else{
+          const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
+          const receipt={service:"Social Media Market",reference:data.reference||"—",status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"GSubz",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0};
+          attachSocialReceiptButton(target,receipt);
           const link=document.getElementById("sparkleSocialLink");if(link)link.value="";invalidateSparkleSocialQuote();
         }
         activeDigitalRequest=null;
@@ -7830,7 +7847,16 @@ function toggleSparkleMoreServices(){
     try{
       const data=await call({action:"check_order",reference});
       if(data.status==="pending")setResult(targetId,"pending","Still pending",data.error||data.message||"The supplier has not confirmed yet. Please check again shortly.",reference);
-      else if(data.status==="successful")setResult(targetId,"success","Order confirmed",data.message||`Order completed. Final charge: ${fmt(data.amount)}.`,reference);
+      else if(data.status==="successful"){
+        setResult(targetId,"success","Order confirmed",data.message||`Order completed. Final charge: ${fmt(data.amount)}.`,reference);
+        if(targetId==="sparkleSocialResult"){
+          const pending=activeDigitalRequest&&activeDigitalRequest.kind==="social"?activeDigitalRequest:null;
+          if(pending&&pending.payload){
+            const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
+            attachSocialReceiptButton(targetId,{service:"Social Media Market",reference:data.reference||reference,status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"GSubz",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0});
+          }
+        }
+      }
       else setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order status",data.message||data.error||"The order has been resolved.",reference);
       if(data.status==="successful"||data.status==="refunded"){if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}}
     }catch(e){setResult(targetId,"pending","Status check unavailable",e.message||"Try the status check again shortly. Do not place a duplicate order.",reference);}
