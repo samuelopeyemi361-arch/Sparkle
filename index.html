@@ -8202,5 +8202,38 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
 })();
 </script>
 
+
+
+<script id="sparkle-wallet-activity-refresh">
+/* Refresh the signed-in user's wallet and Recent Transactions after returning from a bank/payment app.
+   This only reads the existing wallet/ledger; it never credits or changes money. */
+(function(){
+  let refreshing=false;
+  let lastRefreshAt=0;
+  async function refreshWalletActivity(force){
+    if(document.visibilityState!=="visible")return;
+    const dashboard=document.getElementById("dashboard");
+    if(!dashboard||!dashboard.classList.contains("active"))return;
+    const now=Date.now();
+    if(refreshing||(!force&&now-lastRefreshAt<12000))return;
+    refreshing=true;
+    lastRefreshAt=now;
+    try{
+      const auth=await supabaseClient.auth.getUser();
+      const userId=auth?.data?.user?.id;
+      if(auth?.error||!userId)return;
+      await Promise.allSettled([loadWallet(userId),loadTransactions(userId)]);
+    }catch(error){
+      console.warn("Sparkle wallet activity refresh skipped:",error);
+    }finally{
+      refreshing=false;
+    }
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")void refreshWalletActivity(true);});
+  window.addEventListener("focus",()=>void refreshWalletActivity(true));
+  window.setInterval(()=>void refreshWalletActivity(false),15000);
+})();
+</script>
+
 </body>
 </html>
