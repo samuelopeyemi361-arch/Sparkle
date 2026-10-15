@@ -1098,6 +1098,16 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 #transactions .tx[role="button"]:focus-visible,#allTransactions .tx[role="button"]:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 .receipt-actions button{min-width:112px}
 
+
+/* Sparkle email verification: branded six-digit code step */
+.sparkle-email-otp-card{margin:8px 0 16px;padding:20px;border:1px solid #dbe7ff;border-radius:18px;background:linear-gradient(145deg,#f5f9ff,#ffffff)}
+.sparkle-email-otp-mark{width:46px;height:46px;display:flex;align-items:center;justify-content:center;border-radius:14px;background:linear-gradient(135deg,#0b5cff,#4b8bff);color:#fff;font-size:23px;font-weight:900;box-shadow:0 8px 20px rgba(11,92,255,.2);margin-bottom:12px}
+.sparkle-email-otp-card h3{margin:0 0 7px;color:#10234d;font-size:19px}
+.sparkle-email-otp-card p{margin:0 0 14px;color:#64748b;font-size:13px;line-height:1.55}
+#emailVerificationCode{width:100%;height:58px;border:1px solid #cbdaf5;border-radius:13px;background:#fff;text-align:center;letter-spacing:.42em;font-size:25px;font-weight:850;color:#0b5cff;padding:10px 12px;box-shadow:inset 0 1px 2px rgba(7,27,77,.03)}
+#emailVerificationCode:focus{outline:3px solid rgba(11,92,255,.13);border-color:#0b5cff}
+.sparkle-email-otp-resend{display:block;margin:12px auto 0;border:0;background:transparent;color:#0b5cff;font-size:13px;font-weight:800;padding:8px;cursor:pointer}
+.sparkle-email-otp-resend:disabled{opacity:.55;cursor:wait}
 </style>
 
 <style id="sparkle-support-widget-styles">
@@ -3412,7 +3422,7 @@ spellcheck="false">
 </div>
 
 
-<div class="field">
+<div class="field" id="emailField">
 
 <label>
 Email
@@ -3428,7 +3438,7 @@ autocomplete="email">
 </div>
 
 
-<div class="field">
+<div class="field" id="passwordField">
 
 <label>
 Password
@@ -3465,6 +3475,15 @@ spellcheck="false">
 </div>
 
 
+<div class="sparkle-email-otp-card" id="emailOtpField" style="display:none" aria-live="polite">
+  <div class="sparkle-email-otp-mark" aria-hidden="true">✦</div>
+  <h3>Verify your email</h3>
+  <p>We’ve sent a six-digit code to your email address. Enter it below to secure your Sparkle account. Never share this code with anyone.</p>
+  <label for="emailVerificationCode" style="display:block;font-size:13px;font-weight:800;color:#243858;margin-bottom:8px">Six-digit verification code</label>
+  <input id="emailVerificationCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="000000" aria-label="Six-digit email verification code" disabled>
+  <button type="button" id="resendSparkleEmailCodeButton" class="sparkle-email-otp-resend" onclick="resendSparkleEmailCode()" disabled>Resend code</button>
+</div>
+
 <button
 class="btn primary full"
 id="authButton">
@@ -3474,7 +3493,7 @@ Login
 </form>
 
 
-<p style="text-align:center;font-size:14px;color:#64748b;margin-top:18px">
+<p id="authSwitchRow" style="text-align:center;font-size:14px;color:#64748b;margin-top:18px">
 
 <span id="switchText">
 Don't have an account?
@@ -3737,13 +3756,63 @@ SUPABASE_KEY
    ===================================================== */
 
 let authMode = "login";
+let emailVerificationPending = false;
+let pendingVerificationEmail = "";
+let sparkleResendCooldown = false;
 
+function setSparkleEmailOtpStep(enabled){
+  emailVerificationPending = enabled;
+  const ids = ["firstNameField","lastNameField","phoneField","usernameField","emailField","passwordField","referralField"];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) el.style.display = enabled ? "none" : ((id === "emailField" || id === "passwordField") ? "block" : (id === "firstNameField" || id === "lastNameField" || id === "phoneField" || id === "usernameField" || id === "referralField") ? (authMode === "signup" ? "block" : "none") : "none");
+  });
+  document.getElementById("email").required = !enabled;
+  document.getElementById("password").required = !enabled;
+  document.getElementById("username").required = !enabled && authMode === "signup";
+  const otpField = document.getElementById("emailOtpField");
+  const otpInput = document.getElementById("emailVerificationCode");
+  const resend = document.getElementById("resendSparkleEmailCodeButton");
+  otpField.style.display = enabled ? "block" : "none";
+  otpInput.disabled = !enabled;
+  otpInput.required = enabled;
+  if(!enabled){ otpInput.value = ""; pendingVerificationEmail = ""; }
+  document.getElementById("authSwitchRow").style.display = enabled ? "none" : "block";
+  document.getElementById("authTitle").textContent = enabled ? "Verify your Sparkle Email" : (authMode === "signup" ? "Create Sparkle Account" : "Login to Sparkle");
+  document.getElementById("authButton").textContent = enabled ? "Verify email code" : (authMode === "signup" ? "Create Account" : "Login");
+  if(resend){ resend.disabled = !enabled || sparkleResendCooldown; }
+  if(enabled) setTimeout(()=>otpInput.focus(),50);
+}
+
+async function resendSparkleEmailCode(){
+  const button = document.getElementById("resendSparkleEmailCodeButton");
+  if(!pendingVerificationEmail || sparkleResendCooldown) return;
+  button.disabled = true;
+  button.textContent = "Sending code…";
+  try{
+    const {error} = await supabaseClient.auth.resend({type:"signup", email:pendingVerificationEmail});
+    if(error) throw error;
+    showMessage("A new verification code has been sent. Check your inbox and spam folder.","success");
+    sparkleResendCooldown = true;
+    button.textContent = "Resend available in 60 seconds";
+    setTimeout(()=>{ sparkleResendCooldown = false; if(emailVerificationPending){button.disabled=false;button.textContent="Resend code";} },60000);
+  }catch(error){
+    showMessage(error.message || "Could not resend the code yet. Please wait a moment and try again.","error");
+    button.disabled = false;
+    button.textContent = "Resend code";
+  }
+}
 
 function openAuth(mode){
 
 authMode = mode;
+setSparkleEmailOtpStep(false);
 
-document
+ document.getElementById("email").readOnly = false;
+ document.getElementById("email").value = "";
+ document.getElementById("password").value = "";
+
+ document
 .getElementById("authModal")
 .classList.add("show");
 
@@ -3820,6 +3889,8 @@ document
 .getElementById("authModal")
 .classList.remove("show");
 
+setSparkleEmailOtpStep(false);
+document.getElementById("email").readOnly = false;
 clearMessage();
 
 }
@@ -3901,6 +3972,19 @@ authMode === "signup"
 
 try{
 
+if(emailVerificationPending){
+  const token = document.getElementById("emailVerificationCode").value.trim();
+  if(!/^\d{6}$/.test(token)) throw new Error("Enter the six-digit code sent to your email.");
+  const {data,error} = await supabaseClient.auth.verifyOtp({email:pendingVerificationEmail, token, type:"signup"});
+  if(error) throw error;
+  emailVerificationPending = false;
+  showMessage("Email verified successfully. Welcome to Sparkle!","success");
+  setTimeout(()=>{
+    closeAuth();
+    if(data && data.user) loadUser();
+  },500);
+  return;
+}
 
 /* ================= LOGIN ================= */
 
@@ -3918,6 +4002,11 @@ password:password
 
 if(error) throw error;
 
+// Defense in depth: never continue into Sparkle without a confirmed email.
+if(!data.user || !data.user.email_confirmed_at){
+  await supabaseClient.auth.signOut();
+  throw new Error("Please verify your email address before logging in. Check your inbox for Sparkle’s verification code.");
+}
 
 showMessage(
 "Login successful.",
@@ -4120,33 +4209,16 @@ profileError
 }
 
 
-/* SESSION */
-
+/* EMAIL VERIFICATION: require a code before allowing account access. */
 if(data.session){
-
-showMessage(
-"Account created successfully.",
-"success"
-);
-
-
-setTimeout(()=>{
-
-closeAuth();
-
-loadUser();
-
-},700);
-
-
-}else{
-
-showMessage(
-"Account created. Check your email to verify your account.",
-"success"
-);
-
+  await supabaseClient.auth.signOut();
+  throw new Error("Email verification is not being enforced by the authentication settings. Please ensure Supabase Confirm email is enabled before allowing registrations.");
 }
+
+pendingVerificationEmail = email;
+document.getElementById("email").readOnly = true;
+setSparkleEmailOtpStep(true);
+showMessage("Account created. Check your inbox for Sparkle’s six-digit verification code.","success");
 
 }catch(error){
 
@@ -4160,10 +4232,7 @@ error.message ||
 
 button.disabled = false;
 
-button.textContent =
-authMode === "signup"
-? "Create Account"
-: "Login";
+button.textContent = emailVerificationPending ? "Verify email code" : (authMode === "signup" ? "Create Account" : "Login");
 
 }
 
