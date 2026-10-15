@@ -6573,6 +6573,9 @@ async function confirmTransactionPIN(){
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
     if(error) throw new Error(await sparkleFunctionErrorMessage(error,"Could not verify your transaction PIN."));
     if(!data?.success) throw new Error(String(data?.message||data?.error||"Transaction PIN verification failed."));
+    if(currentService==="cryptoTrade" && window.sparkleCryptoAwaitingPin){
+      closePinModal();window.sparkleCryptoContinueAfterPin?.();return;
+    }
     closePinModal();
     if(currentService==="rechargepin" && window.sparkleRechargePinPending){
       await confirmRechargePinPurchase(pin);
@@ -7175,14 +7178,31 @@ document.addEventListener("DOMContentLoaded",()=>{
    screen.scrollTop=0;
    const content=document.getElementById('sparkle-summary-screen-content');
    if(content) content.innerHTML='';
-   try { sessionStorage.removeItem('sparklePendingPurchase'); } catch(e) {}
-   // Remove the dedicated confirmation URL when leaving the review page.
+   const title=document.querySelector('.sparkle-summary-top h2');if(title)title.textContent='Review your purchase';
+   try { sessionStorage.removeItem('sparklePendingPurchase'); sessionStorage.removeItem('sparkleDedicatedReview'); } catch(e) {}
    try {
      const params=new URLSearchParams(window.location.search);
-     if(params.get('page')==='confirm') window.history.replaceState({},'',(window.sparkleSummaryBaseUrl||window.location.pathname));
+     if(['confirm','crypto-review','order-review'].includes(params.get('page'))) window.history.replaceState({},'',(window.sparkleSummaryBaseUrl||window.location.pathname+window.location.hash));
    } catch(e) {}
    if(restoreScroll) window.scrollTo({top:Number(window.sparkleSummaryReturnScroll||0),behavior:'auto'});
  }
+ window.sparkleCloseDedicatedReview=closeReview;
+ window.sparkleShowLogoLoading=function(caption){const roll=document.getElementById('sparkle-continue-roll');if(!roll)return;const text=roll.querySelector('.sparkle-roll-caption');if(text)text.textContent=caption||'Loading Sparkle…';roll.classList.add('is-visible');roll.setAttribute('aria-hidden','false');};
+ window.sparkleHideLogoLoading=function(){const roll=document.getElementById('sparkle-continue-roll');if(roll){roll.classList.remove('is-visible');roll.setAttribute('aria-hidden','true');}};
+ window.sparkleShowDedicatedReview=function(title,html,pageKey,storageData){
+   if(!screen)return;
+   window.sparkleSummaryReturnScroll=window.scrollY||0;
+   window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+   const data={title:String(title||'Review'),html:String(html||''),pageKey:String(pageKey||'review'),storageData:storageData||null};
+   try{sessionStorage.setItem('sparkleDedicatedReview',JSON.stringify(data));}catch(e){}
+   window.sparkleShowLogoLoading('Preparing your '+String(title||'review').toLowerCase()+'…');
+   try{window.history.pushState({sparkleDedicatedReview:true},'',window.location.pathname+'?page='+encodeURIComponent(data.pageKey)+window.location.hash);}catch(e){}
+   setTimeout(()=>{
+     const heading=document.querySelector('.sparkle-summary-top h2');if(heading)heading.textContent=data.title;
+     const content=document.getElementById('sparkle-summary-screen-content');if(content)content.innerHTML=data.html;
+     screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');window.sparkleHideLogoLoading();
+   },320);
+ };
  window.sparkleConfirmPurchase=function(){closeReview(false);openPinForPurchase();};
  document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
  window.addEventListener('popstate',()=>{if(screen?.classList.contains('is-open'))closeReview(true);});
@@ -7205,6 +7225,16 @@ document.addEventListener("DOMContentLoaded",()=>{
        const markup=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${label}</div></div></div><div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service||'')}</strong></div><div class="summary-line"><span>${service==='cable'?'TV provider':'Network'}</span><strong>${escapeHtml(p.network||'')}</strong></div>${service==='data'?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||'')}</strong></div>`:''}<div class="summary-line"><span>${service==='cable'?'Decoder / IUC number':'Recipient Phone'}</span><strong>${escapeHtml(p.phone||'')}</strong></div><div class="summary-line"><span>${service==='data'?'Data plan':service==='cable'?'Subscription plan':'Airtime amount'}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(parsed.purchase.total||p.amount)}</strong></div><button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==='cable'?'Confirm & Pay':service==='data'?'Confirm & Buy':'Confirm & Buy Airtime'}</button>`;
        const content=document.getElementById('sparkle-summary-screen-content');
        if(content){content.innerHTML=markup;screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');}
+     }
+   }
+   const reviewParams=new URLSearchParams(window.location.search);
+   const dedicatedSaved=sessionStorage.getItem('sparkleDedicatedReview');
+   if(dedicatedSaved && ['crypto-review','order-review'].includes(reviewParams.get('page'))){
+     const savedReview=JSON.parse(dedicatedSaved);
+     if(savedReview && savedReview.pageKey===reviewParams.get('page')){
+       const heading=document.querySelector('.sparkle-summary-top h2');if(heading)heading.textContent=String(savedReview.title||'Review');
+       const content=document.getElementById('sparkle-summary-screen-content');if(content)content.innerHTML=String(savedReview.html||'');
+       screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');
      }
    }
  } catch(e) {}
@@ -7597,6 +7627,11 @@ function toggleSparkleMoreServices(){
   let socialLoading = false;
   let smsLoading = false;
   let activeDigitalRequest = null;
+  let socialReviewPending = null;
+  try{
+    const savedReview=JSON.parse(sessionStorage.getItem("sparkleDedicatedReview")||"null");
+    if(savedReview?.pageKey==="order-review"&&savedReview?.storageData?.service==="socialMarket"&&savedReview.storageData.pending){socialReviewPending=savedReview.storageData.pending;}
+  }catch(_){}
 
   async function call(payload){
     const result = await supabaseClient.functions.invoke(FUNCTION_NAME, {body:payload});
@@ -7663,6 +7698,7 @@ function toggleSparkleMoreServices(){
     if(socialLoading)return;
     if(socialPlans.length&&!force){renderSparkleSocialPlanOptions();return;}
     socialLoading=true;setLoading("sparkleSocialResult","Loading the live social-media catalogue…");
+    if(force||!socialPlans.length)window.sparkleShowLogoLoading?.("Loading Social Media Market…");
     const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.innerHTML='<span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current Sparkle plans and prices…';
     try{
       const data=await call({action:"social_plans"});
@@ -7682,7 +7718,7 @@ function toggleSparkleMoreServices(){
     }catch(e){
       if(info)info.textContent=e.message||"Could not load live plans.";
       setResult("sparkleSocialResult","error","Catalogue unavailable",e.message||"Could not load live social-media prices.");
-    }finally{socialLoading=false;}
+    }finally{socialLoading=false;window.sparkleHideLogoLoading?.();}
   }
   function filterSparkleSocialPlans(platform,button){
     socialFilter=platform||"all";
@@ -7746,11 +7782,16 @@ function toggleSparkleMoreServices(){
     const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);const link=document.getElementById("sparkleSocialLink")?.value.trim();
     if(!socialQuote||socialQuote.plan!==plan?.value||socialQuote.quantity!==quantity){setResult("sparkleSocialResult","error","Review the price again","The plan or quantity changed. Check the current price before continuing.");return;}
     const linkError=validateSocialLink(link,plan);if(linkError){setResult("sparkleSocialResult","error","Check target link",linkError);return;}
-    activeDigitalRequest={kind:"social",payload:{action:"buy_social",plan:plan.value,quantity,link,expectedTotal:socialQuote.estimatedRetail,requestID:crypto.randomUUID()}};
-    currentService="socialMarket";
-    openPinForPurchase();
-    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your social-media order with your 4-digit Transaction PIN.";
+    socialReviewPending={kind:"social",payload:{action:"buy_social",plan:plan.value,quantity,link,expectedTotal:socialQuote.estimatedRetail,requestID:crypto.randomUUID()},planName:plan.displayName,rate:socialQuote.retailRatePerThousand,estimated:socialQuote.estimatedRetail,maximumReserve:socialQuote.maximumReserve};
+    const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Social Media Market</div><div class="sparkle-summary-network-label">Order Review</div></div></div><div class="summary-line"><span>Service</span><strong>${esc(socialReviewPending.planName)}</strong></div><div class="summary-line"><span>Target link</span><strong>${esc(link)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity.toLocaleString("en-NG")}</strong></div><div class="summary-line"><span>Rate per 1,000</span><strong>${fmt(socialReviewPending.rate)}</strong></div><div class="summary-line"><span>Estimated price</span><strong>${fmt(socialReviewPending.estimated)}</strong></div><div class="summary-line"><span>Maximum temporary reserve</span><strong>${fmt(socialReviewPending.maximumReserve)}</strong></div><p class="electricity-note">Check the platform, service, link, quantity and price carefully. A valid Transaction PIN is required before Sparkle sends the order. Final charge depends on the supplier-confirmed cost; unused reserved funds are returned.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="confirmSparkleSocialReview()">Confirm Order · Enter Transaction PIN</button>`;
+    if(typeof window.sparkleShowDedicatedReview==="function")window.sparkleShowDedicatedReview("Order Review",reviewHtml,"order-review",{service:"socialMarket",pending:socialReviewPending,plan:socialReviewPending.planName,link,quantity,estimated:socialReviewPending.estimated});
   }
+  window.confirmSparkleSocialReview=function(){
+    if(!socialReviewPending){setResult("sparkleSocialResult","error","Review expired","Please check the service price again before ordering.");window.sparkleCloseDedicatedReview?.(true);return;}
+    activeDigitalRequest={kind:"social",payload:socialReviewPending.payload};currentService="socialMarket";
+    window.sparkleCloseDedicatedReview?.(false);openPinForPurchase();
+    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your Social Media Market order with your 4-digit Transaction PIN.";
+  };
   function recipientsForCount(raw){
     const arr=String(raw||"").split(/[\s,;]+/).map(x=>x.trim()).filter(Boolean);const valid=[];
     for(const x of arr){const clean=x.replace(/[().-]/g,"");let n=null;if(/^0\d{10}$/.test(clean))n=clean;else if(/^\+?234\d{10}$/.test(clean))n="0"+clean.replace(/^\+?234/,"");if(n)valid.push(n);}
@@ -7922,7 +7963,15 @@ function toggleSparkleMoreServices(){
   const SENDING_FEES_USD = Object.freeze({BTC:5, ETH:1.5, TRX:0.8, USDC:0.8, SOL:0.8, USDT:1, BNB:0.7, TON:1.5, XRP:0.8, BCH:1});
   const PRICE_REFRESH_MS = 60 * 1000;
   const FX_REFRESH_MS = 6 * 60 * 60 * 1000;
-  const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:"",pendingWhatsAppMessage:""};
+  const state = {mode:"buy",selected:"",prices:{},fxNgn:null,fxUpdatedAt:0,fxFetchedAt:0,pricesUpdatedAt:0,loading:false,initialized:false,timer:null,lastError:"",pendingWhatsAppMessage:"",cryptoPinVerified:false,pendingReviewHtml:""};
+  try{
+    const savedReview=JSON.parse(sessionStorage.getItem("sparkleDedicatedReview")||"null");
+    if(savedReview?.pageKey==="crypto-review"&&savedReview?.storageData?.service==="cryptoTrade"){
+      const saved=savedReview.storageData;state.pendingWhatsAppMessage=String(saved.pendingWhatsAppMessage||"");state.pendingReviewHtml=String(saved.pendingReviewHtml||"");state.cryptoPinVerified=saved.cryptoPinVerified===true;
+      if(saved.mode==="buy"||saved.mode==="sell")state.mode=saved.mode;
+      if(typeof saved.coin==="string"&&ASSETS.some(a=>a.symbol===saved.coin))state.selected=saved.coin;
+    }
+  }catch(_){}
   const $ = id => document.getElementById(id);
   const escapeHTML = value => String(value ?? "").replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const naira = value => Number.isFinite(Number(value)) ? "₦" + Number(value).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}) : "₦ —";
@@ -8015,16 +8064,18 @@ function toggleSparkleMoreServices(){
       state.lastError=String(error?.message||"Live rates could not be updated.");
     }finally{
       state.loading=false;
-      renderStatus(); renderTicker(); updateSparkleCryptoQuote();
+      renderStatus(); renderTicker(); updateSparkleCryptoQuote();window.sparkleHideLogoLoading?.();
       if(!state.timer) state.timer=setInterval(()=>{if(document.visibilityState!=="hidden") refreshPrices(false);},PRICE_REFRESH_MS);
     }
   }
   window.refreshSparkleCryptoPrices = forceFx => refreshPrices(!!forceFx);
   window.sparkleCryptoTradeInit = function(){
     state.initialized=true;
+    window.sparkleShowLogoLoading?.("Loading Crypto Trade…");
     if(!state.selected) state.selected="BTC";
     renderCoinSelection();
     if(!state.pricesUpdatedAt || Date.now()-state.pricesUpdatedAt>PRICE_REFRESH_MS) refreshPrices(false);
+    else setTimeout(()=>window.sparkleHideLogoLoading?.(),320);
   };
   window.setSparkleCryptoMode = function(mode){
     if(mode!=="buy"&&mode!=="sell") return;
@@ -8134,12 +8185,27 @@ function toggleSparkleMoreServices(){
     const detailRows=buy?
       `<div class="sparkle-crypto-summary-line"><span>Purchase amount</span><strong>${naira(amount)}</strong></div><div class="sparkle-crypto-summary-line"><span>Sparkle fee (3%)</span><strong>${naira(sparkleFee)}</strong></div><div class="sparkle-crypto-summary-line"><span>${asset.symbol} sending fee</span><strong>${usd(sendUsd)} · ${naira(sendNgn)}</strong></div><div class="sparkle-crypto-summary-line"><span>Estimated crypto</span><strong>${coinQuantity(approxCrypto)} ${asset.symbol}</strong></div><div class="sparkle-crypto-summary-total"><span>Estimated total to pay</span><strong>${naira(total)}</strong></div>`:
       `<div class="sparkle-crypto-summary-line"><span>Sale value</span><strong>${naira(amount)}</strong></div><div class="sparkle-crypto-summary-line"><span>Sparkle fee (${pctText})</span><strong>${naira(sparkleFee)}</strong></div><div class="sparkle-crypto-summary-line"><span>Estimated crypto equivalent</span><strong>${coinQuantity(approxCrypto)} ${asset.symbol}</strong></div><div class="sparkle-crypto-summary-line"><span>Network fee</span><strong>Paid by you</strong></div><div class="sparkle-crypto-summary-total"><span>Estimated amount after fee</span><strong>${naira(total)}</strong></div>`;
-    if(host){host.innerHTML=`<div class="sparkle-crypto-summary-title">Transaction summary · ${escapeHTML(buy?"Buy":"Sell")} ${escapeHTML(asset.symbol)}</div>${detailRows}<p class="sparkle-crypto-summary-note">Market rates are estimates, not a locked quote. No Sparkle wallet debit or automatic crypto transfer will happen here. Tap Make Payment to open WhatsApp Customer Service, then send the pre-filled summary to request manual handling.</p><button type="button" class="btn primary full sparkle-crypto-make-payment" onclick="openSparkleCryptoWhatsApp()">Make Payment · Open WhatsApp</button>`;host.hidden=false;}
+    const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Crypto Trade</div><div class="sparkle-summary-network-label">Transaction Summary · ${escapeHTML(buy?"Buy":"Sell")} ${escapeHTML(asset.symbol)}</div></div></div>${detailRows}<p class="sparkle-crypto-summary-note">Market rates are estimates, not a locked quote. This is a WhatsApp-assisted service: Sparkle will not debit your wallet or transfer cryptocurrency automatically from this screen. Verify your Transaction PIN before opening WhatsApp to request manual handling.</p><button type="button" class="btn primary full sparkle-crypto-make-payment" onclick="startSparkleCryptoPin()">Continue · Enter Transaction PIN</button>`;
+    state.pendingReviewHtml=reviewHtml;state.cryptoPinVerified=false;
+    if(host){host.hidden=true;host.innerHTML="";}
+    if(typeof window.sparkleShowDedicatedReview==="function")window.sparkleShowDedicatedReview("Transaction Summary",reviewHtml,"crypto-review",{service:"cryptoTrade",mode:state.mode,coin:asset.symbol,amount,total,pendingWhatsAppMessage:state.pendingWhatsAppMessage,pendingReviewHtml:state.pendingReviewHtml,cryptoPinVerified:false});
+  };
+  window.startSparkleCryptoPin = function(){
+    if(!state.pendingWhatsAppMessage){alert("Please review the crypto quote again before continuing.");return;}
+    state.cryptoPinVerified=false;window.sparkleCloseDedicatedReview?.(false);currentService="cryptoTrade";window.sparkleCryptoAwaitingPin=true;openPinForPurchase();
+    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Verify your Transaction PIN to continue to Sparkle Crypto Customer Service. No wallet charge will be made here.";
   };
   window.openSparkleCryptoWhatsApp = function(){
     if(!state.pendingWhatsAppMessage)return;
+    if(!state.cryptoPinVerified){window.startSparkleCryptoPin();return;}
     const url="https://wa.me/2348089206869?text="+encodeURIComponent(state.pendingWhatsAppMessage);
     window.open(url,"_blank","noopener,noreferrer");
+  };
+  window.sparkleCryptoContinueAfterPin=function(){
+    state.cryptoPinVerified=true;window.sparkleCryptoAwaitingPin=false;
+    const cleanReview=String(state.pendingReviewHtml||"").replace(/<button type="button" class="btn primary full sparkle-crypto-make-payment" onclick="startSparkleCryptoPin\(\)">[\s\S]*?<\/button>/,"" );
+    const html=`${cleanReview}<p class="sparkle-digital-result success"><strong>Transaction PIN verified</strong>Your PIN is correct. Tap below to continue to WhatsApp; Sparkle has not charged your wallet.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="openSparkleCryptoWhatsApp()">Open WhatsApp Customer Service</button>`;
+    window.sparkleShowDedicatedReview?.("Transaction Summary",html,"crypto-review",{service:"cryptoTrade",mode:state.mode,coin:state.selected,verified:true,pendingWhatsAppMessage:state.pendingWhatsAppMessage,pendingReviewHtml:state.pendingReviewHtml,cryptoPinVerified:true});
   };
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&state.initialized&&(!state.pricesUpdatedAt||Date.now()-state.pricesUpdatedAt>PRICE_REFRESH_MS)) refreshPrices(false);});
 })();
