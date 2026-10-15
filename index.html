@@ -4257,6 +4257,13 @@ return;
 
 }
 
+// Central access check: an unverified account must never load the dashboard,
+// even if a stale session exists from before email confirmation was enabled.
+if(!(data.user.email_confirmed_at || data.user.confirmed_at)){
+  showHomepage();
+  await supabaseClient.auth.signOut();
+  return;
+}
 
 showDashboard(data.user);
 
@@ -7158,6 +7165,14 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
   const dashboard=document.getElementById("dashboard");
   const dashboardActive=!!dashboard?.classList.contains("active");
   if(session?.user){
+    // Block stale or unexpected sessions for users who have not verified email.
+    // Sign out on the next task to avoid making an auth request inside this callback.
+    if(!(session.user.email_confirmed_at || session.user.confirmed_at)){
+      window.currentSparkleUser=null;
+      showHomepage();
+      setTimeout(()=>{ supabaseClient.auth.signOut().catch(()=>{}); },0);
+      return;
+    }
     const currentUserId=String(window.currentSparkleUser?.id||"");
     const sessionUserId=String(session.user.id||"");
     // Token refreshes and duplicate auth notifications must not rebuild the dashboard.
