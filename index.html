@@ -1109,6 +1109,9 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 #emailVerificationCode:focus{outline:3px solid rgba(11,92,255,.13);border-color:#0b5cff}
 .sparkle-email-otp-resend{display:block;margin:12px auto 0;border:0;background:transparent;color:#0b5cff;font-size:13px;font-weight:800;padding:8px;cursor:pointer}
 .sparkle-email-otp-resend:disabled{opacity:.55;cursor:wait}
+.sparkle-forgot-password-row{display:block;text-align:right;margin:-8px 0 16px;font-size:13px}
+.sparkle-forgot-password-link{border:0;background:transparent;color:#0b5cff;font-weight:800;padding:5px 0;cursor:pointer;font:inherit}
+.sparkle-forgot-password-link:focus-visible{outline:2px solid #0b5cff;outline-offset:3px;border-radius:4px}
 </style>
 
 <style id="sparkle-support-widget-styles">
@@ -3450,10 +3453,13 @@ type="password"
 id="password"
 placeholder="Minimum 6 characters"
 required
-autocomplete="new-password">
+autocomplete="current-password">
 
 </div>
 
+<div class="sparkle-forgot-password-row" id="forgotPasswordRow" style="display:block">
+  <button type="button" class="sparkle-forgot-password-link" id="forgotPasswordButton" onclick="requestSparklePasswordReset()">Forgot password?</button>
+</div>
 
 <div class="field"
 id="referralField"
@@ -3636,7 +3642,7 @@ id="passwordModal">
 
 <div class="modal-head">
 
-<h2>
+<h2 id="passwordModalTitle">
 Change Password
 </h2>
 
@@ -3757,6 +3763,11 @@ SUPABASE_KEY
    ===================================================== */
 
 let authMode = "login";
+let sparklePasswordRecoveryMode = (()=>{
+  const hashParams = new URLSearchParams(String(window.location.hash||"").replace(/^#/,""));
+  const searchParams = new URLSearchParams(window.location.search);
+  return hashParams.get("type")==="recovery" || searchParams.get("type")==="recovery";
+})();
 let emailVerificationPending = false;
 let pendingVerificationEmail = "";
 let sparkleResendCooldown = false;
@@ -3779,6 +3790,8 @@ function setSparkleEmailOtpStep(enabled){
   otpInput.required = enabled;
   if(!enabled){ otpInput.value = ""; pendingVerificationEmail = ""; }
   document.getElementById("authSwitchRow").style.display = enabled ? "none" : "block";
+  const forgotRow = document.getElementById("forgotPasswordRow");
+  if(forgotRow) forgotRow.style.display = (!enabled && authMode === "login") ? "block" : "none";
   document.getElementById("authTitle").textContent = enabled ? "Verify your Sparkle Email" : (authMode === "signup" ? "Create Sparkle Account" : "Login to Sparkle");
   document.getElementById("authButton").textContent = enabled ? "Verify email code" : (authMode === "signup" ? "Create Account" : "Login");
   if(resend){ resend.disabled = !enabled || sparkleResendCooldown; }
@@ -3801,6 +3814,30 @@ async function resendSparkleEmailCode(){
     showMessage(error.message || "Could not resend the code yet. Please wait a moment and try again.","error");
     button.disabled = false;
     button.textContent = "Resend code";
+  }
+}
+
+async function requestSparklePasswordReset(){
+  if(emailVerificationPending || authMode !== "login") return;
+  const emailInput = document.getElementById("email");
+  const email = String(emailInput?.value || "").trim();
+  if(!email){
+    showMessage("Enter your email address first, then tap Forgot password?", "error");
+    emailInput?.focus();
+    return;
+  }
+  const button = document.getElementById("forgotPasswordButton");
+  if(button) { button.disabled = true; button.textContent = "Sending reset email…"; }
+  try{
+    const redirectTo = window.location.origin + window.location.pathname;
+    const {error} = await supabaseClient.auth.resetPasswordForEmail(email, {redirectTo});
+    if(error) throw error;
+    showMessage("If an account exists for this email, a password reset email has been sent. Check your inbox and spam folder.", "success");
+  }catch(error){
+    console.error("Sparkle password reset request failed:", error);
+    showMessage(error?.message || "We could not send the reset email. Please try again shortly.", "error");
+  }finally{
+    if(button) { button.disabled = false; button.textContent = "Forgot password?"; }
   }
 }
 
@@ -4245,6 +4282,11 @@ button.textContent = emailVerificationPending ? "Verify email code" : (authMode 
    ===================================================== */
 
 async function loadUser(){
+
+if(sparklePasswordRecoveryMode){
+  showHomepage();
+  return;
+}
 
 const {data,error} =
 await supabaseClient.auth.getUser();
@@ -4753,24 +4795,23 @@ button.textContent="Save Changes";
    ===================================================== */
 
 function openPasswordModal(){
-
-document
-.getElementById("passwordModal")
-.classList.add("show");
-
-document.getElementById("newPassword").value="";
-
-document.getElementById("confirmPassword").value="";
-
+  const title = document.getElementById("passwordModalTitle");
+  if(title) title.textContent = sparklePasswordRecoveryMode ? "Reset your Sparkle password" : "Change Password";
+  const message = document.getElementById("passwordMessage");
+  if(message){ message.textContent = ""; message.className = "message"; }
+  document.getElementById("newPassword").value = "";
+  document.getElementById("confirmPassword").value = "";
+  document.getElementById("passwordModal").classList.add("show");
 }
 
 
 function closePasswordModal(){
-
-document
-.getElementById("passwordModal")
-.classList.remove("show");
-
+  document.getElementById("passwordModal").classList.remove("show");
+  if(sparklePasswordRecoveryMode){
+    sparklePasswordRecoveryMode = false;
+    supabaseClient.auth.signOut().catch(()=>{});
+    showHomepage();
+  }
 }
 
 
@@ -4845,18 +4886,21 @@ password:newPassword
 if(error) throw error;
 
 
-message.textContent =
-"Password updated successfully.";
+message.textContent = sparklePasswordRecoveryMode
+  ? "Password reset successfully. Please log in with your new password."
+  : "Password updated successfully.";
 
-message.className =
-"message show success";
+message.className = "message show success";
 
-
-setTimeout(()=>{
-
-closePasswordModal();
-
-},1000);
+if(sparklePasswordRecoveryMode){
+  sparklePasswordRecoveryMode = false;
+  await supabaseClient.auth.signOut().catch(()=>{});
+  closePasswordModal();
+  openAuth("login");
+  showMessage("Password reset successfully. Please log in with your new password.", "success");
+}else{
+  setTimeout(()=>{ closePasswordModal(); },1000);
+}
 
 
 }catch(error){
@@ -7163,6 +7207,13 @@ document.getElementById("homepage").classList.remove("hidden");
    ===================================================== */
 
 supabaseClient.auth.onAuthStateChange((event, session)=>{
+  if(event === "PASSWORD_RECOVERY"){
+    sparklePasswordRecoveryMode = true;
+    window.currentSparkleUser = null;
+    showHomepage();
+    openPasswordModal();
+    return;
+  }
   const dashboard=document.getElementById("dashboard");
   const dashboardActive=!!dashboard?.classList.contains("active");
   if(session?.user){
