@@ -1,1 +1,4 @@
-https://theSparkle.com.ng/
+User-agent: *
+Allow: /
+
+Sitemap: https://www.thesparkle.com.ng/sitemap.xml
