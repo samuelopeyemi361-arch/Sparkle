@@ -3458,7 +3458,7 @@ autocomplete="current-password">
 </div>
 
 <div class="sparkle-forgot-password-row" id="forgotPasswordRow" style="display:block">
-  <button type="button" class="sparkle-forgot-password-link" id="forgotPasswordButton" onclick="requestSparklePasswordReset()">Forgot password?</button>
+  <button type="button" class="sparkle-forgot-password-link" id="forgotPasswordButton" onclick="openSparkleForgotPassword()">Forgot password?</button>
 </div>
 
 <div class="field"
@@ -3499,6 +3499,15 @@ Login
 
 </form>
 
+<div id="sparkleForgotPasswordPanel" style="display:none">
+  <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 18px">Enter the email address linked to your Sparkle account. We’ll send you a secure password-reset link.</p>
+  <div class="field">
+    <label for="sparkleForgotPasswordEmail">Email address</label>
+    <input type="email" id="sparkleForgotPasswordEmail" placeholder="you@example.com" autocomplete="email" required>
+  </div>
+  <button type="button" class="btn primary full" id="sparkleForgotPasswordConfirmButton" onclick="requestSparklePasswordReset()">Confirm</button>
+  <button type="button" id="sparkleForgotPasswordBackButton" onclick="returnToSparkleLoginFromForgotPassword()" style="display:block;width:100%;margin-top:14px;border:0;background:none;color:#0b5cff;font-weight:800;padding:10px">← Back to login</button>
+</div>
 
 <p id="authSwitchRow" style="text-align:center;font-size:14px;color:#64748b;margin-top:18px">
 
@@ -3763,6 +3772,7 @@ SUPABASE_KEY
    ===================================================== */
 
 let authMode = "login";
+let sparkleForgotPasswordMode = false;
 let sparklePasswordRecoveryMode = (()=>{
   const hashParams = new URLSearchParams(String(window.location.hash||"").replace(/^#/,""));
   const searchParams = new URLSearchParams(window.location.search);
@@ -3817,32 +3827,60 @@ async function resendSparkleEmailCode(){
   }
 }
 
-async function requestSparklePasswordReset(){
+function openSparkleForgotPassword(){
   if(emailVerificationPending || authMode !== "login") return;
-  const emailInput = document.getElementById("email");
+  sparkleForgotPasswordMode = true;
+  clearMessage();
+  document.getElementById("authTitle").textContent = "Reset your Sparkle password";
+  document.getElementById("authForm").style.display = "none";
+  document.getElementById("authSwitchRow").style.display = "none";
+  document.getElementById("sparkleForgotPasswordPanel").style.display = "block";
+  const emailInput = document.getElementById("sparkleForgotPasswordEmail");
+  if(emailInput){ emailInput.value = ""; emailInput.required = true; setTimeout(()=>emailInput.focus(),50); }
+}
+
+function returnToSparkleLoginFromForgotPassword(){
+  sparkleForgotPasswordMode = false;
+  document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
+  document.getElementById("authForm").style.display = "block";
+  document.getElementById("authSwitchRow").style.display = "block";
+  document.getElementById("authTitle").textContent = "Login to Sparkle";
+  const button = document.getElementById("sparkleForgotPasswordConfirmButton");
+  if(button){ button.disabled = false; button.textContent = "Confirm"; }
+  clearMessage();
+}
+
+async function requestSparklePasswordReset(){
+  if(emailVerificationPending || authMode !== "login" || !sparkleForgotPasswordMode) return;
+  const emailInput = document.getElementById("sparkleForgotPasswordEmail");
   const email = String(emailInput?.value || "").trim();
-  if(!email){
-    showMessage("Enter your email address first, then tap Forgot password?", "error");
+  if(!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showMessage("Enter a valid email address to continue.", "error");
     emailInput?.focus();
     return;
   }
-  const button = document.getElementById("forgotPasswordButton");
-  if(button) { button.disabled = true; button.textContent = "Sending reset email…"; }
+  const button = document.getElementById("sparkleForgotPasswordConfirmButton");
+  if(button) { button.disabled = true; button.textContent = "Sending link…"; }
   try{
     const redirectTo = window.location.origin + window.location.pathname;
     const {error} = await supabaseClient.auth.resetPasswordForEmail(email, {redirectTo});
     if(error) throw error;
-    showMessage("If an account exists for this email, a password reset email has been sent. Check your inbox and spam folder.", "success");
+    showMessage("If an account exists for that email, we’ve sent a password-reset link. Please check your inbox and spam folder.", "success");
+    if(emailInput) emailInput.value = "";
   }catch(error){
     console.error("Sparkle password reset request failed:", error);
-    showMessage(error?.message || "We could not send the reset email. Please try again shortly.", "error");
+    showMessage(error?.message || "We could not send the reset link. Please try again shortly.", "error");
   }finally{
-    if(button) { button.disabled = false; button.textContent = "Forgot password?"; }
+    if(button) { button.disabled = false; button.textContent = "Confirm"; }
   }
 }
 
 function openAuth(mode){
 
+sparkleForgotPasswordMode = false;
+document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
+document.getElementById("authForm").style.display = "block";
+document.getElementById("authSwitchRow").style.display = "block";
 authMode = mode;
 setSparkleEmailOtpStep(false);
 
@@ -3923,6 +3961,10 @@ clearMessage();
 
 function closeAuth(){
 
+sparkleForgotPasswordMode = false;
+document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
+document.getElementById("authForm").style.display = "block";
+document.getElementById("authSwitchRow").style.display = "block";
 document
 .getElementById("authModal")
 .classList.remove("show");
