@@ -1,4 +1,5 @@
+
 User-agent: *
 Allow: /
 
-Sitemap: https://www.thesparkle.com.ng/sitemap.xml
+Sitemap: https://TheSparkle.com.ng/sitemap.xml
