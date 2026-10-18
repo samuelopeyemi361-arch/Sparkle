@@ -4363,7 +4363,7 @@ const rawMessage = String(error && error.message ? error.message : "").trim();
 let friendlyMessage = rawMessage;
 
 if (/invalid login credentials|invalid password|email or password/i.test(rawMessage)) {
-  friendlyMessage = "Incorrect email or password. Please check your saved login details and try again. If you changed your password, update the one saved in Google Password Manager.";
+  friendlyMessage = "Incorrect email or password. Please check your login details and try again.";
 } else if (/failed to fetch|fetch failed|network|load failed|internet/i.test(rawMessage)) {
   friendlyMessage = "Sparkle could not connect. Check your internet connection and try again.";
 } else if (/taking too long to respond|timeout|timed out/i.test(rawMessage)) {
