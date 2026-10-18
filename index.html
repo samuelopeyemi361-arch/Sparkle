@@ -64,7 +64,7 @@
     var canonical=origin+(path==="/" ? "/" : path);
     setMeta('link[rel="canonical"]',"href",canonical);
     setMeta('meta[property="og:url"]',"content",canonical);
-    var privateRoute=/^\/(admin|dashboard|profile|wallet|transactions)(\/|$)/.test(path)||
+    var privateRoute=/^\/(admin|dashboard|profile|wallet|transactions|login|register)(\/|$)/.test(path)||
       /^\/purchases(\/|$)/.test(path)||path==="/forgot-password"||path==="/reset-password"||
       path==="/verify-email"||path==="/us-number/orders"||/^\/transactions\//.test(path);
     setMeta('meta[name="robots"]',"content",privateRoute?"noindex, nofollow":"index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
