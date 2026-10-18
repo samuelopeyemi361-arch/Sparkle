@@ -1,26 +1,14 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "headers": [
+  "rewrites": [
     {
       "source": "/sitemap.xml",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/xml; charset=utf-8"
-        }
-      ]
+      "destination": "/sitemap.xml"
     },
     {
       "source": "/robots.txt",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/plain; charset=utf-8"
-        }
-      ]
-    }
-  ],
-  "rewrites": [
+      "destination": "/robots.txt"
+    },
     {
       "source": "/admin",
       "destination": "/index.html"
