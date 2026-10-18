@@ -2,5 +2,18 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://thesparkle.com.ng/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
   </url>
+  <url>
+    <loc>https://thesparkle.com.ng/login</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://thesparkle.com.ng/signup</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <!-- Add more important pages below -->
 </urlset>
