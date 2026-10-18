@@ -3388,7 +3388,7 @@ id="authMessage">
 </div>
 
 
-<form id="authForm">
+<form id="authForm" novalidate>
 
 
 <div class="field"
@@ -3471,9 +3471,12 @@ Email
 <input
 type="email"
 id="email"
+name="email"
 placeholder="you@example.com"
 required
-autocomplete="email">
+autocomplete="username"
+autocapitalize="none"
+spellcheck="false">
 
 </div>
 
@@ -3528,6 +3531,7 @@ spellcheck="false">
 </div>
 
 <button
+type="submit"
 class="btn primary full"
 id="authButton">
 Login
@@ -4073,6 +4077,23 @@ document
 .getElementById("password")
 .value;
 
+// Validate credentials in the form handler so browser autofill does not
+// silently block submission through native form validation.
+if (!email) {
+  showMessage("Enter your email address to log in.", "error");
+  document.getElementById("email").focus();
+  return;
+}
+if (!password) {
+  showMessage("Enter your password to log in.", "error");
+  document.getElementById("password").focus();
+  return;
+}
+if (authMode === "login" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  showMessage("Enter a valid email address.", "error");
+  document.getElementById("email").focus();
+  return;
+}
 
 const button =
 document.getElementById("authButton");
