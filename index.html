@@ -4106,14 +4106,14 @@ if(emailVerificationPending){
 
 if(authMode === "login"){
 
-const {data,error} =
-await supabaseClient.auth.signInWithPassword({
-
-email:email,
-
-password:password
-
-});
+const loginResult = await Promise.race([
+  supabaseClient.auth.signInWithPassword({ email: email, password: password }),
+  new Promise((_, reject) => setTimeout(
+    () => reject(new Error("Sparkle is taking too long to respond. Check your internet connection and try again.")),
+    15000
+  ))
+]);
+const {data,error} = loginResult;
 
 
 if(error) throw error;
@@ -4338,11 +4338,20 @@ showMessage("Account created. Check your inbox for Sparkle’s six-digit verific
 
 }catch(error){
 
-showMessage(
-error.message ||
-"Something went wrong.",
-"error"
-);
+const rawMessage = String(error && error.message ? error.message : "").trim();
+let friendlyMessage = rawMessage;
+
+if (/invalid login credentials|invalid password|email or password/i.test(rawMessage)) {
+  friendlyMessage = "Incorrect email or password. Please check your saved login details and try again. If you changed your password, update the one saved in Google Password Manager.";
+} else if (/failed to fetch|fetch failed|network|load failed|internet/i.test(rawMessage)) {
+  friendlyMessage = "Sparkle could not connect. Check your internet connection and try again.";
+} else if (/taking too long to respond|timeout|timed out/i.test(rawMessage)) {
+  friendlyMessage = "Login is taking too long. Check your internet connection and try again.";
+} else if (!friendlyMessage) {
+  friendlyMessage = "We could not log you in right now. Please try again.";
+}
+
+showMessage(friendlyMessage, "error");
 
 }finally{
 
