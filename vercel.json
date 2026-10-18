@@ -1,15 +1,10 @@
+
 {
-  "cleanUrls": false,
-  "trailingSlash": false,
-  "headers": [
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "rewrites": [
     {
-      "source": "/sitemap.xml",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "application/xml"
-        }
-      ]
+      "source": "/admin",
+      "destination": "/index.html"
     }
   ]
 }
