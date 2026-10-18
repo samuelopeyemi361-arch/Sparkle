@@ -4095,7 +4095,7 @@ password:password
 if(error) throw error;
 
 // Defense in depth: never continue into Sparkle without a confirmed email.
-if(!data.user || !data.user.email_confirmed_at){
+if(!data.user || !(data.user.email_confirmed_at || data.user.confirmed_at)){
   await supabaseClient.auth.signOut();
   throw new Error("Please verify your email address before logging in. Check your inbox for Sparkle’s verification code.");
 }
