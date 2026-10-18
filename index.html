@@ -1999,6 +1999,12 @@ body.dark-mode #dashboard #cryptoTradePage .sparkle-crypto-disclaimer strong{col
 }
 </style>
 
+<style id="sparkle-route-link-styles">
+a.tx.sparkle-tx-row{display:flex;color:inherit;text-decoration:none}
+a.tx.sparkle-tx-row:hover{text-decoration:none}
+a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
+</style>
+
 </head>
 
 <body>
@@ -2900,7 +2906,6 @@ Privacy Policy
             <button class="profile-setting-row" type="button" onclick="toggleNotifications()"><span class="profile-setting-icon amber" aria-hidden="true">♧</span><span class="profile-setting-copy"><strong>Notifications</strong><small>View important wallet and transaction update information.</small></span><span class="profile-setting-action">View <b>›</b></span></button>
             <button class="profile-setting-row" type="button" onclick="showDashPage('legalPoliciesPage',null)"><span class="profile-setting-icon violet" aria-hidden="true">▤</span><span class="profile-setting-copy"><strong>Legal & Policies</strong><small>Terms, privacy, refunds, payments and rewards.</small></span><span class="profile-setting-action">Read <b>›</b></span></button>
             <button class="profile-setting-row" type="button" onclick="showDashPage('helpSupportPage',null)"><span class="profile-setting-icon green" aria-hidden="true">♡</span><span class="profile-setting-copy"><strong>Help & support</strong><small>Customer care and help with Sparkle services.</small></span><span class="profile-setting-action">Get help <b>›</b></span></button>
-            <button id="sparkleAdminProfileEntry" class="profile-setting-row" type="button" style="display:none" onclick="sparkleAdminOpen()"><span class="profile-setting-icon blue" aria-hidden="true">✦</span><span class="profile-setting-copy"><strong>Admin Panel</strong><small>Manage customers, wallets, transactions and administrator actions.</small></span><span class="profile-setting-action">Open <b>›</b></span></button>
             <button class="profile-logout-row" type="button" onclick="logout()"><span aria-hidden="true">↪</span><span><strong>Log out of Sparkle</strong><small>Sign out of this account on this device.</small></span><b>›</b></button>
           </section>
         </section>
@@ -7114,11 +7119,12 @@ function renderSparkleTransactionRow(tx, amount, sign, cls, payload){
   const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
   const time=date.toLocaleTimeString("en-NG",{hour:"numeric",minute:"2-digit"});
   const dateLabel=sameDay(date,today)?`Today, ${time}`:sameDay(date,yesterday)?`Yesterday, ${time}`:date.toLocaleDateString("en-NG",{day:"numeric",month:"short"})+`, ${time}`;
-  return `<div class="tx sparkle-tx-row" role="button" tabindex="0" aria-label="Open transaction receipt" onclick="showTransactionReceipt('${payload}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();showTransactionReceipt('${payload}')}">
+  const transactionUrl=tx.id?"/transactions/"+encodeURIComponent(String(tx.id)):"/wallet/transactions";
+  return `<a class="tx sparkle-tx-row" href="${transactionUrl}" style="color:inherit;text-decoration:none" aria-label="Review ${escapeHtml(serviceText)} transaction details" title="Open transaction review">
     <span class="sparkle-tx-icon" aria-hidden="true">${icon}</span>
     <span class="sparkle-tx-main"><strong>${escapeHtml(serviceText)}</strong><small>${escapeHtml(dateLabel)}</small></span>
     <span class="sparkle-tx-trailing"><strong class="${cls}">${sign}${money(amount)}</strong><span class="sparkle-tx-status ${statusClass}"><i aria-hidden="true"></i>${escapeHtml(statusLabel)}</span></span>
-  </div>`;
+  </a>`;
 }
 
 async function loadTransactions(userId){
@@ -7292,6 +7298,230 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
   }
 });
 
+
+/* =====================================================
+   SPARKLE ROUTES AND SHAREABLE TRANSACTION REVIEWS
+   Adds real URLs to existing app screens without rewriting purchase/payment handlers.
+   ===================================================== */
+(function installSparkleRoutes(){
+  let applyDepth = 0;
+  let dashboardSetupDepth = 0;
+  let bootRouteHandled = false;
+  let renderToken = 0;
+  const pageRoutes = {
+    home: "/dashboard",
+    smsotpPage: "/us-number",
+    usNumberOrderPage: "/us-number/orders",
+    cryptoTradePage: "/crypto",
+    transactionsPage: "/wallet/transactions",
+    marketPage: "/market",
+    socialMarketPage: "/social-media-market",
+    bulkSmsPage: "/bulk-sms",
+    earnPage: "/referrals",
+    profilePage: "/profile",
+    adminPage: "/admin",
+    legalPoliciesPage: "/terms",
+    helpSupportPage: "/support",
+    dataPage: "/data",
+    airtimePage: "/airtime",
+    cablePage: "/cable-tv",
+    educationPage: "/education",
+    rechargepinPage: "/recharge-pin-printing",
+    electricityPage: "/electricity"
+  };
+  const serviceRoutes = {
+    "/airtime": "airtime", "/purchases/airtime": "airtime",
+    "/data": "data", "/purchases/data": "data",
+    "/electricity": "electricity", "/purchases/electricity": "electricity",
+    "/cable-tv": "cable", "/cable": "cable", "/purchases/cable-tv": "cable",
+    "/education": "education", "/purchases/education": "education",
+    "/recharge-pin-printing": "rechargepin", "/rechargepin": "rechargepin",
+    "/purchases/recharge-pin-printing": "rechargepin",
+    "/bulk-sms": "bulkSms", "/purchases/bulk-sms": "bulkSms",
+    "/us-number": "smsotp", "/crypto": "cryptoTrade",
+    "/social-media-market": "socialMarket"
+  };
+  const pageAliases = {
+    "/dashboard": "home", "/wallet": "home",
+    "/transactions": "transactionsPage", "/wallet/transactions": "transactionsPage", "/purchases": "transactionsPage",
+    "/us-number/orders": "usNumberOrderPage",
+    "/market": "marketPage", "/referrals": "earnPage", "/referrals/history": "earnPage",
+    "/profile": "profilePage", "/settings": "profilePage",
+    "/support": "helpSupportPage", "/contact": "helpSupportPage",
+    "/terms": "legalPoliciesPage", "/privacy-policy": "legalPoliciesPage"
+  };
+  const normalizePath = path => {
+    let value = String(path || "/");
+    try { value = decodeURI(value); } catch (_) {}
+    value = value.toLowerCase().replace(/\/+$/, "");
+    return value || "/";
+  };
+  function writePath(path, replace){
+    const target = normalizePath(path);
+    if (normalizePath(window.location.pathname) === target) return;
+    const method = replace ? "replaceState" : "pushState";
+    try { window.history[method]({sparkleRoute:true}, "", path); } catch (_) {}
+  }
+  function pageForRoute(pageId){ return pageRoutes[pageId] || null; }
+  const originalShowDashPage = showDashPage;
+  showDashPage = function(pageId, button){
+    const result = originalShowDashPage.apply(this, arguments);
+    if (!applyDepth && !dashboardSetupDepth) {
+      const route = pageForRoute(pageId);
+      if (route) writePath(route, false);
+    }
+    return result;
+  };
+  const originalOpenServicePage = openServicePage;
+  openServicePage = function(service){
+    const result = originalOpenServicePage.apply(this, arguments);
+    if (!applyDepth && !dashboardSetupDepth) {
+      const route = Object.keys(serviceRoutes).find(path => serviceRoutes[path] === service && !path.startsWith("/purchases/"));
+      if (route) writePath(route, false);
+    }
+    return result;
+  };
+  const originalShowDashboard = showDashboard;
+  showDashboard = async function(user){
+    let result;
+    dashboardSetupDepth++;
+    try { result = await originalShowDashboard.apply(this, arguments); }
+    finally { dashboardSetupDepth--; }
+    bootRouteHandled = true;
+    await applyCurrentPath();
+    return result;
+  };
+  const originalShowHomepage = showHomepage;
+  showHomepage = function(){
+    const result = originalShowHomepage.apply(this, arguments);
+    if (!bootRouteHandled && !dashboardSetupDepth && !applyDepth) {
+      bootRouteHandled = true;
+      window.setTimeout(() => { void applyCurrentPath(); }, 0);
+    }
+    return result;
+  };
+  async function openTransactionRoute(transactionId, token){
+    const authResult = await supabaseClient.auth.getUser();
+    const user = authResult && authResult.data && authResult.data.user;
+    if (!user || !user.id) {
+      if (!document.getElementById("authModal")?.classList.contains("show")) openAuth("login");
+      return;
+    }
+    const id = String(transactionId || "");
+    if (!id || id.length > 256) {
+      showDashPage("transactionsPage", null);
+      alert("This transaction link is invalid.");
+      return;
+    }
+    const {data, error} = await supabaseClient.from("wallet_transactions")
+      .select("id,type,amount,service,reference,metadata,status,created_at")
+      .eq("id", id).eq("user_id", user.id).maybeSingle();
+    if (token !== renderToken) return;
+    if (error || !data) {
+      console.warn("Sparkle transaction review could not be loaded:", error?.message || "No matching user transaction");
+      showDashPage("transactionsPage", null);
+      alert("We couldn't find that transaction in your Sparkle account.");
+      return;
+    }
+    showDashPage("transactionsPage", null);
+    showTransactionReceipt(encodeURIComponent(JSON.stringify(data)));
+  }
+  async function applyCurrentPath(){
+    const token = ++renderToken;
+    const path = normalizePath(window.location.pathname);
+    const dashboard = document.getElementById("dashboard");
+    const dashboardActive = !!dashboard?.classList.contains("active");
+    const user = window.currentSparkleUser;
+
+    if (path === "/") {
+      if (dashboardActive) { applyDepth++; try { showDashPage("home", null); } finally { applyDepth--; } }
+      return;
+    }
+
+    if (["/login", "/register", "/forgot-password", "/verify-email", "/reset-password"].includes(path)) {
+      if (user && path !== "/forgot-password" && path !== "/reset-password") {
+        applyDepth++;
+        try { writePath("/dashboard", true); showDashPage("home", null); }
+        finally { applyDepth--; }
+        return;
+      }
+      if (path === "/reset-password" && sparklePasswordRecoveryMode) {
+        if (!document.getElementById("passwordModal")?.classList.contains("show")) openPasswordModal();
+        return;
+      }
+      if (!document.getElementById("authModal")?.classList.contains("show")) {
+        openAuth(path === "/register" || path === "/verify-email" ? "signup" : "login");
+      }
+      if (path === "/forgot-password" && !sparkleForgotPasswordMode) openSparkleForgotPassword();
+      if (path === "/reset-password" && !sparklePasswordRecoveryMode && !sparkleForgotPasswordMode) openSparkleForgotPassword();
+      return;
+    }
+
+    if (path === "/terms" || path === "/privacy-policy") {
+      try { openLegal(path === "/privacy-policy" ? "privacy" : "terms"); } catch (_) {}
+      return;
+    }
+
+    const transactionMatch = path.match(/^\/(?:transactions|purchases)\/([^/]+)$/);
+    const service = serviceRoutes[path];
+    const pageId = pageAliases[path];
+    const fundWalletRoute = path === "/wallet/fund";
+    const adminRoute = path === "/admin";
+    const known = !!(transactionMatch || service || pageId || fundWalletRoute || adminRoute);
+    if (!known) return;
+
+    if (!user || !dashboardActive) {
+      if (!document.getElementById("authModal")?.classList.contains("show")) openAuth("login");
+      return;
+    }
+
+    applyDepth++;
+    try {
+      if (adminRoute) {
+        if (window.sparkleAdminRouteAllowed === true && typeof sparkleAdminOpen === "function") {
+          sparkleAdminOpen();
+        } else {
+          writePath("/dashboard", true);
+          showDashPage("home", null);
+        }
+        return;
+      }
+      if (service) {
+        openServicePage(service);
+        return;
+      }
+      if (transactionMatch) {
+        let transactionId = transactionMatch[1];
+        try { transactionId = decodeURIComponent(transactionId); } catch (_) {}
+        await openTransactionRoute(transactionId, token);
+        return;
+      }
+      if (fundWalletRoute) {
+        showDashPage("home", null);
+        await showFundWallet();
+        return;
+      }
+      if (pageId) {
+        showDashPage(pageId, null);
+        if (path === "/terms") openLegal("terms");
+        if (path === "/privacy-policy") openLegal("privacy");
+      }
+    } finally { applyDepth--; }
+  }
+  window.addEventListener("popstate", () => { void applyCurrentPath(); });
+  // Keep close/back behavior consistent after a transaction is reviewed by URL.
+  const originalCloseReceipt = closeReceipt;
+  closeReceipt = function(){
+    originalCloseReceipt.apply(this, arguments);
+    const path = normalizePath(window.location.pathname);
+    if (/^\/(transactions|purchases)\/[^/]+$/.test(path)) {
+      writePath("/wallet/transactions", true);
+      applyDepth++;
+      try { showDashPage("transactionsPage", null); }
+      finally { applyDepth--; }
+    }
+  };
+})();
 
 /* =====================================================
    INITIAL LOAD
@@ -8393,7 +8623,7 @@ function toggleSparkleMoreServices(){
 <script id="sparkle-admin-controller">
 let sparkleAdminUserPage=1, sparkleAdminTxPage=1, sparkleAdminSelectedUser=null, sparkleAdminCurrentTab='users';
 const sparkleAdminMoney = value => '₦' + Number(value || 0).toLocaleString('en-NG',{minimumFractionDigits:2,maximumFractionDigits:2});
-function sparkleAdminSetVisible(isAdmin){const entry=document.getElementById('sparkleAdminProfileEntry');if(entry)entry.style.display=isAdmin?'flex':'none';if(!isAdmin&&document.getElementById('adminPage')?.classList.contains('active'))showDashPage('profilePage',null);}
+function sparkleAdminSetVisible(isAdmin){window.sparkleAdminRouteAllowed=!!isAdmin;if(!isAdmin&&document.getElementById('adminPage')?.classList.contains('active'))showDashPage('profilePage',null);}
 function sparkleAdminNotice(message,type=''){const el=document.getElementById('sparkleAdminNotice');if(el){el.textContent=message;el.className='sparkle-admin-notice'+(type?' '+type:'');}}
 async function sparkleAdminCall(action,payload={}){const {data,error}=await supabaseClient.functions.invoke('sparkle-admin',{body:{action,...payload}});if(error){let message=error.message||'Admin request failed.';try{if(error.context?.json){const j=await error.context.json();message=j.error||message;}}catch(_){}throw new Error(message);}if(!data?.success)throw new Error(data?.error||'Admin request failed.');return data;}
 function sparkleAdminOpen(){showDashPage('adminPage',null);sparkleAdminNotice('Verifying administrator access…');sparkleAdminRefresh();}
