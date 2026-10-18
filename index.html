@@ -7,6 +7,9 @@
 <title>TheSparkle — Buy Cheap Data, Airtime &amp; Pay Bills in Nigeria</title>
 <meta name="description" content="Buy affordable MTN, Airtel, Glo and 9mobile data and airtime on TheSparkle. Pay supported electricity and cable TV bills and access exam pins and other digital services in Nigeria.">
 <link rel="canonical" href="https://thesparkle.com.ng/">
+<link rel="icon" type="image/png" sizes="96x96" href="/favicon.png">
+<link rel="shortcut icon" href="/favicon.png">
+<link rel="apple-touch-icon" href="/favicon.png">
 <meta property="og:title" content="TheSparkle — Buy Cheap Data, Airtime &amp; Pay Bills in Nigeria">
 <meta property="og:description" content="Buy affordable mobile data and airtime, pay supported utility bills, and access exam pins on TheSparkle in Nigeria.">
 <meta property="og:url" content="https://thesparkle.com.ng/">
@@ -15,6 +18,65 @@
 <meta name="twitter:title" content="TheSparkle — Buy Cheap Data, Airtime &amp; Pay Bills in Nigeria">
 <meta name="twitter:description" content="Buy affordable mobile data and airtime, pay supported utility bills, and access exam pins on TheSparkle in Nigeria.">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<script id="sparkle-seo-route-metadata">
+(function(){
+  "use strict";
+  var origin="https://thesparkle.com.ng";
+  var routes={
+    "/":{title:"TheSparkle | Buy Cheap Data, Airtime & Pay Bills in Nigeria",description:"Buy affordable MTN, Airtel, Glo and 9mobile data and airtime on TheSparkle. Pay supported electricity and cable TV bills and access exam pins and other digital services in Nigeria."},
+    "/login":{title:"Log In to TheSparkle | Secure Wallet Access",description:"Log in to TheSparkle to manage your wallet and access data, airtime, crypto, and supported bill-payment services."},
+    "/register":{title:"Create a TheSparkle Account | Data, Airtime & Bills",description:"Create your TheSparkle account to buy affordable data and airtime, fund your wallet, and access supported digital services in Nigeria."},
+    "/data":{title:"Buy Affordable Data Bundles in Nigeria | TheSparkle",description:"Buy MTN, Airtel, Glo and 9mobile data bundles online through TheSparkle. Sign in to view available plans and complete your purchase."},
+    "/airtime":{title:"Buy Airtime Online in Nigeria | TheSparkle",description:"Recharge MTN, Airtel, Glo and 9mobile airtime with TheSparkle. Sign in to access the airtime service and your wallet."},
+    "/crypto":{title:"Buy and Trade Crypto | TheSparkle",description:"Visit TheSparkle crypto service to review available cryptocurrency options and access your account securely."},
+    "/electricity":{title:"Pay Electricity Bills Online | TheSparkle",description:"Pay supported Nigerian electricity bills through TheSparkle. Sign in to check available providers and continue securely."},
+    "/cable-tv":{title:"Pay DSTV, GOtv and Startimes Bills | TheSparkle",description:"Renew supported DSTV, GOtv and Startimes subscriptions with TheSparkle. Sign in to view plans and make a payment."},
+    "/education":{title:"Buy WAEC and NECO Exam Pins | TheSparkle",description:"Access supported examination pins and education services through TheSparkle. Sign in to view current available options."},
+    "/recharge-pin-printing":{title:"Recharge PIN Printing Services | TheSparkle",description:"Access supported recharge card printing and PIN services on TheSparkle. Sign in to check prices and availability."},
+    "/bulk-sms":{title:"Bulk SMS Services | TheSparkle",description:"Access bulk SMS services through TheSparkle. Sign in to review available options and continue to your account."},
+    "/us-number":{title:"US Number Services | TheSparkle",description:"Access TheSparkle US number and SMS verification services, subject to current availability and account access."},
+    "/market":{title:"Digital Services Marketplace | TheSparkle",description:"Explore digital services in TheSparkle marketplace after signing in to your account."},
+    "/social-media-market":{title:"Social Media Services | TheSparkle",description:"View TheSparkle social media service marketplace and available options through your account."},
+    "/support":{title:"TheSparkle Customer Support",description:"Get help with your TheSparkle account, wallet funding, purchases, and supported digital services."},
+    "/terms":{title:"Terms and Conditions | TheSparkle",description:"Read the terms and conditions for using TheSparkle digital services."},
+    "/privacy-policy":{title:"Privacy Policy | TheSparkle",description:"Read how TheSparkle handles information when you use the website and its digital services."}
+  };
+  function normalizedPath(){
+    var p=String(window.location.pathname||"/");
+    try{p=decodeURI(p);}catch(e){}
+    p=p.toLowerCase().replace(/\/+$/,"");
+    return p||"/";
+  }
+  function setMeta(selector,attr,value){
+    var el=document.querySelector(selector);
+    if(el)el.setAttribute(attr,value);
+  }
+  function apply(){
+    var path=normalizedPath();
+    var item=routes[path]||routes["/"];
+    document.title=item.title;
+    setMeta('meta[name="description"]',"content",item.description);
+    setMeta('meta[property="og:title"]',"content",item.title);
+    setMeta('meta[property="og:description"]',"content",item.description);
+    setMeta('meta[name="twitter:title"]',"content",item.title);
+    setMeta('meta[name="twitter:description"]',"content",item.description);
+    var canonical=origin+(path==="/" ? "/" : path);
+    setMeta('link[rel="canonical"]',"href",canonical);
+    setMeta('meta[property="og:url"]',"content",canonical);
+    var privateRoute=/^\/(admin|dashboard|profile|wallet|transactions)(\/|$)/.test(path)||
+      /^\/purchases(\/|$)/.test(path)||path==="/forgot-password"||path==="/reset-password"||
+      path==="/verify-email"||path==="/us-number/orders"||/^\/transactions\//.test(path);
+    setMeta('meta[name="robots"]',"content",privateRoute?"noindex, nofollow":"index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1");
+  }
+  var originalPush=history.pushState;
+  history.pushState=function(){var result=originalPush.apply(this,arguments);apply();return result;};
+  var originalReplace=history.replaceState;
+  history.replaceState=function(){var result=originalReplace.apply(this,arguments);apply();return result;};
+  window.addEventListener("popstate",apply);
+  apply();
+})();
+</script>
+
 <script type="application/ld+json">
 {
   "@context": "https://schema.org",
@@ -285,6 +347,8 @@ a{text-decoration:none;color:inherit}
   line-height:1.6;
   font-size:14px
 }
+.seo-service-link{display:inline-block;margin-top:12px;color:var(--blue);font-size:13px;font-weight:850;text-decoration:none}
+.seo-service-link:hover{text-decoration:underline}
 
 .dashboard{
   display:none;
@@ -2057,8 +2121,8 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 </nav>
 
 <div class="actions">
-<button class="btn" onclick="openAuth('login')">Log In</button>
-<button class="btn primary" onclick="openAuth('signup')">Sign Up</button>
+<a class="btn" href="/login">Log In</a>
+<a class="btn primary" href="/register">Register</a>
 </div>
 
 </header>
@@ -2082,10 +2146,7 @@ Find affordable MTN, Airtel, Glo and 9mobile data bundles, recharge airtime, and
 
 <div class="hero-buttons">
 
-<button class="btn primary"
-onclick="openAuth('signup')">
-Get Started
-</button>
+<a class="btn primary" href="/register">Get Started</a>
 
 <a class="btn" href="#services">
 Explore Services
@@ -2171,24 +2232,28 @@ Everything you need for instant recharge, subscriptions and everyday utility pay
 <div class="icon">🌐</div>
 <h3>Mobile Data</h3>
 <p>Access affordable data plans across all major networks in Nigeria.</p>
+<a class="seo-service-link" href="/data">Buy Data →</a>
 </div>
 
 <div class="card">
 <div class="icon">🎟️</div>
 <h3>Exam Pins</h3>
 <p>Buy WAEC and NECO examination pins and scratch cards.</p>
+<a class="seo-service-link" href="/education">Buy Exam Pins →</a>
 </div>
 
 <div class="card">
 <div class="icon">📺</div>
 <h3>Cable TV</h3>
 <p>Activate DSTV, GOtv and Startimes subscriptions with ease.</p>
+<a class="seo-service-link" href="/cable-tv">Pay Cable TV →</a>
 </div>
 
 <div class="card">
 <div class="icon">📱</div>
 <h3>Airtime</h3>
 <p>Recharge any Nigerian network instantly from your wallet.</p>
+<a class="seo-service-link" href="/airtime">Buy Airtime →</a>
 </div>
 
 <div class="card">
@@ -2201,12 +2266,14 @@ Everything you need for instant recharge, subscriptions and everyday utility pay
 <div class="icon">⚡</div>
 <h3>Utility Bills</h3>
 <p>Pay electricity and other supported utility bills.</p>
+<a class="seo-service-link" href="/electricity">Pay Electricity →</a>
 </div>
 
 <div class="card">
 <div class="icon">🪪</div>
 <h3>Recharge Pin Printing</h3>
 <p>Buy and print recharge cards for supported networks.</p>
+<a class="seo-service-link" href="/recharge-pin-printing">Print Recharge PINs →</a>
 </div>
 
 <div class="card">
@@ -2431,6 +2498,8 @@ Simple, secure and convenient bill payments.
 
 <h4>Quick Links</h4>
 
+<a href="/login">Log In</a>
+<a href="/register">Register</a>
 <a href="#services">Services</a>
 <a href="#api">API</a>
 <a href="#faq">FAQ</a>
@@ -2442,10 +2511,11 @@ Simple, secure and convenient bill payments.
 
 <h4>Services</h4>
 
-<a href="#services">Buy Data</a>
-<a href="#services">Buy Airtime</a>
-<a href="#services">Cable TV</a>
-<a href="#services">Electricity</a>
+<a href="/data">Buy Data</a>
+<a href="/airtime">Buy Airtime</a>
+<a href="/crypto">Buy Crypto</a>
+<a href="/cable-tv">Cable TV</a>
+<a href="/electricity">Electricity</a>
 
 </div>
 
@@ -2458,15 +2528,9 @@ Simple, secure and convenient bill payments.
 support@sparkle.com
 </a>
 
-<a href="#"
-onclick="openLegal('terms');return false">
-Terms & Conditions
-</a>
+<a href="/terms">Terms & Conditions</a>
 
-<a href="#"
-onclick="openLegal('privacy');return false">
-Privacy Policy
-</a>
+<a href="/privacy-policy">Privacy Policy</a>
 
 </div>
 

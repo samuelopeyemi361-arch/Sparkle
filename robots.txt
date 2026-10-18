@@ -1,0 +1,16 @@
+User-agent: *
+Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /wallet
+Disallow: /wallet/
+Disallow: /transactions
+Disallow: /transactions/
+Disallow: /purchases/
+Disallow: /us-number/orders
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /verify-email
+
+Sitemap: https://thesparkle.com.ng/sitemap.xml
