@@ -7230,7 +7230,13 @@ maximumFractionDigits:2
    TRANSACTIONS
    ===================================================== */
 
-/* Tapping any transaction opens its receipt immediately; no dead /transactions/:id route. */
+/* Each wallet transaction has a private, owner-checked receipt URL. */
+function openSparkleTransactionReceipt(transactionId, payload){
+  const id = String(transactionId || "");
+  if(!id || id.length > 256){ alert("This transaction link is invalid."); return; }
+  try { window.history.pushState({sparkleTransactionId:id}, "", "/transactions/" + encodeURIComponent(id)); } catch (_) {}
+  showTransactionReceipt(payload);
+}
 function renderSparkleTransactionRow(tx, amount, sign, cls, payload){
   const serviceText=String(tx.service||"Wallet transaction");
   const serviceKey=serviceText.toLowerCase();
@@ -7245,7 +7251,7 @@ function renderSparkleTransactionRow(tx, amount, sign, cls, payload){
   const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
   const time=date.toLocaleTimeString("en-NG",{hour:"numeric",minute:"2-digit"});
   const dateLabel=sameDay(date,today)?`Today, ${time}`:sameDay(date,yesterday)?`Yesterday, ${time}`:date.toLocaleDateString("en-NG",{day:"numeric",month:"short"})+`, ${time}`;
-  return `<a class="tx sparkle-tx-row" href="#receipt" onclick="event.preventDefault();showTransactionReceipt('${payload}')" style="color:inherit;text-decoration:none;cursor:pointer" aria-label="Open ${escapeHtml(serviceText)} receipt" title="Tap to view receipt">
+  return `<a class="tx sparkle-tx-row" href="/transactions/${encodeURIComponent(String(tx.id||""))}" onclick="event.preventDefault();openSparkleTransactionReceipt('${escapeHtml(tx.id||"")}','${payload}')" style="color:inherit;text-decoration:none;cursor:pointer" aria-label="Open ${escapeHtml(serviceText)} receipt" title="Tap to view receipt">
     <span class="sparkle-tx-icon" aria-hidden="true">${icon}</span>
     <span class="sparkle-tx-main"><strong>${escapeHtml(serviceText)}</strong><small>${escapeHtml(dateLabel)}</small></span>
     <span class="sparkle-tx-trailing"><strong class="${cls}">${sign}${money(amount)}</strong><span class="sparkle-tx-status ${statusClass}"><i aria-hidden="true"></i>${escapeHtml(statusLabel)}</span></span>
