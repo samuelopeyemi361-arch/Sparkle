@@ -5846,7 +5846,7 @@ async function gsubzRequest(path, method="GET", data=null){
 // Nigerian mobile prefixes are a best-effort hint. Mobile-number portability
 // means customers must always be able to override the detected network manually.
 const SPARKLE_NG_NETWORK_PREFIXES = {
-  MTN: ["07025","07026","0703","0704","0706","0707","0803","0806","0810","0813","0814","0816","0903","0906","0913","0916","0702","0708","0807","0817","0818","0907","0908","0918"],
+  MTN: ["07025","07026","0703","0704","0706","0707","0803","0806","0810","0813","0814","0816","0903","0906","0913","0916"],
   Airtel: ["0701","0708","0802","0808","0812","0901","0902","0907","0912"],
   Glo: ["0705","0805","0807","0811","0815","0905","0915"],
   "9mobile": ["0809","0817","0818","0909","0908","0918"]
@@ -5893,8 +5893,10 @@ function sparkleHandlePhoneNetworkInput(service,force=false){
   const detected=sparkleDetectNgNetwork(phone.value);
   const prefixChanged=detected.prefix!==sparkleLastDetectedPrefix[service];
   if(prefixChanged){
+    // Keep a manual choice made before the customer types; only unlock an
+    // existing manual choice when a previously recognized prefix changes.
+    if(sparkleLastDetectedPrefix[service]) sparkleManualNetworkChoice[service]=false;
     sparkleLastDetectedPrefix[service]=detected.prefix;
-    sparkleManualNetworkChoice[service]=false;
   }
   if(!sparkleNormalizeNgPhone(phone.value)){
     sparkleManualNetworkChoice[service]=false;
@@ -6826,7 +6828,7 @@ function sparkleInitBulkNetworkAutodetect(service){
     network.addEventListener("change",()=>{manual=true;});
     const detect=()=>{
       const result=sparkleDetectNgNetwork(phone.value);
-      if(result.prefix!==lastPrefix){lastPrefix=result.prefix;manual=false;}
+      if(result.prefix!==lastPrefix){if(lastPrefix)manual=false;lastPrefix=result.prefix;}
       if(!sparkleNormalizeNgPhone(phone.value)){manual=false;lastPrefix="";return;}
       if(result.network && !manual) network.value=result.network;
     };
