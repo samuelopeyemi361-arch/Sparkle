@@ -3088,6 +3088,7 @@ support@sparkle.com
     <div id="dataSingle">
       <div class="network-picker-title">1. Select a network</div>
       <p class="network-picker-subtitle">Choose the network you want to buy data for.</p>
+      <p class="network-picker-subtitle" id="dataNetworkAutoStatus" aria-live="polite" style="min-height:16px;margin-top:-8px"></p>
       <div class="network-picker" id="dataNetworkPicker" role="group" aria-label="Select data network">
         <button type="button" class="network-card" data-network="MTN" onclick="selectNetworkCard('data','MTN')">
           <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
@@ -3168,6 +3169,7 @@ support@sparkle.com
     <div id="airtimeSingle">
       <div class="network-picker-title">1. Select a network</div>
       <p class="network-picker-subtitle">Choose the network you want to recharge.</p>
+      <p class="network-picker-subtitle" id="airtimeNetworkAutoStatus" aria-live="polite" style="min-height:16px;margin-top:-8px"></p>
       <div class="network-picker" id="airtimeNetworkPicker" role="group" aria-label="Select airtime network">
         <button type="button" class="network-card active" data-network="MTN" onclick="selectNetworkCard('airtime','MTN')">
           <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
@@ -5841,25 +5843,104 @@ async function gsubzRequest(path, method="GET", data=null){
   if(result&&result.error){const err=new Error(String(result.error));err.responseBody=result;throw err;}return result;
 }
 
-function renderNetworkPicker(service,network){
-  const picker=document.getElementById(service+"NetworkPicker");
-  if(!picker)return;
-  picker.querySelectorAll(".network-card").forEach(card=>{
-    const active=card.dataset.network===network;
-    card.classList.toggle("active",active);
-    card.setAttribute("aria-pressed",active?"true":"false");
-  });
+// Nigerian mobile prefixes are a best-effort hint. Mobile-number portability
+// means customers must always be able to override the detected network manually.
+const SPARKLE_NG_NETWORK_PREFIXES = {
+  MTN: ["07025","07026","0703","0704","0706","0707","0803","0806","0810","0813","0814","0816","0903","0906","0913","0916","0702","0708","0807","0817","0818","0907","0908","0918"],
+  Airtel: ["0701","0708","0802","0808","0812","0901","0902","0907","0912"],
+  Glo: ["0705","0805","0807","0811","0815","0905","0915"],
+  "9mobile": ["0809","0817","0818","0909","0908","0918"]
+};
+const sparkleManualNetworkChoice = { airtime: false, data: false };
+const sparkleLastDetectedPrefix = { airtime: "", data: "" };
+
+function sparkleNormalizeNgPhone(value){
+  let digits=String(value||"").replace(/\D/g,"");
+  if(digits.startsWith("234")) digits="0"+digits.slice(3);
+  if(digits.length===10 && !digits.startsWith("0")) digits="0"+digits;
+  return digits;
+}
+function sparkleDetectNgNetwork(value){
+  const digits=sparkleNormalizeNgPhone(value);
+  if(!digits.startsWith("0")) return {network:"",prefix:""};
+  const prefixes=Object.entries(SPARKLE_NG_NETWORK_PREFIXES)
+    .flatMap(([network,list])=>list.map(prefix=>({network,prefix})))
+    .sort((a,b)=>b.prefix.length-a.prefix.length);
+  const match=prefixes.find(item=>digits.startsWith(item.prefix));
+  return match ? {network:match.network,prefix:match.prefix} : {network:"",prefix:""};
+}
+function sparkleApplyNetwork(service,network,source){
+  const select=document.getElementById(service+"Network");
+  if(!select || !network) return;
+  const changed=select.value!==network;
+  select.value=network;
+  renderNetworkPicker(service,network);
+  if(service==="data"){
+    if(changed || source==="manual") onDataNetworkChange();
+  }else{
+    updateNetworkBadge(service);
+  }
+  const status=document.getElementById(service+"NetworkAutoStatus");
+  if(status){
+    status.textContent=source==="auto" ? "Network detected automatically — you can change it above." :
+      source==="manual" ? "Network selected manually." : "";
+  }
+}
+function sparkleHandlePhoneNetworkInput(service,force=false){
+  const phone=document.getElementById(service+"Phone");
+  const select=document.getElementById(service+"Network");
+  if(!phone || !select) return;
+  const detected=sparkleDetectNgNetwork(phone.value);
+  const prefixChanged=detected.prefix!==sparkleLastDetectedPrefix[service];
+  if(prefixChanged){
+    sparkleLastDetectedPrefix[service]=detected.prefix;
+    sparkleManualNetworkChoice[service]=false;
+  }
+  if(!sparkleNormalizeNgPhone(phone.value)){
+    sparkleManualNetworkChoice[service]=false;
+    sparkleLastDetectedPrefix[service]="";
+    const blankDefault=service==="data"?"":"MTN";
+    if(select.value!==blankDefault){
+      select.value=blankDefault;
+      if(service==="data") onDataNetworkChange();
+      else { renderNetworkPicker(service,blankDefault); updateNetworkBadge(service); }
+    }
+    const status=document.getElementById(service+"NetworkAutoStatus");
+    if(status) status.textContent="";
+    return;
+  }
+  if(detected.network && (!sparkleManualNetworkChoice[service] || force)){
+    sparkleApplyNetwork(service,detected.network,"auto");
+  }else if(!detected.network && !sparkleManualNetworkChoice[service]){
+    const status=document.getElementById(service+"NetworkAutoStatus");
+    if(status) status.textContent="Network not recognized — please choose it manually.";
+  }
 }
 function selectNetworkCard(service,network){
   const select=document.getElementById(service+"Network");
   if(!select)return;
-  select.value=network;
-  renderNetworkPicker(service,network);
-  if(service==="data"){
-    onDataNetworkChange();
-  }else{
-    updateNetworkBadge(service);
-  }
+  sparkleManualNetworkChoice[service]=true;
+  const detected=sparkleDetectNgNetwork(document.getElementById(service+"Phone")?.value||"");
+  sparkleLastDetectedPrefix[service]=detected.prefix;
+  sparkleApplyNetwork(service,network,"manual");
+}
+function sparkleInitNetworkAutodetect(){
+  ["airtime","data"].forEach(service=>{
+    const phone=document.getElementById(service+"Phone");
+    if(!phone || phone.dataset.sparkleAutoNetworkBound==="1") return;
+    phone.dataset.sparkleAutoNetworkBound="1";
+    phone.addEventListener("input",()=>sparkleHandlePhoneNetworkInput(service));
+    phone.addEventListener("change",()=>sparkleHandlePhoneNetworkInput(service));
+    phone.addEventListener("blur",()=>sparkleHandlePhoneNetworkInput(service));
+    sparkleHandlePhoneNetworkInput(service);
+  });
+}
+document.addEventListener("DOMContentLoaded",sparkleInitNetworkAutodetect);
+function sparkleSetBeneficiaryPhone(service,number){
+  const phone=document.getElementById(service+"Phone");
+  if(!phone)return;
+  phone.value=number;
+  sparkleHandlePhoneNetworkInput(service,true);
 }
 function networkBadgeClass(network){
   if(network==="MTN") return "mtn";
@@ -6221,8 +6302,8 @@ function chooseGenericBeneficiary(type){
   const i=Number(answer)-1;
   if(!Number.isInteger(i)||!list[i]) return;
   const number=list[i].number;
-  if(type==="data") document.getElementById("dataPhone").value=number;
-  if(type==="airtime") document.getElementById("airtimePhone").value=number;
+  if(type==="data") sparkleSetBeneficiaryPhone("data",number);
+  if(type==="airtime") sparkleSetBeneficiaryPhone("airtime",number);
   if(type==="cable") document.getElementById("cableNumber").value=number;
 }
 
@@ -6732,6 +6813,27 @@ function addBulkRow(service){
   const index=bulkRows[service].length;
   bulkRows[service].push({index});
   renderBulkRows(service);
+  sparkleInitBulkNetworkAutodetect(service);
+}
+function sparkleInitBulkNetworkAutodetect(service){
+  if(service!=="airtime" && service!=="data")return;
+  document.querySelectorAll("#"+service+"BulkList .bulk-row").forEach(row=>{
+    const phone=row.querySelector('[data-field="phone"]');
+    const network=row.querySelector('[data-field="network"]');
+    if(!phone || !network || phone.dataset.sparkleAutoNetworkBound==="1")return;
+    phone.dataset.sparkleAutoNetworkBound="1";
+    let manual=false,lastPrefix="";
+    network.addEventListener("change",()=>{manual=true;});
+    const detect=()=>{
+      const result=sparkleDetectNgNetwork(phone.value);
+      if(result.prefix!==lastPrefix){lastPrefix=result.prefix;manual=false;}
+      if(!sparkleNormalizeNgPhone(phone.value)){manual=false;lastPrefix="";return;}
+      if(result.network && !manual) network.value=result.network;
+    };
+    phone.addEventListener("input",detect);
+    phone.addEventListener("change",detect);
+    phone.addEventListener("blur",detect);
+  });
 }
 
 function removeBulkRow(service,index){
@@ -6913,12 +7015,14 @@ function clearCompletedPurchaseInputs(service){
     if(params.get('page')==='confirm')window.history.replaceState({},'',window.location.pathname+window.location.hash);
   }catch(_){}
   if(kind==='data'){
-    clearValue('dataPhone');
+    sparkleManualNetworkChoice.data=false;sparkleLastDetectedPrefix.data="";
+    clearValue('dataPhone');sparkleHandlePhoneNetworkInput('data',true);
     if(typeof selectedDataPlan!=='undefined')selectedDataPlan=null;
     removeSelection('#dataPlans .data-plan-card');
     if(typeof clearDataPlans==='function')clearDataPlans('Select a data plan to continue.');
   }else if(kind==='airtime'){
-    clearValue('airtimePhone');clearValue('airtimeAmount');
+    sparkleManualNetworkChoice.airtime=false;sparkleLastDetectedPrefix.airtime="";
+    clearValue('airtimePhone');sparkleHandlePhoneNetworkInput('airtime',true);clearValue('airtimeAmount');
   }else if(kind==='cable'){
     clearValue('cableNumber');
     if(typeof selectedCablePlan!=='undefined')selectedCablePlan=null;
