@@ -6029,19 +6029,14 @@ function onDataNetworkChange(){
     return;
   }
 
-  // Start loading as soon as the number identifies a network. Pick its first
-  // available plan type by default; users can still change the type manually.
+  // Detect the network, but let the customer choose the data service
+  // (for example, Gifting or SME) before any plan lookup starts.
   const options=DATA_SERVICE_OPTIONS[network]||[];
-  const serviceSelect=document.getElementById("dataService");
-  if(!options.length||!serviceSelect){
-    clearDataPlans("No data plans are available for this network right now.");
+  if(!options.length){
+    clearDataPlans("No data services are available for this network right now.");
     return;
   }
-  serviceSelect.value=options[0].id;
-  selectedDataService=options[0].id;
-  selectedServiceID=options[0].id;
-  selectedDataServiceLabel=options[0].label;
-  return loadDataPlans(options[0].id);
+  clearDataPlans("Choose your data service above (for example, Gifting or SME) to load its plans.");
 }
 
 function onDataServiceChange(){
