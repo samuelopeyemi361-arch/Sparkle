@@ -1166,10 +1166,10 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .data-loading{grid-column:1/-1;padding:28px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
 .data-loading::before{display:none}
 .sparkle-plan-loader{grid-column:1/-1;min-height:150px;padding:28px 14px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:#fff;border:1px solid #e7eaf0;border-radius:14px;color:#667085;font-size:13px}
-.sparkle-loader-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#0b5cff,#1648b8);color:#fff;font-size:23px;font-weight:950;box-shadow:0 8px 22px rgba(11,92,255,.18);animation:sparkleLogoPulse 1.35s ease-in-out infinite}
+.sparkle-loader-logo{width:48px;height:48px;border-radius:15px;display:grid;place-items:center;background:linear-gradient(145deg,#0b5cff,#1648b8);color:#fff;font-size:23px;font-weight:950;box-shadow:0 8px 22px rgba(11,92,255,.18);animation:sparkleLogoPulse 1.35s ease-in-out infinite}.sparkle-loader-logo svg{display:block;width:29px;height:29px;animation:sparkleStarSpin 1.1s linear infinite}
 .sparkle-loader-text{margin-top:10px;font-weight:800;color:#475467}
 @keyframes sparkleLogoPulse{0%,100%{transform:rotate(-4deg) scale(1);opacity:.92}50%{transform:rotate(4deg) scale(1.06);opacity:1}}
-@keyframes dataSpin{to{transform:rotate(360deg)}}
+@keyframes dataSpin{to{transform:rotate(360deg)}}@keyframes sparkleStarSpin{to{transform:rotate(360deg)}}@media(prefers-reduced-motion:reduce){.sparkle-loader-logo,.sparkle-loader-logo svg{animation:none!important}}
 .data-empty{grid-column:1/-1;padding:25px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}.data-empty-title{display:block;font-size:24px;line-height:1.25;color:#111827;font-weight:950;margin-bottom:7px}.data-empty-sub{display:block;color:#667085;font-size:13px;font-weight:650}
 .data-bottom-action{position:sticky;bottom:0;background:linear-gradient(transparent,#f7f8fb 14%);padding:12px 0 2px;margin-top:5px}
 .data-bottom-action .btn{border-radius:11px}
@@ -3171,7 +3171,7 @@ support@sparkle.com
       <p class="network-picker-subtitle">Choose the network you want to recharge.</p>
       <p class="network-picker-subtitle" id="airtimeNetworkAutoStatus" aria-live="polite" style="min-height:16px;margin-top:-8px"></p>
       <div class="network-picker" id="airtimeNetworkPicker" role="group" aria-label="Select airtime network">
-        <button type="button" class="network-card active" data-network="MTN" onclick="selectNetworkCard('airtime','MTN')">
+        <button type="button" class="network-card" data-network="MTN" onclick="selectNetworkCard('airtime','MTN')">
           <span class="network-card-logo mtn">mtn</span><span>MTN</span><span class="network-card-check">✓</span>
         </button>
         <button type="button" class="network-card" data-network="Airtel" onclick="selectNetworkCard('airtime','Airtel')">
@@ -3186,7 +3186,7 @@ support@sparkle.com
       </div>
 
       <select class="data-network-select data-network-hidden" id="airtimeNetwork" onchange="updateNetworkBadge('airtime')" aria-hidden="true">
-        <option value="MTN" selected>MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
+        <option value="" selected>Select</option><option value="MTN">MTN</option><option value="Airtel">Airtel</option><option value="Glo">Glo</option><option value="9mobile">9mobile</option>
       </select>
 
       <div class="data-beneficiary-card">
@@ -5869,6 +5869,15 @@ function sparkleDetectNgNetwork(value){
   const match=prefixes.find(item=>digits.startsWith(item.prefix));
   return match ? {network:match.network,prefix:match.prefix} : {network:"",prefix:""};
 }
+function renderNetworkPicker(service,network){
+  const picker=document.getElementById(service+"NetworkPicker");
+  if(!picker)return;
+  picker.querySelectorAll(".network-card").forEach(card=>{
+    const active=!!network && card.dataset.network===network;
+    card.classList.toggle("active",active);
+    card.setAttribute("aria-pressed",active?"true":"false");
+  });
+}
 function sparkleApplyNetwork(service,network,source){
   const select=document.getElementById(service+"Network");
   if(!select || !network) return;
@@ -5901,12 +5910,12 @@ function sparkleHandlePhoneNetworkInput(service,force=false){
   if(!sparkleNormalizeNgPhone(phone.value)){
     sparkleManualNetworkChoice[service]=false;
     sparkleLastDetectedPrefix[service]="";
-    const blankDefault=service==="data"?"":"MTN";
-    if(select.value!==blankDefault){
-      select.value=blankDefault;
-      if(service==="data") onDataNetworkChange();
-      else { renderNetworkPicker(service,blankDefault); updateNetworkBadge(service); }
-    }
+    // A cleared number must leave no network selected, even if MTN was the
+    // previous/default choice. Also clear the old data plans and cancel loads.
+    select.value="";
+    renderNetworkPicker(service,"");
+    if(service==="data") onDataNetworkChange();
+    else updateNetworkBadge(service);
     const status=document.getElementById(service+"NetworkAutoStatus");
     if(status) status.textContent="";
     return;
@@ -5963,7 +5972,7 @@ function updateNetworkBadge(service){
 
 function sparklePlanLoader(text="Loading plans…"){
   return `<div class="sparkle-plan-loader" role="status" aria-live="polite">
-    <div class="sparkle-loader-logo" aria-hidden="true">S</div>
+    <div class="sparkle-loader-logo" aria-hidden="true"><svg viewBox="0 0 64 64" focusable="false"><path d="M32 2 40.7 23.3 62 32 40.7 40.7 32 62 23.3 40.7 2 32 23.3 23.3Z" fill="#fff"/><path d="M32 13 38.2 25.8 51 32 38.2 38.2 32 51 25.8 38.2 13 32 25.8 25.8Z" fill="#b9d8ff"/></svg></div>
     <div class="sparkle-loader-text">${escapeHtml(text)}</div>
   </div>`;
 }
@@ -6004,7 +6013,8 @@ function renderDataServiceOptions(network){
 function onDataNetworkChange(){
   updateNetworkBadge("data");
   const network=document.getElementById("dataNetwork")?.value||"";
-  const token=++dataServiceLoadToken;
+  // Invalidate any response still loading for the previous network.
+  ++dataServiceLoadToken;
   selectedNetwork=network;
   selectedDataCategory="All";
   selectedDataPlan=null;
@@ -6013,8 +6023,25 @@ function onDataNetworkChange(){
   selectedDataServiceLabel="";
   dataPlansCache={};
   renderDataServiceOptions(network);
-  clearDataPlans(network ? "Select a service to load live GSUBZ plans." : "Select a network, then select a service to view live plans.");
-  if(token!==dataServiceLoadToken)return;
+
+  if(!network){
+    clearDataPlans("Select a network, then select a service to view live plans.");
+    return;
+  }
+
+  // Start loading as soon as the number identifies a network. Pick its first
+  // available plan type by default; users can still change the type manually.
+  const options=DATA_SERVICE_OPTIONS[network]||[];
+  const serviceSelect=document.getElementById("dataService");
+  if(!options.length||!serviceSelect){
+    clearDataPlans("No data plans are available for this network right now.");
+    return;
+  }
+  serviceSelect.value=options[0].id;
+  selectedDataService=options[0].id;
+  selectedServiceID=options[0].id;
+  selectedDataServiceLabel=options[0].label;
+  return loadDataPlans(options[0].id);
 }
 
 function onDataServiceChange(){
@@ -6042,21 +6069,28 @@ function onDataServiceChange(){
 
 async function loadDataPlans(serviceID){
   const requestedServiceID=String(serviceID||selectedServiceID||selectedDataService||document.getElementById("dataService")?.value||"").trim();
-  selectedNetwork=document.getElementById("dataNetwork")?.value||selectedNetwork||"";
+  const requestNetwork=String(document.getElementById("dataNetwork")?.value||"");
+  selectedNetwork=requestNetwork;
   selectedServiceID=requestedServiceID||null;
   selectedDataService=requestedServiceID||null;
 
-  console.log("Selected network:", selectedNetwork);
+  // Each request gets a generation number. If the phone/network/plan type
+  // changes while the supplier is responding, ignore that older response.
+  const requestToken=++dataServiceLoadToken;
+  const isRequestCurrent=()=>requestToken===dataServiceLoadToken
+    && String(document.getElementById("dataNetwork")?.value||"")===requestNetwork;
+
+  console.log("Selected network:", requestNetwork);
   console.log("Selected serviceID:", selectedServiceID);
   console.log("ServiceID immediately before Supabase function call:", requestedServiceID);
 
   const box=document.getElementById("dataPlans");
-  if(!requestedServiceID){
-    clearDataPlans("Select a service to load live GSUBZ plans.");
+  if(!requestedServiceID||!requestNetwork){
+    clearDataPlans("Select a network, then select a service to view live plans.");
     return;
   }
 
-  if(box) box.innerHTML=sparklePlanLoader("Loading plans…");
+  if(box) box.innerHTML=sparklePlanLoader("Sparkle is loading the right plans…");
   const error=document.getElementById("dataPlanError");
   if(error) error.innerHTML="";
 
@@ -6067,10 +6101,12 @@ async function loadDataPlans(serviceID){
         await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET")
       );
     }
+    if(!isRequestCurrent())return;
+
     let plans=dataPlansCache[requestedServiceID]||[];
     // MTN has multiple live services. If one has no plans, automatically try
-    // the next MTN service without changing the other networks.
-    if(!plans.length && selectedNetwork==="MTN"){
+    // the next MTN service without allowing an old response to replace new plans.
+    if(!plans.length && requestNetwork==="MTN"){
       const mtnFallbacks=["mtn_sme","mtn_gifting","mtn_fibrex"].filter(id=>id!==requestedServiceID);
       for(const fallback of mtnFallbacks){
         try{
@@ -6079,23 +6115,27 @@ async function loadDataPlans(serviceID){
               await gsubzRequest("/api/plans/?service="+encodeURIComponent(fallback),"GET")
             );
           }
+          if(!isRequestCurrent())return;
           if(dataPlansCache[fallback]?.length){
             selectedDataService=fallback;
             selectedServiceID=fallback;
             const select=document.getElementById("dataService");
-            if(select){select.value=fallback;}
+            if(select)select.value=fallback;
             const opt=select?.selectedOptions?.[0];
             selectedDataServiceLabel=opt?.textContent||fallback;
             plans=dataPlansCache[fallback];
             break;
           }
         }catch(fallbackError){
+          if(!isRequestCurrent())return;
           console.warn("MTN fallback unavailable:",fallback,fallbackError);
         }
       }
     }
+    if(!isRequestCurrent())return;
     renderDataPlans(plans);
   }catch(e){
+    if(!isRequestCurrent())return;
     console.error("[Sparkle DATA] Plans request failed for serviceID:",requestedServiceID,e);
     if(box) box.innerHTML="";
     if(error) error.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to load live GSUBZ plans.")+'</div>';
