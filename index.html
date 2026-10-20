@@ -3932,7 +3932,7 @@ function setSparkleEmailOtpStep(enabled){
   otpField.style.display = enabled ? "block" : "none";
   otpInput.disabled = !enabled;
   otpInput.required = enabled;
-  if(!enabled){ otpInput.value = ""; sparkleSavePendingVerification(""); }
+  if(!enabled){ otpInput.value = ""; pendingVerificationEmail = ""; }
   document.getElementById("authSwitchRow").style.display = enabled ? "none" : "block";
   const forgotRow = document.getElementById("forgotPasswordRow");
   if(forgotRow) forgotRow.style.display = (!enabled && authMode === "login") ? "block" : "none";
