@@ -3888,6 +3888,33 @@ let sparklePasswordRecoveryMode = (()=>{
 let emailVerificationPending = false;
 let pendingVerificationEmail = "";
 let sparkleResendCooldown = false;
+const SPARKLE_PENDING_SIGNUP_KEY = "sparkle_pending_email_verification_v1";
+function sparkleSavePendingVerification(email){
+  pendingVerificationEmail = String(email||"").trim().toLowerCase();
+  try{
+    if(pendingVerificationEmail) sessionStorage.setItem(SPARKLE_PENDING_SIGNUP_KEY,JSON.stringify({email:pendingVerificationEmail,createdAt:Date.now()}));
+    else sessionStorage.removeItem(SPARKLE_PENDING_SIGNUP_KEY);
+  }catch(_){}
+}
+function sparkleRestorePendingVerification(){
+  try{
+    const saved=JSON.parse(sessionStorage.getItem(SPARKLE_PENDING_SIGNUP_KEY)||"null");
+    const email=String(saved?.email||"").trim().toLowerCase();
+    const createdAt=Number(saved?.createdAt||0);
+    if(!email||!Number.isFinite(createdAt)||Date.now()-createdAt>24*60*60*1000)return "";
+    return email;
+  }catch(_){return "";}
+}
+function sparkleExplainAuthError(error,stage){
+  const message=String(error?.message||error||"").trim();
+  if(/profiles_username_lower_unique|duplicate key value.*username|username.*already exists/i.test(message))return "That username is already taken. Please choose a different username.";
+  if(/referral.*not found|referral username was not found/i.test(message))return "That referral username was not found. Check it or leave the referral field blank.";
+  if(/token has expired|otp.*expired|expired.*token/i.test(message))return "That verification code has expired. Tap Resend code to receive a new one, then enter the newest code.";
+  if(/invalid.*(otp|token)|otp.*invalid|token.*invalid|no.*user.*found/i.test(message))return "That code may be incorrect or an older code. Use the latest six-digit code sent to this email, or tap Resend code.";
+  if(/user already registered|already been registered|email.*already/i.test(message))return "An account already exists for this email. Try logging in, or request a new verification code if you have not verified it yet.";
+  if(stage==="signup"&&/database error|unexpected_failure|500/i.test(message))return "We couldn't finish creating this account. Check that your username is available and try again. If it continues, contact Sparkle support.";
+  return message||"Sparkle couldn't complete that step. Please try again.";
+}
 
 function setSparkleEmailOtpStep(enabled){
   emailVerificationPending = enabled;
@@ -3905,7 +3932,7 @@ function setSparkleEmailOtpStep(enabled){
   otpField.style.display = enabled ? "block" : "none";
   otpInput.disabled = !enabled;
   otpInput.required = enabled;
-  if(!enabled){ otpInput.value = ""; pendingVerificationEmail = ""; }
+  if(!enabled){ otpInput.value = ""; sparkleSavePendingVerification(""); }
   document.getElementById("authSwitchRow").style.display = enabled ? "none" : "block";
   const forgotRow = document.getElementById("forgotPasswordRow");
   if(forgotRow) forgotRow.style.display = (!enabled && authMode === "login") ? "block" : "none";
@@ -3923,7 +3950,9 @@ async function resendSparkleEmailCode(){
   try{
     const {error} = await supabaseClient.auth.resend({type:"signup", email:pendingVerificationEmail});
     if(error) throw error;
-    showMessage("A new verification code has been sent. Check your inbox and spam folder.","success");
+    const otp=document.getElementById("emailVerificationCode");
+    if(otp) otp.value="";
+    showMessage("A new verification code has been sent. Use this newest code only; an older code may no longer work. Check your inbox and spam folder.","success");
     sparkleResendCooldown = true;
     button.textContent = "Resend available in 60 seconds";
     setTimeout(()=>{ sparkleResendCooldown = false; if(emailVerificationPending){button.disabled=false;button.textContent="Resend code";} },60000);
@@ -4000,6 +4029,11 @@ setSparkleEmailOtpStep(false);
 .classList.add("show");
 
 const signup = mode === "signup";
+if(!signup && sparkleRestorePendingVerification()){
+  // Keep verification pending if a user switches away and back during signup.
+  pendingVerificationEmail=sparkleRestorePendingVerification();
+  setSparkleEmailOtpStep(true);
+}
 
 
 document.getElementById("authTitle").textContent =
@@ -4177,11 +4211,13 @@ authMode === "signup"
 try{
 
 if(emailVerificationPending){
-  const token = document.getElementById("emailVerificationCode").value.trim();
+  const token = document.getElementById("emailVerificationCode").value.replace(/\D/g,"").trim();
   if(!/^\d{6}$/.test(token)) throw new Error("Enter the six-digit code sent to your email.");
-  const {data,error} = await supabaseClient.auth.verifyOtp({email:pendingVerificationEmail, token, type:"signup"});
-  if(error) throw error;
-  emailVerificationPending = false;
+  const verifyEmail=pendingVerificationEmail || sparkleRestorePendingVerification();
+  if(!verifyEmail) throw new Error("Your verification session expired. Open Sign Up and request a new code.");
+  const {data,error} = await supabaseClient.auth.verifyOtp({email:verifyEmail, token, type:"signup"});
+  if(error) throw new Error(sparkleExplainAuthError(error,"verify"));
+  sparkleSavePendingVerification("");
   showMessage("Email verified successfully. Welcome to Sparkle!","success");
   setTimeout(()=>{
     closeAuth();
@@ -4334,6 +4370,20 @@ throw new Error(
 }
 
 
+/* CHECK USERNAME/REFERRAL BEFORE AUTH SIGNUP: prevents generic database 500s. */
+const {data:signupCheck,error:signupCheckError}=await supabaseClient.rpc("sparkle_check_signup",{
+  p_username:username,
+  p_referral_username:normalizedReferralUsername || null
+});
+if(signupCheckError) throw new Error("Sparkle couldn't validate that username right now. Please try again shortly.");
+if(!signupCheck?.available){
+  const reason=signupCheck?.reason;
+  if(reason==="username_taken")throw new Error("That username is already taken. Please choose a different username.");
+  if(reason==="referral_not_found")throw new Error("That referral username was not found. Check it or leave the referral field blank.");
+  if(reason==="self_referral")throw new Error("You cannot use your own username as a referral.");
+  throw new Error("Enter a valid username using 3–24 letters, numbers, or underscores.");
+}
+
 /* CREATE AUTH ACCOUNT */
 
 const {data,error} =
@@ -4364,7 +4414,7 @@ referral_username:normalizedReferralUsername || null
 });
 
 
-if(error) throw error;
+if(error) throw new Error(sparkleExplainAuthError(error,"signup"));
 
 
 /*
@@ -4419,7 +4469,7 @@ if(data.session){
   throw new Error("Email verification is not being enforced by the authentication settings. Please ensure Supabase Confirm email is enabled before allowing registrations.");
 }
 
-pendingVerificationEmail = email;
+sparkleSavePendingVerification(email);
 document.getElementById("email").readOnly = true;
 setSparkleEmailOtpStep(true);
 showMessage("Account created. Check your inbox for Sparkle’s six-digit verification code.","success");
@@ -4427,7 +4477,7 @@ showMessage("Account created. Check your inbox for Sparkle’s six-digit verific
 }catch(error){
 
 const rawMessage = String(error && error.message ? error.message : "").trim();
-let friendlyMessage = rawMessage;
+let friendlyMessage = sparkleExplainAuthError(error,emailVerificationPending?"verify":(authMode==="signup"?"signup":"login"));
 
 if (/invalid login credentials|invalid password|email or password/i.test(rawMessage)) {
   friendlyMessage = "Incorrect email or password. Please check your login details and try again.";
