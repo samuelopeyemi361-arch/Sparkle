@@ -6377,14 +6377,11 @@ function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if
 function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
 function splitPlanName(plan){const raw=String(plan?.displayName||plan?.display_name||plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||plan?.package_name||plan?.packageName||plan?.title||"").trim();const duration=planDuration({...plan,displayName:plan?.displayName||plan?.display_name||raw,name:plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||raw});const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
 function sparkleDataPrice(plan){
-  const supplierAmount=Number(plan?.api_price ?? plan?.apiPrice ?? plan?.cost);
-  const retailAmount=Number(plan?.price ?? plan?.retail_price ?? plan?.retailPrice ?? plan?.selling_price ?? plan?.sellingPrice);
-  if(!Number.isFinite(supplierAmount)||!Number.isFinite(retailAmount)||supplierAmount<0||retailAmount<supplierAmount) return {sell:NaN,valid:false};
-  // The secure data-purchase Edge Function requires a whole-naira charge.
-  // Round UP to the next naira so Sparkle never sells below its calculated price.
-  const calculated=supplierAmount+(retailAmount-supplierAmount)*0.8;
-  const sell=Math.ceil(calculated-1e-8);
-  return {sell,valid:Number.isSafeInteger(sell)&&sell>=supplierAmount&&sell>0};
+  // Data-plan retail prices are calculated by the server. The browser receives
+  // only the final customer price, never supplier cost or Sparkle's margin.
+  const serverPrice=Number(plan?.sparkle_price ?? plan?.price);
+  const sell=Math.ceil(serverPrice-1e-8);
+  return {sell,valid:Number.isSafeInteger(sell)&&sell>0};
 }
 
 function normalizePlans(result){
