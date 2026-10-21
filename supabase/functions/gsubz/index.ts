@@ -133,44 +133,41 @@ serve(async (req) => {
             (value != null ? String(value) : "");
 
           const price =
-            item.api_price ??
-            item.price ??
-            item.amount ??
-            item.selling_price ??
-            item.sellingPrice;
-
-          if (
-            value == null ||
-            String(value).trim() === "" ||
-            !displayName ||
-            price == null
-          ) {
-            return null;
-          }
-
+            item.price ?? item.selling_price ?? item.sellingPrice ??
+            item.retail_price ?? item.retailPrice ?? item.amount ??
+            item.api_price ?? item.apiPrice ?? item.cost;
+          const supplierCost =
+            item.api_price ?? item.apiPrice ?? item.cost ??
+            item.provider_price ?? item.providerPrice ??
+            item.wholesale_price ?? item.wholesalePrice ??
+            item.price ?? item.amount ?? price;
+          if (value == null || String(value).trim() === "" || !displayName || price == null) return null;
+          const supplierAmount = Number(supplierCost);
+          const retailAmount = Number(price);
+          const sparklePrice = DATA_SERVICES.includes(service) &&
+            Number.isFinite(supplierAmount) && Number.isFinite(retailAmount) &&
+            supplierAmount > 0 && retailAmount >= supplierAmount
+              ? Math.ceil(supplierAmount + (retailAmount - supplierAmount) * 0.8 - 1e-8)
+              : null;
           return {
-            ...item,
-            value: String(value),
-            variation_code: String(value),
-            displayName: String(displayName),
-            price,
-            api_price: item.api_price ?? price,
+            ...item, value: String(value), variation_code: String(value),
+            displayName: String(displayName), price, api_price: supplierCost,
+            sparkle_price: sparklePrice,
           };
         })
         .filter((item: any) => item !== null);
 
-      return json(
-        {
-          success: providerResponse.ok,
-          service,
-          data,
-          plans,
-          PlanName: CABLE_SERVICES.includes(service)
-            ? "variation_code"
-            : data?.PlanName ?? "plan",
-        },
-        providerResponse.status,
-      );
+      const isDataService = DATA_SERVICES.includes(service);
+      const responsePlans = isDataService
+        ? plans.filter((item: any) => Number.isSafeInteger(item.sparkle_price) && item.sparkle_price > 0)
+            .map((item: any) => ({ value: item.value, variation_code: item.variation_code, displayName: item.displayName, price: item.sparkle_price, sparkle_price: item.sparkle_price }))
+        : plans;
+      return json({
+        success: providerResponse.ok, service,
+        ...(isDataService ? {} : { data }),
+        plans: responsePlans,
+        PlanName: CABLE_SERVICES.includes(service) ? "variation_code" : data?.PlanName ?? "plan",
+      }, providerResponse.status);
     }
 
     // POST REQUESTS
@@ -196,6 +193,44 @@ serve(async (req) => {
       }
 
       const action = String(body.action || "").toLowerCase();
+
+      // Browser proxy is limited to cable subscriber verification. Purchases
+      // must use Sparkle's authenticated wallet-reservation endpoints.
+      if (body.path !== undefined) {
+        const requestedPath = String(body.path || "").split("?")[0].replace(/[/]+$/, "");
+        const requestedMethod = String(body.method || "POST").toUpperCase();
+        const requestData = body.data && typeof body.data === "object" ? body.data as Record<string, unknown> : {};
+        if (requestedPath !== "/api/verify-customer" || requestedMethod !== "POST") {
+          return json({ success: false, error: "Direct provider requests are disabled. Use Sparkle's secure purchase flow." }, 403);
+        }
+        const verifyService = String(requestData.serviceID || requestData.service || "").trim().toLowerCase();
+        const billersCode = String(requestData.billersCode || requestData.customerID || "").trim();
+        const verifyType = String(requestData.type || "").trim().toLowerCase();
+        if (!CABLE_SERVICES.includes(verifyService) || billersCode.length < 5 || billersCode.length > 40) {
+          return json({ success: false, error: "Enter a valid cable provider and subscriber number." }, 400);
+        }
+        const form = new FormData();
+        form.append("api", apiKey); form.append("serviceID", verifyService); form.append("billersCode", billersCode);
+        if (verifyType) form.append("type", verifyType);
+        try {
+          const providerResponse = await fetch(`${GSUBZ_BASE}/api/verify-customer/`, {
+            method: "POST", headers: { Authorization: `Bearer ${apiKey}`, Accept: "application/json" },
+            body: form, signal: AbortSignal.timeout(20000),
+          });
+          const raw = await providerResponse.text();
+          let providerData: any;
+          try { providerData = JSON.parse(raw); } catch { providerData = { success: false, error: "Invalid provider response." }; }
+          return json(providerData, providerResponse.status);
+        } catch {
+          return json({ success: false, error: "Subscriber verification is temporarily unavailable." }, 502);
+        }
+      }
+
+      const requestedServiceID = String(body.serviceID || body.service || "").trim().toLowerCase();
+      if (action === "balance" || action === "recharge_pins" || action === "recharge-pins" ||
+          AIRTIME_SERVICES.includes(normalizeNetwork(requestedServiceID)) || DATA_SERVICES.includes(requestedServiceID)) {
+        return json({ success: false, error: "Direct provider purchases are disabled. Use Sparkle's secure purchase flow." }, 403);
+      }
 
       // BALANCE
       if (action === "balance") {
@@ -300,7 +335,7 @@ serve(async (req) => {
 
         try {
           providerResponse = await fetch(
-            `${GSUBZ_BASE}/apiV2/generate/`,
+            `${GSUBZ_BASE}/api/generate/`,
             {
               method: "POST",
               headers: {
