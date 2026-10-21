@@ -141,6 +141,29 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
+  // Fetch the authoritative, server-calculated customer price. Data catalogue
+  // responses expose only this price, never supplier cost or Sparkle's margin.
+  let catalogue: any;
+  try {
+    const response = await fetch(
+      `${supabaseUrl}/functions/v1/gsubz?action=plans&service=${encodeURIComponent(serviceID)}`,
+      { method: "GET", headers: { apikey: anonKey, Authorization: authorization, Accept: "application/json" }, signal: AbortSignal.timeout(15000) },
+    );
+    catalogue = await response.json();
+    if (!response.ok || catalogue?.success !== true || !Array.isArray(catalogue?.plans)) {
+      return reply({ success: false, status: "not_started", error: "Data plan pricing is temporarily unavailable. No payment was taken." }, 502);
+    }
+  } catch {
+    return reply({ success: false, status: "not_started", error: "We could not verify this data plan's price. No payment was taken; please try again shortly." }, 502);
+  }
+  const selectedPlan = catalogue.plans.find((item: any) =>
+    String(item?.value ?? item?.variation_code ?? "").trim() === plan
+  );
+  const expectedSellingPrice = Number(selectedPlan?.sparkle_price ?? selectedPlan?.price);
+  if (!selectedPlan || !Number.isSafeInteger(expectedSellingPrice) || expectedSellingPrice <= 0 || amount !== expectedSellingPrice) {
+    return reply({ success: false, status: "not_started", error: "The displayed price for this plan is outdated or invalid. Refresh plans and try again. No payment was taken." }, 400);
+  }
+
   // Verify the user's transaction PIN before touching the wallet.
   const pin = typeof body.pin === "string" ? body.pin.trim() : "";
 
