@@ -284,7 +284,7 @@ Deno.serve(async (req) => {
     form.append("number", String(quantity));
 
     const response = await fetch(
-      "https://api.gsubz.com/apiV2/generate/",
+      "https://api.gsubz.com/api/generate/",
       {
         method: "POST",
         headers: {
