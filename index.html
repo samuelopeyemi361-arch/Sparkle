@@ -3888,7 +3888,11 @@ let sparklePasswordRecoveryMode = (()=>{
 let emailVerificationPending = false;
 let pendingVerificationEmail = "";
 let sparkleResendCooldown = false;
+let sparkleResendTimer = null;
+let sparkleResendRequestInFlight = false;
 const SPARKLE_PENDING_SIGNUP_KEY = "sparkle_pending_email_verification_v1";
+const SPARKLE_RESEND_UNTIL_KEY = "sparkle_email_verification_resend_until_v1";
+
 function sparkleSavePendingVerification(email){
   pendingVerificationEmail = String(email||"").trim().toLowerCase();
   try{
@@ -3905,13 +3909,52 @@ function sparkleRestorePendingVerification(){
     return email;
   }catch(_){return "";}
 }
+function sparkleGetResendRemainingSeconds(){
+  try{
+    const until=Number(sessionStorage.getItem(SPARKLE_RESEND_UNTIL_KEY)||0);
+    return Math.max(0,Math.ceil((until-Date.now())/1000));
+  }catch(_){return 0;}
+}
+function sparkleRenderResendButton(){
+  const button=document.getElementById("resendSparkleEmailCodeButton");
+  if(!button)return 0;
+  const remaining=sparkleGetResendRemainingSeconds();
+  sparkleResendCooldown=remaining>0;
+  if(!remaining){
+    try{sessionStorage.removeItem(SPARKLE_RESEND_UNTIL_KEY);}catch(_){}
+  }
+  button.disabled=!emailVerificationPending||remaining>0||sparkleResendRequestInFlight;
+  button.textContent=sparkleResendRequestInFlight
+    ? "Sending code…"
+    : (remaining>0 ? "Resend code in "+remaining+"s" : "Resend code");
+  return remaining;
+}
+function sparkleStartResendCooldown(seconds=60){
+  const until=Date.now()+Math.max(0,Number(seconds)||0)*1000;
+  try{sessionStorage.setItem(SPARKLE_RESEND_UNTIL_KEY,String(until));}catch(_){}
+  if(sparkleResendTimer){clearInterval(sparkleResendTimer);sparkleResendTimer=null;}
+  sparkleRenderResendButton();
+  sparkleResendTimer=window.setInterval(()=>{
+    const remaining=sparkleRenderResendButton();
+    if(!remaining){
+      clearInterval(sparkleResendTimer);
+      sparkleResendTimer=null;
+    }
+  },250);
+}
+function sparkleClearResendCooldown(){
+  try{sessionStorage.removeItem(SPARKLE_RESEND_UNTIL_KEY);}catch(_){}
+  sparkleResendCooldown=false;
+  if(sparkleResendTimer){clearInterval(sparkleResendTimer);sparkleResendTimer=null;}
+  sparkleRenderResendButton();
+}
 function sparkleExplainAuthError(error,stage){
   const message=String(error?.message||error||"").trim();
   if(/profiles_username_lower_unique|duplicate key value.*username|username.*already exists/i.test(message))return "That username is already taken. Please choose a different username.";
   if(/referral.*not found|referral username was not found/i.test(message))return "That referral username was not found. Check it or leave the referral field blank.";
-  if(/token has expired|otp.*expired|expired.*token/i.test(message))return "That verification code has expired. Tap Resend code to receive a new one, then enter the newest code.";
-  if(/invalid.*(otp|token)|otp.*invalid|token.*invalid|no.*user.*found/i.test(message))return "That code may be incorrect or an older code. Use the latest six-digit code sent to this email, or tap Resend code.";
-  if(/user already registered|already been registered|email.*already/i.test(message))return "An account already exists for this email. Try logging in, or request a new verification code if you have not verified it yet.";
+  if(/token has expired or is invalid|expired or is invalid|invalid.*(otp|token)|otp.*invalid|token.*invalid|no.*user.*found/i.test(message))return "That code is incorrect or no longer valid. Check all six digits and use the newest code sent to this email. You can request another code when the resend countdown finishes.";
+  if(/token has expired|otp.*expired|expired.*token/i.test(message))return "That verification code has expired. Tap Resend code when the countdown finishes, then enter the newest code.";
+  if(/user already registered|already been registered|email.*already/i.test(message))return "This email already exists. Please log in instead.";
   if(stage==="signup"&&/database error|unexpected_failure|500/i.test(message))return "We couldn't finish creating this account. Check that your username is available and try again. If it continues, contact Sparkle support.";
   return message||"Sparkle couldn't complete that step. Please try again.";
 }
@@ -3928,7 +3971,6 @@ function setSparkleEmailOtpStep(enabled){
   document.getElementById("username").required = !enabled && authMode === "signup";
   const otpField = document.getElementById("emailOtpField");
   const otpInput = document.getElementById("emailVerificationCode");
-  const resend = document.getElementById("resendSparkleEmailCodeButton");
   otpField.style.display = enabled ? "block" : "none";
   otpInput.disabled = !enabled;
   otpInput.required = enabled;
@@ -3938,28 +3980,34 @@ function setSparkleEmailOtpStep(enabled){
   if(forgotRow) forgotRow.style.display = (!enabled && authMode === "login") ? "block" : "none";
   document.getElementById("authTitle").textContent = enabled ? "Verify your Sparkle Email" : (authMode === "signup" ? "Create Sparkle Account" : "Login to Sparkle");
   document.getElementById("authButton").textContent = enabled ? "Verify email code" : (authMode === "signup" ? "Create Account" : "Login");
-  if(resend){ resend.disabled = !enabled || sparkleResendCooldown; }
+  sparkleRenderResendButton();
   if(enabled) setTimeout(()=>otpInput.focus(),50);
 }
 
 async function resendSparkleEmailCode(){
   const button = document.getElementById("resendSparkleEmailCodeButton");
-  if(!pendingVerificationEmail || sparkleResendCooldown) return;
-  button.disabled = true;
-  button.textContent = "Sending code…";
+  const email = pendingVerificationEmail || sparkleRestorePendingVerification();
+  const remaining = sparkleRenderResendButton();
+  if(!email){
+    showMessage("Your pending verification could not be restored. Please start sign up again.", "error");
+    return;
+  }
+  if(remaining>0 || sparkleResendRequestInFlight) return;
+  pendingVerificationEmail=email;
+  sparkleResendRequestInFlight=true;
+  if(button){button.disabled=true;button.textContent="Sending code…";}
   try{
-    const {error} = await supabaseClient.auth.resend({type:"signup", email:pendingVerificationEmail});
+    const {error} = await supabaseClient.auth.resend({type:"signup", email});
     if(error) throw error;
     const otp=document.getElementById("emailVerificationCode");
     if(otp) otp.value="";
-    showMessage("A new verification code has been sent. Use this newest code only; an older code may no longer work. Check your inbox and spam folder.","success");
-    sparkleResendCooldown = true;
-    button.textContent = "Resend available in 60 seconds";
-    setTimeout(()=>{ sparkleResendCooldown = false; if(emailVerificationPending){button.disabled=false;button.textContent="Resend code";} },60000);
+    sparkleStartResendCooldown(60);
+    showMessage("A new verification code has been requested. Use only the newest code. Check your inbox and spam folder.", "success");
   }catch(error){
-    showMessage(error.message || "Could not resend the code yet. Please wait a moment and try again.","error");
-    button.disabled = false;
-    button.textContent = "Resend code";
+    showMessage(sparkleExplainAuthError(error,"verify") || "Could not resend the code. Please check your connection and try again.", "error");
+  }finally{
+    sparkleResendRequestInFlight=false;
+    sparkleRenderResendButton();
   }
 }
 
@@ -4012,91 +4060,50 @@ async function requestSparklePasswordReset(){
 }
 
 function openAuth(mode){
+  sparkleForgotPasswordMode = false;
+  document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
+  document.getElementById("authForm").style.display = "block";
+  document.getElementById("authSwitchRow").style.display = "block";
+  authMode = mode;
+  document.getElementById("authModal").classList.add("show");
 
-sparkleForgotPasswordMode = false;
-document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
-document.getElementById("authForm").style.display = "block";
-document.getElementById("authSwitchRow").style.display = "block";
-authMode = mode;
-setSparkleEmailOtpStep(false);
+  const savedPendingEmail = sparkleRestorePendingVerification();
+  if(savedPendingEmail){
+    pendingVerificationEmail = savedPendingEmail;
+    document.getElementById("email").value = savedPendingEmail;
+    document.getElementById("email").readOnly = true;
+    document.getElementById("password").value = "";
+    setSparkleEmailOtpStep(true);
+    sparkleRenderResendButton();
+    clearMessage();
+    return;
+  }
 
- document.getElementById("email").readOnly = false;
- document.getElementById("email").value = "";
- document.getElementById("password").value = "";
+  setSparkleEmailOtpStep(false);
+  document.getElementById("email").readOnly = false;
+  document.getElementById("email").value = "";
+  document.getElementById("password").value = "";
 
- document
-.getElementById("authModal")
-.classList.add("show");
+  const signup = mode === "signup";
+  document.getElementById("authTitle").textContent = signup ? "Create Sparkle Account" : "Login to Sparkle";
+  document.getElementById("authButton").textContent = signup ? "Create Account" : "Login";
+  document.getElementById("firstNameField").style.display = signup ? "block" : "none";
+  document.getElementById("lastNameField").style.display = signup ? "block" : "none";
+  document.getElementById("phoneField").style.display = signup ? "block" : "none";
+  document.getElementById("usernameField").style.display = signup ? "block" : "none";
+  document.getElementById("username").required = signup;
+  document.getElementById("referralField").style.display = signup ? "block" : "none";
 
-const signup = mode === "signup";
-if(!signup && sparkleRestorePendingVerification()){
-  // Keep verification pending if a user switches away and back during signup.
-  pendingVerificationEmail=sparkleRestorePendingVerification();
-  setSparkleEmailOtpStep(true);
-}
+  if(signup){
+    const params = new URLSearchParams(window.location.search);
+    const referralFromLink = (params.get("ref") || "").trim().toLowerCase();
+    const referralInput = document.getElementById("referralCode");
+    if(referralFromLink && referralInput && !referralInput.value.trim()) referralInput.value = referralFromLink;
+  }
 
-
-document.getElementById("authTitle").textContent =
-signup
-? "Create Sparkle Account"
-: "Login to Sparkle";
-
-
-document.getElementById("authButton").textContent =
-signup
-? "Create Account"
-: "Login";
-
-
-document.getElementById("firstNameField")
-.style.display =
-signup ? "block" : "none";
-
-
-document.getElementById("lastNameField")
-.style.display =
-signup ? "block" : "none";
-
-
-document.getElementById("phoneField")
-.style.display =
-signup ? "block" : "none";
-
-
-document.getElementById("usernameField")
-.style.display =
-signup ? "block" : "none";
-
-// Username is compulsory only during registration, never during login.
-document.getElementById("username").required = signup;
-
-
-document.getElementById("referralField")
-.style.display =
-signup ? "block" : "none";
-
-if(signup){
-  const params = new URLSearchParams(window.location.search);
-  const referralFromLink = (params.get("ref") || "").trim().toLowerCase();
-  const referralInput = document.getElementById("referralCode");
-  if(referralFromLink && referralInput && !referralInput.value.trim()) referralInput.value = referralFromLink;
-}
-
-
-document.getElementById("switchText").textContent =
-signup
-? "Already have an account?"
-: "Don't have an account?";
-
-
-document.getElementById("switchButton").textContent =
-signup
-? "Login"
-: "Sign Up";
-
-
-clearMessage();
-
+  document.getElementById("switchText").textContent = signup ? "Already have an account?" : "Don't have an account?";
+  document.getElementById("switchButton").textContent = signup ? "Login" : "Sign Up";
+  clearMessage();
 }
 
 
@@ -4157,6 +4164,7 @@ box.className = "message";
    SIGNUP / LOGIN
    ===================================================== */
 
+document.getElementById("authForm").noValidate = true;
 document
 .getElementById("authForm")
 .addEventListener("submit",async function(e){
@@ -4178,22 +4186,24 @@ document
 .getElementById("password")
 .value;
 
-// Validate credentials in the form handler so browser autofill does not
-// silently block submission through native form validation.
-if (!email) {
-  showMessage("Enter your email address to log in.", "error");
-  document.getElementById("email").focus();
-  return;
-}
-if (!password) {
-  showMessage("Enter your password to log in.", "error");
-  document.getElementById("password").focus();
-  return;
-}
-if (authMode === "login" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-  showMessage("Enter a valid email address.", "error");
-  document.getElementById("email").focus();
-  return;
+// The six-digit verification step does not require the hidden login fields.
+// Validate email/password only during ordinary signup or login.
+if (!emailVerificationPending) {
+  if (!email) {
+    showMessage("Enter your email address to log in.", "error");
+    document.getElementById("email").focus();
+    return;
+  }
+  if (!password) {
+    showMessage("Enter your password to log in.", "error");
+    document.getElementById("password").focus();
+    return;
+  }
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showMessage("Enter a valid email address.", "error");
+    document.getElementById("email").focus();
+    return;
+  }
 }
 
 const button =
@@ -4202,10 +4212,9 @@ document.getElementById("authButton");
 
 button.disabled = true;
 
-button.textContent =
-authMode === "signup"
-? "Creating account..."
-: "Logging in...";
+button.textContent = emailVerificationPending
+  ? "Verifying code..."
+  : (authMode === "signup" ? "Creating account..." : "Logging in...");
 
 
 try{
@@ -4218,6 +4227,7 @@ if(emailVerificationPending){
   const {data,error} = await supabaseClient.auth.verifyOtp({email:verifyEmail, token, type:"signup"});
   if(error) throw new Error(sparkleExplainAuthError(error,"verify"));
   sparkleSavePendingVerification("");
+  sparkleClearResendCooldown();
   showMessage("Email verified successfully. Welcome to Sparkle!","success");
   setTimeout(()=>{
     closeAuth();
@@ -4415,6 +4425,12 @@ referral_username:normalizedReferralUsername || null
 
 
 if(error) throw new Error(sparkleExplainAuthError(error,"signup"));
+
+// Supabase may intentionally return a user with no identities for an already-registered
+// email when email confirmation is enabled. Do not pretend that a new code was sent.
+if(data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0){
+  throw new Error("This email already exists. Please log in instead.");
+}
 
 
 /*
