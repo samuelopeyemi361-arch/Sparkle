@@ -6937,13 +6937,16 @@ function showPurchaseSummary(service){
     ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>`}
     <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":service==="education"?"Exam PIN":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
-    <div class="sparkle-summary-total"><span>Total to pay</span><strong>${money(p.amount)}</strong></div>
-    <button class="btn primary full sparkle-summary-confirm" onclick="sparkleConfirmPurchase()">${service==="cable"?"Confirm & Pay":service==="education"?"Review & Pay":service==="data"?"Confirm & Buy":"Confirm & Buy Airtime"}</button>`;
+    <div class="sparkle-summary-total"><span>Amount to pay</span><strong>${money(p.amount)}</strong></div>
+    <div class="summary-line"><span>Your wallet balance</span><strong id="sparkleReviewWalletBalance">Checking balance…</strong></div>
+    <div id="sparkleReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:12px 0;padding:12px;border-radius:10px;font-size:13px;line-height:1.5"></div>
+    <button class="btn primary full sparkle-summary-confirm" id="sparkleReviewContinueButton" onclick="sparkleConfirmPurchase()" disabled>Checking wallet balance…</button>`;
   const screen=document.getElementById("sparkle-purchase-summary-screen");
   const content=document.getElementById("sparkle-summary-screen-content");
   if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
   window.sparkleSummaryReturnScroll=window.scrollY||0;
   content.innerHTML=summaryMarkup;
+  (async()=>{const label=document.getElementById("sparkleReviewWalletBalance"),btn=document.getElementById("sparkleReviewContinueButton"),msg=document.getElementById("sparkleReviewFundsMessage");if(!label||!btn)return;try{const a=await supabaseClient.auth.getUser(),uid=a?.data?.user?.id;if(a?.error||!uid)throw new Error("Sign in to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance unavailable. Please retry.");const b=Number(r.data.balance),amount=Number(pendingPurchase?.total||0),fmt=n=>"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});label.textContent=fmt(b);if(b+0.000001<amount){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent="Insufficient funds. Balance: "+fmt(b)+". Amount required: "+fmt(amount)+". Fund your wallet to continue.";btn.disabled=true;btn.textContent="Insufficient funds";}else{msg.style.display="block";msg.style.background="#dcfce7";msg.style.color="#166534";msg.textContent="Your balance is enough. Continue to enter your Transaction PIN.";btn.disabled=false;btn.textContent="Continue to Transaction PIN";}}catch(e){label.textContent="Unavailable";msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent=e?.message||"Balance check failed.";btn.disabled=true;btn.textContent="Balance check required";}})();
   screen.scrollTop=0;
   // Give the review screen its own URL, like a dedicated confirmation link.
   // The screen remains a full-page view so the purchase form is not visible underneath.
@@ -7062,11 +7065,17 @@ function showBulkSummary(service){
 
 let sparklePinRequiredForPendingPurchase=false;
 
-function openPinForPurchase(){
-  document.getElementById("pinModal").classList.add("show");
-  document.querySelectorAll(".pin-box").forEach(x=>x.value="");
-  document.getElementById("pinMessage").textContent="";
-  setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);
+async function openPinForPurchase(options={}){
+  const skip=options?.skipBalanceCheck===true,service=String(currentService||"").toLowerCase();
+  if(!skip&&!["cryptotrade","crypto"].includes(service)){
+    let amount=Number(pendingPurchase?.total||0);
+    if(!(amount>0)&&activeDigitalRequest?.payload)amount=Number(activeDigitalRequest.payload.expectedTotal||activeDigitalRequest.payload.amount||0);
+    if(!(amount>0)&&window.sparkleRechargePinPending){const p=window.sparkleRechargePinPending;amount=Number(p.total||p.amount||p.expectedTotal||0);}
+    if(!(amount>0)){const m=document.getElementById("pinMessage");if(m)m.textContent="Purchase amount could not be verified. Return to review and try again.";return false;}
+    try{const a=await supabaseClient.auth.getUser(),uid=a?.data?.user?.id;if(a?.error||!uid)throw new Error("Please sign in again to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance could not be verified. No purchase was made.");const b=Number(r.data.balance);if(b+0.000001<amount)throw new Error("Insufficient funds. Balance: ₦"+b.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Amount required: ₦"+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet first.");}
+    catch(e){const m=document.getElementById("pinMessage");if(m)m.textContent=e?.message||"Could not verify wallet balance.";return false;}
+  }
+  const modal=document.getElementById("pinModal");if(!modal)return false;modal.classList.add("show");document.querySelectorAll(".pin-box").forEach(x=>x.value="");document.getElementById("pinMessage").textContent="";setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);return true;
 }
 
 function openPinModal(){
@@ -8044,7 +8053,19 @@ document.addEventListener("DOMContentLoaded",()=>{
      screen.classList.add('is-open');screen.setAttribute('aria-hidden','false');window.sparkleHideLogoLoading();
    },320);
  };
- window.sparkleConfirmPurchase=function(){closeReview(false);openPinForPurchase();};
+ window.sparkleConfirmPurchase=async function(){
+  const amount=Number(pendingPurchase?.total||0),label=document.getElementById("sparkleReviewWalletBalance"),msg=document.getElementById("sparkleReviewFundsMessage"),btn=document.getElementById("sparkleReviewContinueButton");
+  if(btn){btn.disabled=true;btn.textContent="Verifying wallet…";}if(msg){msg.style.display="none";}
+  try{
+    const auth=await supabaseClient.auth.getUser(),userId=auth?.data?.user?.id;if(auth?.error||!userId)throw new Error("Please sign in again to check your wallet balance.");
+    const {data,error}=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).maybeSingle();
+    if(error||!data||data.balance===null||!Number.isFinite(Number(data.balance)))throw new Error("Your wallet balance could not be verified. Please try again. No purchase has been made.");
+    const balance=Number(data.balance),fmt=n=>"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});if(label)label.textContent=fmt(balance);
+    if(!(amount>0))throw new Error("Purchase amount could not be verified. Please review the order again.");
+    if(balance+0.000001<amount){if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent="Insufficient funds. Your balance is "+fmt(balance)+", but this purchase costs "+fmt(amount)+". Please fund your wallet. No transaction PIN was requested and no purchase was made.";}if(btn){btn.disabled=true;btn.textContent="Insufficient funds";}return;}
+    closeReview(false);await openPinForPurchase({skipBalanceCheck:true});
+  }catch(e){if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent=e?.message||"Could not verify wallet balance.";}if(btn){btn.disabled=false;btn.textContent="Check balance and continue";}if(label)label.textContent="Unavailable";}
+};
  document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
  window.addEventListener('popstate',()=>{if(screen?.classList.contains('is-open'))closeReview(true);});
  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&screen?.classList.contains('is-open'))closeReview(true);});
