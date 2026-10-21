@@ -5785,7 +5785,7 @@ async function loadReferralStats(){
   const username=String(profile?.username || profile?.referral_code || metadataUsername || "").trim().replace(/^@+/,"").toLowerCase();
   const code=username;
   // The username is embedded in the ref query parameter used by Sparkle signup.
-  const link=code ? ("https://thesparkle.com.ng/?ref=" + encodeURIComponent(code)) : "";
+  const link=code ? ("https://TheSparkle.com.ng/?ref=" + encodeURIComponent(code)) : "";
   // Repair older profile rows from the account's saved username when possible.
   if(username && (!profile?.username || profile?.referral_code !== username)){
     const {error:repairError}=await supabaseClient.from("profiles").update({username,referral_code:username}).eq("id",user.id);
