@@ -2944,14 +2944,14 @@ support@sparkle.com
           <p class="dashboard-subtitle">Your referrals. Your rewards. All in one place.</p>
           <div class="earn-card earn-premium-card">
             <div class="earn-hero">
-              <div class="earn-hero-copy"><span class="earn-eyebrow">SPARKLE REFERRALS</span><h2>Grow together. Earn together.</h2><p>Invite friends to Sparkle and earn 5% from each eligible successful purchase they make.</p></div>
+              <div class="earn-hero-copy"><span class="earn-eyebrow">SPARKLE REFERRALS</span><h2>Grow together. Earn together.</h2><p>Earn 5% of each referred customer’s first successful purchase only. No rewards are earned from their later purchases.</p></div>
               <div class="earn-hero-mark" aria-hidden="true">✦</div>
             </div>
             <div class="earn-grid">
               <div class="earn-stat"><span class="earn-stat-icon">₦</span><small>TOTAL EARNINGS</small><strong id="referralEarnings">₦0.00</strong><span class="earn-stat-foot">Rewards earned so far</span></div>
               <div class="earn-stat"><span class="earn-stat-icon">♧</span><small>PEOPLE REFERRED</small><strong id="referralCount">0</strong><span class="earn-stat-foot">Joined using your username</span></div>
               <div class="earn-stat earn-stat-highlight"><span class="earn-stat-icon">↗</span><small>AVAILABLE BALANCE</small><strong id="referralAvailable">₦0.00</strong><span class="earn-stat-foot">Minimum withdrawal ₦1,000</span></div>
-              <div class="earn-stat"><span class="earn-stat-icon">%</span><small>YOUR REWARD RATE</small><strong>5%</strong><span class="earn-stat-foot">On eligible purchases</span></div>
+              <div class="earn-stat"><span class="earn-stat-icon">%</span><small>YOUR REWARD RATE</small><strong>5%</strong><span class="earn-stat-foot">First successful purchase only</span></div>
             </div>
             <div class="earn-referral-panel">
               <div class="earn-panel-heading"><div><span class="earn-eyebrow">YOUR PERSONAL LINK</span><h3>Invite friends to Sparkle</h3><p>Share this link. Your username is included automatically.</p></div><div class="earn-user-chip" id="referralUsernameLabel">Loading username…</div></div>
@@ -2960,7 +2960,7 @@ support@sparkle.com
                 <button class="btn" type="button" onclick="copyReferralLink()">Copy link</button>
                 <button class="btn primary" type="button" onclick="shareReferral()">Share ↗</button>
               </div>
-              <p class="earn-secure-note"><span>✓</span> Referral rewards are tracked against eligible successful purchases.</p>
+              <p class="earn-secure-note"><span>✓</span> One reward per referred customer: 5% of their first successful purchase only. Later purchases do not earn referral rewards.</p>
               <div class="earn-withdraw-actions">
                 <div><strong>Move earnings to your wallet</strong><small>Secure with your transaction PIN · Minimum ₦1,000</small></div>
                 <button id="referralWithdrawButton" class="btn primary" type="button" onclick="openReferralWithdraw()">Withdraw earnings</button>
@@ -3595,6 +3595,10 @@ spellcheck="false">
   <label for="emailVerificationCode" style="display:block;font-size:13px;font-weight:800;color:#243858;margin-bottom:8px">Six-digit verification code</label>
   <input id="emailVerificationCode" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" minlength="6" maxlength="6" placeholder="000000" aria-label="Six-digit email verification code" disabled>
   <button type="button" id="resendSparkleEmailCodeButton" class="sparkle-email-otp-resend" onclick="resendSparkleEmailCode()" disabled>Resend code</button>
+  <div style="display:grid;grid-template-columns:1fr;gap:9px;margin-top:12px">
+    <button type="button" class="btn full" id="sparkleBackToRegistrationButton" onclick="sparkleBackToRegistration()">← Back to registration</button>
+    <button type="button" class="btn full" onclick="closeAuth()">Exit verification</button>
+  </div>
 </div>
 
 <button
@@ -3891,6 +3895,7 @@ let sparkleResendCooldown = false;
 let sparkleResendTimer = null;
 let sparkleResendRequestInFlight = false;
 const SPARKLE_PENDING_SIGNUP_KEY = "sparkle_pending_email_verification_v1";
+const SPARKLE_EDIT_PENDING_KEY = "sparkle_edit_pending_email_verification_v1";
 const SPARKLE_RESEND_UNTIL_KEY = "sparkle_email_verification_resend_until_v1";
 
 function sparkleSavePendingVerification(email){
@@ -4118,6 +4123,35 @@ function openAuth(mode){
 }
 
 
+function sparkleBackToRegistration(){
+  const verificationEmail = pendingVerificationEmail || sparkleRestorePendingVerification();
+  if(verificationEmail){
+    try{
+      sessionStorage.setItem(SPARKLE_EDIT_PENDING_KEY, verificationEmail);
+      sessionStorage.removeItem(SPARKLE_PENDING_SIGNUP_KEY);
+    }catch(_){}
+  }
+  authMode = "signup";
+  sparkleForgotPasswordMode = false;
+  document.getElementById("sparkleForgotPasswordPanel").style.display = "none";
+  document.getElementById("authForm").style.display = "block";
+  document.getElementById("authSwitchRow").style.display = "block";
+  setSparkleEmailOtpStep(false);
+  document.getElementById("email").readOnly = false;
+  document.getElementById("firstNameField").style.display = "block";
+  document.getElementById("lastNameField").style.display = "block";
+  document.getElementById("phoneField").style.display = "block";
+  document.getElementById("usernameField").style.display = "block";
+  document.getElementById("referralField").style.display = "block";
+  document.getElementById("username").required = true;
+  document.getElementById("authTitle").textContent = "Edit your registration";
+  document.getElementById("authButton").textContent = "Create Account";
+  document.getElementById("switchText").textContent = "Already have an account?";
+  document.getElementById("switchButton").textContent = "Login";
+  clearMessage();
+  showMessage("You can edit your registration details now. If the email address was incorrect, correct it before continuing.", "success");
+}
+
 function closeAuth(){
 
 sparkleForgotPasswordMode = false;
@@ -4238,6 +4272,7 @@ if(emailVerificationPending){
   const {data,error} = await supabaseClient.auth.verifyOtp({email:verifyEmail, token, type:"signup"});
   if(error) throw new Error(sparkleExplainAuthError(error,"verify"));
   sparkleSavePendingVerification("");
+  try{ sessionStorage.removeItem(SPARKLE_EDIT_PENDING_KEY); }catch(_){}
   sparkleClearResendCooldown();
   showMessage("Email verified successfully. Welcome to Sparkle!","success");
   setTimeout(()=>{
@@ -4407,6 +4442,21 @@ if(!signupCheck?.available){
 
 /* CREATE AUTH ACCOUNT */
 
+// If the same email already has a pending signup, resume its verification instead of
+// attempting to create another account. A corrected email can start a new signup.
+let editedPendingEmail = "";
+try{ editedPendingEmail = String(sessionStorage.getItem(SPARKLE_EDIT_PENDING_KEY)||"").trim().toLowerCase(); }catch(_){}
+if(editedPendingEmail && editedPendingEmail === email.toLowerCase()){
+  sparkleSavePendingVerification(editedPendingEmail);
+  try{ sessionStorage.removeItem(SPARKLE_EDIT_PENDING_KEY); }catch(_){}
+  setSparkleEmailOtpStep(true);
+  showMessage("This email already has a pending registration. Verify it first, or go back and correct the email address if it was entered incorrectly.", "success");
+  return;
+}
+if(editedPendingEmail && editedPendingEmail !== email.toLowerCase()){
+  try{ sessionStorage.removeItem(SPARKLE_EDIT_PENDING_KEY); }catch(_){}
+}
+
 const {data,error} =
 await supabaseClient.auth.signUp({
 
@@ -4497,6 +4547,7 @@ if(data.session){
 }
 
 sparkleSavePendingVerification(email);
+try{ sessionStorage.removeItem(SPARKLE_EDIT_PENDING_KEY); }catch(_){}
 document.getElementById("email").readOnly = true;
 setSparkleEmailOtpStep(true);
 showMessage("Account created. Check your inbox for Sparkle’s six-digit verification code.","success");
@@ -5734,7 +5785,7 @@ async function loadReferralStats(){
   const username=String(profile?.username || profile?.referral_code || metadataUsername || "").trim().replace(/^@+/,"").toLowerCase();
   const code=username;
   // The username is embedded in the ref query parameter used by Sparkle signup.
-  const link=code ? ("https://sparkle-sooty.vercel.app/?ref=" + encodeURIComponent(code)) : "";
+  const link=code ? ("https://thesparkle.com.ng/?ref=" + encodeURIComponent(code)) : "";
   // Repair older profile rows from the account's saved username when possible.
   if(username && (!profile?.username || profile?.referral_code !== username)){
     const {error:repairError}=await supabaseClient.from("profiles").update({username,referral_code:username}).eq("id",user.id);
