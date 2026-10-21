@@ -1,37 +1,14 @@
-
-import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-
-serve(async () => {
-  const apiKey = Deno.env.get("FLEEXA_API_KEY");
-
-  if (!apiKey) {
-    return Response.json(
-      { error: "FLEEXA_API_KEY secret missing" },
-      { status: 500 }
-    );
-  }
-
-  try {
-    const response = await fetch(
-      "https://fleexa.com.ng/developer/sms4/prices?serviceName=telegram",
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          Accept: "application/json"
-        }
-      }
-    );
-
-    const result = await response.text();
-
-    return new Response(result, {
-      status: response.status,
-      headers: { "Content-Type": "application/json" }
-    });
-  } catch {
-    return Response.json(
-      { error: "Could not reach Fleexa API" },
-      { status: 502 }
-    );
-  }
+const headers = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+  "Content-Type": "application/json",
+};
+Deno.serve((req: Request) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers });
+  return new Response(JSON.stringify({
+    success: false,
+    status: "disabled",
+    error: "This legacy integration has been disabled. Use the current Sparkle service.",
+  }), { status: 410, headers });
 });
