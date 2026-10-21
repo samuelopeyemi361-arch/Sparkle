@@ -73,6 +73,41 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
+  const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const action = String(body.action || "purchase").trim().toLowerCase();
+
+  if (action === "check") {
+    const reference = String(body.reference || "").trim();
+    if (!/^SPK-AT-[a-f0-9-]{20,}$/i.test(reference)) return reply({ success: false, status: "not_started", error: "Invalid airtime reference." }, 400);
+    const { data: tx, error: txError } = await admin.from("wallet_transactions")
+      .select("user_id,amount,service,status,metadata,reference").eq("reference", reference).maybeSingle();
+    if (txError || !tx || tx.user_id !== user.id || tx.service !== "Airtime") return reply({ success: false, status: "not_found", error: "Airtime transaction not found." }, 404);
+    if (tx.status === "successful") return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+    if (["refunded", "failed"].includes(String(tx.status).toLowerCase())) return reply({ success: false, status: "refunded", reference, error: "This airtime order has already been refunded." });
+    try {
+      const form = new FormData(); form.append("api", gsubzKey); form.append("requestID", reference);
+      const response = await fetch("https://api.gsubz.com/api/verify/", { method: "POST", headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" }, body: form, signal: AbortSignal.timeout(20000) });
+      const raw = await response.text(); let providerData: any;
+      try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
+      const statusValue = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? "").trim().toLowerCase();
+      const succeeded = response.ok && ["successful", "success", "completed"].includes(statusValue);
+      const failed = response.ok && ["failed", "failure", "error", "rejected", "cancelled"].includes(statusValue);
+      const result = await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: succeeded ? "success" : failed ? "failure" : "pending",
+        p_reference: reference, p_amount: Number(tx.amount), p_service: "Airtime",
+        p_phone: String(tx.metadata?.phone || ""),
+        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true },
+      });
+      if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Sparkle could not reconcile this transaction yet. Do not retry; contact support." }, 202);
+      if (succeeded) return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+      if (failed) return reply({ success: false, status: "refunded", reference, error: "The provider confirmed failure. Your Sparkle wallet has been refunded." });
+      return reply({ success: false, status: "pending", reference, error: "The provider has not confirmed success or failure. Funds remain reserved; do not retry." }, 202);
+    } catch {
+      return reply({ success: false, status: "pending", reference, error: "The provider could not be checked. Funds remain reserved; do not retry." }, 202);
+    }
+  }
+  if (action !== "purchase") return reply({ success: false, error: "Unsupported action." }, 400);
+
   const networkInput = String(
     body.network || body.provider || "",
   ).trim().toLowerCase();
@@ -172,10 +207,6 @@ Deno.serve(async (req) => {
 
   // Reserve wallet funds only after successful PIN verification.
   const reference = "SPK-AT-" + crypto.randomUUID();
-
-  const admin = createClient(url, serviceKey, {
-    auth: { persistSession: false },
-  });
 
   const reserve = await admin.rpc(
     "sparkle_airtime_wallet_action",
