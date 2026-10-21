@@ -3423,7 +3423,8 @@ support@sparkle.com
         <p style="text-align:center;color:#64748b;font-size:11px;margin-top:20px">Thank you for using Sparkle.</p>
       </div>
     </div>
-    <div class="receipt-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+    <div class="receipt-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+      <button class="btn" id="receiptCheckAirtimeButton" type="button" style="display:none" onclick="checkPendingAirtimeStatus()">Check Status</button>
       <button class="btn primary" onclick="downloadReceiptPDF()">PDF ↓</button>
       <button class="btn" onclick="downloadReceiptImage()">Image ↓</button>
     </div>
@@ -7385,7 +7386,42 @@ function showReceipt(result){
   const badge=card.querySelector(".receipt-status");
   if(badge){badge.textContent=statusLabel;badge.style.color=statusColor;}
   card.dataset.reference=String(d.reference||d.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
+  const checkAirtimeButton=document.getElementById("receiptCheckAirtimeButton");
+  if(checkAirtimeButton){
+    const ref=String(d.reference||"");
+    checkAirtimeButton.dataset.reference=ref;
+    checkAirtimeButton.style.display=(service.toLowerCase()==="airtime" && status==="pending" && /^SPK-AT-[a-f0-9-]{20,}$/i.test(ref))?"inline-flex":"none";
+    checkAirtimeButton.disabled=false;
+    checkAirtimeButton.textContent="Check Status";
+  }
   document.getElementById("receiptModal").classList.add("show");
+}
+async function checkPendingAirtimeStatus(){
+  const button=document.getElementById("receiptCheckAirtimeButton");
+  const reference=String(button?.dataset.reference||"").trim();
+  if(!button||!/^SPK-AT-[a-f0-9-]{20,}$/i.test(reference))return;
+  button.disabled=true;button.textContent="Checking…";
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-airtime-purchase",{body:{action:"check",reference}});
+    if(error)throw new Error(error.message||"Could not check this airtime order.");
+    const status=String(data?.status||"").toLowerCase();
+    if(status==="successful"){
+      alert("GSubz confirmed the airtime order was successful.");
+    }else if(status==="refunded"){
+      alert("GSubz confirmed the order failed. Sparkle has processed the wallet refund.");
+    }else if(status==="pending"){
+      alert("The provider has not confirmed success or failure yet. Your funds remain reserved. Do not buy again; try checking later.");
+    }else{
+      alert(data?.error||"Sparkle could not verify this transaction. Please contact support before retrying.");
+    }
+    await loadAllTransactions();
+    if(typeof retryRecentTransactions==="function")await retryRecentTransactions();
+    if(status==="successful"||status==="refunded")closeReceipt();
+  }catch(error){
+    alert(String(error?.message||"Could not check this airtime order. Please try again later."));
+  }finally{
+    button.disabled=false;button.textContent="Check Status";
+  }
 }
 function showTransactionReceipt(encoded){
   try {
