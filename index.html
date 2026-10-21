@@ -3927,6 +3927,17 @@ function sparkleRenderResendButton(){
   button.textContent=sparkleResendRequestInFlight
     ? "Sending code…"
     : (remaining>0 ? "Resend code in "+remaining+"s" : "Resend code");
+  // If the user reloads or reopens Sparkle while waiting, resume the visible countdown.
+  if(remaining>0 && !sparkleResendTimer){
+    sparkleResendTimer=window.setInterval(()=>{
+      const secondsLeft=sparkleGetResendRemainingSeconds();
+      sparkleRenderResendButton();
+      if(secondsLeft<=0 && sparkleResendTimer){
+        clearInterval(sparkleResendTimer);
+        sparkleResendTimer=null;
+      }
+    },250);
+  }
   return remaining;
 }
 function sparkleStartResendCooldown(seconds=60){
