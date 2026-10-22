@@ -5550,6 +5550,9 @@ function confirmSvbReviewPurchase(){
   const country=document.getElementById("svbCountrySelect")?.value||"us";
   if(!svbCurrentQuote||svbCurrentQuote.serviceCode!==serviceCode||svbCurrentQuote.country!==country){alert("The price quote has changed. Go back and check the current price again.");return;}
   currentService="smsotp";
+  const quotedAmount=Number(svbCurrentQuote.sellingPrice);
+  if(!Number.isFinite(quotedAmount)||quotedAmount<=0){document.getElementById("svbReviewMessage").textContent="The quoted price could not be verified. Please check the price again.";return;}
+  pendingPurchase={type:"single",items:[{service:"US Number",network:country,plan:svbCurrentQuote.serviceName,amount:quotedAmount}],total:quotedAmount};
   svbAwaitingPin=true;
   openPinForPurchase();
 }
@@ -7065,6 +7068,25 @@ function showBulkSummary(service){
 
 let sparklePinRequiredForPendingPurchase=false;
 
+function sparkleShowWalletGuardMessage(message){
+  const text=String(message||"Your wallet balance could not be verified. No purchase was made.");
+  const svb=document.getElementById("svbReviewPanel");
+  if(svb&&svb.style.display!=="none"){
+    const box=document.getElementById("svbReviewMessage");
+    if(box){box.textContent=text;box.style.color="#b42318";box.setAttribute("role","alert");return;}
+  }
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(screen&&content&&(screen.classList.contains("is-open")||screen.getAttribute("aria-hidden")==="false")){
+    let box=document.getElementById("sparkleWalletGuardMessage");
+    if(!box){box=document.createElement("div");box.id="sparkleWalletGuardMessage";box.setAttribute("role","alert");box.style.cssText="margin:12px 0;padding:12px;border-radius:10px;background:#fee2e2;color:#991b1b;font-size:13px;line-height:1.5";content.prepend(box);}
+    box.textContent=text;return;
+  }
+  const reviewMessage=document.getElementById("sparkleReviewFundsMessage");
+  if(reviewMessage){reviewMessage.style.display="block";reviewMessage.style.background="#fee2e2";reviewMessage.style.color="#991b1b";reviewMessage.textContent=text;return;}
+  alert(text);
+}
+
 async function openPinForPurchase(options={}){
   const skip=options?.skipBalanceCheck===true,service=String(currentService||"").toLowerCase();
   if(!skip&&!["cryptotrade","crypto"].includes(service)){
@@ -7073,7 +7095,7 @@ async function openPinForPurchase(options={}){
     if(!(amount>0)&&window.sparkleRechargePinPending){const p=window.sparkleRechargePinPending;amount=Number(p.total||p.amount||p.expectedTotal||0);}
     if(!(amount>0)){const m=document.getElementById("pinMessage");if(m)m.textContent="Purchase amount could not be verified. Return to review and try again.";return false;}
     try{const a=await supabaseClient.auth.getUser(),uid=a?.data?.user?.id;if(a?.error||!uid)throw new Error("Please sign in again to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance could not be verified. No purchase was made.");const b=Number(r.data.balance);if(b+0.000001<amount)throw new Error("Insufficient funds. Balance: ₦"+b.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Amount required: ₦"+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet first.");}
-    catch(e){const m=document.getElementById("pinMessage");if(m)m.textContent=e?.message||"Could not verify wallet balance.";return false;}
+    catch(e){sparkleShowWalletGuardMessage(e?.message||"Could not verify wallet balance. No purchase was made.");return false;}
   }
   const modal=document.getElementById("pinModal");if(!modal)return false;modal.classList.add("show");document.querySelectorAll(".pin-box").forEach(x=>x.value="");document.getElementById("pinMessage").textContent="";setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);return true;
 }
@@ -7133,6 +7155,19 @@ async function confirmTransactionPIN(){
   const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
   if(button){button.disabled=true;button.textContent="Verifying PIN…";}
   try{
+    // Recheck the latest wallet balance after PIN entry and immediately before any wallet-funded order.
+    if(!["cryptotrade","crypto"].includes(String(currentService||"").toLowerCase())){
+      let required=Number(pendingPurchase?.total||0);
+      if(!(required>0)&&activeDigitalRequest?.payload)required=Number(activeDigitalRequest.payload.expectedTotal||activeDigitalRequest.payload.amount||0);
+      if(!(required>0)&&window.sparkleRechargePinPending&&pendingPurchase)required=Number(pendingPurchase.total||0);
+      if(!(required>0))throw new Error("Purchase amount could not be verified. No purchase was made.");
+      const authCheck=await supabaseClient.auth.getUser(),uid=authCheck?.data?.user?.id;
+      if(authCheck?.error||!uid)throw new Error("Please sign in again to verify your wallet balance.");
+      const walletCheck=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();
+      if(walletCheck.error||!walletCheck.data||walletCheck.data.balance===null||!Number.isFinite(Number(walletCheck.data.balance)))throw new Error("Your wallet balance could not be verified. No purchase was made.");
+      const available=Number(walletCheck.data.balance);
+      if(available+0.000001<required)throw new Error("Insufficient funds. Your current balance is ₦"+available.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" and this purchase requires ₦"+required.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet. No purchase was made.");
+    }
     if(currentService==="smsotp" && svbAwaitingPin){
       svbAwaitingPin=false;
       await executeSvbPurchase(pin);
@@ -7155,6 +7190,12 @@ async function confirmTransactionPIN(){
     }
     alert("Your PIN is correct, but no purchase was queued. Your wallet has not been charged.");
   }catch(e){
+    const rawDetail=String(e?.message||"");
+    if(/insufficient funds|wallet balance could not be verified|purchase amount could not be verified|sign in again to verify your wallet balance/i.test(rawDetail)){
+      closePinModal();
+      sparkleShowWalletGuardMessage(rawDetail);
+      return;
+    }
     const detail=await sparkleFunctionErrorMessage(e,"Could not verify your transaction PIN.");
     if(/pin.{0,30}(not set|not created|missing|does not exist)|create.{0,20}pin|no transaction pin/i.test(detail)){
       sparklePinRequiredForPendingPurchase=true;
