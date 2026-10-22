@@ -2755,9 +2755,11 @@ support@sparkle.com
             <p style="color:var(--muted);margin-top:0">Check your order and total carefully. You will not be charged until you confirm with your Transaction PIN.</p>
             <div class="summary-line"><span>Service</span><strong id="svbReviewService">—</strong></div>
             <div class="summary-line"><span>Wallet charge</span><strong id="svbReviewTotal">—</strong></div>
+            <div class="summary-line"><span>Available wallet balance</span><strong id="svbReviewWalletBalance">Checking…</strong></div>
             <div class="sparkle-summary-total"><span>Total</span><strong id="svbReviewGrandTotal">—</strong></div>
+            <div id="svbReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
             <p style="font-size:12px;color:var(--muted)">Numbers depend on country and service availability. If an order is pending, check its status instead of buying again.</p>
-            <button id="svbReviewConfirm" class="btn primary full" type="button" onclick="confirmSvbReviewPurchase()">Buy US Number</button>
+            <button id="svbReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmSvbReviewPurchase()">Checking wallet balance…</button>
             <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
             <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
           </div>
@@ -5534,8 +5536,12 @@ function buySvbNumber(){
   document.getElementById("svbReviewTotal").textContent=total;
   document.getElementById("svbReviewGrandTotal").textContent=total;
   document.getElementById("svbReviewMessage").textContent="";
+  const svbBalance=document.getElementById("svbReviewWalletBalance");if(svbBalance)svbBalance.textContent="Checking…";
+  const svbFundsMessage=document.getElementById("svbReviewFundsMessage");if(svbFundsMessage){svbFundsMessage.style.display="none";svbFundsMessage.textContent="";}
+  const svbContinue=document.getElementById("svbReviewConfirm");if(svbContinue){svbContinue.disabled=true;svbContinue.textContent="Checking wallet balance…";}
   document.getElementById("svbCatalogPanel").style.display="none";
   document.getElementById("svbReviewPanel").style.display="block";
+  sparkleCheckWalletReview(svbCurrentQuote.sellingPrice,{balanceId:"svbReviewWalletBalance",messageId:"svbReviewFundsMessage",buttonId:"svbReviewConfirm",buttonText:"Buy US Number"});
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function backFromSvbReview(){
@@ -6697,10 +6703,13 @@ async function showElectricitySummary(){
       <div class="summary-line"><span>Meter number</span><strong>${escapeHtml(meter)}</strong></div>
       <div class="summary-line"><span>Bill type</span><strong>${escapeHtml(type.toUpperCase())}</strong></div>
       <div class="summary-line"><span>Phone</span><strong>${escapeHtml(phone)}</strong></div>
+      <div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div>
       <div class="sparkle-summary-total"><span>Total payment</span><strong>${money(amount)}</strong></div>
+      <div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
       <p class="electricity-note">Check the meter and customer name carefully. Your wallet is checked before the provider order is sent.</p>
-      <button class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Pay</button>`;
+      <button id="sparkleReviewContinueButton" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button>`;
     screen.scrollTop=0;
+    sparkleCheckWalletReview(amount);
     window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
     try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
     const roll=document.getElementById("sparkle-continue-roll");
@@ -6802,8 +6811,8 @@ async function showRechargePinSummary(){
   window.sparkleSummaryReturnScroll=window.scrollY||0;
   const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
   const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
-  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Selling price per card</span><strong>${money(unitPrice)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" onclick="openPinForPurchase()">Enter Transaction PIN to Continue</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
-  screen.scrollTop=0;
+  content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Selling price per card</span><strong>${money(unitPrice)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
+  sparkleCheckWalletReview(total);screen.scrollTop=0;
   window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
   try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
   const roll=document.getElementById("sparkle-continue-roll");
@@ -7067,6 +7076,48 @@ function showBulkSummary(service){
 }
 
 let sparklePinRequiredForPendingPurchase=false;
+
+async function sparkleCheckWalletReview(amount, ids={}){
+  const balanceId=ids.balanceId||"sparkleReviewWalletBalance";
+  const messageId=ids.messageId||"sparkleReviewFundsMessage";
+  const buttonId=ids.buttonId||"sparkleReviewContinueButton";
+  const balanceEl=document.getElementById(balanceId);
+  const messageEl=document.getElementById(messageId);
+  const buttonEl=document.getElementById(buttonId);
+  const required=Number(amount);
+  const moneyFmt=n=>"₦"+Number(n).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const showMessage=(text,ok=false)=>{
+    if(messageEl){
+      messageEl.style.display="block";messageEl.style.padding="10px 12px";messageEl.style.margin="10px 0";messageEl.style.borderRadius="10px";
+      messageEl.style.background=ok?"#dcfce7":"#fee2e2";messageEl.style.color=ok?"#166534":"#991b1b";messageEl.textContent=text;messageEl.setAttribute("role","status");
+    }
+  };
+  if(buttonEl){buttonEl.disabled=true;buttonEl.textContent="Checking wallet balance…";}
+  if(balanceEl)balanceEl.textContent="Checking…";
+  if(messageEl){messageEl.style.display="none";messageEl.textContent="";}
+  try{
+    if(!Number.isFinite(required)||required<=0)throw new Error("Purchase amount could not be verified. No purchase was made.");
+    const auth=await supabaseClient.auth.getUser(),userId=auth?.data?.user?.id;
+    if(auth?.error||!userId)throw new Error("Please sign in again to check your wallet balance.");
+    const wallet=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).maybeSingle();
+    if(wallet.error||!wallet.data||wallet.data.balance===null||!Number.isFinite(Number(wallet.data.balance)))throw new Error("Your wallet balance could not be verified. No purchase was made.");
+    const balance=Number(wallet.data.balance);
+    if(balanceEl)balanceEl.textContent=moneyFmt(balance);
+    if(balance+0.000001<required){
+      showMessage("Insufficient funds. Your balance is "+moneyFmt(balance)+" and this purchase costs "+moneyFmt(required)+". Fund your wallet to continue. No PIN was requested and no money was deducted.");
+      if(buttonEl){buttonEl.disabled=true;buttonEl.textContent="Insufficient funds";}
+      return false;
+    }
+    showMessage("Sufficient balance. Review the amount and continue to your Transaction PIN.",true);
+    if(buttonEl){buttonEl.disabled=false;buttonEl.textContent=ids.buttonText||"Check balance and continue";}
+    return true;
+  }catch(error){
+    if(balanceEl)balanceEl.textContent="Unavailable";
+    showMessage(String(error?.message||"Wallet balance could not be verified. No purchase was made."));
+    if(buttonEl){buttonEl.disabled=true;buttonEl.textContent="Balance check unavailable";}
+    return false;
+  }
+}
 
 function sparkleShowWalletGuardMessage(message){
   const text=String(message||"Your wallet balance could not be verified. No purchase was made.");
