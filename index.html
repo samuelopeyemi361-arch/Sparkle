@@ -7065,14 +7065,24 @@ function updateBulkTotal(service){
 
 function showBulkSummary(service){
   const items=collectBulk(service);
-  if(!items.length || items.some(x=>!x.phone || !x.amount || x.amount<=0)){
+  if(!items.length || items.some(x=>!x.phone || !Number.isFinite(Number(x.amount)) || Number(x.amount)<=0)){
     alert("Please complete every bulk row with a valid number and amount.");
     return;
   }
   currentService=service;
-  pendingPurchase={type:"bulk",items,total:items.reduce((s,x)=>s+x.amount,0)};
-  alert(`${items.length} transaction(s) selected. Total: ${money(pendingPurchase.total)}. Your PIN will be requested next.`);
-  openPinForPurchase();
+  pendingPurchase={type:"bulk",items,total:Number(items.reduce((s,x)=>s+Number(x.amount||0),0).toFixed(2))};
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  if(!screen||!content){sparkleShowWalletGuardMessage("Purchase review is temporarily unavailable. No purchase was made.");return;}
+  window.sparkleSummaryReturnScroll=window.scrollY||0;
+  window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+  const rows=items.map((item,i)=>'<div class="summary-line"><span>'+String(i+1)+'. '+escapeHtml(item.service||service)+' · '+escapeHtml(item.phone)+'</span><strong>'+money(Number(item.amount))+'</strong></div>').join("");
+  content.innerHTML='<div class="sparkle-summary-network"><span class="network-card-logo cable">Σ</span><div><div class="sparkle-summary-network-name">Bulk purchase review</div><div class="sparkle-summary-network-label">'+items.length+' transaction(s)</div></div></div>'+rows+'<div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total wallet charge</span><strong>'+money(pendingPurchase.total)+'</strong></div><div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><p class="electricity-note">Review every recipient and amount. Sparkle will check your wallet before requesting your Transaction PIN.</p><button id="sparkleReviewContinueButton" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button>';
+  screen.scrollTop=0;
+  screen.classList.add("is-open");
+  screen.setAttribute("aria-hidden","false");
+  try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
+  sparkleCheckWalletReview(pendingPurchase.total);
 }
 
 let sparklePinRequiredForPendingPurchase=false;
@@ -7123,6 +7133,8 @@ function sparkleShowWalletGuardMessage(message){
   const text=String(message||"Your wallet balance could not be verified. No purchase was made.");
   const svb=document.getElementById("svbReviewPanel");
   if(svb&&svb.style.display!=="none"){
+    const funds=document.getElementById("svbReviewFundsMessage");
+    if(funds){funds.style.display="block";funds.style.background="#fee2e2";funds.style.color="#991b1b";funds.textContent=text;funds.setAttribute("role","alert");return;}
     const box=document.getElementById("svbReviewMessage");
     if(box){box.textContent=text;box.style.color="#b42318";box.setAttribute("role","alert");return;}
   }
