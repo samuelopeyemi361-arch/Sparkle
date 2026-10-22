@@ -6920,7 +6920,7 @@ function getSinglePurchase(service){
   };
 }
 
-function showPurchaseSummary(service){
+async function showPurchaseSummary(service){
   const p=getSinglePurchase(service);
   if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue) || (service==="education"&&(!p.serviceID||!p.planValue)) || (service==="electricity"&&(!p.serviceID||!p.customerID))){
     alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : service==="education" ? "Select an exam pin and enter a valid phone number." : service==="electricity" ? "Complete the electricity details first." : "Enter a phone number and valid amount.");
