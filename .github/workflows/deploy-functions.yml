@@ -7,7 +7,6 @@ on:
     paths:
       - "supabase/functions/**"
       - "supabase/config.toml"
-      - ".github/workflows/deploy-functions.yml"
   workflow_dispatch:
 
 permissions:
