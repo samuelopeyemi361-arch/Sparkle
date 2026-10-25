@@ -4,7 +4,18 @@ on:
   push:
     branches:
       - main
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-functions.yml"
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: supabase-functions-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -17,6 +28,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+        with:
+          persist-credentials: false
 
       - name: Setup Supabase CLI
         uses: supabase/setup-cli@v3
