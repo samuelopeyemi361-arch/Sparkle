@@ -1159,7 +1159,7 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .data-plan-card:hover{transform:translateY(-1px)}
 .data-plan-card.selected{border-color:#0b5cff;box-shadow:0 0 0 2px rgba(11,92,255,.12)}
 .data-plan-size{font-size:18px;font-weight:500;color:#111827;line-height:1.2}.data-plan-duration-number{font-weight:650}
-.data-plan-validity{font-size:11px;color:#667085;margin-top:4px}
+.data-plan-validity{font-size:11px;color:#667085;margin-top:4px}.data-plan-validity .data-plan-duration-number{font-weight:700;color:#475467}
 .data-plan-price{font-size:15px;font-weight:900;color:#0b5cff;margin-top:auto;padding-top:9px}
 .data-plan-service{font-size:10px;color:#7b8492;margin-top:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .data-loading{grid-column:1/-1;padding:28px 14px;text-align:center;color:#667085;background:#fff;border:1px solid #e7eaf0;border-radius:14px;font-size:13px}
@@ -6384,7 +6384,7 @@ function planDays(plan){return extractPlanDuration(plan).days;}
 function planCategory(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";return "Other";}
 function planCategoryLabel(plan){const d=planDays(plan);if(d===30)return "Monthly";if(d===7)return "Weekly";if(d===1)return "Daily";if([2,3].includes(d))return "Hot";if(Number.isFinite(d)&&d>0)return d+" Days";return "Other";}
 function splitPlanName(plan){const raw=String(plan?.displayName||plan?.display_name||plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||plan?.package_name||plan?.packageName||plan?.title||"").trim();const duration=planDuration({...plan,displayName:plan?.displayName||plan?.display_name||raw,name:plan?.name||plan?.plan_name||plan?.planName||plan?.PlanName||raw});const m=raw.match(/(\d+(?:\.\d+)?\s*(?:gb|mb|tb))\b/i);return {size:m?m[1]:raw,duration};}
-function formatPlanDisplayName(value){const escaped=escapeHtml(String(value??""));return escaped.replace(/\s+\d+(?:\.\d+)?\s*days?\s+(?=(?:[\w+.-]+\s+)*?(?:night\s+)?plan\b)/ig," ").replace(/(\d+(?:\.\d+)?)(\s*)(days?\b)/ig,'<span class="data-plan-duration-number">$1</span>$2$3');}
+function formatPlanDisplayName(value){const escaped=escapeHtml(String(value??""));return escaped.replace(/\s*[-–]\s*\d+(?:\.\d+)?\s*days?\b/ig,"").replace(/\s+\d+(?:\.\d+)?\s*days?\s+(?=(?:[\w+.-]+\s+)*?(?:night\s+)?plan\b)/ig," ").replace(/(\d+(?:\.\d+)?)(\s*)(days?\b)/ig,'<span class="data-plan-duration-number">$1</span>$2$3');}
 function sparkleDataPrice(plan){
   // Data-plan retail prices are calculated by the server. The browser receives
   // only the final customer price, never supplier cost or Sparkle's margin.
