@@ -100,8 +100,7 @@
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js"></script>
+<!-- Receipt-export libraries are lazy-loaded only when the customer requests an image or PDF receipt. -->
 
 <style>
 :root{
@@ -7556,20 +7555,59 @@ function showTransactionReceipt(encoded){
 }
 
 function closeReceipt(){document.getElementById("receiptModal").classList.remove("show");}
+const sparkleReceiptScriptLoads=new Map();
+function sparkleLoadReceiptScript(src,check){
+  if(check())return Promise.resolve();
+  if(sparkleReceiptScriptLoads.has(src))return sparkleReceiptScriptLoads.get(src);
+  const promise=new Promise((resolve,reject)=>{
+    const script=document.createElement("script");
+    script.src=src;
+    script.async=true;
+    script.dataset.sparkleReceiptLibrary="true";
+    script.onload=()=>check()?resolve():reject(new Error("Receipt library failed to initialize."));
+    script.onerror=()=>reject(new Error("Could not load receipt export tools. Check your connection and try again."));
+    document.head.appendChild(script);
+  });
+  sparkleReceiptScriptLoads.set(src,promise);
+  promise.catch(()=>sparkleReceiptScriptLoads.delete(src));
+  return promise;
+}
+async function sparkleEnsureReceiptLibraries(){
+  await sparkleLoadReceiptScript("https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js",()=>typeof window.html2canvas==="function");
+  await sparkleLoadReceiptScript("https://cdn.jsdelivr.net/npm/jspdf@4.2.1/dist/jspdf.umd.min.js",()=>typeof window.jspdf?.jsPDF==="function");
+}
 async function downloadReceiptImage(){
-  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
-  const a=document.createElement("a");a.download=(document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".png";a.href=canvas.toDataURL("image/png");a.click();
+  try{
+    await sparkleEnsureReceiptLibraries();
+    const card=document.getElementById("receiptCard");
+    if(!card)throw new Error("Open a transaction receipt first.");
+    const canvas=await window.html2canvas(card,{scale:2,backgroundColor:"#ffffff"});
+    const a=document.createElement("a");
+    a.download=(card.dataset.reference||"sparkle-receipt")+".png";
+    a.href=canvas.toDataURL("image/png");
+    a.click();
+  }catch(error){
+    console.error("Sparkle receipt image export failed:",error);
+    alert(error.message||"Unable to export this receipt. Please try again.");
+  }
 }
 async function downloadReceiptPDF(){
-  const canvas=await html2canvas(document.getElementById("receiptCard"),{scale:2,backgroundColor:"#ffffff"});
-  const {jsPDF}=window.jspdf;
-  const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
-  const img=canvas.toDataURL("image/png");
-  const width=180, height=canvas.height*width/canvas.width;
-  pdf.addImage(img,"PNG",15,15,width,height);
-  pdf.save((document.getElementById("receiptCard").dataset.reference||"sparkle-receipt")+".pdf");
+  try{
+    await sparkleEnsureReceiptLibraries();
+    const card=document.getElementById("receiptCard");
+    if(!card)throw new Error("Open a transaction receipt first.");
+    const canvas=await window.html2canvas(card,{scale:2,backgroundColor:"#ffffff"});
+    const {jsPDF}=window.jspdf;
+    const pdf=new jsPDF({orientation:"portrait",unit:"mm",format:"a4"});
+    const img=canvas.toDataURL("image/png");
+    const width=180,height=canvas.height*width/canvas.width;
+    pdf.addImage(img,"PNG",15,15,width,height);
+    pdf.save((card.dataset.reference||"sparkle-receipt")+".pdf");
+  }catch(error){
+    console.error("Sparkle receipt PDF export failed:",error);
+    alert(error.message||"Unable to export this receipt. Please try again.");
+  }
 }
-
 async function loadAllTransactions(){
   const box=document.getElementById("allTransactions");
   if(!box)return;
@@ -8054,6 +8092,35 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       }
     } finally { applyDepth--; }
   }
+  // Intercept first-party route links so service navigation never reloads the whole document.
+  // External links, hash-only jumps, downloads, modified clicks and new-tab links are left alone.
+  const authPaths = new Set(["/login", "/register", "/forgot-password", "/verify-email", "/reset-password"]);
+  document.addEventListener("click", event => {
+    if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const anchor = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (!anchor || anchor.hasAttribute("download") || (anchor.target && anchor.target.toLowerCase() !== "_self")) return;
+    let url;
+    try { url = new URL(anchor.href, window.location.href); } catch (_) { return; }
+    if (url.origin !== window.location.origin) return;
+    const targetPath = normalizePath(url.pathname);
+    const currentPath = normalizePath(window.location.pathname);
+    if (url.hash && targetPath === currentPath && !url.search) return;
+    const knownRoute = !!(
+      authPaths.has(targetPath) ||
+      targetPath === "/terms" || targetPath === "/privacy-policy" ||
+      targetPath === "/wallet/fund" || targetPath === "/admin" ||
+      serviceRoutes[targetPath] || pageAliases[targetPath] ||
+      /^\\/(?:transactions|purchases)\\/[^/]+$/.test(targetPath)
+    );
+    if (!knownRoute) return;
+    event.preventDefault();
+    const destination = url.pathname + url.search + url.hash;
+    if (window.location.pathname + window.location.search + window.location.hash !== destination) {
+      try { window.history.pushState({ sparkleRoute: true }, "", destination); }
+      catch (_) { window.location.assign(destination); return; }
+    }
+    void applyCurrentPath();
+  }, true);
   window.addEventListener("popstate", () => { void applyCurrentPath(); });
   // Keep close/back behavior consistent after a transaction is reviewed by URL.
   const originalCloseReceipt = closeReceipt;
