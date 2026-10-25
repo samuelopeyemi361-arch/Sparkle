@@ -8110,7 +8110,7 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       targetPath === "/terms" || targetPath === "/privacy-policy" ||
       targetPath === "/wallet/fund" || targetPath === "/admin" ||
       serviceRoutes[targetPath] || pageAliases[targetPath] ||
-      /^\\/(?:transactions|purchases)\\/[^/]+$/.test(targetPath)
+      /^\/(?:transactions|purchases)\/[^/]+$/.test(targetPath)
     );
     if (!knownRoute) return;
     event.preventDefault();
