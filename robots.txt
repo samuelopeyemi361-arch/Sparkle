@@ -13,4 +13,4 @@ Disallow: /forgot-password
 Disallow: /reset-password
 Disallow: /verify-email
 
-Sitemap: https://TheSparkle.com.ng/sitemap.xml
+Sitemap: https://thesparkle.com.ng/sitemap.xml
