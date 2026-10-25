@@ -709,6 +709,11 @@ a{text-decoration:none;color:inherit}
   background:#dcfce7;
   color:#166534
 }
+.sparkle-google-auth-button{width:100%;min-height:48px;display:flex;align-items:center;justify-content:center;gap:11px;border:1px solid #d8e0ec;border-radius:11px;background:#fff;color:#1e293b;font-size:14px;font-weight:800}
+.sparkle-google-auth-button:hover{background:#f8fafc;border-color:#b8c5d8}
+.sparkle-google-auth-button:disabled{opacity:.65;cursor:wait}
+.sparkle-google-g{display:grid;place-items:center;width:22px;height:22px;border-radius:50%;font-weight:900;font-size:20px;background:conic-gradient(from -45deg,#4285f4 0 25%,#34a853 0 50%,#fbbc05 0 75%,#ea4335 0);color:transparent;background-clip:text;-webkit-background-clip:text}
+#sparkleGoogleProfileModal{z-index:100005}
 
 /* API */
 
@@ -3611,7 +3616,10 @@ Login
 </button>
 
 </form>
-
+<div id="sparkleGoogleAuthRow" style="margin-top:14px">
+  <div style="display:flex;align-items:center;gap:12px;color:#94a3b8;font-size:12px;margin:12px 0"><span style="height:1px;background:#e2e8f0;flex:1"></span><span>OR</span><span style="height:1px;background:#e2e8f0;flex:1"></span></div>
+  <button type="button" id="sparkleGoogleAuthButton" class="sparkle-google-auth-button" onclick="sparkleStartGoogleAuth()"><span class="sparkle-google-g" aria-hidden="true">G</span><span>Continue with Google</span></button>
+</div>
 <div id="sparkleForgotPasswordPanel" style="display:none">
   <p style="color:#64748b;font-size:14px;line-height:1.6;margin:0 0 18px">Enter the email address linked to your Sparkle account. We’ll send you a secure password-reset link.</p>
   <div class="field">
@@ -3642,6 +3650,19 @@ Sign Up
 
 </div>
 
+
+<div class="modal" id="sparkleGoogleProfileModal" style="z-index:100005">
+  <div class="modal-box">
+    <div class="modal-head"><h2>Finish setting up Sparkle</h2></div>
+    <p style="color:#1e40af;background:#eff6ff;border-radius:10px;padding:11px 12px;font-size:12px;line-height:1.5">Your Google account is connected. Complete your Sparkle profile to continue.</p>
+    <div class="field"><label for="sparkleGoogleFirstName">First name</label><input id="sparkleGoogleFirstName" type="text" autocomplete="given-name" required></div>
+    <div class="field"><label for="sparkleGoogleLastName">Last name</label><input id="sparkleGoogleLastName" type="text" autocomplete="family-name" required></div>
+    <div class="field"><label for="sparkleGooglePhone">Phone number</label><input id="sparkleGooglePhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="08012345678" required></div>
+    <div class="field"><label for="sparkleGoogleUsername">Username</label><input id="sparkleGoogleUsername" type="text" minlength="3" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3–24 letters, numbers, or underscores" required><small style="color:#64748b">Your username is your Sparkle referral ID.</small></div>
+    <p id="sparkleGoogleProfileMessage" class="message" role="status"></p>
+    <button type="button" id="sparkleGoogleProfileSaveButton" class="btn primary full" onclick="sparkleSaveGoogleProfile()">Continue</button>
+  </div>
+</div>
 
 <!-- ================= EDIT PROFILE ================= -->
 
@@ -9333,6 +9354,138 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")void refreshWalletActivity(true);});
   window.addEventListener("focus",()=>void refreshWalletActivity(true));
   window.setInterval(()=>void refreshWalletActivity(false),15000);
+})();
+</script>
+
+
+<script id="sparkle-google-auth">
+(function(){
+  "use strict";
+  const PENDING_KEY="sparkle_google_oauth_pending_v1";
+  let handledUserId="", profileUser=null, requirePinAfterProfile=false, saving=false;
+  let originalShowDashboard=null;
+  function pending(){
+    try{const p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||"null");return p&&Number.isFinite(Number(p.startedAt))?p:null;}catch(_){return null;}
+  }
+  function clearPending(){try{sessionStorage.removeItem(PENDING_KEY);}catch(_){}}
+  function message(text,type="error"){
+    const el=document.getElementById("sparkleGoogleProfileMessage");if(!el)return;
+    el.textContent=text;el.className="message show "+type;
+  }
+  window.sparkleStartGoogleAuth=async function(){
+    const button=document.getElementById("sparkleGoogleAuthButton");
+    if(button){button.disabled=true;button.innerHTML='<span class="sparkle-google-g">G</span><span>Connecting to Google…</span>';}
+    try{
+      clearMessage();
+      sessionStorage.setItem(PENDING_KEY,JSON.stringify({mode:authMode,startedAt:Date.now()}));
+      const {error}=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}});
+      if(error)throw error;
+    }catch(e){
+      clearPending();
+      showMessage(e?.message||"Google login could not start. Please try again.","error");
+      if(button){button.disabled=false;button.innerHTML='<span class="sparkle-google-g" aria-hidden="true">G</span><span>Continue with Google</span>';}
+    }
+  };
+  function openProfile(user,profile,isNew){
+    profileUser=user;requirePinAfterProfile=isNew;
+    const meta=user.user_metadata||{}, full=String(meta.full_name||meta.name||"").trim(),parts=full.split(/\s+/).filter(Boolean);
+    document.getElementById("sparkleGoogleFirstName").value=String(profile?.first_name||meta.given_name||parts[0]||"");
+    document.getElementById("sparkleGoogleLastName").value=String(profile?.last_name||meta.family_name||(parts.length>1?parts.slice(1).join(" "):""));
+    document.getElementById("sparkleGooglePhone").value=String(profile?.phone||"");
+    document.getElementById("sparkleGoogleUsername").value=String(profile?.username||"").toLowerCase();
+    document.getElementById("sparkleGoogleUsername").dataset.existingUsername=String(profile?.username||"").toLowerCase();
+    document.getElementById("sparkleGoogleProfileMessage").textContent="";
+    document.getElementById("sparkleGoogleProfileMessage").className="message";
+    showHomepage();
+    document.getElementById("authModal")?.classList.remove("show");
+    document.getElementById("sparkleGoogleProfileModal").classList.add("show");
+  }
+  async function handle(user){
+    const p=pending();if(!p||!user?.id)return false;
+    if(handledUserId===user.id)return true;
+    handledUserId=user.id;
+    try{
+      if(!user.email||!(user.email_confirmed_at||user.confirmed_at))throw new Error("Google must provide a verified email address to use Sparkle.");
+      const created=Date.parse(user.created_at||""),started=Number(p.startedAt);
+      const isNew=Number.isFinite(created)&&created>=started-120000;
+      const {data:profile,error}=await supabaseClient.from("profiles").select("first_name,last_name,full_name,username,phone,email,referral_code").eq("id",user.id).maybeSingle();
+      if(error)throw new Error("We couldn't load your Sparkle profile. Please refresh and try again.");
+      if(!profile?.username||!profile?.phone||!(profile?.first_name||user.user_metadata?.given_name)||!(profile?.last_name||user.user_metadata?.family_name)){
+        openProfile(user,profile,isNew);return true;
+      }
+      clearPending();
+      if(document.getElementById("authModal")?.classList.contains("show"))closeAuth();
+      await originalShowDashboard(user);
+      if(isNew)setTimeout(()=>openPinModal(),900);
+      return true;
+    }catch(e){
+      handledUserId="";
+      showHomepage();
+      clearPending();
+      if(document.getElementById("authModal")){openAuth("login");showMessage(e?.message||"Google login could not be completed.","error");}
+      else alert(e?.message||"Google login could not be completed.");
+      return true;
+    }
+  }
+  window.sparkleSaveGoogleProfile=async function(){
+    if(saving)return;
+    const user=profileUser;if(!user?.id){message("Your Google session expired. Please sign in with Google again.");return;}
+    const firstName=document.getElementById("sparkleGoogleFirstName").value.trim();
+    const lastName=document.getElementById("sparkleGoogleLastName").value.trim();
+    const phone=document.getElementById("sparkleGooglePhone").value.trim();
+    const username=document.getElementById("sparkleGoogleUsername").value.trim().toLowerCase();
+    const existing=String(document.getElementById("sparkleGoogleUsername").dataset.existingUsername||"").toLowerCase();
+    if(!firstName||!lastName||!phone||!username){message("Complete your first name, last name, phone number, and username.");return;}
+    if(!/^[a-z0-9_]{3,24}$/.test(username)){message("Username must be 3–24 characters using only letters, numbers, or underscores.");return;}
+    if(username!==existing){
+      try{
+        const {data,error}=await supabaseClient.rpc("sparkle_check_signup",{p_username:username,p_referral_username:null});
+        if(error)throw new Error("Sparkle couldn't validate your username right now. Please try again.");
+        if(!data?.available){
+          if(data?.reason==="username_taken")throw new Error("That username is already taken. Choose another one.");
+          throw new Error("Please choose a valid available username.");
+        }
+      }catch(e){message(e?.message||"Could not validate your username.");return;}
+    }
+    const button=document.getElementById("sparkleGoogleProfileSaveButton");saving=true;
+    if(button){button.disabled=true;button.textContent="Saving profile…";}
+    try{
+      const payload={first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
+      const {error}=await supabaseClient.from("profiles").update(payload).eq("id",user.id);
+      if(error)throw new Error("We couldn't save your Sparkle profile. Please try again.");
+      clearPending();
+      document.getElementById("sparkleGoogleProfileModal").classList.remove("show");
+      profileUser=null;
+      await originalShowDashboard(user);
+      if(requirePinAfterProfile)setTimeout(()=>openPinModal(),900);
+      requirePinAfterProfile=false;
+    }catch(e){message(e?.message||"We couldn't save your profile. Please try again.");}
+    finally{saving=false;if(button){button.disabled=false;button.textContent="Continue";}}
+  };
+  function install(){
+    const form=document.getElementById("authForm"),row=document.getElementById("sparkleGoogleAuthRow");
+    if(form&&row&&row.parentElement!==form.parentElement)form.insertAdjacentElement("afterend",row);
+    if(typeof showDashboard==="function"){
+      originalShowDashboard=showDashboard;
+      showDashboard=async function(user){
+        if(pending()&&user?.id){const intercepted=await handle(user);if(intercepted)return;}
+        return await originalShowDashboard.apply(this,arguments);
+      };
+    }
+    if(typeof setSparkleEmailOtpStep==="function"){
+      const original=setSparkleEmailOtpStep;
+      setSparkleEmailOtpStep=function(enabled){const result=original.apply(this,arguments);const r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display=enabled?"none":"block";return result;};
+    }
+    if(typeof openSparkleForgotPassword==="function"){
+      const original=openSparkleForgotPassword;
+      openSparkleForgotPassword=function(){const result=original.apply(this,arguments);const r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="none";return result;};
+    }
+    if(typeof returnToSparkleLoginFromForgotPassword==="function"){
+      const original=returnToSparkleLoginFromForgotPassword;
+      returnToSparkleLoginFromForgotPassword=function(){const result=original.apply(this,arguments);const r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="block";return result;};
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
 })();
 </script>
 
