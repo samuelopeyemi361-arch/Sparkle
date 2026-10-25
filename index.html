@@ -9451,7 +9451,7 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     const button=document.getElementById("sparkleGoogleProfileSaveButton");saving=true;
     if(button){button.disabled=true;button.textContent="Saving profile…";}
     try{
-      const payload={first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
+      const payload={id:user.id,first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
       const {error}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"});
       if(error)throw new Error("We couldn't save your Sparkle profile. Please try again.");
       clearPending();
