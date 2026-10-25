@@ -6416,7 +6416,7 @@ function normalizePlans(result){
       _categoryLabel:Number.isFinite(days)&&days>0?(days===1?"1 day":days+" days"):"Other",
       _duration:durationInfo.label||split.duration||"",
       _days:days,
-      _size:split.size||String(name)
+      _size:String(name)
     };
   }).filter(Boolean);
 }
