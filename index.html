@@ -9407,9 +9407,10 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     try{
       if(!user.email||!(user.email_confirmed_at||user.confirmed_at))throw new Error("Google must provide a verified email address to use Sparkle.");
       const created=Date.parse(user.created_at||""),started=Number(p.startedAt);
-      const isNew=Number.isFinite(created)&&created>=started-120000;
+      const recentlyCreated=Number.isFinite(created)&&created>=started-120000;
       const {data:profile,error}=await supabaseClient.from("profiles").select("first_name,last_name,full_name,username,phone,email,referral_code").eq("id",user.id).maybeSingle();
       if(error)throw new Error("We couldn't load your Sparkle profile. Please refresh and try again.");
+      const isNew=recentlyCreated&&(!profile?.username||!profile?.phone);
       if(!profile?.username||!profile?.phone||!(profile?.first_name||user.user_metadata?.given_name)||!(profile?.last_name||user.user_metadata?.family_name)){
         openProfile(user,profile,isNew);return true;
       }
