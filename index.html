@@ -9372,6 +9372,23 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     const el=document.getElementById("sparkleGoogleProfileMessage");if(!el)return;
     el.textContent=text;el.className="message show "+type;
   }
+  async function googleUserHasPin(user){
+    const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+    if(sessionError||!session?.access_token||session.user?.id!==user?.id)throw new Error("Your Sparkle session needs refreshing. Please sign in again.");
+    const response=await fetch(SUPABASE_URL+"/functions/v1/sparkle-transaction-pin",{
+      method:"POST",
+      headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_ANON_KEY,"Content-Type":"application/json"},
+      body:JSON.stringify({action:"status"})
+    });
+    let result={};try{result=await response.json();}catch(_){}
+    if(!response.ok||result.success!==true||typeof result.hasPin!=="boolean")throw new Error("Sparkle couldn't verify your Transaction PIN status. Please sign in again.");
+    return result.hasPin;
+  }
+  async function finishGoogleLogin(user){
+    const hasPin=await googleUserHasPin(user);
+    await originalShowDashboard(user);
+    if(!hasPin){enforceGooglePin=true;setTimeout(()=>openPinModal(),900);}
+  }
   window.sparkleStartGoogleAuth=async function(){
     const button=document.getElementById("sparkleGoogleAuthButton");
     if(button){button.disabled=true;button.innerHTML='<span class="sparkle-google-g">G</span><span>Connecting to Google…</span>';}
@@ -9414,10 +9431,9 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
       if(!profile?.username||!profile?.phone||!(profile?.first_name||user.user_metadata?.given_name)||!(profile?.last_name||user.user_metadata?.family_name)){
         openProfile(user,profile,isNew);return true;
       }
-      clearPending();
       if(document.getElementById("authModal")?.classList.contains("show"))closeAuth();
-      await originalShowDashboard(user);
-      if(isNew){enforceGooglePin=true;setTimeout(()=>openPinModal(),900);}
+      await finishGoogleLogin(user);
+      clearPending();
       return true;
     }catch(e){
       handledUserId="";
@@ -9454,11 +9470,10 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
       const payload={id:user.id,first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
       const {error}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"});
       if(error)throw new Error("We couldn't save your Sparkle profile. Please try again.");
-      clearPending();
       document.getElementById("sparkleGoogleProfileModal").classList.remove("show");
       profileUser=null;
-      await originalShowDashboard(user);
-      if(requirePinAfterProfile){enforceGooglePin=true;setTimeout(()=>openPinModal(),900);}
+      await finishGoogleLogin(user);
+      clearPending();
       requirePinAfterProfile=false;
     }catch(e){message(e?.message||"We couldn't save your profile. Please try again.");}
     finally{saving=false;if(button){button.disabled=false;button.textContent="Continue";}}
