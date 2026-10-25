@@ -9362,7 +9362,7 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
 (function(){
   "use strict";
   const PENDING_KEY="sparkle_google_oauth_pending_v1";
-  let handledUserId="", profileUser=null, requirePinAfterProfile=false, saving=false;
+  let handledUserId="", profileUser=null, requirePinAfterProfile=false, saving=false, enforceGooglePin=false;
   let originalShowDashboard=null;
   function pending(){
     try{const p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||"null");return p&&Number.isFinite(Number(p.startedAt))?p:null;}catch(_){return null;}
@@ -9416,7 +9416,7 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
       clearPending();
       if(document.getElementById("authModal")?.classList.contains("show"))closeAuth();
       await originalShowDashboard(user);
-      if(isNew)setTimeout(()=>openPinModal(),900);
+      if(isNew){enforceGooglePin=true;setTimeout(()=>openPinModal(),900);}
       return true;
     }catch(e){
       handledUserId="";
@@ -9451,13 +9451,13 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     if(button){button.disabled=true;button.textContent="Saving profile…";}
     try{
       const payload={first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
-      const {error}=await supabaseClient.from("profiles").update(payload).eq("id",user.id);
+      const {error}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"});
       if(error)throw new Error("We couldn't save your Sparkle profile. Please try again.");
       clearPending();
       document.getElementById("sparkleGoogleProfileModal").classList.remove("show");
       profileUser=null;
       await originalShowDashboard(user);
-      if(requirePinAfterProfile)setTimeout(()=>openPinModal(),900);
+      if(requirePinAfterProfile){enforceGooglePin=true;setTimeout(()=>openPinModal(),900);}
       requirePinAfterProfile=false;
     }catch(e){message(e?.message||"We couldn't save your profile. Please try again.");}
     finally{saving=false;if(button){button.disabled=false;button.textContent="Continue";}}
@@ -9484,6 +9484,21 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
       const original=returnToSparkleLoginFromForgotPassword;
       returnToSparkleLoginFromForgotPassword=function(){const result=original.apply(this,arguments);const r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="block";return result;};
     }
+    if(typeof closeSetPinModal==="function"){
+      const original=closeSetPinModal;
+      closeSetPinModal=function(){if(enforceGooglePin){const msg=document.getElementById("setPinMessage");if(msg){msg.style.color="#b45309";msg.textContent="Please create your Transaction PIN to finish setting up your new Sparkle account.";}return;}return original.apply(this,arguments);};
+    }
+    if(typeof saveTransactionPIN==="function"){
+      const original=saveTransactionPIN;
+      saveTransactionPIN=async function(){
+        await original.apply(this,arguments);
+        const msg=document.getElementById("setPinMessage");
+        if(enforceGooglePin&&msg&&/Transaction PIN saved securely/i.test(msg.textContent)){enforceGooglePin=false;}
+      };
+    }
+    supabaseClient.auth.onAuthStateChange((event,session)=>{
+      if(session?.user&&pending())void handle(session.user);
+    });
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
 })();
