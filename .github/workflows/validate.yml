@@ -1,0 +1,31 @@
+name: Validate Sparkle
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - "maintenance/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  static-validation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.x"
+      - name: Validate inline JavaScript and public assets
+        run: python scripts/validate-static.py
