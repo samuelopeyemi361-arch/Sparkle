@@ -2410,6 +2410,28 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 #authModal #authSwitchRow{order:5}
 </style>
 
+
+<style id="sparkle-login-welcome-styles">
+#sparkle-login-welcome-modal{position:fixed;inset:0;z-index:100006;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,16,42,.76);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#sparkle-login-welcome-modal.is-open{display:flex}
+#sparkle-login-welcome-modal .sparkle-welcome-card{position:relative;box-sizing:border-box;width:min(100%,470px);max-height:calc(100dvh - 36px);overflow:auto;padding:29px;border:1px solid rgba(255,255,255,.9);border-radius:27px;background:linear-gradient(155deg,#fff 0%,#f7f9ff 100%);box-shadow:0 28px 90px rgba(2,13,38,.32);color:#142344}
+#sparkle-login-welcome-modal .sparkle-welcome-close{position:absolute;right:18px;top:18px;width:36px;height:36px;border:1px solid #e3e9f4;border-radius:50%;background:#f6f8fc;color:#344563;font-size:23px;cursor:pointer}
+#sparkle-login-welcome-modal .sparkle-welcome-mark{display:grid;place-items:center;width:54px;height:54px;margin:0 0 18px;border-radius:18px;background:linear-gradient(140deg,#1559e9,#635be8);color:#fff;font-size:25px;font-weight:950;box-shadow:0 12px 25px rgba(37,94,218,.23)}
+#sparkle-login-welcome-modal .sparkle-welcome-eyebrow{margin:0 0 8px;color:#2c60d5;font-size:10px;font-weight:950;letter-spacing:1.3px;text-transform:uppercase}
+#sparkle-login-welcome-modal .sparkle-welcome-title{margin:0 42px 10px 0;color:#101d3b;font-size:clamp(24px,5vw,29px);line-height:1.15;font-weight:950;letter-spacing:-.8px}
+#sparkle-login-welcome-modal .sparkle-welcome-copy{margin:0 0 20px;color:#65738b;font-size:14px;line-height:1.65}
+#sparkle-login-welcome-modal .sparkle-welcome-community{display:flex;align-items:center;gap:13px;margin:11px 0;padding:14px;border:1px solid #e3eaf6;border-radius:16px;background:#fff}
+#sparkle-login-welcome-modal .sparkle-welcome-community-icon{flex:0 0 43px;width:43px;height:43px;display:grid;place-items:center;border-radius:14px;background:#eafaf1;color:#119553;font-size:23px}
+#sparkle-login-welcome-modal .sparkle-welcome-community-copy{min-width:0;flex:1}
+#sparkle-login-welcome-modal .sparkle-welcome-community-copy strong{display:block;margin-bottom:4px;color:#192847;font-size:13px;font-weight:900}
+#sparkle-login-welcome-modal .sparkle-welcome-community-copy small{display:block;color:#708099;font-size:11px;line-height:1.5}
+#sparkle-login-welcome-modal .sparkle-welcome-action{width:100%;min-height:47px;margin-top:10px;border:0;border-radius:13px;background:linear-gradient(112deg,#1559e9,#377af5 55%,#635be8);color:#fff;font-size:13px;font-weight:900;box-shadow:0 10px 20px rgba(37,94,218,.18);cursor:pointer}
+#sparkle-login-welcome-modal .sparkle-welcome-action.group{border:1px solid #dce5f2;background:#fff;color:#20416f;box-shadow:none}
+#sparkle-login-welcome-modal .sparkle-welcome-later{display:block;width:100%;margin:8px 0 0;padding:11px;border:0;background:transparent;color:#77849a;font-size:12px;font-weight:800;cursor:pointer}
+@media(max-width:480px){#sparkle-login-welcome-modal{padding:12px}#sparkle-login-welcome-modal .sparkle-welcome-card{padding:24px 18px 18px;border-radius:23px;max-height:calc(100dvh - 24px)}}
+@media(prefers-reduced-motion:reduce){#sparkle-login-welcome-modal *{animation:none!important;transition:none!important}}
+</style>
+
 </head>
 
 <body>
@@ -7746,7 +7768,7 @@ async function processPendingPurchase(transactionPin){
     }
     const {data,error}=isData
       ? await supabaseClient.functions.invoke("sparkle-data-purchase",{
-          body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
+          body:{serviceID:p.serviceID,phone:p.phone,plan:p.planValue,planName:p.plan,network:p.network,serviceLabel:p.serviceLabel,validity:p.validity,amount:Number(p.amount),pin:transactionPin,requestID:pendingPurchase.requestID||("WEB-"+crypto.randomUUID())}
         })
       : await supabaseClient.functions.invoke("sparkle-airtime-purchase",{
           body:{network:p.network,phone:p.phone,amount:Number(p.amount),pin:transactionPin}
@@ -7756,7 +7778,7 @@ async function processPendingPurchase(transactionPin){
       clearCompletedPurchaseInputs(isData?"data":"airtime");
       pendingPurchase=null;
       if(overlay) overlay.classList.remove("show");
-      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:isData?(p.serviceLabel||p.serviceID):undefined,type:isData?p.plan:undefined,phone:p.phone,amount:Number(data.amount||p.amount)});
+      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:"TheSparkle.com.ng",network:p.network||"",serviceLabel:isData?(p.serviceLabel||p.serviceID||""):"",plan:isData?(p.plan||""):"",type_detail:isData?(p.plan||""):"",validity:isData?(p.validity||""):"",phone:p.phone,amount:Number(data.amount||p.amount)});
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
@@ -7803,17 +7825,31 @@ function showReceipt(result){
   const statusColor=failed?"#dc2626":pending?"#d97706":"#059669";
   const date=d.created_at?new Date(d.created_at):new Date();
   const service=String(d.service||"Sparkle Payment");
+  const receiptMeta=d.metadata&&typeof d.metadata==="object"?d.metadata:{};
+  const firstReceiptText=values=>values.map(v=>String(v??"").trim()).find(v=>v&&v!=="—")||"";
+  const isDataReceipt=/^data$/i.test(service.trim());
+  const readablePlanCandidates=[d.type_detail,d.planName,d.plan_name,d.planLabel,d.plan_label,receiptMeta.plan_name,receiptMeta.planName,receiptMeta.plan_label,receiptMeta.display_plan,d.plan,(!["credit","debit"].includes(String(d.type||"").toLowerCase())?d.type:"")];
+  const readablePlan=firstReceiptText(readablePlanCandidates);
+  const planCode=firstReceiptText([d.plan_id,d.planValue,receiptMeta.plan,receiptMeta.planValue,receiptMeta.plan_value,receiptMeta.variation_code]);
+  const networkLabel=firstReceiptText([d.network,d.networkLabel,receiptMeta.network,receiptMeta.network_name,receiptMeta.operator]);
+  const dataServiceLabel=firstReceiptText([d.serviceLabel,d.service_label,receiptMeta.service_label,receiptMeta.serviceLabel,receiptMeta.provider_service,receiptMeta.service_type,receiptMeta.serviceID,receiptMeta.service_id]);
+  const validityLabel=firstReceiptText([d.validity,receiptMeta.validity,receiptMeta.duration,receiptMeta.plan_duration]);
+  const prettyReceiptLabel=value=>String(value||"").replace(/[_]+/g," ").replace(/\\s+/g," ").trim().replace(/\\b\\w/g,ch=>ch.toUpperCase()).replace(/\\bMtn\\b/g,"MTN").replace(/\\bGlo\\b/g,"Glo").replace(/\\bSme\\b/g,"SME").replace(/\\bGb\\b/g,"GB").replace(/\\bMb\\b/g,"MB").replace(/\\bKb\\b/g,"KB").replace(/\\bLte\\b/g,"LTE");
+  const planParts=[];
+  const addPlanPart=value=>{const part=prettyReceiptLabel(value);if(!part)return;const low=part.toLowerCase();if(planParts.some(existing=>existing.toLowerCase()===low||existing.toLowerCase().includes(low)||low.includes(existing.toLowerCase())))return;planParts.push(part);};
+  if(isDataReceipt){if(dataServiceLabel)addPlanPart(dataServiceLabel);else if(networkLabel)addPlanPart(networkLabel);if(readablePlan)addPlanPart(readablePlan);else if(/\\d+(?:\\.\\d+)?\\s*(?:kb|mb|gb|tb)/i.test(planCode))addPlanPart(planCode);if(validityLabel)addPlanPart(validityLabel);if(planParts.length===0)addPlanPart("Selected data plan");}else{addPlanPart(readablePlan);if(!planParts.length)addPlanPart(dataServiceLabel);}
+  const receiptPlanLabel=planParts.join(" · ");
   const amountLabel=(String(d.type||"").toLowerCase()==="credit"||/deposit|fund|refund|reversal|reward/i.test(service))?"Amount credited":"Transaction amount";
   const details=document.getElementById("receiptDetails");
   details.innerHTML=`
     <div class="receipt-row"><span>Service</span><strong>${safe(service)}</strong></div>
     <div class="receipt-row"><span>Reference</span><strong style="overflow-wrap:anywhere">${safe(d.reference||d.id)}</strong></div>
     ${d.customer?`<div class="receipt-row"><span>Customer</span><strong>${safe(d.customer)}</strong></div>`:""}
-    ${d.provider?`<div class="receipt-row"><span>Provider</span><strong>${safe(d.provider)}</strong></div>`:""}
+    <div class="receipt-row"><span>Provider</span><strong>TheSparkle.com.ng</strong></div>
     ${d.targetLink?`<div class="receipt-row"><span>Target link</span><strong style="overflow-wrap:anywhere;word-break:break-word">${safe(d.targetLink)}</strong></div>`:""}
     ${d.quantity!==undefined&&d.quantity!==null&&d.quantity!==""?`<div class="receipt-row"><span>Quantity</span><strong>${safe(Number(d.quantity).toLocaleString("en-NG"))}</strong></div>`:""}
     ${d.meter?`<div class="receipt-row"><span>Meter / Smartcard</span><strong>${safe(d.meter)}</strong></div>`:""}
-    ${d.type_detail||d.plan||d.type?`<div class="receipt-row"><span>Type / Plan</span><strong>${safe(d.type_detail||d.plan||(d.type==="credit"||d.type==="debit"?"":d.type))}</strong></div>`:""}
+    ${receiptPlanLabel?`<div class="receipt-row"><span>${isDataReceipt?"Plan Purchased":"Type / Plan"}</span><strong>${safe(receiptPlanLabel)}</strong></div>`:""}
     ${d.phone?`<div class="receipt-row"><span>Phone</span><strong>${safe(d.phone)}</strong></div>`:""}
     <div class="receipt-row"><span>${amountLabel}</span><strong>${money(Math.abs(Number(d.amount)||0))}</strong></div>
     ${d.token?`<div class="receipt-row"><span>Token / Details</span><strong style="overflow-wrap:anywhere">${safe(d.token)}</strong></div>`:""}
@@ -7860,25 +7896,56 @@ async function checkPendingAirtimeStatus(){
     button.disabled=false;button.textContent="Check Status";
   }
 }
-function showTransactionReceipt(encoded){
+async function sparkleLookupHistoricalDataPlan(serviceID,planValue){
+  const service=String(serviceID||"").trim().toLowerCase(),wanted=String(planValue||"").trim();
+  if(!service||!wanted)return "";
+  const validServices=Object.values(DATA_SERVICE_OPTIONS||{}).flat().map(option=>String(option.id||"").toLowerCase());
+  if(!validServices.includes(service))return "";
+  const cacheKey=service+"::"+wanted;
+  if(window.sparkleHistoricalDataPlanCache?.[cacheKey])return window.sparkleHistoricalDataPlanCache[cacheKey];
+  try{
+    const cached=Array.isArray(dataPlansCache?.[service])?dataPlansCache[service]:null;
+    if(cached){const item=cached.find(p=>String(p?._value||"").trim()===wanted);if(item?._name)return item._name;}
+    const result=await gsubzRequest("/api/plans/?service="+encodeURIComponent(service),"GET");
+    const rawPlans=Array.isArray(result?.plans)?result.plans:Array.isArray(result?.data?.plans)?result.data.plans:Array.isArray(result?.data?.data?.plans)?result.data.data.plans:[];
+    const match=rawPlans.find(p=>String(p?.value??p?.plan??p?.variation_code??p?.variationCode??p?.code??"").trim()===wanted);
+    const label=String(match?.displayName||match?.display_name||match?.name||match?.plan_name||match?.planName||match?.package_name||match?.packageName||match?.PlanName||"").trim();
+    if(label){window.sparkleHistoricalDataPlanCache=window.sparkleHistoricalDataPlanCache||{};window.sparkleHistoricalDataPlanCache[cacheKey]=label;return label;}
+  }catch(error){console.warn("Could not resolve historical Sparkle data plan label:",error?.message||error);}
+  return "";
+}
+async function showTransactionReceipt(encoded){
   try {
     const tx=JSON.parse(decodeURIComponent(encoded));
     const m=tx.metadata&&typeof tx.metadata==="object"?tx.metadata:{};
-    const status=String(tx.status||"").toLowerCase();
+    const status=String(tx.status||"").toLowerCase(),isDataReceipt=String(tx.service||"").trim().toLowerCase()==="data";
+    const planName=m.plan_name||m.planName||m.plan_label||m.display_plan||"";
+    const planValue=m.plan||m.planValue||m.plan_value||m.variation_code||"";
+    const serviceID=m.provider_service||m.serviceID||m.service_id||"";
     const detail={
       ...tx,
       customer:m.customer||m.customer_name||m.phone||m.phone_number||m.recipient||m.billersCode||m.billers_code||"",
       phone:m.phone||m.phone_number||m.recipient_phone||"",
-      provider:m.provider||m.provider_service||m.serviceID||m.service_id||"",
+      provider:"TheSparkle.com.ng",
+      network:m.network||m.network_name||m.operator||"",
+      serviceLabel:m.service_label||m.serviceLabel||m.provider_service||m.service_type||m.serviceID||m.service_id||"",
       meter:m.meter||m.meter_number||m.customerID||m.customer_id||m.smartcard||m.iuc||"",
-      plan:m.planName||m.plan||m.plan_name||m.variation_code||"",
-      type_detail:m.planName||m.plan_name||m.plan||m.provider_service||m.service_type||"",
+      plan:planName,
+      plan_id:planValue,
+      type_detail:planName,
+      validity:m.validity||m.duration||m.plan_duration||"",
       targetLink:m.link||m.targetLink||m.target_link||"",
       quantity:m.quantity??"",
       token:m.token||m.electricity_token||m.pin||"",
       status:status||"unknown"
     };
     showReceipt(detail);
+    if(isDataReceipt&&!planName&&planValue&&serviceID){
+      const receiptCard=document.getElementById("receiptCard");
+      const expectedReference=String(tx.reference||tx.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
+      const label=await sparkleLookupHistoricalDataPlan(serviceID,planValue);
+      if(label&&document.getElementById("receiptModal")?.classList.contains("show")&&receiptCard?.dataset.reference===expectedReference)showReceipt({...detail,plan:label,type_detail:label});
+    }
   } catch(error){ console.error("Could not open Sparkle receipt:",error); alert("This receipt could not be opened. Please refresh transaction history and try again."); }
 }
 
@@ -8197,7 +8264,12 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       window.currentSparkleUser=session.user;
       return;
     }
-    showDashboard(session.user);
+    const dashboardReady = showDashboard(session.user);
+    if(event === "SIGNED_IN"){
+      Promise.resolve(dashboardReady).then(()=>{
+        if(typeof window.sparkleShowLoginWelcome === "function") window.sparkleShowLoginWelcome(session.user);
+      }).catch(error=>console.warn("Sparkle login welcome could not be opened:",error));
+    }
     return;
   }
   // Only a real sign-out should switch an already-open dashboard to the public homepage.
@@ -9823,6 +9895,57 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     });
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
+})();
+</script>
+
+
+<!-- Sparkle login welcome and community links -->
+<div id="sparkle-login-welcome-modal" aria-hidden="true">
+  <section class="sparkle-welcome-card" role="dialog" aria-modal="true" aria-labelledby="sparkle-login-welcome-title" aria-describedby="sparkle-login-welcome-copy">
+    <button type="button" class="sparkle-welcome-close" id="sparkle-login-welcome-close" aria-label="Close welcome message">×</button>
+    <div class="sparkle-welcome-mark" aria-hidden="true">✦</div>
+    <p class="sparkle-welcome-eyebrow">Your Sparkle community</p>
+    <h2 class="sparkle-welcome-title" id="sparkle-login-welcome-title">Welcome to Sparkle, <span id="sparkle-login-welcome-name">there</span>!</h2>
+    <p class="sparkle-welcome-copy" id="sparkle-login-welcome-copy">We’re glad you’re here. Join our official WhatsApp Channel for updates, and get the invite to our WhatsApp community group.</p>
+    <div class="sparkle-welcome-community">
+      <span class="sparkle-welcome-community-icon" aria-hidden="true">◉</span>
+      <span class="sparkle-welcome-community-copy"><strong>WhatsApp Channel</strong><small>Product updates, announcements and Sparkle news.</small></span>
+    </div>
+    <button type="button" class="sparkle-welcome-action" id="sparkle-login-welcome-channel">Join WhatsApp Channel ↗</button>
+    <div class="sparkle-welcome-community">
+      <span class="sparkle-welcome-community-icon" aria-hidden="true">👥</span>
+      <span class="sparkle-welcome-community-copy"><strong>WhatsApp Group</strong><small>Get the official group invitation from Sparkle Support.</small></span>
+    </div>
+    <button type="button" class="sparkle-welcome-action group" id="sparkle-login-welcome-group">Get WhatsApp Group Invite ↗</button>
+    <button type="button" class="sparkle-welcome-later" id="sparkle-login-welcome-later">Continue to Sparkle</button>
+  </section>
+</div>
+<script id="sparkle-login-welcome-behavior">
+(function(){
+  "use strict";
+  const CHANNEL_URL="https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V";
+  const GROUP_INVITE_REQUEST_URL="https://wa.me/2348089206869?text=Hi%20Sparkle%2C%20please%20send%20me%20the%20official%20WhatsApp%20group%20invite%20link.";
+  const overlay=document.getElementById("sparkle-login-welcome-modal");
+  if(!overlay)return;
+  function closeWelcome(){
+    overlay.classList.remove("is-open");
+    overlay.setAttribute("aria-hidden","true");
+  }
+  window.sparkleShowLoginWelcome=function(user){
+    const profileName=(document.getElementById("userName")?.textContent||"").trim();
+    const fallbackName=user?.user_metadata?.first_name||user?.user_metadata?.full_name||user?.email?.split("@")?.[0]||"there";
+    const name=profileName&&profileName!=="User"?profileName:fallbackName;
+    document.getElementById("sparkle-login-welcome-name").textContent=name;
+    overlay.classList.add("is-open");
+    overlay.setAttribute("aria-hidden","false");
+    document.getElementById("sparkle-login-welcome-later")?.focus({preventScroll:true});
+  };
+  document.getElementById("sparkle-login-welcome-close")?.addEventListener("click",closeWelcome);
+  document.getElementById("sparkle-login-welcome-later")?.addEventListener("click",closeWelcome);
+  overlay.addEventListener("click",event=>{if(event.target===overlay)closeWelcome();});
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&overlay.classList.contains("is-open"))closeWelcome();});
+  document.getElementById("sparkle-login-welcome-channel")?.addEventListener("click",()=>window.open(CHANNEL_URL,"_blank","noopener,noreferrer"));
+  document.getElementById("sparkle-login-welcome-group")?.addEventListener("click",()=>window.open(GROUP_INVITE_REQUEST_URL,"_blank","noopener,noreferrer"));
 })();
 </script>
 
