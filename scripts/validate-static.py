@@ -58,7 +58,39 @@ def main():
     for required in ("robots.txt", "favicon.svg"):
         if not (ROOT / required).is_file():
             raise SystemExit(f"Required public asset missing: {required}")
-    print(f"PASS: {checked} inline JavaScript blocks, vercel.json, sitemap.xml, robots.txt, favicon.svg")
+
+    # Guard the most important Sparkle production invariants against regressions.
+    checks = {
+        "compact welcome modal": 'id="sparkle-login-welcome-modal"' in html,
+        "WhatsApp channel action": 'id="sparkle-login-welcome-channel"' in html,
+        "welcome close action": 'id="sparkle-login-welcome-later"' in html,
+        "welcome group invitation removed": 'id="sparkle-login-welcome-group"' not in html and "GROUP_INVITE_REQUEST_URL" not in html,
+        "Sparkle-branded receipt provider": '<span>Provider</span><strong>TheSparkle.com.ng</strong>' in html,
+        "receipt plan label": 'isDataReceipt?"Plan Purchased"' in html,
+        "no service-role key in browser code": "SUPABASE_SERVICE_ROLE_KEY" not in html and "SERVICE_ROLE_KEY" not in html,
+        "canonical production domain": 'https://thesparkle.com.ng/' in html,
+    }
+    for label, passed in checks.items():
+        if not passed:
+            raise SystemExit(f"Regression check failed: {label}")
+
+    sitemap_root = ET.parse(ROOT / "sitemap.xml").getroot()
+    sitemap_ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+    sitemap_urls = [node.text or "" for node in sitemap_root.findall("sm:url/sm:loc", sitemap_ns)]
+    if not sitemap_urls:
+        raise SystemExit("sitemap.xml must contain at least one URL")
+    if any(not url.startswith("https://thesparkle.com.ng/") for url in sitemap_urls):
+        raise SystemExit("sitemap.xml contains a URL outside the canonical production domain")
+
+    webhook = ROOT / "supabase/functions/paystack-webhook/index.ts"
+    if not webhook.is_file():
+        raise SystemExit("Paystack webhook source is missing")
+    webhook_source = webhook.read_text(encoding="utf-8")
+    for marker in ("x-paystack-signature", "constantTimeEqual", "PAYSTACK_SECRET_KEY"):
+        if marker not in webhook_source:
+            raise SystemExit(f"Paystack webhook security check failed: missing {marker}")
+
+    print(f"PASS: {checked} inline JavaScript blocks, production invariants, Paystack webhook guardrails, sitemap.xml ({len(sitemap_urls)} URLs), vercel.json, robots.txt, favicon.svg")
 
 if __name__ == "__main__":
     main()
