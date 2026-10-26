@@ -2397,6 +2397,19 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 }
 </style>
 
+
+<style id="sparkle-google-login-top">
+/* Google sign-in sits above the email/password form, as requested. */
+#authModal .modal-box{display:flex;flex-direction:column}
+#authModal .modal-head{order:0}
+#authModal #authMessage{order:1}
+#authModal #sparkleGoogleAuthRow{order:2;margin:0 0 18px!important}
+#authModal #sparkleGoogleAuthRow>div{margin:0 0 12px!important}
+#authModal #authForm{order:3}
+#authModal #sparkleForgotPasswordPanel{order:4}
+#authModal #authSwitchRow{order:5}
+</style>
+
 </head>
 
 <body>
