@@ -103,6 +103,21 @@ Deno.serve(async (req) => {
     "",
   ).trim();
 
+  // Receipt-only display labels; these do not affect service, plan code, or price.
+  const displayPlanName = String(body.planName ?? body.plan_name ?? "").trim().slice(0, 160);
+  const displayNetwork = String(body.network ?? "").trim().slice(0, 40);
+  const displayServiceLabel = String(body.serviceLabel ?? body.service_label ?? "").trim().slice(0, 80);
+  const displayValidity = String(body.validity ?? "").trim().slice(0, 80);
+  const receiptMetadata = {
+    provider: "GSubz",
+    provider_service: serviceID,
+    plan,
+    ...(displayPlanName ? { plan_name: displayPlanName } : {}),
+    ...(displayNetwork ? { network: displayNetwork } : {}),
+    ...(displayServiceLabel ? { service_label: displayServiceLabel } : {}),
+    ...(displayValidity ? { validity: displayValidity } : {}),
+  };
+
   const amount = Number(body.amount ?? body.price);
 
   if (!DATA_SERVICES.includes(serviceID)) {
@@ -229,6 +244,56 @@ Deno.serve(async (req) => {
     auth: { persistSession: false },
   });
 
+  const action = String(body.action || "purchase").trim().toLowerCase();
+
+  // Reconcile an existing data order without PIN verification or another purchase.
+  if (action === "check") {
+    const reference = String(body.reference || "").trim();
+    if (!/^SPK-DT-[A-Za-z0-9_-]{8,100}$/i.test(reference)) {
+      return reply({ success: false, status: "not_started", error: "Invalid data transaction reference." }, 400);
+    }
+    const { data: tx, error: txError } = await admin.from("wallet_transactions")
+      .select("user_id,amount,service,status,metadata,reference")
+      .eq("reference", reference).maybeSingle();
+    if (txError || !tx || tx.user_id !== user.id || tx.service !== "Data") {
+      return reply({ success: false, status: "not_found", error: "Data transaction not found." }, 404);
+    }
+    if (tx.status === "successful") return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+    if (["refunded", "failed"].includes(String(tx.status).toLowerCase())) return reply({ success: false, status: "refunded", reference, error: "This data order has already been refunded." });
+    try {
+      const form = new FormData();
+      form.append("api", gsubzKey);
+      form.append("requestID", reference);
+      const response = await fetch("https://api.gsubz.com/api/verify/", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" },
+        body: form,
+        signal: AbortSignal.timeout(20000),
+      });
+      const raw = await response.text();
+      let providerData: any;
+      try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
+      const providerStatus = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? providerData?.transaction_status ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+      const description = String(providerData?.description ?? providerData?.data?.description ?? "").trim().toUpperCase();
+      const notFound = Number(providerData?.code) === 404 || description.includes("NOT_FOUND") || description.includes("CONTENT_NOT_FOUND");
+      const succeeded = response.ok && ["successful", "success", "completed", "complete"].includes(providerStatus);
+      const failed = !notFound && response.ok && ["failed", "failure", "error", "rejected", "cancelled", "canceled", "transaction_failed"].includes(providerStatus);
+      const result = await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: succeeded ? "success" : failed ? "failure" : "pending",
+        p_reference: reference, p_amount: Number(tx.amount), p_service: "Data",
+        p_phone: String(tx.metadata?.phone || ""),
+        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true },
+      });
+      if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Sparkle could not reconcile this data order yet. Do not retry." }, 202);
+      if (succeeded) return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+      if (failed) return reply({ success: false, status: "refunded", reference, error: "GSubz confirmed failure. Your wallet has been refunded." });
+      return reply({ success: false, status: "pending", reference, error: "GSubz has not confirmed success or failure. Funds remain reserved; do not retry." }, 202);
+    } catch {
+      return reply({ success: false, status: "pending", reference, error: "Provider verification is unavailable. Funds remain reserved; do not retry." }, 202);
+    }
+  }
+  if (action !== "purchase") return reply({ success: false, error: "Unsupported action." }, 400);
+
   // Reuse a supplied request ID on retries to help prevent duplicate orders.
   const suppliedID = String(
     body.requestID || body.requestId || body.reference || "",
@@ -252,11 +317,7 @@ Deno.serve(async (req) => {
       p_amount: amount,
       p_service: "Data",
       p_phone: phone,
-      p_metadata: {
-        provider: "GSubz",
-        provider_service: serviceID,
-        plan,
-      },
+      p_metadata: receiptMetadata,
     },
   );
 
@@ -329,9 +390,7 @@ Deno.serve(async (req) => {
       p_service: "Data",
       p_phone: phone,
       p_metadata: {
-        provider: "GSubz",
-        provider_service: serviceID,
-        plan,
+        ...receiptMetadata,
         reason: "provider_timeout_or_connection_error",
       },
     });
@@ -376,9 +435,7 @@ Deno.serve(async (req) => {
         p_service: "Data",
         p_phone: phone,
         p_metadata: {
-          provider: "GSubz",
-          provider_service: serviceID,
-          plan,
+          ...receiptMetadata,
           provider_response: providerData,
         },
       },
@@ -418,9 +475,7 @@ Deno.serve(async (req) => {
         p_service: "Data",
         p_phone: phone,
         p_metadata: {
-          provider: "GSubz",
-          provider_service: serviceID,
-          plan,
+          ...receiptMetadata,
           provider_response: providerData,
         },
       },
@@ -454,9 +509,7 @@ Deno.serve(async (req) => {
     p_service: "Data",
     p_phone: phone,
     p_metadata: {
-      provider: "GSubz",
-      provider_service: serviceID,
-      plan,
+      ...receiptMetadata,
       provider_response: providerData,
       http_ok: httpOk,
     },
