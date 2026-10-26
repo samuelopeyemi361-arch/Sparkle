@@ -137,6 +137,11 @@ Deno.serve(async (req) => {
       }, 400);
     }
     const action = body.action;
+    // STATUS CHECK: return only whether the authenticated user has a PIN.
+    // This action must be available to existing users during login; never expose the stored hash.
+    if (action === "status") {
+      return reply({ success: true, hasPin: Boolean(record) });
+    }
     if (!["set", "verify", "change"].includes(action ?? "")) {
       return reply({
         success: false,
