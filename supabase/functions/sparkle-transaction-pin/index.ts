@@ -137,11 +137,6 @@ Deno.serve(async (req) => {
       }, 400);
     }
     const action = body.action;
-    // STATUS CHECK: return only whether the authenticated user has a PIN.
-    // This action must be available to existing users during login; never expose the stored hash.
-    if (action === "status") {
-      return reply({ success: true, hasPin: Boolean(record) });
-    }
     if (!["set", "verify", "change"].includes(action ?? "")) {
       return reply({
         success: false,
@@ -166,6 +161,11 @@ Deno.serve(async (req) => {
         error: "We couldn't access your PIN security record. Please try again.",
         message: "We couldn't access your PIN security record. Please try again.",
       }, 500);
+    }
+    // STATUS CHECK: return only whether the authenticated user has a PIN.
+    // This action must be available to existing users during login; never expose the stored hash.
+    if (action === "status") {
+      return reply({ success: true, hasPin: Boolean(record) });
     }
     // CREATE PIN
     if (action === "set") {
