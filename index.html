@@ -2104,6 +2104,312 @@ a.tx.sparkle-tx-row:hover{text-decoration:none}
 a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 </style>
 
+
+<style id="sparkle-premium-auth-pin-redesign">
+/* Premium visual-only refresh for registration, email verification and transaction PIN. */
+#authModal.modal{
+  z-index:100000;
+  padding:clamp(12px,3vw,24px);
+  background:rgba(5,16,42,.72);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+#authModal .modal-box{
+  position:relative;
+  width:min(100%,470px);
+  max-width:470px;
+  max-height:calc(100dvh - 32px);
+  overflow-x:hidden;
+  overflow-y:auto;
+  padding:30px;
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:27px;
+  background:linear-gradient(155deg,#fff 0%,#fbfcff 100%);
+  box-shadow:0 28px 90px rgba(2,13,38,.30),0 4px 16px rgba(14,47,105,.08);
+  scrollbar-width:thin;
+}
+#authModal .modal-box::before{
+  content:"✦  THE SPARKLE EXPERIENCE";
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 18px;
+  padding:8px 11px;
+  border:1px solid #dce8ff;
+  border-radius:999px;
+  background:linear-gradient(100deg,#eff5ff,#f7f8ff);
+  color:#1748aa;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.15px;
+}
+#authModal .modal-head{align-items:flex-start;margin:0 0 21px;gap:12px}
+#authModal .modal-head h2{
+  max-width:330px;
+  color:#101d3b;
+  font-size:clamp(23px,4vw,28px);
+  font-weight:900;
+  letter-spacing:-.8px;
+  line-height:1.18;
+}
+#authModal .close,#setPinModal .close,#pinModal .close{
+  flex:0 0 36px;
+  display:grid;
+  place-items:center;
+  border:1px solid #e5eaf3;
+  background:#f7f9fc;
+  color:#344563;
+  font-size:23px;
+  cursor:pointer;
+  transition:background .18s ease,transform .18s ease;
+}
+#authModal .close:hover,#setPinModal .close:hover,#pinModal .close:hover{background:#eaf0ff;transform:translateY(-1px)}
+#authModal .field{min-width:0;margin-bottom:14px}
+#authModal .field label{
+  margin-bottom:7px;
+  color:#273754;
+  font-size:12px;
+  font-weight:850;
+  letter-spacing:.1px;
+}
+#authModal .field input{
+  box-sizing:border-box;
+  width:100%;
+  min-height:49px;
+  padding:12px 14px;
+  border:1px solid #dce3ef;
+  border-radius:13px;
+  background:#fbfcff;
+  color:#111e39;
+  font-size:15px;
+  box-shadow:inset 0 1px 2px rgba(13,30,61,.025);
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#authModal .field input::placeholder{color:#9aa7bc}
+#authModal .field input:focus{
+  border-color:#4779ec;
+  outline:none;
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(42,99,224,.10);
+}
+#authModal #authMessage{border-radius:12px;line-height:1.5}
+#authModal #authButton{
+  min-height:51px;
+  margin-top:5px;
+  border:0;
+  border-radius:14px;
+  background:linear-gradient(112deg,#1559e9 0%,#377af5 53%,#635be8 100%);
+  color:#fff;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.15px;
+  box-shadow:0 11px 22px rgba(37,94,218,.21);
+  transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+}
+#authModal #authButton:hover{filter:brightness(1.035);transform:translateY(-1px);box-shadow:0 14px 26px rgba(37,94,218,.25)}
+#authModal #authButton:disabled{opacity:.65;transform:none;box-shadow:none}
+#authModal .sparkle-google-auth-button{
+  min-height:49px;
+  border:1px solid #dce3ef;
+  border-radius:14px;
+  background:#fff;
+  color:#1d2b46;
+  font-weight:850;
+  transition:border-color .18s ease,background .18s ease,transform .18s ease;
+}
+#authModal .sparkle-google-auth-button:hover{border-color:#b9ccf5;background:#f8faff;transform:translateY(-1px)}
+#authModal #authSwitchRow{
+  padding-top:15px;
+  border-top:1px solid #edf0f6;
+  color:#64728a;
+  line-height:1.7;
+}
+#authModal #switchButton{
+  padding:3px 5px;
+  border-radius:7px;
+  color:#1856d7;
+  font-weight:900;
+}
+#authModal .sparkle-forgot-password-row{text-align:right;margin:-3px 0 14px}
+#authModal .sparkle-forgot-password-link{padding:4px 0;color:#245dd5;font-size:12px;font-weight:850}
+#authModal #referralField small{display:block;margin-top:7px;line-height:1.5}
+#authModal .sparkle-email-otp-card{
+  padding:18px;
+  border-color:#d8e5ff;
+  border-radius:18px;
+  background:linear-gradient(145deg,#f0f5ff 0%,#fff 75%);
+  box-shadow:inset 0 1px 0 #fff;
+}
+#authModal .sparkle-email-otp-mark{border-radius:15px;box-shadow:0 9px 20px rgba(11,92,255,.19)}
+#authModal #emailVerificationCode{box-sizing:border-box;min-height:58px}
+#authModal .sparkle-email-otp-card .btn{min-height:46px;border-radius:12px;font-weight:850}
+#authModal #sparkleBackToRegistrationButton{border-color:#dce5f4;background:#fff;color:#244066}
+#authModal #sparkleForgotPasswordPanel .field input{box-sizing:border-box}
+
+/* Transaction authorization screen */
+#pinModal.modal,#setPinModal.modal{
+  padding:clamp(12px,3vw,24px);
+  background:rgba(5,16,42,.76);
+  -webkit-backdrop-filter:blur(12px);
+  backdrop-filter:blur(12px);
+}
+#pinModal .modal-box,#setPinModal .modal-box{
+  position:relative;
+  width:min(100%,420px);
+  max-width:420px;
+  max-height:calc(100dvh - 32px);
+  overflow-y:auto;
+  padding:29px;
+  border:1px solid rgba(255,255,255,.85);
+  border-radius:27px;
+  background:linear-gradient(155deg,#fff 0%,#f9fbff 100%);
+  box-shadow:0 28px 90px rgba(2,13,38,.32),0 4px 18px rgba(14,47,105,.08);
+}
+#pinModal .modal-box::before{
+  content:"✦  SECURE CHECKOUT";
+  display:inline-flex;
+  margin:0 auto 17px;
+  padding:8px 12px;
+  border:1px solid #dce8ff;
+  border-radius:999px;
+  background:#f0f5ff;
+  color:#1748aa;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1.1px;
+}
+#setPinModal .modal-box::before{
+  content:"✦  YOUR SECURITY, YOUR CONTROL";
+  display:inline-flex;
+  margin:0 0 17px;
+  padding:8px 12px;
+  border:1px solid #dce8ff;
+  border-radius:999px;
+  background:#f0f5ff;
+  color:#1748aa;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:.9px;
+}
+#pinModal .modal-head,#setPinModal .modal-head{align-items:flex-start;gap:12px;margin-bottom:13px}
+#pinModal .modal-head h2,#setPinModal .modal-head h2{
+  color:#101d3b;
+  font-size:24px;
+  font-weight:900;
+  letter-spacing:-.65px;
+  line-height:1.2;
+}
+#pinModal .modal-box>p:not(#pinMessage),#setPinModal .modal-box>p:not(#setPinMessage){
+  color:#65738b!important;
+  font-size:13px;
+  line-height:1.65;
+}
+#pinModal .pin-boxes{gap:11px;margin:25px 0 19px}
+#pinModal .pin-box{
+  box-sizing:border-box;
+  width:54px;
+  height:62px;
+  border:1px solid #d9e2f1;
+  border-radius:15px;
+  background:linear-gradient(180deg,#fbfcff,#f2f6ff);
+  color:#15366f;
+  font-size:25px;
+  font-weight:900;
+  box-shadow:inset 0 1px 2px rgba(13,30,61,.025);
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#pinModal .pin-box:focus{
+  outline:none;
+  border-color:#3b75ee;
+  background:#fff;
+  box-shadow:0 0 0 4px rgba(42,99,224,.12);
+}
+#pinModal #pinMessage,#setPinModal #setPinMessage{min-height:18px;line-height:1.5}
+#pinModal .btn.primary,#setPinModal .btn.primary{
+  min-height:50px;
+  border:0;
+  border-radius:14px;
+  background:linear-gradient(112deg,#1559e9 0%,#377af5 53%,#635be8 100%);
+  color:#fff;
+  font-weight:900;
+  box-shadow:0 11px 22px rgba(37,94,218,.20);
+}
+#setPinModal .modal-box>label{
+  display:block;
+  margin:15px 0 7px;
+  color:#273754;
+  font-size:12px;
+  font-weight:850;
+  text-align:left;
+}
+#setPinModal #currentTransactionPin,
+#setPinModal #newTransactionPin,
+#setPinModal #confirmTransactionPin{
+  box-sizing:border-box!important;
+  width:100%!important;
+  min-height:49px!important;
+  margin:0 0 4px!important;
+  padding:12px 14px!important;
+  border:1px solid #dce3ef!important;
+  border-radius:13px!important;
+  background:#fbfcff!important;
+  color:#111e39!important;
+  font-size:16px!important;
+  outline:none;
+  transition:border-color .18s ease,box-shadow .18s ease,background .18s ease;
+}
+#setPinModal #currentTransactionPin:focus,
+#setPinModal #newTransactionPin:focus,
+#setPinModal #confirmTransactionPin:focus{
+  border-color:#4779ec!important;
+  background:#fff!important;
+  box-shadow:0 0 0 4px rgba(42,99,224,.10);
+}
+#pinModal .close,#setPinModal .close{background:#f7f9fc}
+@media (min-width:520px){
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])){display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:14px;row-gap:0}
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #firstNameField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #lastNameField{grid-column:auto}
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #phoneField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #usernameField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #emailField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #passwordField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #forgotPasswordRow,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #referralField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #emailOtpField,
+  #authModal #authForm:has(#firstNameField:not([style*="display:none"])) #authButton{grid-column:1/-1}
+}
+@media (max-width:519px){
+  #authModal.modal,#pinModal.modal,#setPinModal.modal{align-items:center;padding:12px}
+  #authModal .modal-box{padding:23px 19px 20px;border-radius:23px;max-height:calc(100dvh - 24px)}
+  #authModal .modal-box::before{margin-bottom:15px}
+  #authModal .modal-head{margin-bottom:17px}
+  #authModal .field{margin-bottom:12px}
+  #authModal .field input{min-height:47px;font-size:16px}
+  #authModal #authSwitchRow{margin-top:15px!important;padding-top:13px}
+  #pinModal .modal-box,#setPinModal .modal-box{padding:24px 19px 21px;border-radius:23px;max-height:calc(100dvh - 24px)}
+  #pinModal .pin-boxes{gap:8px}
+  #pinModal .pin-box{width:min(17vw,54px);height:58px;border-radius:13px;font-size:23px}
+  #pinModal .modal-head h2,#setPinModal .modal-head h2{font-size:22px}
+}
+@media (prefers-reduced-motion:reduce){
+  #authModal *,#pinModal *,#setPinModal *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
+}
+</style>
+
+
+<style id="sparkle-google-login-top">
+/* Google sign-in sits above the email/password form, as requested. */
+#authModal .modal-box{display:flex;flex-direction:column}
+#authModal .modal-head{order:0}
+#authModal #authMessage{order:1}
+#authModal #sparkleGoogleAuthRow{order:2;margin:0 0 18px!important}
+#authModal #sparkleGoogleAuthRow>div{margin:0 0 12px!important}
+#authModal #authForm{order:3}
+#authModal #sparkleForgotPasswordPanel{order:4}
+#authModal #authSwitchRow{order:5}
+</style>
+
 </head>
 
 <body>
