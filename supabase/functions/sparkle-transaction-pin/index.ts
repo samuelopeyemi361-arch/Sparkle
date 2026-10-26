@@ -137,7 +137,7 @@ Deno.serve(async (req) => {
       }, 400);
     }
     const action = body.action;
-    if (!["set", "verify", "change"].includes(action ?? "")) {
+    if (!["set", "verify", "change", "status"].includes(action ?? "")) {
       return reply({
         success: false,
         error: "Invalid PIN action. Please try again.",
