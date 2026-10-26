@@ -2412,23 +2412,19 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 
 
 <style id="sparkle-login-welcome-styles">
-#sparkle-login-welcome-modal{position:fixed;inset:0;z-index:100006;display:none;align-items:center;justify-content:center;padding:18px;background:rgba(5,16,42,.76);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+#sparkle-login-welcome-modal{position:fixed;inset:0;z-index:100006;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(9,20,43,.52);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
 #sparkle-login-welcome-modal.is-open{display:flex}
-#sparkle-login-welcome-modal .sparkle-welcome-card{position:relative;box-sizing:border-box;width:min(100%,470px);max-height:calc(100dvh - 36px);overflow:auto;padding:29px;border:1px solid rgba(255,255,255,.9);border-radius:27px;background:linear-gradient(155deg,#fff 0%,#f7f9ff 100%);box-shadow:0 28px 90px rgba(2,13,38,.32);color:#142344}
-#sparkle-login-welcome-modal .sparkle-welcome-close{position:absolute;right:18px;top:18px;width:36px;height:36px;border:1px solid #e3e9f4;border-radius:50%;background:#f6f8fc;color:#344563;font-size:23px;cursor:pointer}
-#sparkle-login-welcome-modal .sparkle-welcome-mark{display:grid;place-items:center;width:54px;height:54px;margin:0 0 18px;border-radius:18px;background:linear-gradient(140deg,#1559e9,#635be8);color:#fff;font-size:25px;font-weight:950;box-shadow:0 12px 25px rgba(37,94,218,.23)}
-#sparkle-login-welcome-modal .sparkle-welcome-eyebrow{margin:0 0 8px;color:#2c60d5;font-size:10px;font-weight:950;letter-spacing:1.3px;text-transform:uppercase}
-#sparkle-login-welcome-modal .sparkle-welcome-title{margin:0 42px 10px 0;color:#101d3b;font-size:clamp(24px,5vw,29px);line-height:1.15;font-weight:950;letter-spacing:-.8px}
-#sparkle-login-welcome-modal .sparkle-welcome-copy{margin:0 0 20px;color:#65738b;font-size:14px;line-height:1.65}
-#sparkle-login-welcome-modal .sparkle-welcome-community{display:flex;align-items:center;gap:13px;margin:11px 0;padding:14px;border:1px solid #e3eaf6;border-radius:16px;background:#fff}
-#sparkle-login-welcome-modal .sparkle-welcome-community-icon{flex:0 0 43px;width:43px;height:43px;display:grid;place-items:center;border-radius:14px;background:#eafaf1;color:#119553;font-size:23px}
-#sparkle-login-welcome-modal .sparkle-welcome-community-copy{min-width:0;flex:1}
-#sparkle-login-welcome-modal .sparkle-welcome-community-copy strong{display:block;margin-bottom:4px;color:#192847;font-size:13px;font-weight:900}
-#sparkle-login-welcome-modal .sparkle-welcome-community-copy small{display:block;color:#708099;font-size:11px;line-height:1.5}
-#sparkle-login-welcome-modal .sparkle-welcome-action{width:100%;min-height:47px;margin-top:10px;border:0;border-radius:13px;background:linear-gradient(112deg,#1559e9,#377af5 55%,#635be8);color:#fff;font-size:13px;font-weight:900;box-shadow:0 10px 20px rgba(37,94,218,.18);cursor:pointer}
-#sparkle-login-welcome-modal .sparkle-welcome-action.group{border:1px solid #dce5f2;background:#fff;color:#20416f;box-shadow:none}
-#sparkle-login-welcome-modal .sparkle-welcome-later{display:block;width:100%;margin:8px 0 0;padding:11px;border:0;background:transparent;color:#77849a;font-size:12px;font-weight:800;cursor:pointer}
-@media(max-width:480px){#sparkle-login-welcome-modal{padding:12px}#sparkle-login-welcome-modal .sparkle-welcome-card{padding:24px 18px 18px;border-radius:23px;max-height:calc(100dvh - 24px)}}
+#sparkle-login-welcome-modal .sparkle-welcome-card{position:relative;box-sizing:border-box;width:min(100%,390px);max-height:calc(100dvh - 32px);overflow:auto;padding:24px 22px 17px;border:1px solid rgba(255,255,255,.92);border-radius:24px;background:linear-gradient(145deg,#fff 0%,#f6f8fd 100%);box-shadow:0 20px 58px rgba(4,16,43,.24),0 2px 8px rgba(4,16,43,.08);color:#142344;text-align:center}
+#sparkle-login-welcome-modal .sparkle-welcome-mark{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 15px;border:1px solid #dbe6ff;border-radius:50%;background:linear-gradient(145deg,#f4f7ff,#e4ecff);color:#1756ce;font-size:21px;font-weight:950;box-shadow:0 5px 13px rgba(24,70,150,.12)}
+#sparkle-login-welcome-modal .sparkle-welcome-eyebrow{margin:0 0 7px;color:#315fc1;font-size:9px;font-weight:900;letter-spacing:1.35px;text-transform:uppercase}
+#sparkle-login-welcome-modal .sparkle-welcome-title{margin:0 0 10px;color:#101d35;font-size:clamp(20px,4.6vw,23px);line-height:1.23;font-weight:900;letter-spacing:-.55px;overflow-wrap:anywhere}
+#sparkle-login-welcome-modal .sparkle-welcome-copy{margin:0 auto 19px;max-width:310px;color:#56657d;font-size:13px;line-height:1.55;font-weight:450}
+#sparkle-login-welcome-modal .sparkle-welcome-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:stretch}
+#sparkle-login-welcome-modal .sparkle-welcome-action{display:flex;align-items:center;justify-content:center;gap:6px;box-sizing:border-box;width:100%;min-height:46px;margin:0;padding:10px 12px;border:1px solid #1654cc;border-radius:12px;background:linear-gradient(115deg,#1559e9,#3c70e7);color:#fff;font-size:12px;line-height:1.3;font-weight:850;box-shadow:0 7px 15px rgba(37,94,218,.16);cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
+#sparkle-login-welcome-modal .sparkle-welcome-action:hover{transform:translateY(-1px);box-shadow:0 9px 18px rgba(37,94,218,.2)}
+#sparkle-login-welcome-modal .sparkle-welcome-action.close-action{border:1px solid #dbe2ee;background:#edf1f7;color:#21324e;box-shadow:none}
+#sparkle-login-welcome-modal .sparkle-welcome-action:focus-visible{outline:3px solid rgba(42,99,224,.25);outline-offset:2px}
+@media(max-width:420px){#sparkle-login-welcome-modal{padding:13px}#sparkle-login-welcome-modal .sparkle-welcome-card{width:min(100%,370px);padding:22px 17px 16px;border-radius:22px}#sparkle-login-welcome-modal .sparkle-welcome-title{font-size:21px}#sparkle-login-welcome-modal .sparkle-welcome-copy{font-size:12.5px;margin-bottom:17px}#sparkle-login-welcome-modal .sparkle-welcome-actions{gap:8px}#sparkle-login-welcome-modal .sparkle-welcome-action{padding:9px 8px;min-height:44px;font-size:11.5px}}
 @media(prefers-reduced-motion:reduce){#sparkle-login-welcome-modal *{animation:none!important;transition:none!important}}
 </style>
 
@@ -9899,32 +9895,23 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
 </script>
 
 
-<!-- Sparkle login welcome and community links -->
+<!-- Compact Sparkle login welcome -->
 <div id="sparkle-login-welcome-modal" aria-hidden="true">
   <section class="sparkle-welcome-card" role="dialog" aria-modal="true" aria-labelledby="sparkle-login-welcome-title" aria-describedby="sparkle-login-welcome-copy">
-    <button type="button" class="sparkle-welcome-close" id="sparkle-login-welcome-close" aria-label="Close welcome message">×</button>
     <div class="sparkle-welcome-mark" aria-hidden="true">✦</div>
-    <p class="sparkle-welcome-eyebrow">Your Sparkle community</p>
+    <p class="sparkle-welcome-eyebrow">A quick note from Sparkle</p>
     <h2 class="sparkle-welcome-title" id="sparkle-login-welcome-title">Welcome to Sparkle, <span id="sparkle-login-welcome-name">there</span>!</h2>
-    <p class="sparkle-welcome-copy" id="sparkle-login-welcome-copy">We’re glad you’re here. Join our official WhatsApp Channel for updates, and get the invite to our WhatsApp community group.</p>
-    <div class="sparkle-welcome-community">
-      <span class="sparkle-welcome-community-icon" aria-hidden="true">◉</span>
-      <span class="sparkle-welcome-community-copy"><strong>WhatsApp Channel</strong><small>Product updates, announcements and Sparkle news.</small></span>
+    <p class="sparkle-welcome-copy" id="sparkle-login-welcome-copy">Stay connected with Sparkle. Join our official WhatsApp Channel for updates, offers and important announcements.</p>
+    <div class="sparkle-welcome-actions">
+      <button type="button" class="sparkle-welcome-action" id="sparkle-login-welcome-channel">Join WhatsApp Channel <span aria-hidden="true">↗</span></button>
+      <button type="button" class="sparkle-welcome-action close-action" id="sparkle-login-welcome-later">Close</button>
     </div>
-    <button type="button" class="sparkle-welcome-action" id="sparkle-login-welcome-channel">Join WhatsApp Channel ↗</button>
-    <div class="sparkle-welcome-community">
-      <span class="sparkle-welcome-community-icon" aria-hidden="true">👥</span>
-      <span class="sparkle-welcome-community-copy"><strong>WhatsApp Group</strong><small>Get the official group invitation from Sparkle Support.</small></span>
-    </div>
-    <button type="button" class="sparkle-welcome-action group" id="sparkle-login-welcome-group">Get WhatsApp Group Invite ↗</button>
-    <button type="button" class="sparkle-welcome-later" id="sparkle-login-welcome-later">Continue to Sparkle</button>
   </section>
 </div>
 <script id="sparkle-login-welcome-behavior">
 (function(){
   "use strict";
   const CHANNEL_URL="https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V";
-  const GROUP_INVITE_REQUEST_URL="https://wa.me/2348089206869?text=Hi%20Sparkle%2C%20please%20send%20me%20the%20official%20WhatsApp%20group%20invite%20link.";
   const overlay=document.getElementById("sparkle-login-welcome-modal");
   if(!overlay)return;
   function closeWelcome(){
@@ -9938,14 +9925,12 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     document.getElementById("sparkle-login-welcome-name").textContent=name;
     overlay.classList.add("is-open");
     overlay.setAttribute("aria-hidden","false");
-    document.getElementById("sparkle-login-welcome-later")?.focus({preventScroll:true});
+    document.getElementById("sparkle-login-welcome-channel")?.focus({preventScroll:true});
   };
-  document.getElementById("sparkle-login-welcome-close")?.addEventListener("click",closeWelcome);
   document.getElementById("sparkle-login-welcome-later")?.addEventListener("click",closeWelcome);
   overlay.addEventListener("click",event=>{if(event.target===overlay)closeWelcome();});
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&overlay.classList.contains("is-open"))closeWelcome();});
   document.getElementById("sparkle-login-welcome-channel")?.addEventListener("click",()=>window.open(CHANNEL_URL,"_blank","noopener,noreferrer"));
-  document.getElementById("sparkle-login-welcome-group")?.addEventListener("click",()=>window.open(GROUP_INVITE_REQUEST_URL,"_blank","noopener,noreferrer"));
 })();
 </script>
 
