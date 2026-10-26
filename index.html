@@ -9842,8 +9842,26 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
     if(button){button.disabled=true;button.textContent="Saving profile…";}
     try{
       const payload={id:user.id,first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
-      const {error}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"});
-      if(error)throw new Error("We couldn't save your Sparkle profile. Please try again.");
+      const {data: savedProfile,error:profileSaveError}=await supabaseClient
+        .from("profiles")
+        .upsert(payload,{onConflict:"id"})
+        .select("id")
+        .single();
+      if(profileSaveError){
+        console.error("Sparkle Google profile save failed:",{
+          code:profileSaveError.code,
+          message:profileSaveError.message,
+          details:profileSaveError.details,
+          hint:profileSaveError.hint,
+          userId:user.id
+        });
+        const code=String(profileSaveError.code||"");
+        if(code==="42501")throw new Error("Sparkle couldn't save your profile because of a database permission issue. Please try again shortly.");
+        if(code==="23505")throw new Error("That username or phone number is already in use. Please choose another one.");
+        if(code==="23503")throw new Error("Some profile information could not be verified. Please check your details and try again.");
+        throw new Error("Sparkle profile save failed ("+(code||"database error")+"): "+String(profileSaveError.message||"Please try again.").slice(0,180));
+      }
+      if(!savedProfile?.id)throw new Error("Sparkle could not confirm that your profile was saved. Please try again.");
       document.getElementById("sparkleGoogleProfileModal").classList.remove("show");
       profileUser=null;
       await finishGoogleLogin(user);
