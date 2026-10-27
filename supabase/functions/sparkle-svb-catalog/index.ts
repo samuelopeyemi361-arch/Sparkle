@@ -17,7 +17,7 @@ Deno.serve(async(req)=>{
  if(req.method!=="GET" && req.method!=="POST") return reply({success:false,error:"GET or POST required."},405);
  const key=Deno.env.get("SOFTVIRALBOOST_API_KEY");
  if(!key) return reply({success:false,error:"SMS OTP catalogue is temporarily unavailable."},503);
- let action="services",country="us",serviceName="";
+ let action="services",country="us",serviceName="",serverId="server1";
  try {
   if(req.method==="GET"){const u=new URL(req.url);action=u.searchParams.get("action")||"services";country=u.searchParams.get("country")||"us";serviceName=u.searchParams.get("serviceName")||"";}
   else {const b=await req.json();action=String(b.action||"services");country=String(b.country||"us");serviceName=String(b.serviceName||"");}
