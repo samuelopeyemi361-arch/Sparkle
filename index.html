@@ -5678,6 +5678,29 @@ let svbCountriesCache = [];
 let svbServicesCache = [];
 let svbCountriesLoadPromise = null;
 let svbCurrentQuote = null;
+let svbCurrentServerId = "server1";
+const SVB_SERVER_LABELS = {server1:"Server 1 · Buy Number",server2:"Server 2 · Standard",server3:"Server 3 · Premium"};
+function selectSvbServer(serverId){
+  if(!Object.prototype.hasOwnProperty.call(SVB_SERVER_LABELS,serverId))return;
+  const selectedCode=document.getElementById("svbAppSelect")?.value||"";
+  svbCurrentServerId=serverId;
+  document.querySelectorAll(".sparkle-usn-server-card").forEach(card=>{const active=card.dataset.serverId===serverId;card.classList.toggle("is-selected",active);card.setAttribute("aria-pressed",active?"true":"false");});
+  const heading=document.querySelector("#smsotpPage .data-topbar h1");if(heading)heading.textContent="Buy US Number";
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
+  loadSvbServices().then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
+}
+async function updateSvbServerPriceCards(){
+  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
+  const country=document.getElementById("svbCountrySelect")?.value||"us";
+  const targets={server1:"svbServerPrice1",server2:"svbServerPrice2",server3:"svbServerPrice3"};
+  if(!serviceCode){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Choose service";});return;}
+  Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Checking…";});
+  try{
+    const response=await callSvbCatalog({action:"server-prices",country,serviceName:serviceCode});
+    const data=response?.data||response;const prices=Array.isArray(data.prices)?data.prices:[];
+    for(const [serverId,id] of Object.entries(targets)){const el=document.getElementById(id);const item=prices.find(p=>p.server_id===serverId);if(el)el.textContent=item&&Number(item.selling_price_ngn)>0?"₦"+Number(item.selling_price_ngn).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Unavailable";}
+  }catch(_){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Price unavailable";});}
+}
 let svbCurrentOrder = null;
 let svbAutoCheckTimer = null;
 let svbAutoCheckBusy = false;
@@ -5813,7 +5836,7 @@ async function loadSvbServices(){
   select.innerHTML='<option value="">Loading services…</option>';
   if(result)result.textContent="Loading available number services for this country…";
   try{
-    const response=await callSvbCatalog({action:"services",country});
+    const response=await callSvbCatalog({action:"services",country,serverId:svbCurrentServerId});
     svbServicesCache=normalizeSvbServices(response);
     renderSvbApps(svbServicesCache);
     if(result)result.textContent=svbServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
@@ -5834,7 +5857,7 @@ function startSvbPriceAutoRefresh(){
     try{
       const selectedCode=document.getElementById("svbAppSelect")?.value||"";
       const country=document.getElementById("svbCountrySelect")?.value||"us";
-      const response=await callSvbCatalog({action:"services",country});
+      const response=await callSvbCatalog({action:"services",country,serverId:svbCurrentServerId});
       svbServicesCache=normalizeSvbServices(response);
       renderSvbApps(svbServicesCache);
       if(selectedCode&&svbServicesCache.some(item=>item.code===selectedCode)){
@@ -5868,12 +5891,13 @@ async function checkSvbPrice(){
   if(buy){buy.disabled=true;buy.textContent="Checking price…";buy.style.opacity=".55";}
   svbCurrentQuote=null;
   try{
-    const response=await callSvbCatalog({action:"price",country,serviceName:serviceCode});
+    const response=await callSvbCatalog({action:"price",country,serviceName:serviceCode,serverId:svbCurrentServerId});
     const quote=response?.data||response;
     const sellingPrice=Number(quote?.selling_price_ngn);
     if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw new Error("Sparkle could not verify the current selling price. Please try another service or country.");
     const selected=svbServicesCache.find(item=>item.code===serviceCode);
-    svbCurrentQuote={serviceCode,country,serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:Math.round((sellingPrice+Number.EPSILON)*100)/100,network:String(quote.network||selected?.network||"")};
+    svbCurrentQuote={serviceCode,country,serverId:svbCurrentServerId,serverLabel:String(quote.server_label||SVB_SERVER_LABELS[svbCurrentServerId]),serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:Math.round((sellingPrice+Number.EPSILON)*100)/100,network:String(quote.network||selected?.network||"")};
+    await updateSvbServerPriceCards();
     if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the full amount charged by Sparkle. Supplier costs and profit are not shown.</div></div>';
     if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
   }catch(error){
@@ -5980,6 +6004,7 @@ function buySvbNumber(){
   const countryName=svbCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
   document.getElementById("svbReviewService").textContent=svbCurrentQuote.serviceName+" · "+countryName;
   const total="₦"+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const reviewServer=document.getElementById("svbReviewServer");if(reviewServer)reviewServer.textContent=svbCurrentQuote.serverLabel||SVB_SERVER_LABELS[svbCurrentServerId];
   document.getElementById("svbReviewTotal").textContent=total;
   document.getElementById("svbReviewGrandTotal").textContent=total;
   document.getElementById("svbReviewMessage").textContent="";
@@ -6021,7 +6046,7 @@ async function executeSvbPurchase(pin){
   const quote={...svbCurrentQuote};
   const requestId="SPK-SVB-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
   try{
-    const response=await callSvbOrderFunction("sparkle-svb-buy",{service:quote.serviceCode,country:quote.country,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
+    const response=await callSvbOrderFunction("sparkle-svb-buy",{service:quote.serviceCode,country:quote.country,server_id:quote.serverId||svbCurrentServerId,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
     const d=response?.data||response;
     closePinModal();
     if(d.status==="failed"){
