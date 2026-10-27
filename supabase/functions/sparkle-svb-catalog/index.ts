@@ -25,9 +25,11 @@ Deno.serve(async(req)=>{
  country=country.toLowerCase();
  if(!/^[a-z]{2,3}$/.test(country)) return reply({success:false,error:"Invalid country code."},400);
  if(action!=="countries" && action!=="services" && action!=="price" && action!=="server-prices") return reply({success:false,error:"Unsupported catalogue action."},400);
- const profiles=[{id:"server1",label:"Server 1 · Buy Number",markup:75},{id:"server2",label:"Server 2 · Standard",markup:60},{id:"server3",label:"Server 3 · Premium",markup:95}];
+ const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:75},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:25}];
  const profile=profiles.find(p=>p.id===serverId);
- if(action!=="countries" && action!=="server-prices" && !profile) return reply({success:false,error:"Choose a valid number server."},400);
+ if(!profile) return reply({success:false,error:"Choose a valid number server."},400);
+ if(serverId==="server1" && action!=="countries" && !["us","ca"].includes(country)) return reply({success:false,error:"Server 1 is available for USA and Canada only."},400);
+ if(serverId==="server3" && country!=="us") return reply({success:false,error:"Server 3 is available for USA WhatsApp only."},400);
  if((action==="price"||action==="server-prices") && !/^[a-zA-Z0-9_-]{1,80}$/.test(serviceName)) return reply({success:false,error:"Invalid service name."},400);
  const path=action==="countries"?"/countries":"/services?country="+encodeURIComponent(country);
  try {
@@ -38,11 +40,11 @@ Deno.serve(async(req)=>{
   if(action==="countries"){
    const rawCountries=Array.isArray(data.countries)?data.countries:Array.isArray(data.data?.countries)?data.data.countries:Array.isArray(data.data)?data.data:[];
    const countries=rawCountries.map((c:Obj)=>{
-    const code=String(c.code||c.country_code||"").trim().toLowerCase();
+    let code=String(c.code||c.country_code||c.countryCode||c.iso2||c.iso_code||"").trim().toLowerCase(); if(code==="usa")code="us"; if(code==="canada")code="ca";
     const name=String(c.name||c.country_name||code).trim();
     if(!code||!name)return null;
     return {code,name,dial:String(c.dial||""),flag:String(c.flag||""),network:String(c.network||"Global Carrier Hub")};
-   }).filter(Boolean);
+   }).filter(Boolean).filter((c:Obj)=>serverId==="server2" || (serverId==="server1" ? ["us","ca"].includes(String(c.code).toLowerCase()) : String(c.code).toLowerCase()==="us"));
    return reply({success:true,data:{countries}});
   }
   const rawServices=Array.isArray(data.services)?data.services:Array.isArray(data.data?.services)?data.data.services:[];
@@ -53,6 +55,7 @@ Deno.serve(async(req)=>{
    const name=String(s.name||s.service_name||s.serviceName||code).trim();
    const rawCost=Number(s.cost);
    if(!code||!name||!Number.isFinite(rawCost)||rawCost<=0)return null;
+   if(serverId==="server3" && code.toLowerCase()!=="whatsapp" && name.toLowerCase()!=="whatsapp")return null;
    // Match the exact cents used by sparkle_reserve_sms_otp before computing retail.
    const cost=Math.round((rawCost+Number.EPSILON)*100)/100;
    if(!Number.isFinite(cost)||cost<=0)return null;
@@ -63,10 +66,11 @@ Deno.serve(async(req)=>{
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
    const safe=mapService(found);if(!safe)return reply({success:false,error:"Could not verify live pricing."},502);
-   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>({server_id:p.id,server_label:p.label,selling_price_ngn:Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100}))}});
+   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||(country==="us"&&String(found.code||found.service||found.serviceName||"").toLowerCase()==="whatsapp"));return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
   }
   if(action==="price"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
+   if(serverId==="server3" && String(found?.code||found?.service||found?.serviceName||"").toLowerCase()!=="whatsapp")return reply({success:false,error:"Server 3 is available for USA WhatsApp only."},400);
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
    const safe=mapService(found);
    if(!safe)return reply({success:false,error:"Sparkle could not verify the current selling price. Please try again later."},502);
