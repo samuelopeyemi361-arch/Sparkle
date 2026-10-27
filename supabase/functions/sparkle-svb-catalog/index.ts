@@ -25,7 +25,7 @@ Deno.serve(async(req)=>{
  country=country.toLowerCase();
  if(!/^[a-z]{2,3}$/.test(country)) return reply({success:false,error:"Invalid country code."},400);
  if(action!=="countries" && action!=="services" && action!=="price" && action!=="server-prices") return reply({success:false,error:"Unsupported catalogue action."},400);
- const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:75},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:10}];
+ const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:75},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:0}];
  const profile=profiles.find(p=>p.id===serverId);
  if(!profile) return reply({success:false,error:"Choose a valid number server."},400);
  if(serverId==="server1" && action!=="countries" && !["us","ca"].includes(country)) return reply({success:false,error:"Server 1 is available for USA and Canada only."},400);
@@ -57,7 +57,7 @@ Deno.serve(async(req)=>{
    if(!code||!name||!Number.isFinite(rawCost)||rawCost<=0)return null;
    if(serverId==="server3" && code.toLowerCase()!=="whatsapp" && name.toLowerCase()!=="whatsapp")return null;
    // Cheap USA WhatsApp must match the advertised supplier price band; never expose a mismatched high-cost route.
-   if(serverId==="server3" && Math.round((rawCost*1.10+Number.EPSILON)*100)/100>=938)return null;
+   if(serverId==="server3" && Math.round((rawCost+Number.EPSILON)*100)/100>=938)return null;
    // Match the exact cents used by sparkle_reserve_sms_otp before computing retail.
    const cost=Math.round((rawCost+Number.EPSILON)*100)/100;
    if(!Number.isFinite(cost)||cost<=0)return null;
@@ -71,7 +71,7 @@ Deno.serve(async(req)=>{
    if(!Number.isFinite(rawCost)||rawCost<=0)return reply({success:false,error:"Could not verify live pricing."},502);
    const baseCost=Math.round((rawCost+Number.EPSILON)*100)/100;
    const serviceCode=String(found.code||found.service||found.serviceName||"").toLowerCase();
-   const server3Allowed=country==="us"&&serviceCode==="whatsapp"&&Math.round((baseCost*1.10+Number.EPSILON)*100)/100<938;
+   const server3Allowed=country==="us"&&serviceCode==="whatsapp"&&baseCost<938;
    return reply({success:true,data:{code:String(found.code||found.service||found.serviceName||""),name:String(found.name||found.service_name||found.serviceName||found.code||""),country:String(found.country||country),prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||server3Allowed);return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((baseCost*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
   }
   if(action==="price"){
