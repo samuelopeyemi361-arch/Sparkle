@@ -3122,18 +3122,18 @@ support@sparkle.com
   <div class="sparkle-usn-server-grid" role="group" aria-label="Choose a US Number server">
     <button type="button" class="sparkle-usn-server-card is-selected" data-server-id="server1" onclick="selectSvbServer('server1')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">01</span><span class="sparkle-usn-selected-mark">✓</span></span>
-      <strong>Server 1</strong><span class="sparkle-usn-server-name">Buy Number</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice1">Choose service</span><small>Live price</small>
+      <strong>Server 1</strong><span class="sparkle-usn-server-name">USA &amp; Canada</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice1">Choose service</span>
     </button>
     <button type="button" class="sparkle-usn-server-card" data-server-id="server2" onclick="selectSvbServer('server2')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">02</span><span class="sparkle-usn-selected-mark">✓</span></span>
-      <strong>Server 2</strong><span class="sparkle-usn-server-name">Standard</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice2">Choose service</span><small>Live price</small>
+      <strong>Server 2</strong><span class="sparkle-usn-server-name">Standard Number</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice2">Choose service</span>
     </button>
     <button type="button" class="sparkle-usn-server-card" data-server-id="server3" onclick="selectSvbServer('server3')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">03</span><span class="sparkle-usn-selected-mark">✓</span></span>
-      <strong>Server 3</strong><span class="sparkle-usn-server-name">Premium</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice3">Choose service</span><small>Live price</small>
+      <strong>Server 3</strong><span class="sparkle-usn-server-name">Cheap USA WhatsApp</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice3">Choose service</span>
     </button>
   </div>
   <div id="svbCatalogPanel" class="service-page sparkle-usn-form">
@@ -5679,7 +5679,7 @@ let svbServicesCache = [];
 let svbCountriesLoadPromise = null;
 let svbCurrentQuote = null;
 let svbCurrentServerId = "server1";
-const SVB_SERVER_LABELS = {server1:"Server 1 · Buy Number",server2:"Server 2 · Standard",server3:"Server 3 · Premium"};
+const SVB_SERVER_LABELS = {server1:"Server 1 · USA & Canada",server2:"Server 2 · Standard Number",server3:"Server 3 · Cheap USA WhatsApp"};
 function selectSvbServer(serverId){
   if(!Object.prototype.hasOwnProperty.call(SVB_SERVER_LABELS,serverId))return;
   const selectedCode=document.getElementById("svbAppSelect")?.value||"";
@@ -5687,7 +5687,7 @@ function selectSvbServer(serverId){
   document.querySelectorAll(".sparkle-usn-server-card").forEach(card=>{const active=card.dataset.serverId===serverId;card.classList.toggle("is-selected",active);card.setAttribute("aria-pressed",active?"true":"false");});
   const heading=document.querySelector("#smsotpPage .data-topbar h1");if(heading)heading.textContent="Buy US Number";
   const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
-  loadSvbServices().then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
+  loadSvbCountries(true).then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
 }
 async function updateSvbServerPriceCards(){
   const serviceCode=document.getElementById("svbAppSelect")?.value||"";
@@ -5696,7 +5696,7 @@ async function updateSvbServerPriceCards(){
   if(!serviceCode){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Choose service";});return;}
   Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Checking…";});
   try{
-    const response=await callSvbCatalog({action:"server-prices",country,serviceName:serviceCode});
+    const response=await callSvbCatalog({action:"server-prices",country,serviceName:serviceCode,serverId:svbCurrentServerId});
     const data=response?.data||response;const prices=Array.isArray(data.prices)?data.prices:[];
     for(const [serverId,id] of Object.entries(targets)){const el=document.getElementById(id);const item=prices.find(p=>p.server_id===serverId);if(el)el.textContent=item&&Number(item.selling_price_ngn)>0?"₦"+Number(item.selling_price_ngn).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Unavailable";}
   }catch(_){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Price unavailable";});}
@@ -5808,7 +5808,7 @@ async function loadSvbCountries(force=false){
   if(result)result.textContent="Loading available countries…";
   svbCountriesLoadPromise=(async()=>{
     try{
-      const response=await callSvbCatalog({action:"countries"});
+      const response=await callSvbCatalog({action:"countries",serverId:svbCurrentServerId});
       svbCountriesCache=normalizeSvbCountries(response);
     }catch(error){
       // US remains available as a fallback; the service function will show any real provider error.
