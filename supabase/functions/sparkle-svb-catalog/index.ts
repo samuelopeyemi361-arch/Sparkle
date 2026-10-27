@@ -31,7 +31,7 @@ Deno.serve(async(req)=>{
   const res=await providerFetch(path,key,{method:"GET"});
   const rawBody=await res.text(); let data:any=null; try{data=JSON.parse(rawBody)}catch{}
   if(!res.ok || !data || data.status==="error" || data.success===false)
-   return reply({success:false,error:errorText(data,"Soft Viral Boost could not load the catalogue.")},res.status>=400&&res.status<500?res.status:502);
+   return reply({success:false,error:"The number catalogue is temporarily unavailable. Please try again shortly."},res.status>=400&&res.status<500?res.status:502);
   if(action==="countries"){
    const rawCountries=Array.isArray(data.countries)?data.countries:Array.isArray(data.data?.countries)?data.data.countries:Array.isArray(data.data)?data.data:[];
    const countries=rawCountries.map((c:Obj)=>{
@@ -63,6 +63,6 @@ Deno.serve(async(req)=>{
   const services=rawServices.map((s:Obj)=>mapService(s)).filter(Boolean);
   return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",services}});
  } catch {
-  return reply({success:false,error:"Could not reach Soft Viral Boost. No Sparkle wallet funds were used."},502);
+  return reply({success:false,error:"Could not reach the number service. No Sparkle wallet funds were used."},502);
  }
 });
