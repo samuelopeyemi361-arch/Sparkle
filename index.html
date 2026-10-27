@@ -5826,8 +5826,11 @@ async function onSvbCountryChange(){
   const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
   await loadSvbServices();
 }
+let svbCatalogLoadSequence = 0;
 async function loadSvbServices(){
   const country=document.getElementById("svbCountrySelect")?.value||"us";
+  const requestSequence=++svbCatalogLoadSequence;
+  const requestedServer=svbCurrentServerId;
   const select=document.getElementById("svbAppSelect");
   const result=document.getElementById("svbPriceResult");
   if(!select)return;
@@ -5836,7 +5839,8 @@ async function loadSvbServices(){
   select.innerHTML='<option value="">Loading services…</option>';
   if(result)result.textContent="Loading available number services for this country…";
   try{
-    const response=await callSvbCatalog({action:"services",country,serverId:svbCurrentServerId});
+    const response=await callSvbCatalog({action:"services",country,serverId:requestedServer});
+    if(requestSequence!==svbCatalogLoadSequence || country!==(document.getElementById("svbCountrySelect")?.value||"us") || requestedServer!==svbCurrentServerId)return;
     svbServicesCache=normalizeSvbServices(response);
     renderSvbApps(svbServicesCache);
     if(result)result.textContent=svbServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
