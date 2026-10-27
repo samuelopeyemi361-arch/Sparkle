@@ -10,7 +10,7 @@ const reply = (data: unknown, status=200) => new Response(JSON.stringify(data), 
 async function providerFetch(path:string, apiKey:string, init:RequestInit={}) {
   return await fetch(BASE+path,{...init,headers:{Authorization:"Bearer "+apiKey,Accept:"application/json",...(init.headers||{})},signal:init.signal||AbortSignal.timeout(20000)});
 }
-function errorText(data:any, fallback:string) { return String(data?.message||data?.error||data?.details||data?.detail||fallback); }
+function errorText(_data:any, fallback:string) { return fallback; }
 
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS") return new Response("ok",{headers:cors});
