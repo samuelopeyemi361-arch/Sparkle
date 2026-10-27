@@ -5716,7 +5716,13 @@ async function loadSvbCountries(force=false){
   const result=document.getElementById("svbPriceResult");
   if(!select)return;
   if(svbCountriesLoadPromise&&!force)return svbCountriesLoadPromise;
-  if(!force&&svbCountriesCache.length&&select.options.length>1){if(!svbServicesCache.length)await loadSvbServices();await restoreSavedSvbOrder();return;}
+  if(!force&&svbCountriesCache.length&&select.options.length>1){
+    // Re-query supplier services every time this page is reopened so cached customer prices cannot linger.
+    await loadSvbServices();
+    await restoreSavedSvbOrder();
+    startSvbPriceAutoRefresh();
+    return;
+  }
   select.innerHTML='<option value="us">🇺🇸 United States</option>';
   if(result)result.textContent="Loading available countries…";
   svbCountriesLoadPromise=(async()=>{
