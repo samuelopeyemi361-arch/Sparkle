@@ -1211,6 +1211,41 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .sparkle-forgot-password-row{display:block;text-align:right;margin:-8px 0 16px;font-size:13px}
 .sparkle-forgot-password-link{border:0;background:transparent;color:#0b5cff;font-weight:800;padding:5px 0;cursor:pointer;font:inherit}
 .sparkle-forgot-password-link:focus-visible{outline:2px solid #0b5cff;outline-offset:3px;border-radius:4px}
+
+/* Sparkle US Number — premium server selector */
+.sparkle-usn-hero{position:relative;overflow:hidden;margin:12px 0 16px;padding:23px 21px;border-radius:22px;color:#fff;background:radial-gradient(circle at 90% 8%,rgba(145,120,255,.45),transparent 35%),linear-gradient(135deg,#08152f 0%,#172b62 56%,#4335a5 100%);box-shadow:0 14px 32px rgba(15,28,76,.18)}
+.sparkle-usn-kicker{display:flex;align-items:center;gap:8px;color:#cbd5ff;font-size:10px;letter-spacing:1.5px;font-weight:900}
+.sparkle-usn-live-dot{width:7px;height:7px;border-radius:50%;background:#55edbd;box-shadow:0 0 0 4px rgba(85,237,189,.14)}
+.sparkle-usn-hero h2{margin:13px 0 8px;font-size:clamp(23px,5vw,31px);line-height:1.13;letter-spacing:-.7px;color:#fff}
+.sparkle-usn-hero p{margin:0;max-width:500px;color:#d9e2ff;font-size:13px;line-height:1.65}
+.sparkle-usn-hero-foot{display:flex;gap:13px;flex-wrap:wrap;margin-top:19px;padding-top:13px;border-top:1px solid rgba(255,255,255,.16);font-size:10px;color:#e0e7ff}
+.sparkle-usn-hero-foot b{display:inline-grid;place-items:center;width:19px;height:19px;margin-right:4px;border-radius:7px;background:rgba(255,255,255,.15);font-size:9px}
+.sparkle-usn-server-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:0 0 15px}
+.sparkle-usn-server-card{min-width:0;text-align:left;display:flex;flex-direction:column;gap:5px;padding:12px 10px;border:1px solid var(--border,#e2e8f0);border-radius:17px;background:var(--card,#fff);color:var(--text,#111827);box-shadow:0 4px 16px rgba(15,23,42,.035);cursor:pointer;transition:border-color .16s,transform .16s,box-shadow .16s}
+.sparkle-usn-server-card.is-selected{border:1.5px solid #6258e8;background:linear-gradient(160deg,rgba(99,91,230,.09),rgba(255,255,255,.98));box-shadow:0 7px 20px rgba(83,72,202,.12)}
+.sparkle-usn-card-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.sparkle-usn-server-icon{display:grid;place-items:center;width:29px;height:29px;border-radius:10px;background:linear-gradient(145deg,#315cf5,#8a63ff);color:#fff;font-size:10px;font-weight:900;box-shadow:0 4px 9px rgba(61,87,232,.2)}
+.sparkle-usn-selected-mark{display:grid;place-items:center;width:17px;height:17px;border-radius:50%;font-size:10px;color:#fff;background:#6258e8;opacity:0}
+.sparkle-usn-server-card.is-selected .sparkle-usn-selected-mark{opacity:1}
+.sparkle-usn-server-card>strong{font-size:12px;line-height:1.3}
+.sparkle-usn-server-name{font-size:11px;color:var(--muted,#64748b);min-height:14px}
+.sparkle-usn-server-price{font-size:clamp(11px,2.5vw,14px);font-weight:900;overflow-wrap:anywhere;color:var(--text,#0f172a);margin-top:6px}
+.sparkle-usn-server-card small{font-size:9px;color:var(--muted,#64748b)}
+.sparkle-usn-form{padding:clamp(15px,4vw,22px)!important;margin-top:0!important;border-radius:20px!important;border:1px solid var(--border,#e2e8f0);box-shadow:0 8px 25px rgba(15,23,42,.045)}
+.sparkle-usn-section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:19px}
+.sparkle-usn-eyebrow{font-size:9px;letter-spacing:1.4px;font-weight:900;color:#6258e8}
+.sparkle-usn-section-head h3{font-size:19px;letter-spacing:-.4px;margin:4px 0 0}
+.sparkle-usn-lock{font-size:10px;font-weight:800;white-space:nowrap;color:#16846a;background:#e8fbf4;border-radius:20px;padding:7px 9px}
+.sparkle-usn-form label{display:block;font-size:12px;font-weight:800;margin:14px 0 7px}
+.sparkle-usn-form select,.sparkle-usn-form input[type=search]{box-sizing:border-box;width:100%;padding:13px 14px;border:1px solid var(--border,#dbe1ea);border-radius:12px;background:var(--input-bg,#fff);color:var(--text,#111827);font:inherit;font-size:14px;outline:none}
+.sparkle-usn-form select:focus,.sparkle-usn-form input[type=search]:focus{border-color:#7167ef;box-shadow:0 0 0 3px rgba(113,103,239,.12)}
+.sparkle-usn-price-result{margin-top:14px;color:var(--muted,#64748b);font-size:13px;line-height:1.55}
+.sparkle-usn-buy-button{min-height:48px;margin-top:12px!important;border-radius:13px!important;font-weight:900!important}
+.sparkle-usn-buy-button:disabled{opacity:.5;cursor:not-allowed}
+.sparkle-usn-safety{display:flex;gap:8px;align-items:flex-start;margin:15px 0 0;color:var(--muted,#64748b);font-size:11px;line-height:1.55}
+.sparkle-usn-safety span{flex:none}
+@media(max-width:380px){.sparkle-usn-server-grid{gap:6px}.sparkle-usn-server-card{padding:10px 8px}.sparkle-usn-hero{padding:19px 16px}.sparkle-usn-hero-foot{gap:8px}}
+
 </style>
 
 <style id="sparkle-support-widget-styles">
@@ -3077,36 +3112,59 @@ support@sparkle.com
 
         <!-- US number purchase page: secure Edge Functions. -->
         <section class="page" id="smsotpPage">
-          <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))">‹</button><h1>Server 1 · Buy Number</h1></div>
-          <p class="dashboard-subtitle">Choose an available service, check its live Sparkle price, and review the total before confirming your purchase.</p>
-          <div id="svbCatalogPanel" class="service-page" style="padding:18px;margin-top:14px">
-            <label for="svbCountrySelect" style="display:block;font-weight:800;margin-bottom:8px">Choose country</label>
-            <select id="svbCountrySelect" onchange="onSvbCountryChange()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="us">🇺🇸 United States</option></select>
-            <label for="svbAppSearch" style="display:block;font-weight:800;margin-bottom:8px">Search services</label>
-            <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;margin-bottom:14px">
-            <label for="svbAppSelect" style="display:block;font-weight:800;margin-bottom:8px">Choose verification service</label>
-            <select id="svbAppSelect" onchange="onSvbServiceChange()" style="width:100%;padding:13px;border:1px solid #dbe1ea;border-radius:12px;background:#fff;margin-bottom:14px"><option value="">Select a country first</option></select>
-            <button class="btn primary full" type="button" onclick="checkSvbPrice()">Check price</button>
-            <div id="svbPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
-            <button id="svbBuyButton" class="btn primary full" type="button" onclick="buySvbNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
-            <p id="svbSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Review the current Sparkle price and wallet balance before confirming. Your Transaction PIN is required to purchase.</p>
-          </div>
-          <div id="svbReviewPanel" class="service-page" style="display:none;padding:18px;margin-top:14px">
-            <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromSvbReview()">‹</button><h2 style="margin:0">Review number purchase</h2></div>
-            <p style="color:var(--muted);margin-top:0">Check your order and total carefully. You will not be charged until you confirm with your Transaction PIN.</p>
-            <div class="summary-line"><span>Service</span><strong id="svbReviewService">—</strong></div>
-            <div class="summary-line"><span>Wallet charge</span><strong id="svbReviewTotal">—</strong></div>
-            <div class="summary-line"><span>Available wallet balance</span><strong id="svbReviewWalletBalance">Checking…</strong></div>
-            <div class="sparkle-summary-total"><span>Total</span><strong id="svbReviewGrandTotal">—</strong></div>
-            <div id="svbReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
-            <p style="font-size:12px;color:var(--muted)">Numbers depend on country and service availability. If an order is pending, check its status instead of buying again.</p>
-            <button id="svbReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmSvbReviewPurchase()">Checking wallet balance…</button>
-            <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
-            <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
-          </div>
-        </section>
+  <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to home">‹</button><h1>Buy US Number</h1></div>
+  <div class="sparkle-usn-hero">
+    <div class="sparkle-usn-kicker"><span class="sparkle-usn-live-dot"></span> LIVE NUMBER OPTIONS</div>
+    <h2>Choose your best route.</h2>
+    <p>Compare live Sparkle prices, select a server, and confirm your number securely with your Transaction PIN.</p>
+    <div class="sparkle-usn-hero-foot"><span><b>01</b> Choose server</span><span><b>02</b> Check live price</span><span><b>03</b> Confirm securely</span></div>
+  </div>
+  <div class="sparkle-usn-server-grid" role="group" aria-label="Choose a US Number server">
+    <button type="button" class="sparkle-usn-server-card is-selected" data-server-id="server1" onclick="selectSvbServer('server1')">
+      <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">01</span><span class="sparkle-usn-selected-mark">✓</span></span>
+      <strong>Server 1</strong><span class="sparkle-usn-server-name">Buy Number</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice1">Choose service</span><small>Live price</small>
+    </button>
+    <button type="button" class="sparkle-usn-server-card" data-server-id="server2" onclick="selectSvbServer('server2')">
+      <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">02</span><span class="sparkle-usn-selected-mark">✓</span></span>
+      <strong>Server 2</strong><span class="sparkle-usn-server-name">Standard</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice2">Choose service</span><small>Live price</small>
+    </button>
+    <button type="button" class="sparkle-usn-server-card" data-server-id="server3" onclick="selectSvbServer('server3')">
+      <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">03</span><span class="sparkle-usn-selected-mark">✓</span></span>
+      <strong>Server 3</strong><span class="sparkle-usn-server-name">Premium</span>
+      <span class="sparkle-usn-server-price" id="svbServerPrice3">Choose service</span><small>Live price</small>
+    </button>
+  </div>
+  <div id="svbCatalogPanel" class="service-page sparkle-usn-form">
+    <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3>Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
+    <label for="svbCountrySelect">Country</label>
+    <select id="svbCountrySelect" onchange="onSvbCountryChange()"><option value="us">🇺🇸 United States</option></select>
+    <label for="svbAppSearch">Find an app or service</label>
+    <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()">
+    <label for="svbAppSelect">Verification service</label>
+    <select id="svbAppSelect" onchange="onSvbServiceChange()"><option value="">Loading available services…</option></select>
+    <div id="svbPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
+    <button id="svbBuyButton" class="btn primary full sparkle-usn-buy-button" type="button" onclick="buySvbNumber()" disabled>Check price first</button>
+    <p class="sparkle-usn-safety"><span>🔒</span> Your price is checked live. Your wallet is charged only through the verified purchase flow after you confirm with your Transaction PIN.</p>
+  </div>
+  <div id="svbReviewPanel" class="service-page sparkle-usn-form" style="display:none">
+    <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromSvbReview()">‹</button><h2 style="margin:0">Review purchase</h2></div>
+    <p style="color:var(--muted);margin-top:0">Check your server, service, and total. Your wallet will not be charged until the purchase is confirmed with your Transaction PIN.</p>
+    <div class="summary-line"><span>Server</span><strong id="svbReviewServer">Server 1</strong></div>
+    <div class="summary-line"><span>Service</span><strong id="svbReviewService">—</strong></div>
+    <div class="summary-line"><span>Wallet charge</span><strong id="svbReviewTotal">—</strong></div>
+    <div class="summary-line"><span>Available wallet balance</span><strong id="svbReviewWalletBalance">Checking…</strong></div>
+    <div class="sparkle-summary-total"><span>Total</span><strong id="svbReviewGrandTotal">—</strong></div>
+    <div id="svbReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
+    <p style="font-size:12px;color:var(--muted)">If your order is pending, check its status instead of purchasing again.</p>
+    <button id="svbReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmSvbReviewPurchase()">Checking wallet balance…</button>
+    <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
+    <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
+  </div>
+</section>
 
-        <!-- Dedicated US Number order page: separate from price preview and purchase form. -->
+<!-- Dedicated US Number order page: separate from price preview and purchase form. -->
         <section class="page" id="usNumberOrderPage">
           <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadSvbCountries()">‹</button><h1>Your US Number Order</h1></div>
           <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest US Number purchase.</p>
