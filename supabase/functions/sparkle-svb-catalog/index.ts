@@ -19,13 +19,16 @@ Deno.serve(async(req)=>{
  if(!key) return reply({success:false,error:"SMS OTP catalogue is temporarily unavailable."},503);
  let action="services",country="us",serviceName="",serverId="server1";
  try {
-  if(req.method==="GET"){const u=new URL(req.url);action=u.searchParams.get("action")||"services";country=u.searchParams.get("country")||"us";serviceName=u.searchParams.get("serviceName")||"";}
-  else {const b=await req.json();action=String(b.action||"services");country=String(b.country||"us");serviceName=String(b.serviceName||"");}
+  if(req.method==="GET"){const u=new URL(req.url);action=u.searchParams.get("action")||"services";country=u.searchParams.get("country")||"us";serviceName=u.searchParams.get("serviceName")||"";serverId=u.searchParams.get("serverId")||"server1";}
+  else {const b=await req.json();action=String(b.action||"services");country=String(b.country||"us");serviceName=String(b.serviceName||"");serverId=String(b.serverId||b.server_id||"server1");}
  } catch { return reply({success:false,error:"Invalid request body."},400); }
  country=country.toLowerCase();
  if(!/^[a-z]{2,3}$/.test(country)) return reply({success:false,error:"Invalid country code."},400);
- if(action!=="countries" && action!=="services" && action!=="price") return reply({success:false,error:"Action must be countries, services, or price."},400);
- if(action==="price" && !/^[a-zA-Z0-9_-]{1,80}$/.test(serviceName)) return reply({success:false,error:"Invalid service name."},400);
+ if(action!=="countries" && action!=="services" && action!=="price" && action!=="server-prices") return reply({success:false,error:"Unsupported catalogue action."},400);
+ const profiles=[{id:"server1",label:"Server 1 · Buy Number",markup:75},{id:"server2",label:"Server 2 · Standard",markup:60},{id:"server3",label:"Server 3 · Premium",markup:95}];
+ const profile=profiles.find(p=>p.id===serverId);
+ if(action!=="countries" && action!=="server-prices" && !profile) return reply({success:false,error:"Choose a valid number server."},400);
+ if((action==="price"||action==="server-prices") && !/^[a-zA-Z0-9_-]{1,80}$/.test(serviceName)) return reply({success:false,error:"Invalid service name."},400);
  const path=action==="countries"?"/countries":"/services?country="+encodeURIComponent(country);
  try {
   const res=await providerFetch(path,key,{method:"GET"});
@@ -54,8 +57,14 @@ Deno.serve(async(req)=>{
    const cost=Math.round((rawCost+Number.EPSILON)*100)/100;
    if(!Number.isFinite(cost)||cost<=0)return null;
    const rawStock=Number(s.stock??s.available??s.quantity??0);
-   return {code,name,country:String(s.country||country),network:String(s.network||network),stock:Number.isFinite(rawStock)?Math.max(0,rawStock):0,selling_price_ngn:Math.round((cost*1.75+Number.EPSILON)*100)/100};
+   return {code,name,country:String(s.country||country),network:String(s.network||network),stock:Number.isFinite(rawStock)?Math.max(0,rawStock):0,selling_price_ngn:Math.round((cost*(1+(profile?.markup??75)/100)+Number.EPSILON)*100)/100,server_id:profile?.id||"server1",server_label:profile?.label||"Server 1"};
   };
+  if(action==="server-prices"){
+   const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
+   if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
+   const safe=mapService(found);if(!safe)return reply({success:false,error:"Could not verify live pricing."},502);
+   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>({server_id:p.id,server_label:p.label,selling_price_ngn:Math.round((Number(found.cost)* (1+p.markup/100)+Number.EPSILON)*100)/100}))}});
+  }
   if(action==="price"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
@@ -64,7 +73,7 @@ Deno.serve(async(req)=>{
    return reply({success:true,data:safe});
   }
   const services=rawServices.map((s:Obj)=>mapService(s)).filter(Boolean);
-  return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",services}});
+  return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",server_id:profile?.id||"server1",server_label:profile?.label||"Server 1",services}});
  } catch {
   return reply({success:false,error:"Could not reach the number service. No Sparkle wallet funds were used."},502);
  }
