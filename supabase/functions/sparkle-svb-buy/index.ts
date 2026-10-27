@@ -15,7 +15,6 @@ Deno.serve(async(req:Request)=>{
  if(!/^[a-z0-9_-]{1,80}$/i.test(service)||!/^[a-z]{2,3}$/.test(country)||!/^[A-Za-z0-9_-]{8,120}$/.test(requestId))return reply({success:false,message:"Choose a valid country and service."},400);
  if(serverId==="server1"&&!["us","ca"].includes(country))return reply({success:false,message:"Server 1 is available for USA and Canada only."},400);
  if(serverId==="server3"&&(country!=="us"||service.toLowerCase()!=="whatsapp"))return reply({success:false,message:"Server 3 is available for USA WhatsApp only."},400);
- const MAX_SERVER3_SELLING_PRICE=937.99;
  // Friendly early balance check when the client sent its current Sparkle selling quote.
  const displayedPrice=Number(b.quoted_selling_price_ngn);
  if(Number.isFinite(displayedPrice)&&displayedPrice>0){const earlyWallet=await cfg.admin.from("wallets").select("balance").eq("user_id",authData.user.id).maybeSingle();if(earlyWallet.error)return reply({success:false,code:"WALLET_CHECK_FAILED",message:"Could not verify your Sparkle wallet balance. No supplier order was sent and no money was deducted."},503);const earlyBalance=Number(earlyWallet.data?.balance||0);if(!Number.isFinite(earlyBalance)||earlyBalance+0.0001<displayedPrice)return reply({success:false,code:"INSUFFICIENT_FUNDS",message:"Insufficient Sparkle wallet balance. Please fund your wallet and try again."},402);}
