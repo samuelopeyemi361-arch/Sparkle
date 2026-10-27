@@ -24,7 +24,7 @@ async function ctx(req: Request) {
 
 async function api(path: string) {
   const key = Deno.env.get("SOFTVIRALBOOST_API_KEY");
-  if (!key) throw Error("SOFTVIRALBOOST_API_KEY secret missing.");
+  if (!key) throw Error("Number service is temporarily unavailable.");
   const r = await fetch(BASE + path, {
     headers: { Authorization: "Bearer " + key, Accept: "application/json" },
     signal: AbortSignal.timeout(20000)
@@ -59,7 +59,7 @@ Deno.serve(async (req: Request) => {
   });
   if (!o.provider_request_id) return out({
     success: false, status: "unknown", request_id: id,
-    message: "Supplier order ID is not available yet. Do not buy again; contact support if this persists."
+    message: "Your order is still being registered. Do not buy again; contact support if this persists."
   }, 202);
 
   try {
@@ -95,7 +95,7 @@ Deno.serve(async (req: Request) => {
       return out({
         success: false, status: finalStatus, request_id: id, phone_number: phone,
         refund_status: "processed", refund_amount: Number(o.amount),
-        message: "Supplier confirmed " + sms.toLowerCase() + ". Sparkle has automatically recorded your wallet refund."
+        message: "The order was not completed. Sparkle has automatically recorded your wallet refund."
       });
     }
 
@@ -106,7 +106,7 @@ Deno.serve(async (req: Request) => {
       }).eq("user_id", c.user.id).eq("request_id", id);
       return out({
         success: false, status: "pending", request_id: id,
-        message: String(d.message || "Supplier could not confirm the order status. Sparkle will not refund until the supplier confirms cancellation, failure, or expiry.")
+        message: "Sparkle could not confirm the order status yet. No refund is recorded until the outcome is verified."
       }, 202);
     }
 
@@ -138,7 +138,7 @@ Deno.serve(async (req: Request) => {
   } catch {
     return out({
       success: false, status: "pending", request_id: id,
-      message: "Supplier could not be reached. Order remains unresolved; check again shortly."
+      message: "The number service could not be reached. Order remains unresolved; check again shortly."
     }, 202);
   }
 });
