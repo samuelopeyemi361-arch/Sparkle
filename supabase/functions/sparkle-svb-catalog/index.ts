@@ -48,8 +48,11 @@ Deno.serve(async(req)=>{
   const mapService=(s:Obj)=>{
    const code=String(s.code||s.service||s.serviceName||"").trim();
    const name=String(s.name||s.service_name||s.serviceName||code).trim();
-   const cost=Number(s.cost);
-   if(!code||!name||!Number.isFinite(cost)||cost<=0)return null;
+   const rawCost=Number(s.cost);
+   if(!code||!name||!Number.isFinite(rawCost)||rawCost<=0)return null;
+   // Match the exact cents used by sparkle_reserve_sms_otp before computing retail.
+   const cost=Math.round((rawCost+Number.EPSILON)*100)/100;
+   if(!Number.isFinite(cost)||cost<=0)return null;
    const rawStock=Number(s.stock??s.available??s.quantity??0);
    return {code,name,country:String(s.country||country),network:String(s.network||network),stock:Number.isFinite(rawStock)?Math.max(0,rawStock):0,selling_price_ngn:Math.round((cost*1.75+Number.EPSILON)*100)/100};
   };
