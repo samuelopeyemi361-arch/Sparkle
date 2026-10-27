@@ -2428,6 +2428,19 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 @media(prefers-reduced-motion:reduce){#sparkle-login-welcome-modal *{animation:none!important;transition:none!important}}
 </style>
 
+<style id="sparkle-premium-home-refresh">
+/* Premium public homepage polish: compact, fast-rendering and mobile-first. */
+:root{--sparkle-ink:#101d35;--sparkle-blue:#245fe5;--sparkle-violet:#7257df;--sparkle-line:rgba(110,137,190,.18)}
+#homepage{background:radial-gradient(ellipse at 12% 0%,rgba(83,127,255,.12),transparent 34%),radial-gradient(ellipse at 94% 8%,rgba(130,95,240,.10),transparent 29%),#f7f9fe}
+#homepage h1,#homepage h2{letter-spacing:-.035em;text-wrap:balance}
+#homepage button,#homepage a{transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease}
+#homepage button:focus-visible,#homepage a:focus-visible{outline:3px solid rgba(49,103,232,.32);outline-offset:3px}
+#homepage .card,#homepage .service-card,#homepage .hero-card{border-color:var(--sparkle-line)}
+#homepage .service-card:hover,#homepage .card:hover{box-shadow:0 12px 28px rgba(27,55,111,.08);transform:translateY(-2px)}
+#homepage img{content-visibility:auto}
+@media(max-width:600px){#homepage{overflow-x:clip}#homepage h1{line-height:1.08;letter-spacing:-.04em}#homepage .service-card:hover,#homepage .card:hover{transform:none}}
+@media(prefers-reduced-motion:reduce){#homepage *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
 </head>
 
 <body>
@@ -8262,9 +8275,12 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
     }
     const dashboardReady = showDashboard(session.user);
     if(event === "SIGNED_IN"){
-      Promise.resolve(dashboardReady).then(()=>{
+      // Show the welcome immediately after the dashboard shell is revealed.
+      // Do not wait for wallet, DVA, referral and transaction requests to finish.
+      requestAnimationFrame(()=>{
         if(typeof window.sparkleShowLoginWelcome === "function") window.sparkleShowLoginWelcome(session.user);
-      }).catch(error=>console.warn("Sparkle login welcome could not be opened:",error));
+      });
+      Promise.resolve(dashboardReady).catch(error=>console.warn("Sparkle dashboard initialization:",error));
     }
     return;
   }
