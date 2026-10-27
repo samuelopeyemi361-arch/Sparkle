@@ -56,6 +56,8 @@ Deno.serve(async(req)=>{
    const rawCost=Number(s.cost);
    if(!code||!name||!Number.isFinite(rawCost)||rawCost<=0)return null;
    if(serverId==="server3" && code.toLowerCase()!=="whatsapp" && name.toLowerCase()!=="whatsapp")return null;
+   // Cheap USA WhatsApp must match the advertised supplier price band; never expose a mismatched high-cost route.
+   if(serverId==="server3" && rawCost>938)return null;
    // Match the exact cents used by sparkle_reserve_sms_otp before computing retail.
    const cost=Math.round((rawCost+Number.EPSILON)*100)/100;
    if(!Number.isFinite(cost)||cost<=0)return null;
@@ -66,7 +68,7 @@ Deno.serve(async(req)=>{
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
    const safe=mapService(found);if(!safe)return reply({success:false,error:"Could not verify live pricing."},502);
-   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||(country==="us"&&String(found.code||found.service||found.serviceName||"").toLowerCase()==="whatsapp"));return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
+   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||(country==="us"&&String(found.code||found.service||found.serviceName||"").toLowerCase()==="whatsapp"&&Number(found.cost)<=938));return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
   }
   if(action==="price"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
