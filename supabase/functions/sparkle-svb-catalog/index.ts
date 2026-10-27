@@ -55,6 +55,12 @@ Deno.serve(async(req)=>{
    const name=String(s.name||s.service_name||s.serviceName||code).trim();
    const rawCost=Number(s.cost);
    if(!code||!name||!Number.isFinite(rawCost)||rawCost<=0)return null;
+   // Server 1's Canadian catalogue must only show services returned for Canada.
+   // The endpoint is already country-scoped; reject any explicitly mismatched country label.
+   if(serverId==="server1" && country==="ca" && s.country!=null){
+    const serviceCountry=String(s.country).trim().toLowerCase();
+    if(!["ca","canada","can"].includes(serviceCountry))return null;
+   }
    if(serverId==="server3" && code.toLowerCase()!=="whatsapp" && name.toLowerCase()!=="whatsapp")return null;
    // Cheap USA WhatsApp must match the advertised supplier price band; never expose a mismatched high-cost route.
    
