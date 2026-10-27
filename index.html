@@ -5880,6 +5880,7 @@ function onSvbServiceChange(){
   const result=document.getElementById("svbPriceResult");
   if(result)result.textContent="Choose a service and check its current Sparkle price.";
   const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  void updateSvbServerPriceCards();
 }
 async function checkSvbPrice(){
   const serviceCode=document.getElementById("svbAppSelect")?.value||"";
