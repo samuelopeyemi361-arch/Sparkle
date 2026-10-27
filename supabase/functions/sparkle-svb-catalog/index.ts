@@ -67,8 +67,12 @@ Deno.serve(async(req)=>{
   if(action==="server-prices"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
-   const safe=mapService(found);if(!safe)return reply({success:false,error:"Could not verify live pricing."},502);
-   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||(country==="us"&&String(found.code||found.service||found.serviceName||"").toLowerCase()==="whatsapp"&&Math.round((Number(found.cost)*1.10+Number.EPSILON)*100)/100<938));return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
+   const rawCost=Number(found.cost);
+   if(!Number.isFinite(rawCost)||rawCost<=0)return reply({success:false,error:"Could not verify live pricing."},502);
+   const baseCost=Math.round((rawCost+Number.EPSILON)*100)/100;
+   const serviceCode=String(found.code||found.service||found.serviceName||"").toLowerCase();
+   const server3Allowed=country==="us"&&serviceCode==="whatsapp"&&Math.round((baseCost*1.10+Number.EPSILON)*100)/100<938;
+   return reply({success:true,data:{code:String(found.code||found.service||found.serviceName||""),name:String(found.name||found.service_name||found.serviceName||found.code||""),country:String(found.country||country),prices:profiles.map(p=>{const allowed=(p.id!=="server1"||["us","ca"].includes(country))&&(p.id!=="server3"||server3Allowed);return {server_id:p.id,server_label:p.label,selling_price_ngn:allowed?Math.round((baseCost*(1+p.markup/100)+Number.EPSILON)*100)/100:null};})}});
   }
   if(action==="price"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
