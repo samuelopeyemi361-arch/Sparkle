@@ -5689,7 +5689,7 @@ function selectSvbServer(serverId){
   const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
   loadSvbCountries(true).then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
 }
-async async async function updateSvbServerPriceCards(){
+async function updateSvbServerPriceCards(){
   const serviceCode=document.getElementById("svbAppSelect")?.value||"";
   const country=document.getElementById("svbCountrySelect")?.value||"us";
   const targets={server1:"svbServerPrice1",server2:"svbServerPrice2",server3:"svbServerPrice3"};
