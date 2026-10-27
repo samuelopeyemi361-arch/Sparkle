@@ -63,7 +63,7 @@ Deno.serve(async(req)=>{
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
    if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
    const safe=mapService(found);if(!safe)return reply({success:false,error:"Could not verify live pricing."},502);
-   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>({server_id:p.id,server_label:p.label,selling_price_ngn:Math.round((Number(found.cost)* (1+p.markup/100)+Number.EPSILON)*100)/100}))}});
+   return reply({success:true,data:{code:safe.code,name:safe.name,country:safe.country,prices:profiles.map(p=>({server_id:p.id,server_label:p.label,selling_price_ngn:Math.round((Math.round((Number(found.cost)+Number.EPSILON)*100)/100*(1+p.markup/100)+Number.EPSILON)*100)/100}))}});
   }
   if(action==="price"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
