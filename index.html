@@ -5623,6 +5623,8 @@ let svbCurrentQuote = null;
 let svbCurrentOrder = null;
 let svbAutoCheckTimer = null;
 let svbAutoCheckBusy = false;
+let svbPriceRefreshTimer = null;
+let svbPriceRefreshBusy = false;
 let svbPurchaseInProgress = false;
 let svbAwaitingPin = false;
 const SVB_LIVE_PURCHASES_ENABLED = true;
@@ -5692,7 +5694,8 @@ function normalizeSvbServices(response){
     const code=String(item?.code??item?.service??item?.serviceName??item?.service_name??"").trim();
     const name=String(item?.name??item?.service_name??item?.serviceName??item?.title??code).trim();
     if(!code||!name)return null;
-    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0)};
+    const sellingPrice=Number(item?.selling_price_ngn??item?.sellingPrice);
+    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
 function renderSvbCountries(){
@@ -5705,7 +5708,7 @@ function renderSvbApps(items){
   const select=document.getElementById("svbAppSelect");if(!select)return;
   const current=select.value;
   select.innerHTML='<option value="">Choose a service</option>';
-  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name;select.appendChild(option);});
+  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name+(item.sellingPrice!=null?" — ₦"+item.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):" — price check required");select.appendChild(option);});
   if(items.some(item=>item.code===current))select.value=current;
 }
 async function loadSvbCountries(force=false){
@@ -5749,12 +5752,35 @@ async function loadSvbServices(){
     const response=await callSvbCatalog({action:"services",country});
     svbServicesCache=normalizeSvbServices(response);
     renderSvbApps(svbServicesCache);
-    if(result)result.textContent=svbServicesCache.length?"Choose a service and check its current Sparkle price.":"No services are currently listed for this country. Choose another country and try again.";
+    if(result)result.textContent=svbServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
+    startSvbPriceAutoRefresh();
   }catch(error){
     svbServicesCache=[];
     select.innerHTML='<option value="">Could not load services</option>';
     if(result)result.textContent="Could not load Soft Viral Boost services: "+String(error.message||error);
   }
+}
+function startSvbPriceAutoRefresh(){
+  if(svbPriceRefreshTimer)clearInterval(svbPriceRefreshTimer);
+  svbPriceRefreshTimer=setInterval(async()=>{
+    if(svbPriceRefreshBusy||document.hidden)return;
+    const page=document.getElementById("smsotpPage");
+    if(!page||!page.classList.contains("active"))return;
+    svbPriceRefreshBusy=true;
+    try{
+      const selectedCode=document.getElementById("svbAppSelect")?.value||"";
+      const country=document.getElementById("svbCountrySelect")?.value||"us";
+      const response=await callSvbCatalog({action:"services",country});
+      svbServicesCache=normalizeSvbServices(response);
+      renderSvbApps(svbServicesCache);
+      if(selectedCode&&svbServicesCache.some(item=>item.code===selectedCode)){
+        const select=document.getElementById("svbAppSelect");if(select)select.value=selectedCode;
+        if(svbCurrentQuote&&svbCurrentQuote.serviceCode===selectedCode)await checkSvbPrice();
+      }
+    }catch(_){
+      // Keep the last catalogue visible. Purchase still requires a fresh server-side price check.
+    }finally{svbPriceRefreshBusy=false;}
+  },60000);
 }
 function filterSvbApps(){
   const query=(document.getElementById("svbAppSearch")?.value||"").toLowerCase().trim();
