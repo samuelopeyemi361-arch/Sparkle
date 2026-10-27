@@ -3089,7 +3089,7 @@ support@sparkle.com
             <button class="btn primary full" type="button" onclick="checkSvbPrice()">Check price</button>
             <div id="svbPriceResult" role="status" style="margin-top:14px;color:var(--muted)">Loading the service catalogue…</div>
             <button id="svbBuyButton" class="btn primary full" type="button" onclick="buySvbNumber()" disabled style="margin-top:12px;opacity:.55">Check price first</button>
-            <p id="svbSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Live purchases are enabled for testing. Check the price in naira before buying; real wallet funds may be deducted.</p>
+            <p id="svbSafetyNote" style="font-size:12px;color:var(--muted);margin-top:12px">Review the current Sparkle price and wallet balance before confirming. Your Transaction PIN is required to purchase.</p>
           </div>
           <div id="svbReviewPanel" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromSvbReview()">‹</button><h2 style="margin:0">Review number purchase</h2></div>
@@ -5632,10 +5632,10 @@ const SVB_LIVE_PURCHASES_ENABLED = true;
 async function callSvbCatalog(payload){
   const {data,error}=await supabaseClient.functions.invoke("sparkle-svb-catalog",{body:payload});
   if(error){
-    const detail=await sparkleFunctionErrorMessage(error,"Could not load the Soft Viral Boost catalogue.");
+    const detail=await sparkleFunctionErrorMessage(error,"Could not load the number catalogue. Please try again shortly.");
     throw new Error(detail);
   }
-  if(data?.success===false)throw new Error(String(data.message||data.error||"Soft Viral Boost could not load this catalogue."));
+  if(data?.success===false)throw new Error(String(data.message||data.error||"The number catalogue is temporarily unavailable."));
   return data||{};
 }
 async function callSvbOrderFunction(name,payload){
@@ -5657,7 +5657,7 @@ async function callSvbOrderFunction(name,payload){
   // A non-2xx response can still mean the supplier order is pending/unknown.
   // Preserve it so the page can tell the customer not to submit a duplicate order.
   if(body&&["pending","unknown","failed","cancelled"].includes(String(body.status||"")))return body;
-  const reason=String(body?.message||body?.error||body?.details||body?.code||error.message||"Could not reach Soft Viral Boost.");
+  const reason=String(body?.message||body?.error||body?.details||body?.code||error.message||"Could not reach the number service. Please try again shortly.");
   const err=new Error(/INSUFFICIENT_FUNDS|insufficient.*balance|not enough.*balance/i.test(reason)
     ?"Insufficient Sparkle wallet balance. Please fund your wallet and try again."
     :reason);
@@ -5753,7 +5753,7 @@ async function loadSvbServices(){
   svbCurrentQuote=null;
   const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
   select.innerHTML='<option value="">Loading services…</option>';
-  if(result)result.textContent="Loading Soft Viral Boost services for this country…";
+  if(result)result.textContent="Loading available number services for this country…";
   try{
     const response=await callSvbCatalog({action:"services",country});
     svbServicesCache=normalizeSvbServices(response);
@@ -5763,7 +5763,7 @@ async function loadSvbServices(){
   }catch(error){
     svbServicesCache=[];
     select.innerHTML='<option value="">Could not load services</option>';
-    if(result)result.textContent="Could not load Soft Viral Boost services: "+String(error.message||error);
+    if(result)result.textContent="Could not load available services: "+String(error.message||error);
   }
 }
 function startSvbPriceAutoRefresh(){
@@ -5875,7 +5875,7 @@ function showSvbOrder(order,options={}){
   order={...order,status:normalizedStatus,smsCode,message:statusMessage};
   svbCurrentOrder=order;
   void saveSvbOrderSnapshot(order);
-  // Automatically reconcile active SoftViralBoost orders while Sparkle is open.
+  // Automatically reconcile active number orders while Sparkle is open.
   // Terminal orders stop polling; the server-side finalizer prevents duplicate refunds.
   if(["success","failed","cancelled","canceled","expired"].includes(normalizedStatus)){
     if(svbAutoCheckTimer){clearInterval(svbAutoCheckTimer);svbAutoCheckTimer=null;}
