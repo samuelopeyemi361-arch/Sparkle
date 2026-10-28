@@ -25,7 +25,7 @@ Deno.serve(async(req)=>{
  country=country.toLowerCase();
  if(!/^[a-z]{2,3}$/.test(country)) return reply({success:false,error:"Invalid country code."},400);
  if(action!=="countries" && action!=="services" && action!=="price" && action!=="server-prices") return reply({success:false,error:"Unsupported catalogue action."},400);
- const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:75},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:10}];
+ const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:10},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:10}];
  const profile=profiles.find(p=>p.id===serverId);
  if(!profile) return reply({success:false,error:"Choose a valid number server."},400);
  if(serverId==="server1" && action!=="countries" && !["us","ca"].includes(country)) return reply({success:false,error:"Server 1 is available for USA and Canada only."},400);
@@ -91,6 +91,7 @@ Deno.serve(async(req)=>{
    return reply({success:true,data:safe});
   }
   const services=rawServices.map((s:Obj)=>mapService(s)).filter(Boolean);
+  if(serverId==="server1" && country==="ca" && services.length!==4) return reply({success:false,code:"SERVER1_CANADA_CATALOG_MISMATCH",error:"Canada catalogue could not be verified. Sparkle will not show unrelated services or quote an unverified price. Please try again later."},503);
   return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",server_id:profile?.id||"server1",server_label:profile?.label||"Server 1",services}});
  } catch {
   return reply({success:false,error:"Could not reach the number service. No Sparkle wallet funds were used."},502);
