@@ -28,6 +28,7 @@ Deno.serve(async(req)=>{
  const profiles=[{id:"server1",label:"Server 1 · USA & Canada",markup:10},{id:"server2",label:"Server 2 · Standard Number",markup:60},{id:"server3",label:"Server 3 · Cheap USA WhatsApp",markup:10}];
  const profile=profiles.find(p=>p.id===serverId);
  if(!profile) return reply({success:false,error:"Choose a valid number server."},400);
+ if(serverId==="server2") return reply({success:false,code:"SERVER_CATALOG_UNVERIFIED",error:"This number server is being updated. Please choose another server; no purchase was made."},503);
  if(serverId==="server1" && action!=="countries" && !["us","ca"].includes(country)) return reply({success:false,error:"Server 1 is available for USA and Canada only."},400);
  if(serverId==="server3" && country!=="us") return reply({success:false,error:"Server 3 is available for USA WhatsApp only."},400);
  if((action==="price"||action==="server-prices") && !/^[a-zA-Z0-9_-]{1,80}$/.test(serviceName)) return reply({success:false,error:"Invalid service name."},400);
