@@ -3127,23 +3127,28 @@ support@sparkle.com
     </button>
     <button type="button" class="sparkle-usn-server-card" data-server-id="server2" onclick="selectSvbServer('server2')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">02</span><span class="sparkle-usn-selected-mark">✓</span></span>
-      <strong>Server 2</strong><span class="sparkle-usn-server-name">Standard Number</span>
+      <strong>Server 2</strong><span class="sparkle-usn-server-name">Premium Service</span>
       <span class="sparkle-usn-server-price" id="svbServerPrice2">Choose service</span>
     </button>
     <button type="button" class="sparkle-usn-server-card" data-server-id="server3" onclick="selectSvbServer('server3')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">03</span><span class="sparkle-usn-selected-mark">✓</span></span>
-      <strong>Server 3</strong><span class="sparkle-usn-server-name">Cheap USA WhatsApp</span>
+      <strong>Server 3</strong><span class="sparkle-usn-server-name">USA WhatsApp Only</span>
       <span class="sparkle-usn-server-price" id="svbServerPrice3">Choose service</span>
     </button>
   </div>
   <div id="svbCatalogPanel" class="service-page sparkle-usn-form">
-    <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3>Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
-    <label for="svbCountrySelect">Country</label>
-    <select id="svbCountrySelect" onchange="onSvbCountryChange()"><option value="us">🇺🇸 United States</option></select>
-    <label for="svbAppSearch">Find an app or service</label>
-    <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()">
-    <label for="svbAppSelect">Verification service</label>
-    <select id="svbAppSelect" onchange="onSvbServiceChange()"><option value="">Loading available services…</option></select>
+    <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3 id="svbNumberDetailsTitle">Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
+    <div id="svbCountryField">
+      <label for="svbCountrySelect">Country</label>
+      <select id="svbCountrySelect" onchange="onSvbCountryChange()"><option value="us">🇺🇸 United States</option></select>
+    </div>
+    <div id="svbServiceField">
+      <label for="svbAppSearch">Find an app or service</label>
+      <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()">
+      <label for="svbAppSelect">Verification service</label>
+      <select id="svbAppSelect" onchange="onSvbServiceChange()"><option value="">Loading available services…</option></select>
+    </div>
+    <div id="svbServer3Notice" style="display:none;margin-top:14px;padding:14px;border-radius:12px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:13px;line-height:1.5"><strong>🇺🇸 United States · WhatsApp</strong><div style="margin-top:4px">This option is fixed to USA WhatsApp. No country or service selection is needed.</div></div>
     <div id="svbPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
     <button id="svbBuyButton" class="btn primary full sparkle-usn-buy-button" type="button" onclick="buySvbNumber()" disabled>Check price first</button>
     <p class="sparkle-usn-safety"><span>🔒</span> Your price is checked live. Your wallet is charged only through the verified purchase flow after you confirm with your Transaction PIN.</p>
@@ -5679,15 +5684,37 @@ let svbServicesCache = [];
 let svbCountriesLoadPromise = null;
 let svbCurrentQuote = null;
 let svbCurrentServerId = "server1";
-const SVB_SERVER_LABELS = {server1:"Server 1 · USA & Canada",server2:"Server 2 · Standard Number",server3:"Server 3 · Cheap USA WhatsApp"};
+const SVB_SERVER_LABELS = {server1:"Server 1 · USA & Canada",server2:"Server 2 · Premium Service",server3:"Server 3 · USA WhatsApp Only"};
+function updateSvbServerModeUI(){
+  const whatsappOnly=svbCurrentServerId==="server3";
+  const countryField=document.getElementById("svbCountryField");if(countryField)countryField.style.display=whatsappOnly?"none":"";
+  const serviceField=document.getElementById("svbServiceField");if(serviceField)serviceField.style.display=whatsappOnly?"none":"";
+  const notice=document.getElementById("svbServer3Notice");if(notice)notice.style.display=whatsappOnly?"block":"none";
+  const title=document.getElementById("svbNumberDetailsTitle");if(title)title.textContent=whatsappOnly?"USA WhatsApp number":"Number details";
+  const country=document.getElementById("svbCountrySelect");if(country){if(whatsappOnly)country.value="us";country.disabled=whatsappOnly;}
+  const label=document.querySelector('label[for="svbCountrySelect"]');
+  if(label){const count=Array.isArray(svbCountriesCache)?svbCountriesCache.length:0;label.textContent=whatsappOnly?"Country":(count?`Country (${count} available)`:"Country");}
+}
 function selectSvbServer(serverId){
   if(!Object.prototype.hasOwnProperty.call(SVB_SERVER_LABELS,serverId))return;
-  const selectedCode=document.getElementById("svbAppSelect")?.value||"";
   svbCurrentServerId=serverId;
+  svbCurrentQuote=null;
   document.querySelectorAll(".sparkle-usn-server-card").forEach(card=>{const active=card.dataset.serverId===serverId;card.classList.toggle("is-selected",active);card.setAttribute("aria-pressed",active?"true":"false");});
   const heading=document.querySelector("#smsotpPage .data-topbar h1");if(heading)heading.textContent="Buy US Number";
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
-  loadSvbCountries(true).then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
+  const appSelect=document.getElementById("svbAppSelect");if(appSelect)appSelect.innerHTML='<option value="">Loading services…</option>';
+  const search=document.getElementById("svbAppSearch");if(search)search.value="";
+  const result=document.getElementById("svbPriceResult");if(result)result.textContent=serverId==="server3"?"Loading USA WhatsApp price…":"Loading available services…";
+  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";buy.style.opacity=".55";}
+  updateSvbServerModeUI();
+  loadSvbCountries(true).then(()=>{
+    if(serverId!==svbCurrentServerId)return;
+    updateSvbServerModeUI();
+    if(serverId!=="server3"){
+      const select=document.getElementById("svbAppSelect");if(select)select.value="";
+      svbCurrentQuote=null;
+      void updateSvbServerPriceCards();
+    }
+  });
 }
 async function updateSvbServerPriceCards(){
   const serviceCode=document.getElementById("svbAppSelect")?.value||"";
@@ -5793,6 +5820,7 @@ function renderSvbApps(items){
   if(items.some(item=>item.code===current))select.value=current;
 }
 async function loadSvbCountries(force=false){
+  updateSvbServerModeUI();
   const select=document.getElementById("svbCountrySelect");
   const result=document.getElementById("svbPriceResult");
   if(!select)return;
@@ -5815,6 +5843,7 @@ async function loadSvbCountries(force=false){
       svbCountriesCache=normalizeSvbCountries({data:{countries:[]}});
     }
     renderSvbCountries();
+    updateSvbServerModeUI();
     await loadSvbServices();
     await restoreSavedSvbOrder();
   })();
@@ -5843,8 +5872,18 @@ async function loadSvbServices(){
     if(requestSequence!==svbCatalogLoadSequence || country!==(document.getElementById("svbCountrySelect")?.value||"us") || requestedServer!==svbCurrentServerId)return;
     svbServicesCache=normalizeSvbServices(response);
     renderSvbApps(svbServicesCache);
-    if(result)result.textContent=svbServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
+    if(requestedServer==="server3"){
+      const whatsApp=svbServicesCache.find(item=>item.code.toLowerCase()==="whatsapp"||item.name.toLowerCase()==="whatsapp");
+      if(!whatsApp)throw new Error("USA WhatsApp is temporarily unavailable. Please try again later.");
+      select.value=whatsApp.code;
+      const search=document.getElementById("svbAppSearch");if(search)search.value="";
+      const countrySelect=document.getElementById("svbCountrySelect");if(countrySelect)countrySelect.value="us";
+      updateSvbServerModeUI();
+    }
+    const countryName=svbCountriesCache.find(item=>item.code===country)?.name||(country==="us"?"USA":country.toUpperCase());
+    if(result)result.textContent=svbServicesCache.length?`${svbServicesCache.length} services available for ${countryName}. Select a service to verify its current price before purchase.`:"No services are currently listed for this country. Choose another country and try again.";
     startSvbPriceAutoRefresh();
+    if(requestedServer==="server3")await checkSvbPrice();
   }catch(error){
     svbServicesCache=[];
     select.innerHTML='<option value="">Could not load services</option>';
@@ -5864,7 +5903,18 @@ function startSvbPriceAutoRefresh(){
       const response=await callSvbCatalog({action:"services",country,serverId:svbCurrentServerId});
       svbServicesCache=normalizeSvbServices(response);
       renderSvbApps(svbServicesCache);
-      if(selectedCode&&svbServicesCache.some(item=>item.code===selectedCode)){
+      if(svbCurrentServerId==="server3"){
+        const select=document.getElementById("svbAppSelect");
+        const whatsApp=svbServicesCache.find(item=>item.code.toLowerCase()==="whatsapp"||item.name.toLowerCase()==="whatsapp");
+        if(!whatsApp){
+          svbCurrentQuote=null;
+          const result=document.getElementById("svbPriceResult");if(result)result.textContent="USA WhatsApp is currently unavailable. Please try again later.";
+          const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="WhatsApp unavailable";buy.style.opacity=".55";}
+        }else{
+          if(select)select.value=whatsApp.code;
+          if(svbCurrentQuote&&svbCurrentQuote.serviceCode===whatsApp.code)await checkSvbPrice();
+        }
+      }else if(selectedCode&&svbServicesCache.some(item=>item.code===selectedCode)){
         const select=document.getElementById("svbAppSelect");if(select)select.value=selectedCode;
         if(svbCurrentQuote&&svbCurrentQuote.serviceCode===selectedCode)await checkSvbPrice();
       }
