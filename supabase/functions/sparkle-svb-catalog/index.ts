@@ -11,6 +11,19 @@ async function providerFetch(path:string, apiKey:string, init:RequestInit={}) {
   return await fetch(BASE+path,{...init,headers:{Authorization:"Bearer "+apiKey,Accept:"application/json",...(init.headers||{})},signal:init.signal||AbortSignal.timeout(20000)});
 }
 function errorText(_data:any, fallback:string) { return fallback; }
+function countryCode(value:unknown,nameHint:unknown=""):string {
+ const raw=String(value??"").trim().toLowerCase();
+ const name=String(nameHint??"").trim().toLowerCase();
+ const aliases:Record<string,string>={usa:"us","united states":"us","united states of america":"us",canada:"ca",can:"ca","great britain":"gb","united kingdom":"gb",uk:"gb","south korea":"kr","republic of korea":"kr","north korea":"kp","russia":"ru","russian federation":"ru","turkey":"tr","türkiye":"tr","viet nam":"vn","vietnam":"vn","ivory coast":"ci","cote d ivoire":"ci","uae":"ae","united arab emirates":"ae"};
+ if(aliases[raw])return aliases[raw];
+ if(/^[a-z]{2,3}$/.test(raw))return raw;
+ const normalizedName=name||raw;
+ if(aliases[normalizedName])return aliases[normalizedName];
+ return "";
+}
+function serviceCountry(s:Obj):string {
+ return countryCode(s.country_code??s.countryCode??s.iso2??s.iso_code??s.country,s.country_name??s.countryName??s.country);
+}
 
 Deno.serve(async(req)=>{
  if(req.method==="OPTIONS") return new Response("ok",{headers:cors});
@@ -40,10 +53,10 @@ Deno.serve(async(req)=>{
   if(action==="countries"){
    const rawCountries=Array.isArray(data.countries)?data.countries:Array.isArray(data.data?.countries)?data.data.countries:Array.isArray(data.data)?data.data:[];
    const countries=rawCountries.map((c:Obj)=>{
-    let code=String(c.code||c.country_code||c.countryCode||c.iso2||c.iso_code||"").trim().toLowerCase(); if(code==="usa")code="us"; if(code==="canada")code="ca";
-    const name=String(c.name||c.country_name||code).trim();
+    const name=String(c.name||c.country_name||c.countryName||"").trim();
+    const code=countryCode(c.code||c.country_code||c.countryCode||c.iso2||c.iso_code,name);
     if(!code||!name)return null;
-    return {code,name,dial:String(c.dial||""),flag:String(c.flag||""),network:String(c.network||"Global Carrier Hub")};
+    return {code,name,dial:String(c.dial||c.dial_code||""),flag:String(c.flag||""),network:String(c.network||"Global Carrier Hub")};
    }).filter(Boolean).filter((c:Obj)=>serverId==="server2" || (serverId==="server1" ? ["us","ca"].includes(String(c.code).toLowerCase()) : String(c.code).toLowerCase()==="us"));
    return reply({success:true,data:{countries}});
   }
@@ -59,9 +72,8 @@ Deno.serve(async(req)=>{
    // Require the supplier's service row to match the selected country exactly;
    // missing or mismatched country metadata is not safe to display for Server 1.
    if(serverId==="server1"){
-    const serviceCountry=String(s.country||"").trim().toLowerCase();
-    const allowedCountries=country==="ca"?["ca","canada","can"]:["us","usa","united states"];
-    if(!allowedCountries.includes(serviceCountry))return null;
+    const selectedServiceCountry=serviceCountry(s);
+    if(selectedServiceCountry!==country)return null;
    }
    if(serverId==="server3" && code.toLowerCase()!=="whatsapp" && name.toLowerCase()!=="whatsapp")return null;
    // Cheap USA WhatsApp must match the advertised supplier price band; never expose a mismatched high-cost route.
@@ -74,7 +86,7 @@ Deno.serve(async(req)=>{
   };
   if(action==="server-prices"){
    const found=rawServices.find((s:Obj)=>String(s.code||s.service||s.serviceName||"").toLowerCase()===serviceName.toLowerCase());
-   if(!found)return reply({success:false,error:"This service is not available for the selected country."},404);
+   if(!found||!mapService(found))return reply({success:false,error:"This service is not available for the selected country."},404);
    const rawCost=Number(found.cost);
    if(!Number.isFinite(rawCost)||rawCost<=0)return reply({success:false,error:"Could not verify live pricing."},502);
    const baseCost=Math.round((rawCost+Number.EPSILON)*100)/100;
@@ -91,7 +103,7 @@ Deno.serve(async(req)=>{
    return reply({success:true,data:safe});
   }
   const services=rawServices.map((s:Obj)=>mapService(s)).filter(Boolean);
-  return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",server_id:profile?.id||"server1",server_label:profile?.label||"Server 1",services}});
+  return reply({success:true,data:{country,country_name:countryName,network,currency:"NGN",server_id:profile.id,server_label:profile.label,service_count:services.length,services}});
  } catch {
   return reply({success:false,error:"Could not reach the number service. No Sparkle wallet funds were used."},502);
  }
