@@ -52,16 +52,19 @@ function asText(v: unknown): string {
   return typeof v === "string" ? v.trim() : String(v ?? "").trim();
 }
 function providerCountry(country: string): string {
-  if (country === "us") return "usa";
-  if (country === "ca") return "canada";
-  throw problem("Choose a supported country.", 400, "INVALID_COUNTRY");
+  const value = asText(country).toLowerCase();
+  if (value === "us" || value === "usa") return "usa";
+  if (value === "ca" || value === "canada") return "canada";
+  if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(value)) {
+    throw problem("Choose a country from the live catalogue.", 400, "INVALID_COUNTRY");
+  }
+  return value;
 }
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
   const profile=profileByServer[serverId];
   if(!profile)throw problem("Use the live number catalogue.",400,"INVALID_SERVER");
   if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
   providerCountry(country);
-  if(!["us","ca"].includes(country))throw problem("Choose USA or Canada.",400,"INVALID_COUNTRY");
   return profile;
 }
 function configured(): string {
