@@ -4648,7 +4648,7 @@ function openAuth(mode){
   authMode = mode;
   document.getElementById("authModal").classList.add("show");
 
-  const savedPendingEmail = sparkleRestorePendingVerification();
+  const savedPendingEmail = mode === "signup" ? sparkleRestorePendingVerification() : "";
   if(savedPendingEmail){
     pendingVerificationEmail = savedPendingEmail;
     document.getElementById("email").value = savedPendingEmail;
