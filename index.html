@@ -6323,6 +6323,34 @@ async function loadNumberOperators(preferred){
  }catch(error){if(seq!==numberOperatorsLoadSequence)return;numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(cards)cards.innerHTML='<div class="data-empty">No operator offers are available right now.</div>';if(status)status.textContent="Could not load operator prices. "+String(error?.message||error);if(result)result.textContent="";if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
 }
 
+
+/* Keep Virtual Number operator quotes live while the operator chooser is on screen.
+   The catalogue endpoint reads current supplier prices, delivery rates and stock.
+   Purchases still perform their own server-side quote/stock check before wallet reservation. */
+async function refreshNumberOffersAutomatically(){
+ if(numberPurchaseInProgress||numberSelectionStep!=="operator"||document.visibilityState==="hidden")return;
+ const cards=document.getElementById("numberOperatorCards");
+ if(!cards||cards.offsetParent===null)return;
+ const service=document.getElementById("numberAppSelect")?.value||"";
+ const country=document.getElementById("numberCountrySelect")?.value||"us";
+ if(!service||!country)return;
+ const previous=numberOperatorsCache.map(x=>({operator:String(x.operator||""),price:Number(x.selling_price_ngn),rate:x.rate==null?null:Number(x.rate),stock:Number(x.stock||0),available:x.available!==false}));
+ const selected=document.getElementById("numberOperatorSelect")?.value||"";
+ await loadNumberOperators(selected);
+ if(numberPurchaseInProgress||service!==(document.getElementById("numberAppSelect")?.value||"")||country!==(document.getElementById("numberCountrySelect")?.value||"us"))return;
+ const current=numberOperatorsCache.map(x=>({operator:String(x.operator||""),price:Number(x.selling_price_ngn),rate:x.rate==null?null:Number(x.rate),stock:Number(x.stock||0),available:x.available!==false}));
+ const changed=JSON.stringify(previous)!==JSON.stringify(current);
+ const status=document.getElementById("numberOperatorStatus");
+ if(changed&&status)status.textContent="Live update received: prices, delivery chances and available stock have been refreshed.";
+}
+if(!window.__sparkleNumberAutoRefreshStarted){
+ window.__sparkleNumberAutoRefreshStarted=true;
+ window.setInterval(()=>{void refreshNumberOffersAutomatically();},30000);
+ document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="visible")void refreshNumberOffersAutomatically();
+ });
+}
+
 async function loadCountriesForNumberService(serviceCode){
  const service=numberServicesCache.find(x=>x.code===serviceCode);
  if(!service||numberPurchaseInProgress)return;
