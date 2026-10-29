@@ -35,7 +35,7 @@
     "/education":{title:"Buy WAEC and NECO Exam Pins | TheSparkle",description:"Access supported examination pins and education services through TheSparkle. Sign in to view current available options."},
     "/recharge-pin-printing":{title:"Recharge PIN Printing Services | TheSparkle",description:"Access supported recharge card printing and PIN services on TheSparkle. Sign in to check prices and availability."},
     "/bulk-sms":{title:"Bulk SMS Services | TheSparkle",description:"Access bulk SMS services through TheSparkle. Sign in to review available options and continue to your account."},
-    "/us-number":{title:"US Number Services | TheSparkle",description:"Access TheSparkle US number and SMS verification services, subject to current availability and account access."},
+    "/us-number":{title:"Virtual Number Services | TheSparkle",description:"Browse live virtual number services by country and operator, with Sparkle prices shown in naira."},
     "/market":{title:"Digital Services Marketplace | TheSparkle",description:"Explore digital services in TheSparkle marketplace after signing in to your account."},
     "/social-media-market":{title:"Social Media Services | TheSparkle",description:"View TheSparkle social media service marketplace and available options through your account."},
     "/support":{title:"TheSparkle Customer Support",description:"Get help with your TheSparkle account, wallet funding, purchases, and supported digital services."},
@@ -3092,7 +3092,7 @@ support@sparkle.com
             <div class="service" role="button" tabindex="0" onclick="openServicePage('electricity')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('electricity')}"><span aria-hidden="true">💡</span><div>Electricity</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('cable')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('cable')}"><span aria-hidden="true">📺</span><div>Cable TV</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🎟️</span><div>Recharge PIN Printing</div></div>
-            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadNumberCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadNumberCountries()}"><span aria-hidden="true">🇺🇸</span><div>Buy US Number</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadNumberCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadNumberCountries()}"><span aria-hidden="true">🇺🇸</span><div>Virtual Number</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education PIN</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
@@ -3152,7 +3152,7 @@ support@sparkle.com
 <!-- Dedicated US Number order page: separate from price preview and purchase form. -->
         <section class="page" id="usNumberOrderPage">
           <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">‹</button><h1>Your Virtual Number Order</h1></div>
-          <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest US Number purchase.</p>
+          <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest virtual number purchase.</p>
           <div id="numberOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
             <h3 style="margin-top:0">No virtual number order to display</h3>
             <p style="color:var(--muted)">After you confirm a virtual number purchase with your transaction PIN, its order details will appear on this page.</p>
@@ -5753,7 +5753,7 @@ function renderNumberApps(items){
   const select=document.getElementById("numberAppSelect");if(!select)return;
   const current=select.value;
   select.innerHTML='<option value="">Choose a service</option>';
-  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name+(item.sellingPrice!=null?" — from ₦"+item.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):" — price check required");select.appendChild(option);});
+  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name+(item.sellingPrice!=null?" — from ₦"+item.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):" — choose operator for price");select.appendChild(option);});
   if(items.some(item=>item.code===current))select.value=current;
 }
 function renderNumberOperators(items,preferred="any"){
@@ -5997,7 +5997,7 @@ function showNumberOrder(order,options={}){
 function buyNumberNumber(){
   const serviceCode=document.getElementById("numberAppSelect")?.value||"";
   const country=document.getElementById("numberCountrySelect")?.value||"us";
-  if(!NUMBER_LIVE_PURCHASES_ENABLED){alert("US number purchases are temporarily unavailable.");return;}
+  if(!NUMBER_LIVE_PURCHASES_ENABLED){alert("Virtual number purchases are temporarily unavailable.");return;}
   if(!serviceCode){alert("Choose a verification service first.");return;}
   const previousStatus=String(numberCurrentOrder?.status||"").toLowerCase();
   if(numberCurrentOrder?.requestId&&! ["success","failed","cancelled","expired"].includes(previousStatus)){
@@ -6017,7 +6017,7 @@ function buyNumberNumber(){
   const numberContinue=document.getElementById("numberReviewConfirm");if(numberContinue){numberContinue.disabled=true;numberContinue.textContent="Checking wallet balance…";}
   document.getElementById("numberCatalogPanel").style.display="none";
   document.getElementById("numberReviewPanel").style.display="block";
-  sparkleCheckWalletReview(numberCurrentQuote.sellingPrice,{balanceId:"numberReviewWalletBalance",messageId:"numberReviewFundsMessage",buttonId:"numberReviewConfirm",buttonText:"Buy US Number"});
+  sparkleCheckWalletReview(numberCurrentQuote.sellingPrice,{balanceId:"numberReviewWalletBalance",messageId:"numberReviewFundsMessage",buttonId:"numberReviewConfirm",buttonText:"Buy Virtual Number"});
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function backFromNumberReview(){
@@ -6109,7 +6109,7 @@ async function executeNumberPurchase(pin){
     alert("US number purchase: "+text+"\nThe outcome may be unknown. Do not submit another order until this reference is checked.");
   }finally{
     numberPurchaseInProgress=false;
-    if(button){button.disabled=false;button.textContent="Buy US Number";}
+    if(button){button.disabled=false;button.textContent="Buy Virtual Number";}
   }
 }
 async function checkNumberOrder(options={}){
