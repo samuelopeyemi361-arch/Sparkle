@@ -7,16 +7,30 @@ const CORS = {
   "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-const services: Record<string, string> = {
-  whatsapp: "WhatsApp",
-  google: "Google / YouTube",
-  instagram: "Instagram",
-  telegram: "Telegram",
+const serviceLabels: Record<string, string> = {
+  whatsapp:"WhatsApp", google:"Google / YouTube", instagram:"Instagram / Threads",
+  facebook:"Facebook", telegram:"Telegram", openai:"OpenAI / ChatGPT", amazon:"Amazon",
+  microsoft:"Microsoft", tiktok:"TikTok", twitter:"X / Twitter", discord:"Discord",
+  snapchat:"Snapchat", uber:"Uber", tinder:"Tinder", yahoo:"Yahoo", outlook:"Outlook",
+  airbnb:"Airbnb", binance:"Binance", steam:"Steam", wechat:"WeChat", line:"LINE",
+  viber:"Viber", signal:"Signal", other:"Other"
 };
-const profileByServer: Record<string, { markup: number; label: string }> = {
-  server1: { markup: 75, label: "Server 1 · USA & Canada" },
-  server2: { markup: 60, label: "Server 2 · Standard Number" },
-  server3: { markup: 10, label: "Server 3 · USA WhatsApp" },
+function serviceDisplayName(code: string): string {
+  const key=asText(code).toLowerCase();
+  if(serviceLabels[key])return serviceLabels[key];
+  return key.replace(/[_-]+/g," ").replace(/\b[a-z]/g,ch=>ch.toUpperCase());
+}
+function operatorDisplayName(code: string): string {
+  const key=asText(code).toLowerCase();
+  if(key==="any")return "Automatic · price capped";
+  const virtual=key.match(/^virtual[-_ ]?(\d+)$/);
+  if(virtual)return "Virtual network "+virtual[1];
+  return key.replace(/[_-]+/g," ").replace(/\b[a-z]/g,ch=>ch.toUpperCase());
+}
+const profileByServer: Record<string,{markup:number;label:string}> = {
+  // Internal compatibility for the existing atomic wallet-reservation routine.
+  // Customers see one live catalogue, not supplier server choices.
+  server1:{markup:75,label:"Live number catalogue"}
 };
 let fxCache: { rate: number; updatedAt: number } | null = null;
 
@@ -43,17 +57,11 @@ function providerCountry(country: string): string {
   throw problem("Choose a supported country.", 400, "INVALID_COUNTRY");
 }
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
-  const profile = profileByServer[serverId];
-  if (!profile) throw problem("Choose a valid number server.", 400, "INVALID_SERVER");
-  if (serverId === "server2") throw problem("This number option is temporarily unavailable. Please choose another server.", 503, "SERVER_UNAVAILABLE");
-  if (!services[service]) throw problem("Choose a supported verification service.", 400, "INVALID_SERVICE");
+  const profile=profileByServer[serverId];
+  if(!profile)throw problem("Use the live number catalogue.",400,"INVALID_SERVER");
+  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
   providerCountry(country);
-  if (serverId === "server1" && !["us", "ca"].includes(country)) {
-    throw problem("Server 1 is available for USA and Canada only.", 400, "INVALID_COUNTRY");
-  }
-  if (serverId === "server3" && (country !== "us" || service !== "whatsapp")) {
-    throw problem("Server 3 is available for USA WhatsApp only.", 400, "INVALID_ROUTE");
-  }
+  if(!["us","ca"].includes(country))throw problem("Choose USA or Canada.",400,"INVALID_COUNTRY");
   return profile;
 }
 function configured(): string {
@@ -145,87 +153,88 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now };
   return rate;
 }
-async function bestOffer(country: string, service: string): Promise<{ operator: string; usd: number; count: number; rate: number | null; fx: number; providerCostNgn: number; providerBalanceUsd: number }> {
-  const c = providerCountry(country);
-  if (!services[service]) throw problem("Choose a supported verification service.", 400, "INVALID_SERVICE");
-  const account = await providerProfile();
-  const result = await apiGet("/guest/prices?country=" + encodeURIComponent(c) + "&product=" + encodeURIComponent(service));
-  if (!result.ok || !result.data || typeof result.data !== "object") {
-    throw problem("Current number prices could not be verified. Please try again shortly.", 503, "PRICE_UNAVAILABLE");
-  }
-  const root: any = result.data;
-  const countryNode: any = root[c] || root[c.toUpperCase()] || root;
-  let productNode: any = countryNode?.[service] || root?.[service] || null;
-  if (productNode && typeof productNode === "object" && productNode[c] && typeof productNode[c] === "object") {
-    productNode = productNode[c];
-  }
-  if (!productNode || typeof productNode !== "object") {
-    throw problem("This number service is not currently available for the selected country.", 409, "NO_STOCK");
-  }
-  let rows = Object.entries(productNode).map(([operator, raw]: [string, any]) => {
-    const usd = Number(raw?.cost);
-    const count = Number(raw?.count);
-    const rateValue = raw?.rate == null || raw?.rate === "" ? null : Number(raw.rate);
-    const deliveryRate = rateValue !== null && Number.isFinite(rateValue) && rateValue >= 0 && rateValue <= 100 ? rateValue : null;
-    if (!/^[a-zA-Z0-9._-]{1,80}$/.test(operator) || !Number.isFinite(usd) || usd <= 0 ||
-        !Number.isFinite(count) || count <= 0) return null;
-    return { operator, usd, count, rate: deliveryRate };
-  }).filter((x): x is { operator: string; usd: number; count: number; rate: number | null } => x !== null);
-  if (!rows.length) throw problem("No number is currently available for this service and country. Try again later.", 409, "NO_STOCK");
-  rows = rows.filter((row) => row.usd <= account.balance);
-  if (!rows.length) throw problem("This number option is temporarily unavailable. Please try again later.", 503, "PROVIDER_BALANCE_LOW");
-  // Prefer operators with stronger reported delivery rates; then use price and stock as tie-breakers.
-  rows.sort((a, b) => {
-    if (a.rate !== null && b.rate !== null && a.rate !== b.rate) return b.rate - a.rate;
-    if (a.rate !== null && b.rate === null) return -1;
-    if (a.rate === null && b.rate !== null) return 1;
-    if (a.usd !== b.usd) return a.usd - b.usd;
-    return b.count - a.count;
-  });
-  const offer = rows[0];
-  const fx = await usdToNgn();
-  // A small FX buffer protects Sparkle against rounding/exchange-rate movement; customer price is still rechecked before reserving funds.
-  const providerCostNgn = money(offer.usd * fx * 1.02);
-  if (!Number.isFinite(providerCostNgn) || providerCostNgn <= 0) {
-    throw problem("Current number prices could not be verified. No wallet funds were used.", 503, "PRICE_UNAVAILABLE");
-  }
-  return { ...offer, fx, providerCostNgn, providerBalanceUsd: account.balance };
+type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
+type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
+function parseOfferRows(node:any):ParsedOffer[]{
+ if(!node||typeof node!=="object"||Array.isArray(node))return [];
+ return Object.entries(node).map(([operator,raw]:[string,any])=>{
+  const usd=Number(raw?.cost),count=Number(raw?.count);
+  const rv=raw?.rate==null||raw?.rate===""?null:Number(raw.rate);
+  const rate=rv!==null&&Number.isFinite(rv)&&rv>=0&&rv<=100?rv:null;
+  if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
+  return {operator,usd,count,rate};
+ }).filter((x):x is ParsedOffer=>x!==null);
 }
-async function getQuote(country: string, service: string, serverId: string) {
-  const profile = validateRoute(serverId, country, service);
-  const offer = await bestOffer(country, service);
-  const sellingPrice = money(offer.providerCostNgn * (1 + profile.markup / 100));
-  if (!Number.isFinite(sellingPrice) || sellingPrice <= 0) throw problem("Current number prices could not be verified.", 503, "PRICE_UNAVAILABLE");
-  return {
-    code: service,
-    name: services[service],
-    country,
-    network: "Available network",
-    selling_price_ngn: sellingPrice,
-    server_id: serverId,
-    server_label: profile.label,
-    stock: offer.count,
-    rate: offer.rate,
-    markup_percent: profile.markup,
-    provider_cost_ngn: offer.providerCostNgn,
-    provider_cost_usd: offer.usd,
-    provider_operator: offer.operator,
-    provider_balance_usd: offer.providerBalanceUsd,
-    fx_rate: offer.fx,
-  };
+async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
+ const pc=providerCountry(country);
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
+ const account=await providerProfile();
+ const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service));
+ if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
+ const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
+ let productNode:any=countryNode?.[service]||root?.[service]||null;
+ if(productNode&&typeof productNode==="object"&&productNode[pc]&&typeof productNode[pc]==="object")productNode=productNode[pc];
+ if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
+ const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0&&x.usd<=account.balance);
+ if(!rows.length){
+  if(parsed.some(x=>x.count>0))throw problem("This service is temporarily unavailable. Please try another option later.",503,"PROVIDER_BALANCE_LOW");
+  throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
+ }
+ const fx=await usdToNgn();
+ const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:account.balance}));
+ offers.sort((a,b)=>{
+  if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
+  if(a.rate!==null&&b.rate===null)return -1;
+  if(a.rate===null&&b.rate!==null)return 1;
+  if(a.usd!==b.usd)return a.usd-b.usd;
+  return b.count-a.count;
+ });
+ return offers;
 }
-function safeServiceQuote(q: any) {
-  return {
-    code: q.code,
-    name: q.name,
-    country: q.country,
-    network: "Available network",
-    selling_price_ngn: q.selling_price_ngn,
-    server_id: q.server_id,
-    server_label: q.server_label,
-    stock: q.stock,
-  };
+async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
+ const offers=await getProductOffers(country,service);
+ const chosen=requestedOperator&&requestedOperator!=="any"?offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase()):offers;
+ if(!chosen.length)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
+ return chosen[0];
 }
+async function getCatalogServices(country:string):Promise<any[]>{
+ const pc=providerCountry(country),account=await providerProfile();
+ const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc));
+ if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
+ const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root,fx=await usdToNgn();
+ const items:any[]=[];
+ for(const [code,rawNode] of Object.entries(countryNode||{})){
+  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code))continue;
+  let node:any=rawNode;
+  if(node&&typeof node==="object"&&node[pc]&&typeof node[pc]==="object")node=node[pc];
+  const offers=parseOfferRows(node).filter(x=>x.count>0&&x.usd<=account.balance);
+  if(!offers.length)continue;
+  const prices=offers.map(x=>money(money(x.usd*fx*1.02)*1.75));
+  items.push({code,name:serviceDisplayName(code),country,network:"Multiple operators",stock:offers.reduce((n,x)=>n+x.count,0),selling_price_ngn:Math.min(...prices)});
+ }
+ return items.sort((a,b)=>a.name.localeCompare(b.name));
+}
+async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
+ const profile=validateRoute(serverId,country,service);
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
+ const offer=await bestOffer(country,service,requestedOperator);
+ const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
+ if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified.",503,"PRICE_UNAVAILABLE");
+ const chosen=requestedOperator==="any"?"any":offer.operator;
+ return {code:service,name:serviceDisplayName(service),country,network:"Available network",
+  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
+  selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
+  stock:offer.count,rate:offer.rate,markup_percent:profile.markup,
+  provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
+  provider_operator:offer.operator,fx_rate:offer.fx};
+}
+function safeServiceQuote(q:any){
+ return {code:q.code,name:q.name,country:q.country,network:q.network||"Available network",
+  operator:q.operator,operator_label:q.operator_label,selling_price_ngn:q.selling_price_ngn,
+  server_id:"server1",stock:q.stock,rate:q.rate};
+}
+
 function publicError(error: any, fallback = "The number service is temporarily unavailable. Please try again shortly.") {
   const code = String(error?.code || "");
   const status = Number(error?.status);
@@ -252,65 +261,40 @@ async function finalize(admin: any, requestId: string, status: "success" | "fail
   });
 }
 
-Deno.serve(async (req: Request) => {
-  if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
-  if (req.method !== "POST") return reply({ success: false, message: "POST required." }, 405);
-  let ctx: any;
-  try { ctx = await userContext(req); } catch (e) { return publicError(e, "Please sign in again to continue."); }
-  const body: Obj = await req.json().catch(() => ({}));
-  const action = asText(body.action || "services");
-  const country = asText(body.country || "us").toLowerCase();
-  const serverId = asText(body.serverId || body.server_id || "server1").toLowerCase();
-  const service = asText(body.serviceName || body.service || "").toLowerCase();
-  try {
-    if (!profileByServer[serverId]) throw problem("Choose a valid number server.", 400, "INVALID_SERVER");
-    if (serverId === "server2") throw problem("This number option is temporarily unavailable. Please choose another server.", 503, "SERVER_UNAVAILABLE");
-    if (action === "countries") {
-      const countries = serverId === "server3"
-        ? [{ code: "us", name: "United States", dial: "+1", flag: "🇺🇸" }]
-        : [{ code: "us", name: "United States", dial: "+1", flag: "🇺🇸" }, { code: "ca", name: "Canada", dial: "+1", flag: "🇨🇦" }];
-      return reply({ success: true, data: { countries } });
-    }
-    if (!["services", "price", "server-prices"].includes(action)) throw problem("Unsupported catalogue action.", 400, "INVALID_ACTION");
-    providerCountry(country);
-    if (action === "services") {
-      if (serverId === "server1" && !["us", "ca"].includes(country)) throw problem("Server 1 is available for USA and Canada only.", 400, "INVALID_COUNTRY");
-      if (serverId === "server3" && country !== "us") throw problem("Server 3 is available for USA WhatsApp only.", 400, "INVALID_ROUTE");
-      const products = serverId === "server3" ? ["whatsapp"] : Object.keys(services);
-      const results = await Promise.all(products.map(async (code) => {
-        try {
-          const q = await getQuote(country, code, serverId);
-          return safeServiceQuote(q);
-        } catch (e: any) {
-          if (e?.code === "NO_STOCK") return null;
-          throw e;
-        }
-      }));
-      const available = results.filter(Boolean);
-      return reply({ success: true, data: { country, country_name: country === "us" ? "United States" : "Canada", currency: "NGN", server_id: serverId, server_label: profileByServer[serverId].label, services: available } });
-    }
-    if (!/^[a-z0-9_-]{1,80}$/.test(service)) throw problem("Choose a valid service.", 400, "INVALID_SERVICE");
-    if (action === "price") {
-      const q = await getQuote(country, service, serverId);
-      return reply({ success: true, data: safeServiceQuote(q) });
-    }
-    const priceItems: any[] = [];
-    for (const target of ["server1", "server2", "server3"]) {
-      if (target === "server2" || (target === "server1" && !["us", "ca"].includes(country)) ||
-          (target === "server3" && (country !== "us" || service !== "whatsapp"))) {
-        priceItems.push({ server_id: target, server_label: profileByServer[target].label, selling_price_ngn: null });
-        continue;
-      }
-      try {
-        const q = await getQuote(country, service, target);
-        priceItems.push({ server_id: target, server_label: profileByServer[target].label, selling_price_ngn: q.selling_price_ngn });
-      } catch (e: any) {
-        if (e?.code === "NO_STOCK") priceItems.push({ server_id: target, server_label: profileByServer[target].label, selling_price_ngn: null });
-        else throw e;
-      }
-    }
-    return reply({ success: true, data: { code: service, name: services[service], country, prices: priceItems } });
-  } catch (e) {
-    return publicError(e);
+Deno.serve(async (req:Request)=>{
+ if(req.method==="OPTIONS")return new Response("ok",{headers:CORS});
+ if(req.method!=="POST")return reply({success:false,message:"POST required."},405);
+ let ctx:any;
+ try{ctx=await userContext(req);}catch(e){return publicError(e,"Please sign in again to continue.");}
+ const body:Obj=await req.json().catch(()=>({}));
+ const action=asText(body.action||"services");
+ const country=asText(body.country||"us").toLowerCase();
+ const serverId=asText(body.serverId||body.server_id||"server1").toLowerCase();
+ const service=asText(body.serviceName||body.service||"").toLowerCase();
+ const operator=asText(body.operator||"any").toLowerCase();
+ try{
+  if(serverId!=="server1")throw problem("Use the live number catalogue.",400,"INVALID_SERVER");
+  if(action==="countries")return reply({success:true,data:{countries:[
+   {code:"us",name:"United States",dial:"+1",flag:"🇺🇸"},
+   {code:"ca",name:"Canada",dial:"+1",flag:"🇨🇦"}
+  ]}});
+  providerCountry(country);
+  if(action==="services"){
+   const services=await getCatalogServices(country);
+   return reply({success:true,data:{country,country_name:country==="us"?"United States":"Canada",currency:"NGN",services}});
   }
+  if(action==="operators"){
+   if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
+   const offers=await getProductOffers(country,service),best=offers[0];
+   const automatic={operator:"any",operator_label:"Automatic · price capped",selling_price_ngn:money(best.providerCostNgn*1.75),stock:offers.reduce((n,x)=>n+x.count,0),rate:best.rate};
+   const specific=offers.map(x=>({operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*1.75),stock:x.count,rate:x.rate}));
+   return reply({success:true,data:{country,service,currency:"NGN",operators:[automatic,...specific]}});
+  }
+  if(action==="price"){
+   if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
+   const quote=await getQuote(country,service,serverId,operator);
+   return reply({success:true,data:safeServiceQuote(quote)});
+  }
+  throw problem("Unsupported catalogue action.",400,"INVALID_ACTION");
+ }catch(e){return publicError(e);}
 });
