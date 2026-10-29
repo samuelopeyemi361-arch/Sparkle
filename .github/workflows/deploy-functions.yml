@@ -51,6 +51,8 @@ jobs:
       - name: Remove retired provider registrations and secret
         run: |
           set -euo pipefail
+          # Read the current names once so this cleanup is safe to re-run.
+          registered_functions="$(supabase functions list --project-ref "$SUPABASE_PROJECT_ID")"
           for fn in \
             sparkle-fleexa-buy \
             sparkle-fleexa-cancel \
@@ -63,8 +65,12 @@ jobs:
             sparkle-svb-check \
             svb-canada-cost-check-once
           do
-            echo "Removing retired provider function: $fn"
-            supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_ID" --yes
+            if printf '%s\n' "$registered_functions" | grep -Fq "$fn"; then
+              echo "Removing retired provider function: $fn"
+              supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_ID" --yes
+            else
+              echo "Retired provider function already absent: $fn"
+            fi
           done
 
           # Remove the retired key only after verifying the replacement key exists.
