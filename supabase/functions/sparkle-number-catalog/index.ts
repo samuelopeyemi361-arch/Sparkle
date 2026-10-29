@@ -204,7 +204,8 @@ function parseOfferRows(node:any):ParsedOffer[]{
 async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- const account=await providerProfile();
+ let providerBalance=0;
+ try{providerBalance=(await providerProfile()).balance;}catch{/* Catalogue and NGN quotes remain visible even if the provider account cannot currently be verified. The purchase endpoint rechecks before reserving any customer funds. */}
  const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service));
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
  const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
@@ -215,7 +216,7 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
- const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:account.balance}));
+ const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
  offers.sort((a,b)=>{
   if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
   if(a.rate!==null&&b.rate===null)return -1;
@@ -332,6 +333,25 @@ async function getCountriesForService(service:string):Promise<string[]>{
  return result;
 }
 
+async function getDisplayQuote(country:string,service:string,serverId:string,requestedOperator="any"){
+ const profile=validateRoute(serverId,country,service);
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
+ const offers=await getProductOffers(country,service);
+ const offer=requestedOperator==="any"
+   ?(offers.find(x=>x.operator.toLowerCase()==="any")||[...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0])
+   :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
+ if(!offer||offer.count<=0)throw problem("Service unavailable. Please try again later.",409,"NO_STOCK");
+ const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
+ if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
+ const chosen=requestedOperator==="any"?"any":offer.operator;
+ return {code:service,name:serviceDisplayName(service),country,network:"Available network",
+  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
+  selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
+  stock:offer.count,rate:offer.rate,markup_percent:profile.markup,
+  provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
+  provider_operator:offer.operator,fx_rate:offer.fx};
+}
 async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
@@ -425,7 +445,7 @@ Deno.serve(async (req:Request)=>{
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
-   const quote=await getQuote(country,service,serverId,operator);
+   const quote=await getDisplayQuote(country,service,serverId,operator);
    return reply({success:true,data:safeServiceQuote(quote)});
   }
   throw problem("Unsupported catalogue action.",400,"INVALID_ACTION");
