@@ -6161,8 +6161,8 @@ function renderNumberApps(items){
   if(!numberServicesExpanded&&!q&&visible.length>8){const first=visible.slice(0,8),selected=visible.find(x=>x.code===select.value);visible=selected&&!first.some(x=>x.code===selected.code)?[selected,...first.slice(0,7)]:first;}
   list.innerHTML=visible.length?visible.map(item=>{
    const chosen=item.code===select.value,brand=brandFor(item.name),initial=String(item.name||"•").trim().charAt(0).toUpperCase()||"•";
-   const logo=brand?'<img class="sparkle-number-brand-image" src="https://cdn.simpleicons.org/'+brand.slug+'/'+brand.color+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><span class="sparkle-number-brand-fallback" aria-hidden="true" style="display:none">'+escapeHtml(initial)+'</span>':'<span class="sparkle-number-brand-fallback" aria-hidden="true">'+escapeHtml(initial)+'</span>';
-   return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')"><span class="sparkle-number-service-logo '+(brand?'has-brand-logo':'')+'" aria-hidden="true">'+logo+'</span><span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';
+   const logo=brand?'<img class="sparkle-number-brand-image" src="https://cdn.simpleicons.org/'+brand.slug+'/'+brand.color+'" alt="" loading="lazy" onerror="this.style.display=\'none\'">':"";
+   return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')">'+(brand?'<span class="sparkle-number-service-logo has-brand-logo" aria-hidden="true">'+logo+'</span>':"")+'<span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';
   }).join(""):'<div class="data-empty">No matching services. Try a shorter search.</div>';
 const more=document.getElementById("numberServiceShowAll");if(more){more.style.display=!q&&items.length>8?"flex":"none";more.textContent=numberServicesExpanded?"Show fewer services":"Show all services ("+items.length+")";more.setAttribute("aria-expanded",String(numberServicesExpanded));}
 }
@@ -10559,5 +10559,32 @@ async function sparkleAdminLoadAudit(){const list=document.getElementById('spark
 })();
 </script>
 
+
+<style id="sparkle-virtual-number-neutral-icons-and-refresh-fix">
+/* Keep real brand marks only; services without a recognizable brand stay text-only. */
+#smsotpPage .sparkle-number-service-logo{display:grid!important;place-items:center!important;flex:0 0 30px!important;width:30px!important;height:30px!important;border-radius:8px!important;background:#fff!important;border:1px solid #e6eaf0!important;box-shadow:none!important;overflow:hidden!important;color:inherit!important}
+#smsotpPage .sparkle-number-service-logo.has-brand-logo{background:#fff!important;border-color:#e6eaf0!important}
+#smsotpPage .sparkle-number-brand-image{width:21px!important;height:21px!important;object-fit:contain!important}
+#smsotpPage .sparkle-number-service-row:nth-child(4n+2) .sparkle-number-service-logo,#smsotpPage .sparkle-number-service-row:nth-child(4n+3) .sparkle-number-service-logo,#smsotpPage .sparkle-number-service-row:nth-child(4n+4) .sparkle-number-service-logo{background:#fff!important}
+#smsotpPage .sparkle-number-service-row{background:#fff!important;color:#172944!important}
+#smsotpPage .sparkle-number-service-row.is-selected{background:#f7f9fc!important;border-color:#aab6c7!important;box-shadow:inset 0 0 0 1px #d5dce6!important}
+@media(max-width:380px){#smsotpPage .sparkle-number-service-logo{flex-basis:27px!important;width:27px!important;height:27px!important}}
+</style>
+<script id="sparkle-virtual-number-refresh-recovery">
+// A hard browser refresh can bypass the dashboard tile click handler. Re-enter the
+// Virtual Number screen and reload the service catalogue when its direct route opens.
+window.addEventListener("DOMContentLoaded",function(){
+  const path=String(window.location.pathname||"").toLowerCase();
+  const params=new URLSearchParams(window.location.search||"");
+  const isVirtualNumberRoute=/\/(us-number|smsotp)\/?$/.test(path)||params.get("page")==="smsotp"||params.get("service")==="virtual-number";
+  if(!isVirtualNumberRoute)return;
+  window.setTimeout(function(){
+    const page=document.getElementById("smsotpPage");
+    if(!page)return;
+    if(typeof openServicePage==="function")openServicePage("smsotp");
+    if(typeof loadNumberCountries==="function")void loadNumberCountries(true);
+  },450);
+});
+</script>
 </body>
 </html>
