@@ -5721,8 +5721,25 @@ function normalizeNumberCountries(response){
     if(code==="canada")code="ca";
     const name=String((typeof item==="string"?item:(item?.name??item?.country_name??item?.countryName??item?.label))||(code==="us"?"United States":code==="ca"?"Canada":code.toUpperCase())).trim();
     if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(code)||!name)return null;
-    const isoValue=typeof item?.iso_code==="string"?item.iso_code.toLowerCase():"";
-    const flagCode=(isoValue||code)==="uk"?"gb":(isoValue||code);
+    const isoValue=typeof item?.iso_code==="string"?item.iso_code.trim().toLowerCase():"";
+    // Provider slugs are not always ISO-2 country codes (e.g. "usa", "united-states").
+    // Prefer a valid ISO-2 value, then resolve common provider slugs/names to ISO-2.
+    const countryFlagCodes={
+      usa:"us","united-states":"us","united states":"us",canada:"ca",
+      uk:"gb","united-kingdom":"gb","united kingdom":"gb",
+      "south-korea":"kr","south korea":"kr","north-korea":"kp",
+      "saudi-arabia":"sa","united-arab-emirates":"ae","uae":"ae",
+      "hong-kong":"hk","taiwan":"tw","czech-republic":"cz",
+      "new-zealand":"nz","south-africa":"za","puerto-rico":"pr",
+      "dominican-republic":"do","costa-rica":"cr","el-salvador":"sv",
+      "bosnia-and-herzegovina":"ba","north-macedonia":"mk",
+      "ivory-coast":"ci","cote-divoire":"ci","russia":"ru",
+      "vietnam":"vn","moldova":"md","bolivia":"bo","venezuela":"ve",
+      "tanzania":"tz","laos":"la","syria":"sy","palestine":"ps"
+    };
+    const nameKey=name.toLowerCase().trim();
+    const validIso2=/^[a-z]{2}$/.test(isoValue)?isoValue:"";
+    const flagCode=(validIso2||countryFlagCodes[code]||countryFlagCodes[nameKey]||(code==="uk"?"gb":(/^[a-z]{2}$/.test(code)?code:"")));
     const flag= /^[a-z]{2}$/.test(flagCode)
       ? String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0)))
       : "🌐";
