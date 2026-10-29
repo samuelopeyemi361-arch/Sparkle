@@ -2506,6 +2506,18 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 .vn-show-all{display:flex;align-items:center;justify-content:center;width:100%;margin-top:9px;padding:11px;border:1px solid #dce6f7;border-radius:11px;background:#f7f9ff;color:#315bba;font:inherit;font-size:10px;font-weight:950;cursor:pointer}.vn-note{display:flex;gap:8px;margin-top:13px;padding:10px 11px;border:1px solid #e7ecfa;border-radius:11px;background:#f8faff;color:var(--vn-muted)}.vn-note>span{color:#5269cc}.vn-note p{margin:0;font-size:9px;line-height:1.55}
 .vn-selected{display:flex;align-items:center;gap:9px;margin:0 0 12px!important;padding:11px!important;border:1px solid #e2eafa!important;border-radius:13px!important;background:linear-gradient(110deg,#f5f8ff,#fff)!important}.vn-selected-icon{display:grid;place-items:center;flex:0 0 29px;width:29px;height:29px;border-radius:9px;background:#e8f0ff;color:#2c61cc;font-size:13px;font-weight:950}.vn-selected>div{display:grid;gap:4px;flex:1;min-width:0}.vn-selected small{color:#8290a7;font-size:7px;letter-spacing:1px;font-weight:950}.vn-selected strong{color:var(--vn-ink);font-size:11px;font-weight:950;overflow-wrap:anywhere}.vn-selected button,.vn-review-head>button{padding:8px 9px;border:1px solid #d9e3f4;border-radius:9px;background:#fff;color:#315dc2;font-size:9px;font-weight:950;cursor:pointer;white-space:nowrap}
 #numberCountryPicker label{display:block;margin:12px 0 7px;color:var(--vn-ink);font-size:10px;font-weight:950}#numberCountryPicker select{box-sizing:border-box;width:100%;min-height:47px;padding:12px;border:1px solid #dfe6f1;border-radius:12px;background:var(--input-bg,#fff);color:var(--text,#162640);font:inherit;font-size:12px}.vn-country-help{display:flex;gap:8px;margin-top:12px;color:var(--vn-muted);font-size:9px;line-height:1.55}
+
+.vn-brand-loader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 35%,rgba(66,100,245,.16),transparent 43%),rgba(6,13,36,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.vn-brand-loader-card{width:min(100%,330px);padding:29px 23px 25px;border:1px solid rgba(255,255,255,.19);border-radius:25px;background:linear-gradient(150deg,rgba(255,255,255,.17),rgba(255,255,255,.07));box-shadow:0 28px 90px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.24);text-align:center;color:#fff}
+.vn-brand-orb{width:92px;height:92px;margin:0 auto 17px;border-radius:28px;display:grid;place-items:center;background:linear-gradient(145deg,#e5f1ff 0%,#7fa9ff 26%,#4c5fe8 58%,#27245f 100%);box-shadow:inset 4px 4px 10px rgba(255,255,255,.8),inset -7px -8px 13px rgba(14,18,79,.52),0 13px 28px rgba(36,79,224,.48);transform-style:preserve-3d;animation:vnSparkleFloat 2.2s ease-in-out infinite}
+.vn-brand-orb-core{width:64px;height:64px;display:grid;place-items:center;border-radius:21px;background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.06));box-shadow:inset 1px 1px 2px rgba(255,255,255,.8),0 4px 8px rgba(11,18,71,.3);transform:translateZ(10px)}
+.vn-brand-orb svg{width:48px;height:48px;filter:drop-shadow(0 2px 3px rgba(14,25,91,.24))}
+.vn-brand-wordmark{font-size:24px;letter-spacing:-1.2px;font-weight:950;text-shadow:0 2px 16px rgba(154,184,255,.35)}.vn-brand-wordmark span{color:#a7c4ff}
+.vn-brand-loader-title{margin-top:15px;font-size:13px;font-weight:900;letter-spacing:.1px}.vn-brand-loader-sub{margin-top:7px;font-size:10px;line-height:1.6;color:#d5ddff}
+.vn-brand-loader-track{height:4px;overflow:hidden;margin:19px auto 0;max-width:190px;border-radius:9px;background:rgba(255,255,255,.17)}.vn-brand-loader-track span{display:block;width:40%;height:100%;border-radius:9px;background:linear-gradient(90deg,#fff,#a9c8ff,#c5baff);box-shadow:0 0 13px #b8caff;animation:vnBrandProgress 1.2s ease-in-out infinite}
+@keyframes vnSparkleFloat{0%,100%{transform:perspective(500px) rotateY(-12deg) rotateX(7deg) translateY(0)}50%{transform:perspective(500px) rotateY(12deg) rotateX(-5deg) translateY(-5px)}}
+@keyframes vnBrandProgress{0%{transform:translateX(-110%)}100%{transform:translateX(360%)}}
+@media(prefers-reduced-motion:reduce){.vn-brand-orb,.vn-brand-loader-track span{animation:none}}
 .vn-primary{display:flex!important;align-items:center;justify-content:center;gap:10px;min-height:46px;margin-top:14px!important;border:0!important;border-radius:12px!important;background:linear-gradient(112deg,#2769f8,#6354e7)!important;color:#fff!important;font-size:11px!important;font-weight:950!important;box-shadow:0 6px 15px #3566d925!important}.vn-primary:disabled{opacity:.48!important;box-shadow:none!important;cursor:not-allowed}.vn-primary b{font-size:15px}.vn-back{display:block;width:100%;margin-top:9px;padding:9px;border:0;background:transparent;color:#71819a;font:inherit;font-size:10px;font-weight:900;text-align:center;cursor:pointer}.vn-back:hover{color:#315dc2}.vn-operator-head{margin-top:16px}
 .vn-operators{display:grid;grid-template-columns:1fr;gap:7px;margin-top:8px}.sparkle-number-operator-card{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-width:0;padding:11px;border:1px solid #e2e9f3;border-radius:13px;background:var(--card-bg,#fff);color:var(--text,#172944);text-align:left;cursor:pointer;box-shadow:0 2px 6px #1b376309;transition:border-color .15s,background .15s}.sparkle-number-operator-card.is-selected{border-color:#81adff;background:#f2f7ff;box-shadow:inset 0 0 0 1px #a5c3ff}.sparkle-number-operator-card:disabled{cursor:not-allowed;opacity:.6;background:#f7f8fb}.sparkle-number-operator-left{display:flex;align-items:center;gap:9px;flex:1;min-width:0}.sparkle-number-operator-mark{display:grid;place-items:center;flex:0 0 32px;width:32px;height:32px;border-radius:10px;background:linear-gradient(145deg,#197fe6,#3c55ca);color:white;font-size:13px;font-weight:950}.sparkle-number-operator-copy{display:grid;gap:4px;min-width:0}.sparkle-number-operator-copy strong{font-size:10px;font-weight:950;line-height:1.3;overflow-wrap:anywhere}.sparkle-number-operator-meta{font-size:8px;color:var(--vn-muted);line-height:1.45}.sparkle-number-operator-right{display:grid;justify-items:end;gap:5px;flex:0 0 auto}.sparkle-number-operator-price{font-size:11px;font-weight:950;color:#174db6;white-space:nowrap}.sparkle-number-operator-status{padding:4px 6px;border-radius:6px;background:#e9fbf3;color:#12815b;font-size:7px;font-weight:950;white-space:nowrap}.sparkle-number-operator-status.is-unavailable{background:#fff2e8;color:#b55c19}.vn-price{margin-top:11px!important}.vn-price>div{padding:12px!important;border:1px solid #dbe7ff!important;border-radius:13px!important;background:linear-gradient(120deg,#f2f7ff,#f9f8ff)!important}.vn-price>div>div:nth-child(2){font-size:23px!important;color:#174fd0!important}.vn-safety{font-size:9px!important;line-height:1.55!important}
 .vn-support-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:11px}.vn-support-grid>div{padding:12px;border:1px solid var(--vn-border);border-radius:14px;background:var(--card-bg,#fff)}.vn-support-grid i{display:grid;place-items:center;width:26px;height:26px;margin-bottom:7px;border-radius:8px;background:#eff3ff;color:#5267c8;font-style:normal;font-size:12px}.vn-support-grid strong{display:block;color:var(--vn-ink);font-size:9px;font-weight:950}.vn-support-grid p{margin:4px 0 0;color:var(--vn-muted);font-size:8px;line-height:1.55}.vn-support-grid button{margin:7px 0 0;padding:0;border:0;background:transparent;color:#315dc2;font:inherit;font-size:8px;font-weight:950;cursor:pointer}
@@ -3299,7 +3311,16 @@ support@sparkle.com
 <div class="vn-main">
   <div class="vn-head"><div><span class="vn-label">YOUR ORDER</span><h2 id="numberFlowHeading">Choose a service</h2><p id="numberFlowSubheading">Search the apps and websites you want to verify.</p></div><span id="numberFlowStepCount" class="vn-step-count">STEP 1 OF 3</span></div>
   <div id="numberFlowSteps" class="vn-progress" aria-label="Purchase progress"><div class="is-active" data-number-flow-step="service"><i>01</i><span>Service</span></div><b></b><div data-number-flow-step="country"><i>02</i><span>Country</span></div><b></b><div data-number-flow-step="operator"><i>03</i><span>Operator</span></div></div>
-  <div id="numberCatalogPanel" class="service-page vn-form">
+  <div id="sparkleVirtualNumberLoader" class="vn-brand-loader" role="status" aria-live="polite" aria-hidden="true" style="display:none">
+ <div class="vn-brand-loader-card">
+  <div class="vn-brand-orb" aria-hidden="true"><div class="vn-brand-orb-core"><svg viewBox="0 0 64 64" role="img" aria-label="Sparkle"><path d="M32 3 39 24 61 32 39 39 32 61 24 39 3 32 24 24Z" fill="url(#sparkleLogoGradient)"/><path d="M48 5 51 14 60 17 51 20 48 29 45 20 36 17 45 14Z" fill="#fff" opacity=".96"/><defs><linearGradient id="sparkleLogoGradient" x1="5" y1="6" x2="58" y2="58" gradientUnits="userSpaceOnUse"><stop stop-color="#9FCBFF"/><stop offset=".5" stop-color="#fff"/><stop offset="1" stop-color="#AFA6FF"/></linearGradient></defs></svg></div></div>
+  <div class="vn-brand-wordmark">Sparkle<span>.</span></div>
+  <div id="sparkleVirtualNumberLoaderTitle" class="vn-brand-loader-title">Preparing your number services</div>
+  <div id="sparkleVirtualNumberLoaderSub" class="vn-brand-loader-sub">Checking live availability securely</div>
+  <div class="vn-brand-loader-track"><span></span></div>
+ </div>
+</div>
+<div id="numberCatalogPanel" class="service-page vn-form">
     <div id="numberServiceStep">
       <div class="vn-section-head"><div><span class="vn-label">STEP 01</span><h3>Select a service</h3><p>Choose the app that will send your verification SMS.</p></div><span class="vn-section-icon">⌕</span></div>
       <label class="vn-sr" for="numberAppSearch">Search apps and services</label><div class="vn-search"><span>⌕</span><input id="numberAppSearch" type="search" placeholder="Search Facebook, WhatsApp, Google…" oninput="filterNumberApps()" autocomplete="off" aria-label="Search apps and services"><small>SEARCH</small></div>
@@ -3308,6 +3329,7 @@ support@sparkle.com
       <div id="numberServiceCards" class="sparkle-number-service-list vn-services" aria-label="Choose a verification service"><div class="data-empty">Loading available services…</div></div>
       <button id="numberServiceShowAll" class="vn-show-all" type="button" onclick="toggleNumberServices()" style="display:none">Show all services</button>
       <div class="vn-note"><span>ⓘ</span><p>Prices depend on your selected country and operator. No wallet debit happens at this step.</p></div>
+      <button id="numberContinueServiceButton" class="btn primary full vn-primary" type="button" onclick="continueWithSelectedNumberService()" disabled>Choose a service to continue <b>→</b></button>
     </div>
     <div id="numberCountryStep" style="display:none">
       <div class="number-step-summary vn-selected"><span class="vn-selected-icon">✓</span><div><small>SELECTED SERVICE</small><strong id="numberSelectedServiceName">—</strong></div><button type="button" onclick="editNumberService()">Change</button></div>
@@ -5941,6 +5963,29 @@ let numberSelectionStep = "service";
 let numberServicesExpanded = false;
 let numberOperatorsLoadSequence = 0;
 let numberServiceCountriesLoadSequence = 0;
+let sparkleVirtualNumberLoaderDepth=0;
+let sparkleVirtualNumberLoaderTimer=null;
+function showSparkleVirtualNumberLoader(title,sub){
+ const overlay=document.getElementById("sparkleVirtualNumberLoader");
+ if(!overlay)return;
+ sparkleVirtualNumberLoaderDepth++;
+ if(sparkleVirtualNumberLoaderTimer){clearTimeout(sparkleVirtualNumberLoaderTimer);sparkleVirtualNumberLoaderTimer=null;}
+ const titleEl=document.getElementById("sparkleVirtualNumberLoaderTitle"),subEl=document.getElementById("sparkleVirtualNumberLoaderSub");
+ if(titleEl)titleEl.textContent=title||"Preparing your number services";
+ if(subEl)subEl.textContent=sub||"Checking live availability securely";
+ overlay.style.display="flex";overlay.setAttribute("aria-hidden","false");
+ document.body.style.overflow="hidden";
+}
+function hideSparkleVirtualNumberLoader(){
+ sparkleVirtualNumberLoaderDepth=Math.max(0,sparkleVirtualNumberLoaderDepth-1);
+ if(sparkleVirtualNumberLoaderDepth>0)return;
+ sparkleVirtualNumberLoaderTimer=setTimeout(()=>{
+  const overlay=document.getElementById("sparkleVirtualNumberLoader");
+  if(overlay){overlay.style.display="none";overlay.setAttribute("aria-hidden","true");}
+  document.body.style.overflow="";
+  sparkleVirtualNumberLoaderTimer=null;
+ },420);
+}
 function updateNumberSelectionStep(step){
  if(!["service","country","operator"].includes(step))step="service";
  const code=document.getElementById("numberAppSelect")?.value||"",service=numberServicesCache.find(x=>x.code===code);
@@ -5974,15 +6019,22 @@ function editNumberCountry(){
  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Tap Continue to load operators for this country.";
  resetNumberPriceForStep("");updateNumberSelectionStep("country");
 }
-function continueWithSelectedNumberCountry(){
+async function continueWithSelectedNumberCountry(){
  if(numberPurchaseInProgress)return;
  const serviceCode=document.getElementById("numberAppSelect")?.value||"",service=numberServicesCache.find(x=>x.code===serviceCode);
  if(!serviceCode||!service){updateNumberSelectionStep("service");return;}
- if(service.countryAvailabilityLoaded!==true){void loadCountriesForNumberService(serviceCode);return;}
- if(!Array.isArray(service.availableCountries)||!service.availableCountries.length){alert("This service has no verified country availability right now. Please choose another service or try again shortly.");return;}
+ if(service.countryAvailabilityLoaded!==true||!Array.isArray(service.availableCountries)||!service.availableCountries.length){alert("This service's country availability is not confirmed yet. Retry or choose another service.");return;}
  const countryCode=String(document.getElementById("numberCountrySelect")?.value||"us").toLowerCase();
  if(!service.availableCountries.includes(countryCode)){alert("Choose a country that currently supports this service.");return;}
- resetNumberPriceForStep("");updateNumberSelectionStep("operator");void loadNumberOperators("");
+ const button=document.getElementById("numberContinueCountryButton");
+ if(button){button.disabled=true;button.textContent="Loading operators…";}
+ showSparkleVirtualNumberLoader("Loading operators","Finding live operators and their individual naira prices");
+ try{
+  resetNumberPriceForStep("");updateNumberSelectionStep("operator");await loadNumberOperators("");
+ }finally{
+  hideSparkleVirtualNumberLoader();
+  if(button){button.disabled=false;button.textContent="Continue to operators →";}
+ }
 }
 
 let numberCountryPickerOpen = false;
@@ -6063,10 +6115,23 @@ function chooseNumberService(code){
  const select=document.getElementById("numberAppSelect"),service=numberServicesCache.find(x=>x.code===code);if(!select||!service||numberPurchaseInProgress)return;
  select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";
  service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=false;service.availableCountries=[];
- renderNumberCountries();renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
+ numberServiceCountriesLoadSequence++;numberOperatorsLoadSequence++;numberOperatorsCache=[];
  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Choose a country that supports this service, then continue to compare operator prices.";
- resetNumberPriceForStep("");updateNumberSelectionStep("country");void loadCountriesForNumberService(code);
+ const next=document.getElementById("numberContinueServiceButton");if(next){next.disabled=false;next.textContent="Continue to choose country →";}
+ resetNumberPriceForStep("");renderNumberCountries();renderNumberApps(numberServicesCache);updateNumberSelectionStep("service");
+}
+async function continueWithSelectedNumberService(){
+ if(numberPurchaseInProgress)return;
+ const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+ if(!serviceCode){const status=document.getElementById("numberServiceStatus");if(status)status.textContent="Select a service before continuing.";return;}
+ showSparkleVirtualNumberLoader("Loading countries","Checking where this service is currently available");
+ try{
+  const service=numberServicesCache.find(x=>x.code===serviceCode);
+  if(service){service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=false;service.availableCountries=[];}
+  updateNumberSelectionStep("country");
+  await loadCountriesForNumberService(serviceCode);
+ }finally{hideSparkleVirtualNumberLoader();}
 }
 function renderNumberOperators(items,preferred=""){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;const rows=Array.isArray(items)?items:[];select.innerHTML='<option value="">Choose an operator</option>';
@@ -6171,6 +6236,7 @@ function onNumberCountryChange(){
 
 let numberCatalogLoadSequence = 0;
 async function loadNumberServices(){
+ showSparkleVirtualNumberLoader("Loading Virtual Number","Preparing the available services for you");
  const country=document.getElementById("numberCountrySelect")?.value||"us",seq=++numberCatalogLoadSequence,server=numberCurrentServerId;
  const select=document.getElementById("numberAppSelect"),status=document.getElementById("numberServiceStatus");if(!select)return;
  numberCurrentQuote=null;const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Review purchase";buy.style.opacity=".5";}
@@ -6182,8 +6248,8 @@ async function loadNumberServices(){
   const search=document.getElementById("numberAppSearch");if(search)search.value="";
   renderNumberApps(numberServicesCache);if(status)status.textContent=numberServicesCache.length?numberServicesCache.length+" services available · Search to find an app quickly.":"No services are currently listed. Refresh the catalogue or try again shortly.";
   const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
-  updateNumberSelectionStep("service");startNumberPriceAutoRefresh();
- }catch(error){numberServicesCache=[];select.innerHTML='<option value="">Could not load services</option>';renderNumberApps([]);if(status)status.textContent="Could not load services right now. "+String(error?.message||error);updateNumberSelectionStep("service");}
+  updateNumberSelectionStep("service");const next=document.getElementById("numberContinueServiceButton");if(next){next.disabled=true;next.textContent="Choose a service to continue →";}startNumberPriceAutoRefresh();
+ }catch(error){numberServicesCache=[];select.innerHTML='<option value="">Could not load services</option>';renderNumberApps([]);if(status)status.textContent="Could not load services right now. "+String(error?.message||error);updateNumberSelectionStep("service");}finally{hideSparkleVirtualNumberLoader();}
 }
 function startNumberPriceAutoRefresh(){
  if(numberPriceRefreshTimer)clearInterval(numberPriceRefreshTimer);
