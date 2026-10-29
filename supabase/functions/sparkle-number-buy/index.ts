@@ -62,7 +62,7 @@ function providerCountry(country: string): string {
 }
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
   const profile = profileByServer[serverId];
-  if (!profile || serverId !== "server1") throw problem("Use the live 5SIM number catalogue.", 400, "INVALID_SERVER");
+  if (!profile || serverId !== "server1") throw problem("Choose a valid Sparkle number option.", 400, "INVALID_SERVER");
   if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service)) throw problem("Choose a valid verification service.", 400, "INVALID_SERVICE");
   providerCountry(country);
   return profile;
