@@ -5745,10 +5745,13 @@ function normalizeNumberCountries(response){
     const nameKey=name.toLowerCase().trim().replace(/_/g,"-");
     const codeKey=code.toLowerCase().replace(/_/g,"-");
     const validIso2=/^[a-z]{2}$/.test(isoRaw)?isoRaw:"";
-    const flagCode=countryFlagCodes[codeKey]||countryFlagCodes[nameKey]||validIso2||isoAliases[isoRaw]||"";
-    const flag= /^[a-z]{2}$/.test(flagCode)
-      ? String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0)))
-      : "🌐";
+    const rawAlpha2=/^[a-z]{2}$/.test(codeKey)?codeKey:"";
+    const nameAlias=nameKey.replace(/_/g,"-").replace(/\\s+/g," ");
+    const expandedAliases={unitedstates:"us","united-states-of-america":"us","united states of america":"us",england:"gb",scotland:"gb",wales:"gb","northern-ireland":"gb","south korea":"kr","republic-of-korea":"kr","viet-nam":"vn","czech-republic":"cz","russian-federation":"ru","iran-islamic-republic-of":"ir","bolivia-plurinational-state-of":"bo","venezuela-bolivarian-republic-of":"ve","tanzania-united-republic-of":"tz","moldova-republic-of":"md","lao-peoples-democratic-republic":"la","syrian-arab-republic":"sy","brunei-darussalam":"bn","cape verde":"cv","ivory coast":"ci","cote d'ivoire":"ci","democratic-republic-of-the-congo":"cd","republic-of-the-congo":"cg","palestinian-territory":"ps","hong kong":"hk","macao":"mo","taiwan":"tw"};
+    const mappedName=countryFlagCodes[nameAlias]||countryFlagCodes[nameAlias.replace(/ /g,"-")]||expandedAliases[nameAlias]||expandedAliases[nameAlias.replace(/-/g," ")];
+    const flagCode=countryFlagCodes[codeKey]||mappedName||countryFlagCodes[nameKey]||validIso2||rawAlpha2||isoAliases[isoRaw]||"";
+    const suppliedFlag=String(item?.flag_emoji??item?.flagEmoji??item?.emoji??item?.flag??"").trim();
+    const flag=/^\\p{Regional_Indicator}{2}$/u.test(suppliedFlag)?suppliedFlag:(/^[a-z]{2}$/i.test(suppliedFlag)?String.fromCodePoint(...[...suppliedFlag.toUpperCase()].map(ch=>127397+ch.charCodeAt(0))):(/^[a-z]{2}$/.test(flagCode)?String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0))):"🌐"));
     const displayName=(codeKey==="usa"||codeKey==="us"||isoRaw==="usa"||nameKey==="usa"||nameKey==="us"||nameKey==="united states of america")?"United States"
       :(codeKey==="canada"||nameKey==="can"||nameKey==="ca")?"Canada":name;
     return {code,name:displayName,flag,dial:String(item?.dial||item?.dial_code||"")};
