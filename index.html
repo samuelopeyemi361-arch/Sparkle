@@ -6352,7 +6352,7 @@ async function loadNumberOperators(preferred){
   if(seq!==numberOperatorsLoadSequence||serviceCode!==(document.getElementById("numberAppSelect")?.value||"")||country!==(document.getElementById("numberCountrySelect")?.value||"us"))return;
   const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
   renderNumberOperators(numberOperatorsCache,preferred||"");if(!numberOperatorsCache.length)throw new Error("No operators are currently available for this service and country.");
-  const available=numberOperatorsCache.filter(x=>x.available!==false);const supplierBalanceBlocked=numberOperatorsCache.some(x=>x.available===false&&/balance/i.test(String(x.unavailable_reason||"")));if(status)status.textContent=available.length?available.length+" available option"+(available.length===1?"":"s")+" · Each operator has its own price.":supplierBalanceBlocked?"Supplier stock exists, but the supplier account needs more USD to fulfil these options. Sparkle customer wallets will not be charged.":"No operators currently have stock for this service and country.";
+  if(status)status.textContent=numberOperatorsCache.length+" operator option"+(numberOperatorsCache.length===1?"":"s")+" · Each operator has its own price. Select one to review.";
   updateNumberSelectionStep("operator");if(preferred&&select.value)await checkNumberPrice();else{if(result)result.textContent="";numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
  }catch(error){if(seq!==numberOperatorsLoadSequence)return;numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(cards)cards.innerHTML='<div class="data-empty">No operator offers are available right now.</div>';if(status)status.textContent="Could not load operator prices. "+String(error?.message||error);if(result)result.textContent="";if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
 }
@@ -6513,7 +6513,18 @@ async function checkNumberPrice(){
    serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:cleanPrice,network:String(quote.network||selected?.network||"")};
   if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price · '+escapeHtml(operatorLabel)+'</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+cleanPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the current total charged by Sparkle for the selected option. The price is checked again before checkout.</div></div>';
   if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
- }catch(error){if(result)result.textContent="Could not check price: "+String(error.message||error);if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}}
+ }catch(error){
+  const selected=numberOperatorsCache.find(x=>String(x.operator)===operator),cachedPrice=Number(selected?.selling_price_ngn);
+  if(Number.isFinite(cachedPrice)&&cachedPrice>0){
+    const selectedService=numberServicesCache.find(x=>x.code===serviceCode);
+    numberCurrentQuote={serviceCode,country,serverId:"server1",serverLabel:"Live number catalogue",operator,operatorLabel:String(selected?.operator_label||operator),serviceName:String(selectedService?.name||serviceCode),sellingPrice:Math.round(cachedPrice*100)/100,network:String(selectedService?.network||"")};
+    if(result)result.textContent="Service availability will be confirmed securely before payment.";
+    if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
+  }else{
+    if(result)result.textContent="Service unavailable. Please try again later.";
+    if(buy){buy.disabled=true;buy.textContent="Service unavailable";buy.style.opacity=".55";}
+  }
+}
 }
 function numberOrderStorageKey(userId){return "sparkle_number_active_order_"+String(userId||"");}
 async function saveNumberOrderSnapshot(order){
