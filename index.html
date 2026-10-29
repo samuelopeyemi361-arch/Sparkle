@@ -3403,7 +3403,7 @@ support@sparkle.com
 <div id="numberOrderCard" class="service-page vn-order-card" style="display:none"><div class="vn-order-card-head"><div><span class="vn-label">ORDER DETAILS</span><h2 id="numberOrderService">Verification service</h2></div><span id="numberOrderStatus" class="vn-order-status">Checking…</span></div>
 <div class="vn-phone-panel"><span>YOUR VIRTUAL NUMBER</span><strong id="numberOrderPhone">Waiting for number…</strong><small>Use this number on the service you selected.</small></div>
 <div class="vn-otp-panel"><div><span class="vn-label">VERIFICATION CODE</span><p>Latest SMS received</p><strong id="numberOrderOtp">Waiting for SMS…</strong></div><button id="numberCopyOtpButton" type="button" onclick="copyNumberOtp()" disabled>Waiting for code</button></div>
-<div class="vn-reference"><span>Order reference</span><strong id="numberOrderReference">—</strong></div><div id="numberOrderMessage" role="status" aria-live="polite" class="vn-order-message"></div><div id="numberAutoCheckHint" class="vn-auto-check-hint" role="status" aria-live="polite">✦ Sparkle checks for new SMS automatically every 10 seconds while this page is open. Tap “Check for SMS now” to check immediately.</div><div class="vn-order-actions"><button class="btn primary" type="button" onclick="checkNumberOrder()">↻ Check for SMS now</button><button class="btn" type="button" onclick="cancelNumberOrder()">Cancel order</button></div></div>
+<div class="vn-reference"><span>Order reference</span><strong id="numberOrderReference">—</strong></div><div id="numberOrderMessage" role="status" aria-live="polite" class="vn-order-message"></div><div id="numberAutoCheckHint" class="vn-auto-check-hint" role="status" aria-live="polite">✦ Sparkle checks for new SMS automatically every 5 seconds while this page is open. Tap “Check for SMS now” to check immediately.</div><div class="vn-order-actions"><button class="btn primary" type="button" onclick="checkNumberOrder()">↻ Check for SMS now</button><button class="btn" type="button" onclick="cancelNumberOrder()">Cancel order</button></div></div>
 <div class="vn-order-safety">🛡 <p><strong>Protect your verification code.</strong> Use it only on the service you requested. Sparkle will never ask you to share SMS codes with another person.</p></div><button class="vn-back vn-order-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">← Back to Virtual Number</button>
 </section>
 
@@ -6598,7 +6598,7 @@ function showNumberOrder(order,options={}){
       numberAutoCheckBusy=true;
       try{await checkNumberOrder({silent:true});}catch(e){console.warn("Sparkle automatic SMS order reconciliation:",e);}
       finally{numberAutoCheckBusy=false;}
-    },10000);
+    },5000);
   }
   const card=document.getElementById("numberOrderCard");if(!card)return;
   card.style.display="block";
