@@ -7,6 +7,7 @@ on:
     paths:
       - "supabase/functions/**"
       - "supabase/config.toml"
+      - ".github/workflows/deploy-functions.yml"
   workflow_dispatch:
 
 permissions:
@@ -35,5 +36,19 @@ jobs:
         with:
           version: latest
 
-      - name: Deploy Edge Functions
+      - name: Deploy active Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+
+      - name: Remove retired Fleexa function registrations
+        run: |
+          set -euo pipefail
+          for fn in \
+            sparkle-fleexa-buy \
+            sparkle-fleexa-cancel \
+            sparkle-fleexa-catalog \
+            sparkle-fleexa-check \
+            sparkle-fleexa-test
+          do
+            echo "Removing retired function: $fn"
+            supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_ID" --yes
+          done
