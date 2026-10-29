@@ -3387,10 +3387,15 @@ support@sparkle.com
   </div>
 </div>
 <div class="vn-support-grid"><div><i>🛡</i><strong>Secure checkout</strong><p>Confirm the exact price before approving payment.</p></div><div><i>↻</i><strong>Track your order</strong><p>Check your number and SMS code on the order screen.</p><button type="button" onclick="openNumberOrderPage()">View my order →</button></div></div>
-<div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:none"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><span>🔒 Private</span></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
+
+
+<section class="page" id="numberReviewPage">
+<div class="data-topbar vn-top"><button class="data-back" type="button" onclick="backFromNumberReview()" aria-label="Back to Virtual Number">‹</button><div><h1>Review your order</h1><p>Secure Virtual Number checkout</p></div><span class="vn-live"><i></i> PRIVATE</span></div>
+<div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:block"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><span>🔒 Private</span></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
 <div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
 <div id="numberReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><div class="vn-review-note">ⓘ <span>If an order is pending, check its status instead of purchasing again.</span></div>
 <button id="numberReviewConfirm" class="btn primary full vn-primary" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button><button class="btn full vn-secondary" type="button" onclick="backFromNumberReview()">Go back and edit</button><div id="numberReviewMessage" class="vn-review-message" role="status" aria-live="polite"></div></div>
+</section>
 </section>
 <section class="page" id="usNumberOrderPage">
 <div class="data-topbar vn-top"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()" aria-label="Back to virtual number purchase">‹</button><div><h1>My Virtual Number</h1><p>Number details and verification messages</p></div></div>
@@ -6613,6 +6618,45 @@ function showNumberOrder(order,options={}){
     if(normalizedStatus!=="success")numberCurrentQuote=null;
   }
 }
+function shareVirtualNumberLink(){
+ const service=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us",operator=document.getElementById("numberOperatorSelect")?.value||"";
+ const url=new URL("/us-number",window.location.origin);
+ if(service)url.searchParams.set("service",service);
+ if(country)url.searchParams.set("country",country);
+ if(operator)url.searchParams.set("operator",operator);
+ return url.toString();
+}
+async function openNumberReviewRoute(){
+ const params=new URLSearchParams(window.location.search),service=params.get("service"),country=params.get("country")||"us",operator=params.get("operator");
+ if(!service||!operator){showDashPage("smsotpPage",null);await loadNumberCountries();return;}
+ showDashPage("smsotpPage",null);
+ await loadNumberCountries();
+ const countrySelect=document.getElementById("numberCountrySelect");if(countrySelect&&Array.from(countrySelect.options).some(o=>o.value===country))countrySelect.value=country;
+ await loadNumberServices();
+ const serviceSelect=document.getElementById("numberAppSelect");if(serviceSelect&&Array.from(serviceSelect.options).some(o=>o.value===service))serviceSelect.value=service;
+ await loadNumberOperators(operator);
+ if(!numberOperatorsCache.some(x=>String(x.operator)===operator)){showDashPage("smsotpPage",null);return;}
+ const opSelect=document.getElementById("numberOperatorSelect");if(opSelect)opSelect.value=operator;
+ await checkNumberPrice();
+ if(numberCurrentQuote&&numberCurrentQuote.operator===operator){
+   showDashPage("numberReviewPage",null);
+   renderNumberReviewPage();
+ }
+}
+function renderNumberReviewPage(){
+ const quote=numberCurrentQuote;if(!quote)return;
+ const countryName=numberCountriesCache.find(c=>c.code===quote.country)?.name||quote.country.toUpperCase();
+ const total="₦"+quote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+ const serviceEl=document.getElementById("numberReviewService");if(serviceEl)serviceEl.textContent=quote.serviceName+" · "+countryName;
+ const opEl=document.getElementById("numberReviewServer");if(opEl)opEl.textContent=quote.operatorLabel||quote.operator;
+ const totalEl=document.getElementById("numberReviewTotal");if(totalEl)totalEl.textContent=total;
+ const grand=document.getElementById("numberReviewGrandTotal");if(grand)grand.textContent=total;
+ const balance=document.getElementById("numberReviewWalletBalance");if(balance)balance.textContent="Checking…";
+ const funds=document.getElementById("numberReviewFundsMessage");if(funds){funds.style.display="none";funds.textContent="";}
+ const message=document.getElementById("numberReviewMessage");if(message)message.textContent="";
+ const button=document.getElementById("numberReviewConfirm");if(button){button.disabled=true;button.textContent="Checking wallet balance…";}
+ sparkleCheckWalletReview(quote.sellingPrice,{balanceId:"numberReviewWalletBalance",messageId:"numberReviewFundsMessage",buttonId:"numberReviewConfirm",buttonText:"Buy Virtual Number"});
+}
 function buyNumberNumber(){
   const serviceCode=document.getElementById("numberAppSelect")?.value||"";
   const country=document.getElementById("numberCountrySelect")?.value||"us";
@@ -6634,15 +6678,16 @@ function buyNumberNumber(){
   const numberBalance=document.getElementById("numberReviewWalletBalance");if(numberBalance)numberBalance.textContent="Checking…";
   const numberFundsMessage=document.getElementById("numberReviewFundsMessage");if(numberFundsMessage){numberFundsMessage.style.display="none";numberFundsMessage.textContent="";}
   const numberContinue=document.getElementById("numberReviewConfirm");if(numberContinue){numberContinue.disabled=true;numberContinue.textContent="Checking wallet balance…";}
-  document.getElementById("numberCatalogPanel").style.display="none";
-  document.getElementById("numberReviewPanel").style.display="block";
-  sparkleCheckWalletReview(numberCurrentQuote.sellingPrice,{balanceId:"numberReviewWalletBalance",messageId:"numberReviewFundsMessage",buttonId:"numberReviewConfirm",buttonText:"Buy Virtual Number"});
-  window.scrollTo({top:0,behavior:"smooth"});
+  try{window.history.pushState({sparkleRoute:true},"","/us-number/review?service="+encodeURIComponent(serviceCode)+"&country="+encodeURIComponent(country)+"&operator="+encodeURIComponent(operator));}catch(_){}
+  showDashPage("numberReviewPage",null);
+  renderNumberReviewPage();
 }
 function backFromNumberReview(){
   if(numberPurchaseInProgress)return;
-  document.getElementById("numberReviewPanel").style.display="none";
-  document.getElementById("numberCatalogPanel").style.display="block";
+  const url=shareVirtualNumberLink();try{window.history.pushState({sparkleRoute:true},"",url);}catch(_){}
+  showDashPage("smsotpPage",null);
+  const panel=document.getElementById("numberReviewPanel");if(panel)panel.style.display="block";
+  const catalog=document.getElementById("numberCatalogPanel");if(catalog)catalog.style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
 }
 function confirmNumberReviewPurchase(){
@@ -9074,6 +9119,7 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
   const pageRoutes = {
     home: "/dashboard",
     smsotpPage: "/us-number",
+    numberReviewPage: "/us-number/review",
     usNumberOrderPage: "/us-number/orders",
     cryptoTradePage: "/crypto",
     transactionsPage: "/wallet/transactions",
@@ -9108,6 +9154,7 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
     "/dashboard": "home", "/wallet": "home",
     "/transactions": "transactionsPage", "/wallet/transactions": "transactionsPage", "/purchases": "transactionsPage",
     "/us-number/orders": "usNumberOrderPage",
+    "/us-number/review": "numberReviewPage",
     "/market": "marketPage", "/referrals": "earnPage", "/referrals/history": "earnPage",
     "/profile": "profilePage", "/settings": "profilePage",
     "/support": "helpSupportPage", "/contact": "helpSupportPage",
@@ -9272,6 +9319,7 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       }
       if (pageId) {
         showDashPage(pageId, null);
+        if (path === "/us-number/review") { void openNumberReviewRoute(); }
         if (path === "/terms") openLegal("terms");
         if (path === "/privacy-policy") openLegal("privacy");
       }
