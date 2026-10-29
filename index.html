@@ -2647,6 +2647,17 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 @media(max-width:370px){#smsotpPage .vn-hero{padding:17px 15px 14px}#smsotpPage .vn-hero-art{flex-basis:65px;transform:scale(.86);transform-origin:center right}#smsotpPage .vn-progress{gap:4px}#smsotpPage .vn-step-chip{padding:6px 5px;gap:4px}#smsotpPage .vn-step-chip b{font-size:9px}#smsotpPage .vn-step-chip span{width:17px;height:17px}#smsotpPage .sparkle-number-service-row{padding:9px 7px!important;gap:6px!important}#smsotpPage .sparkle-number-service-logo{width:30px!important;height:30px!important;flex-basis:30px}#smsotpPage .sparkle-number-service-name{font-size:11px!important}#smsotpPage .vn-operator-card{gap:7px;padding:10px 8px}#smsotpPage .vn-operator-price{font-size:12px}}
 @media(prefers-reduced-motion:reduce){#smsotpPage *,#usNumberOrderPage *{animation:none!important;transition:none!important}}
 </style>
+
+<style id="sparkle-compact-country-picker-styles">
+#numberCountryPickerPanel .vn-search{margin:0 0 8px;background:#fff}
+#numberCountryCards.sparkle-number-country-list{display:grid;grid-template-columns:1fr;gap:4px;margin:0;max-height:min(36vh,250px);overflow-y:auto;overscroll-behavior:contain;border-radius:10px;background:transparent;scrollbar-width:thin}
+#numberCountryCards .sparkle-number-country-row{min-height:48px;padding:8px 10px;gap:8px;border:1px solid #e8edf5;border-radius:10px;background:#fff}
+#numberCountryCards .sparkle-number-country-flag{width:30px;min-width:30px;font-size:22px}
+#numberCountryCards .sparkle-number-country-name{font-size:12px;font-weight:800;letter-spacing:0}
+#numberCountryCards .sparkle-number-row-check{font-size:15px}
+#numberCountryPickerButton:focus-visible{outline:3px solid rgba(35,102,230,.18);outline-offset:2px}
+@media(max-width:380px){#numberCountryPickerButton{font-size:11px!important}#numberCountryPickerPanel{padding:6px!important}}
+</style>
 </head>
 
 <body>
@@ -3302,9 +3313,17 @@ support@sparkle.com
       <div class="number-step-summary vn-selected"><span class="vn-selected-icon">✓</span><div><small>SELECTED SERVICE</small><strong id="numberSelectedServiceName">—</strong></div><button type="button" onclick="editNumberService()">Change</button></div>
       <div id="numberCountryPicker">
         <div class="vn-section-head"><div><span class="vn-label">STEP 02</span><h3>Choose a country</h3><p>Select where your number should be registered.</p></div><span class="vn-section-icon">◎</span></div>
-        <label for="numberCountrySelect">Available countries</label><select id="numberCountrySelect" onchange="onNumberCountryChange()"><option value="us">🇺🇸 United States</option></select>
-        <div id="numberCountryCards" class="sparkle-number-country-list" style="display:none" aria-label="Choose a country"></div>
-        <div class="vn-country-help">🌐 <span>Only the selected country is shown. Operators load when you continue.</span></div>
+        <label for="numberCountryPickerButton">Available countries</label>
+        <button id="numberCountryPickerButton" type="button" aria-haspopup="true" aria-expanded="false" aria-controls="numberCountryPickerPanel" onclick="toggleNumberCountryPicker()" style="width:100%;min-height:47px;padding:11px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;border:1px solid #dfe6f1;border-radius:12px;background:#fff;color:#172944;font:inherit;font-size:12px;font-weight:850;text-align:left;cursor:pointer">
+          <span id="numberCountryPickerSelected">🇺🇸 United States</span><span id="numberCountryPickerAction" style="color:#245dd5;font-size:10px;white-space:nowrap">Change country⌄</span>
+        </button>
+        <select id="numberCountrySelect" class="number-screenreader-only" aria-label="Selected country" tabindex="-1" onchange="onNumberCountryChange()"><option value="us">United States</option></select>
+        <div id="numberCountryPickerPanel" style="display:none;margin-top:8px;padding:8px;border:1px solid #e3e9f4;border-radius:14px;background:#f8faff">
+          <div class="vn-search"><span>⌕</span><input id="numberCountrySearch" type="search" placeholder="Search countries…" oninput="filterNumberCountries()" autocomplete="off" aria-label="Search countries"><small>SEARCH</small></div>
+          <div id="numberCountryCards" class="sparkle-number-country-list" aria-label="Choose a country"></div>
+          <div id="numberCountryEmpty" style="display:none;padding:12px;color:#71819a;font-size:11px;text-align:center">No matching country. Try another search.</div>
+        </div>
+        <div class="vn-country-help">🌐 <span>Search and select one country at a time. Operators load when you continue.</span></div>
         <button id="numberContinueCountryButton" class="btn primary full vn-primary" type="button" onclick="continueWithSelectedNumberCountry()">Continue to operators <b>→</b></button><button type="button" class="vn-back" onclick="editNumberService()">← Back to services</button>
       </div>
       <div id="numberCountryChosenSummary" class="number-step-summary vn-selected" style="display:none"><span class="vn-selected-icon">◎</span><div><small>SELECTED COUNTRY</small><strong id="numberChosenCountryName">—</strong></div><button type="button" onclick="editNumberCountry()">Change</button></div>
@@ -5959,11 +5978,61 @@ function continueWithSelectedNumberCountry(){
  resetNumberPriceForStep("");updateNumberSelectionStep("operator");void loadNumberOperators("");
 }
 
+let numberCountryPickerOpen = false;
+function numberCountryLabel(country){
+ return country ? ((country.flag ? country.flag+" " : "")+String(country.name||country.code||"Country")) : "🇺🇸 United States";
+}
+function toggleNumberCountryPicker(force){
+ if(numberPurchaseInProgress)return;
+ const panel=document.getElementById("numberCountryPickerPanel"),button=document.getElementById("numberCountryPickerButton"),search=document.getElementById("numberCountrySearch");
+ if(!panel||!button)return;
+ numberCountryPickerOpen=typeof force==="boolean"?force:!numberCountryPickerOpen;
+ panel.style.display=numberCountryPickerOpen?"block":"none";
+ button.setAttribute("aria-expanded",numberCountryPickerOpen?"true":"false");
+ if(numberCountryPickerOpen){
+  if(search)search.value="";
+  filterNumberCountries();
+  if(search)setTimeout(()=>search.focus(),30);
+ }
+}
+function filterNumberCountries(){
+ const list=document.getElementById("numberCountryCards"),empty=document.getElementById("numberCountryEmpty");
+ const select=document.getElementById("numberCountrySelect"),search=String(document.getElementById("numberCountrySearch")?.value||"").trim().toLowerCase();
+ if(!list)return;
+ const chosen=select?.value||"us";
+ const rows=numberCountriesCache.filter(c=>{
+  const hay=[c.name,c.code,c.iso_code,c.dial].map(x=>String(x||"").toLowerCase()).join(" ");
+  return !search||hay.includes(search);
+ });
+ list.innerHTML=rows.map(c=>{
+  const selected=String(c.code)===String(chosen);
+  const label=numberCountryLabel(c);
+  return '<button type="button" class="sparkle-number-country-row '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" onclick="selectNumberCountry(\''+escapeHtml(c.code)+'\')"><span class="sparkle-number-country-flag">'+escapeHtml(c.flag||"🌐")+'</span><span class="sparkle-number-country-name">'+escapeHtml(c.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">'+(selected?"✓":"")+'</span></button>';
+ }).join("");
+ if(empty)empty.style.display=rows.length?"none":"block";
+}
+function selectNumberCountry(code){
+ if(numberPurchaseInProgress)return;
+ const country=numberCountriesCache.find(c=>String(c.code)===String(code)),select=document.getElementById("numberCountrySelect");
+ if(!country||!select)return;
+ select.value=country.code;
+ const selected=document.getElementById("numberCountryPickerSelected");
+ if(selected)selected.textContent=numberCountryLabel(country);
+ toggleNumberCountryPicker(false);
+ const search=document.getElementById("numberCountrySearch");if(search)search.value="";
+ filterNumberCountries();
+ onNumberCountryChange();
+}
 function renderNumberCountries(){
  const select=document.getElementById("numberCountrySelect");if(!select)return;const current=select.value||"us";
- select.innerHTML=numberCountriesCache.map(c=>'<option value="'+escapeHtml(c.code)+'">'+escapeHtml((c.flag?c.flag+" ":"")+c.name)+'</option>').join("");
+ select.innerHTML=numberCountriesCache.map(c=>'<option value="'+escapeHtml(c.code)+'">'+escapeHtml(numberCountryLabel(c))+'</option>').join("");
  select.value=numberCountriesCache.some(c=>c.code===current)?current:(numberCountriesCache.some(c=>c.code==="us")?"us":numberCountriesCache[0]?.code||"us");
- const list=document.getElementById("numberCountryCards");if(list){list.style.display="none";list.innerHTML="";}
+ const chosen=numberCountriesCache.find(c=>c.code===select.value);
+ const selected=document.getElementById("numberCountryPickerSelected");if(selected)selected.textContent=numberCountryLabel(chosen);
+ const panel=document.getElementById("numberCountryPickerPanel"),button=document.getElementById("numberCountryPickerButton");
+ if(panel)panel.style.display=numberCountryPickerOpen?"block":"none";
+ if(button)button.setAttribute("aria-expanded",numberCountryPickerOpen?"true":"false");
+ filterNumberCountries();
 }
 
 function renderNumberApps(items){
