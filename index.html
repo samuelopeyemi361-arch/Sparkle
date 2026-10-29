@@ -3391,7 +3391,7 @@ support@sparkle.com
 
 <section class="page" id="numberReviewPage">
 <div class="data-topbar vn-top"><button class="data-back" type="button" onclick="backFromNumberReview()" aria-label="Back to Virtual Number">‹</button><div><h1>Review your order</h1><p>Secure Virtual Number checkout</p></div><span class="vn-live"><i></i> PRIVATE</span></div>
-<div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:block"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><span>🔒 Private</span></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
+<div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:block"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><button type="button" class="vn-back" style="width:auto;margin:0;padding:8px 10px;border:1px solid #dce5f6;border-radius:10px" onclick="copyNumberReviewLink()">Share link ↗</button></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
 <div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
 <div id="numberReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><div class="vn-review-note">ⓘ <span>If an order is pending, check its status instead of purchasing again.</span></div>
 <button id="numberReviewConfirm" class="btn primary full vn-primary" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button><button class="btn full vn-secondary" type="button" onclick="backFromNumberReview()">Go back and edit</button><div id="numberReviewMessage" class="vn-review-message" role="status" aria-live="polite"></div></div>
@@ -6618,6 +6618,29 @@ function showNumberOrder(order,options={}){
     if(normalizedStatus!=="success")numberCurrentQuote=null;
   }
 }
+function currentNumberReviewLink(){
+ const quote=numberCurrentQuote;
+ const params=new URLSearchParams();
+ if(quote?.serviceCode)params.set("service",quote.serviceCode);
+ if(quote?.country)params.set("country",quote.country);
+ if(quote?.operator)params.set("operator",quote.operator);
+ return window.location.origin+"/us-number/review?"+params.toString();
+}
+async function copyNumberReviewLink(){
+ const url=currentNumberReviewLink();
+ try{await navigator.clipboard.writeText(url);alert("Shareable Sparkle Virtual Number link copied.");}
+ catch(_){window.prompt("Copy this Sparkle link",url);}
+}
+async function openNumberCategoryRoute(){
+ const params=new URLSearchParams(window.location.search),service=params.get("service"),country=params.get("country")||"us",operator=params.get("operator");
+ await loadNumberCountries();
+ const cs=document.getElementById("numberCountrySelect");if(cs&&Array.from(cs.options).some(o=>o.value===country))cs.value=country;
+ if(service){
+   await loadNumberServices();
+   const ss=document.getElementById("numberAppSelect");if(ss&&Array.from(ss.options).some(o=>o.value===service)){ss.value=service;renderNumberApps(numberServicesCache);updateNumberSelectionStep("country");}
+   if(operator&&ss?.value===service){await loadNumberOperators(operator);if(numberCurrentQuote)renderNumberOperators(numberOperatorsCache,operator);}
+ }
+}
 function shareVirtualNumberLink(){
  const service=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us",operator=document.getElementById("numberOperatorSelect")?.value||"";
  const url=new URL("/us-number",window.location.origin);
@@ -6678,8 +6701,8 @@ function buyNumberNumber(){
   const numberBalance=document.getElementById("numberReviewWalletBalance");if(numberBalance)numberBalance.textContent="Checking…";
   const numberFundsMessage=document.getElementById("numberReviewFundsMessage");if(numberFundsMessage){numberFundsMessage.style.display="none";numberFundsMessage.textContent="";}
   const numberContinue=document.getElementById("numberReviewConfirm");if(numberContinue){numberContinue.disabled=true;numberContinue.textContent="Checking wallet balance…";}
-  try{window.history.pushState({sparkleRoute:true},"","/us-number/review?service="+encodeURIComponent(serviceCode)+"&country="+encodeURIComponent(country)+"&operator="+encodeURIComponent(operator));}catch(_){}
   showDashPage("numberReviewPage",null);
+  try{window.history.pushState({sparkleRoute:true},"","/us-number/review?service="+encodeURIComponent(serviceCode)+"&country="+encodeURIComponent(country)+"&operator="+encodeURIComponent(operator));}catch(_){}
   renderNumberReviewPage();
 }
 function backFromNumberReview(){
@@ -9304,6 +9327,7 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       }
       if (service) {
         openServicePage(service);
+        if(path==="/us-number"&&new URLSearchParams(window.location.search).has("service"))void openNumberCategoryRoute();
         return;
       }
       if (transactionMatch) {
