@@ -62,7 +62,7 @@ function providerCountry(country: string): string {
 }
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
   const profile = profileByServer[serverId];
-  if (!profile || serverId !== "server1") throw problem("Use the live 5SIM number catalogue.", 400, "INVALID_SERVER");
+  if (!profile || serverId !== "server1") throw problem("The live number catalogue is currently unavailable.", 400, "INVALID_SERVER");
   if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service)) throw problem("Choose a valid verification service.", 400, "INVALID_SERVICE");
   providerCountry(country);
   return profile;
@@ -233,31 +233,51 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
   if(automatic)return automatic;
   const cheapest=[...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
   if(cheapest)return cheapest;
-  throw problem("The supplier account balance is too low to buy this service right now. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
+  throw problem("This number option is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
+ }
+ if(requestedOperator==="smart"){
+  // Offers are ordered by delivery rate, then price and stock. Prefer a named operator
+  // so the quote and eventual purchase use the exact same option.
+  const best=affordable.find(x=>x.operator.toLowerCase()!=="any");
+  if(best)return best;
+  const automatic=affordable.find(x=>x.operator.toLowerCase()==="any");
+  if(automatic)return automatic;
+  throw problem("This number option is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  }
  const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!chosen)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
- if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable because the supplier account cannot cover its USD price. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
+ if(!chosen)throw problem("That operator is no longer available. Choose another operator and check the price again.",409,"OPERATOR_UNAVAILABLE");
+ if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  return chosen;
 }
 async function getCatalogServices(country:string):Promise<any[]>{
  const pc=providerCountry(country);
- // Use 5SIM's product list for service discovery. Do not make the service picker
- // depend on FX conversion; conversion is only required when operator prices load.
  const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
- const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- const items:any[]=[];
- for(const [code,raw] of Object.entries(root||{})){
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code)||!raw||typeof raw!=="object")continue;
-  const product:any=raw;
-  const category=asText(product.Category??product.category??"activation").toLowerCase();
-  if(category&&category!=="activation")continue;
-  const stock=Number(product.Qty??product.qty??product.quantity??product.count??product.Count??0);
-  if(!Number.isFinite(stock)||stock<=0)continue;
-  items.push({code,name:serviceDisplayName(code),country,network:"5SIM",stock});
+ let root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
+ if(!Array.isArray(root)&&root&&typeof root==="object"){
+  const wrapped=root.products??root.Products??root.items??root.Items;
+  if(wrapped&&(Array.isArray(wrapped)||typeof wrapped==="object"))root=wrapped;
  }
- return items.sort((a,b)=>a.name.localeCompare(b.name));
+ const entries:Array<[string,any]>=Array.isArray(root)
+  ?root.map((item:any,index:number)=>[asText(item?.product??item?.Product??item?.code??item?.Code??item?.slug??item?.name??item?.Name??("service-"+index)),item])
+  :Object.entries(root||{});
+ const items:any[]=[];
+ for(const [rawCode,raw] of entries){
+  const code=asText(rawCode).toLowerCase();
+  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(code)||!raw||typeof raw!=="object")continue;
+  const product:any=raw;
+  const categoryRaw=product.Category??product.category??product.type??product.Type;
+  const category=typeof categoryRaw==="string"?categoryRaw.trim().toLowerCase():"";
+  if(category&&category!=="activation")continue;
+  const stockRaw=product.Qty??product.qty??product.quantity??product.count??product.Count;
+  const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
+  const stock=hasStock?Number(stockRaw):null;
+  if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
+  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null});
+ }
+ const unique=new Map<string,any>();
+ for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
+ return [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
 async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
  const profile=validateRoute(serverId,country,service);
@@ -335,9 +355,9 @@ Deno.serve(async (req:Request)=>{
    const automatic=affordable.find(x=>x.operator.toLowerCase()==="any")||
      [...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0]||
      [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
-   const automaticRow={operator:"any",operator_label:"Automatic · price capped",selling_price_ngn:money(automatic.providerCostNgn*1.75),stock:automatic.count,rate:automatic.rate,available:automatic.usd<=automatic.providerBalanceUsd};
+   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,available:automatic.usd<=automatic.providerBalanceUsd};
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>({
-     operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*1.75),stock:x.count,rate:x.rate,available:x.usd<=x.providerBalanceUsd
+     operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,available:x.usd<=x.providerBalanceUsd
    }));
    return reply({success:true,data:{country,service,currency:"NGN",operators:[automaticRow,...specific]}});
   }
