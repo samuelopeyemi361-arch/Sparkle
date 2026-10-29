@@ -5734,8 +5734,8 @@ function normalizeNumberCountries(response){
     const flag= /^[a-z]{2}$/.test(flagCode)
       ? String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0)))
       : "🌐";
-    const displayName=(codeKey==="usa"||isoRaw==="usa"||nameKey==="usa"||nameKey==="united states of america")?"United States"
-      :(codeKey==="canada"||nameKey==="can")?"Canada":name;
+    const displayName=(codeKey==="usa"||codeKey==="us"||isoRaw==="usa"||nameKey==="usa"||nameKey==="us"||nameKey==="united states of america")?"United States"
+      :(codeKey==="canada"||nameKey==="can"||nameKey==="ca")?"Canada":name;
     return {code,name:displayName,flag,dial:String(item?.dial||item?.dial_code||"")};
   }).filter(Boolean);
   // Keep the requested US option usable even if the provider country list omits it.
