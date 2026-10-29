@@ -1253,9 +1253,7 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .sparkle-number-country-flag{width:38px;min-width:38px;text-align:center;font-size:29px;line-height:1.1}
 .sparkle-number-country-name,.sparkle-number-service-name{font-size:20px;font-weight:800;letter-spacing:-.35px;line-height:1.25}
 .sparkle-number-service-logo{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:50%;font-size:19px;font-weight:900;color:#fff;background:linear-gradient(145deg,#1687ee,#1455bc);box-shadow:0 2px 5px #163d6c22}.sparkle-number-service-logo.has-brand-logo{background:#fff!important;border:1px solid #e8edf5;overflow:hidden}.sparkle-number-brand-image{display:block;width:23px;height:23px;object-fit:contain}.sparkle-number-brand-fallback{place-items:center;width:100%;height:100%;font-size:14px;font-weight:950;color:#3159a8}
-.sparkle-number-service-row:nth-child(4n+2) .sparkle-number-service-logo{background:linear-gradient(145deg,#30a5ff,#0871cc)}
-.sparkle-number-service-row:nth-child(4n+3) .sparkle-number-service-logo{background:linear-gradient(145deg,#6c77f8,#4942ba)}
-.sparkle-number-service-row:nth-child(4n+4) .sparkle-number-service-logo{background:linear-gradient(145deg,#23bda0,#07856c)}
+/* Virtual Number service logos stay on a clean neutral background, including fallback marks. */
 .sparkle-number-row-check{margin-left:auto;color:#1685e8;font-size:22px;font-weight:900;opacity:0}
 .is-selected .sparkle-number-row-check{opacity:1}
 @media(max-width:480px){.sparkle-number-country-row,.sparkle-number-service-row{min-height:68px;padding:11px 13px;gap:11px}.sparkle-number-country-name,.sparkle-number-service-name{font-size:19px}}
@@ -6266,9 +6264,12 @@ function renderNumberApps(items){
   const q=(document.getElementById("numberAppSearch")?.value||"").trim();let visible=Array.isArray(items)?items:[];
   if(!numberServicesExpanded&&!q&&visible.length>8){const first=visible.slice(0,8),selected=visible.find(x=>x.code===select.value);visible=selected&&!first.some(x=>x.code===selected.code)?[selected,...first.slice(0,7)]:first;}
   list.innerHTML=visible.length?visible.map(item=>{
-   const chosen=item.code===select.value,brand=brandFor(item.name),initial=String(item.name||"•").trim().charAt(0).toUpperCase()||"•";
-   const logo=brand?'<img class="sparkle-number-brand-image" src="https://cdn.simpleicons.org/'+brand.slug+'/'+brand.color+'" data-fallback="https://www.google.com/s2/favicons?domain='+encodeURIComponent(brand.domain)+'&sz=64" alt="'+escapeHtml(item.name)+' logo" loading="lazy" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=\'\';}else{this.style.display=\'none\';}">':"";
-   return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')">'+(brand?'<span class="sparkle-number-service-logo has-brand-logo" aria-hidden="true">'+logo+'</span>':"")+'<span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';
+   const chosen=item.code===select.value,brand=brandFor(item.name+" "+item.code),initial=String(item.name||item.code||"•").trim().replace(/[^\\p{L}\\p{N}]/gu,"").charAt(0).toUpperCase()||"•";
+   const fallbackDomain=String(item.code||item.name||"").toLowerCase().replace(/[^a-z0-9-]/g,"").replace(/^-+|-+$/g,"");
+   const firstLogo=brand?"https://cdn.simpleicons.org/"+brand.slug+"/"+brand.color:"https://www.google.com/s2/favicons?domain="+encodeURIComponent(fallbackDomain+".com")+"&sz=64";
+   const secondLogo=brand?"https://www.google.com/s2/favicons?domain="+encodeURIComponent(brand.domain)+"&sz=64":"https://www.google.com/s2/favicons?domain="+encodeURIComponent(fallbackDomain+".net")+"&sz=64";
+   const logo='<span class="sparkle-number-service-logo has-brand-logo" aria-hidden="true"><img class="sparkle-number-brand-image" src="'+firstLogo+'" data-fallback="'+secondLogo+'" data-initial="'+escapeHtml(initial)+'" alt="" loading="lazy" onerror="if(this.dataset.fallback&&this.src!==this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=\'\';}else{const t=document.createElement(\'span\');t.className=\'sparkle-number-brand-fallback\';t.textContent=this.dataset.initial||\'•\';this.replaceWith(t);}"></span>';
+   return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')">'+logo+'<span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';
   }).join(""):'<div class="data-empty">No matching services. Try a shorter search.</div>';
 const more=document.getElementById("numberServiceShowAll");if(more){more.style.display=!q&&items.length>8?"flex":"none";more.textContent=numberServicesExpanded?"Show fewer services":"Show all services ("+items.length+")";more.setAttribute("aria-expanded",String(numberServicesExpanded));}
 }
