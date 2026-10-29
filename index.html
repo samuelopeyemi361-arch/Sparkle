@@ -6264,7 +6264,7 @@ function renderNumberApps(items){
   const q=(document.getElementById("numberAppSearch")?.value||"").trim();let visible=Array.isArray(items)?items:[];
   if(!numberServicesExpanded&&!q&&visible.length>8){const first=visible.slice(0,8),selected=visible.find(x=>x.code===select.value);visible=selected&&!first.some(x=>x.code===selected.code)?[selected,...first.slice(0,7)]:first;}
   list.innerHTML=visible.length?visible.map(item=>{
-   const chosen=item.code===select.value,brand=brandFor(item.name+" "+item.code),initial=String(item.name||item.code||"•").trim().replace(/[^\\p{L}\\p{N}]/gu,"").charAt(0).toUpperCase()||"•";
+   const chosen=item.code===select.value,brand=brandFor(item.name+" "+item.code),initial=String(item.name||item.code||"•").trim().replace(/[^a-z0-9]/gi,"").charAt(0).toUpperCase()||"•";
    const fallbackDomain=String(item.code||item.name||"").toLowerCase().replace(/[^a-z0-9-]/g,"").replace(/^-+|-+$/g,"");
    const firstLogo=brand?"https://cdn.simpleicons.org/"+brand.slug+"/"+brand.color:"https://www.google.com/s2/favicons?domain="+encodeURIComponent(fallbackDomain+".com")+"&sz=64";
    const secondLogo=brand?"https://www.google.com/s2/favicons?domain="+encodeURIComponent(brand.domain)+"&sz=64":"https://www.google.com/s2/favicons?domain="+encodeURIComponent(fallbackDomain+".net")+"&sz=64";
