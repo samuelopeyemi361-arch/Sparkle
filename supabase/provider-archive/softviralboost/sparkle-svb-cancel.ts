@@ -1,0 +1,16 @@
+import { createClient } from "npm:@supabase/supabase-js@2";
+const B="https://softviralboost.com.ng/api/v2",H={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const res=(x:unknown,s=200)=>new Response(JSON.stringify(x),{status:s,headers:{...H,"Content-Type":"application/json","Cache-Control":"no-store"}});
+Deno.serve(async(req)=>{if(req.method==="OPTIONS")return new Response("ok",{headers:H});if(req.method!=="POST")return res({success:false,message:"POST required"},405);
+const url=Deno.env.get("SUPABASE_URL")!,anon=Deno.env.get("SUPABASE_ANON_KEY")!,srv=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,key=Deno.env.get("SOFTVIRALBOOST_API_KEY"),auth=req.headers.get("Authorization");
+if(!auth?.startsWith("Bearer "))return res({success:false,message:"Sign in required"},401);if(!key)return res({success:false,message:"Number service is temporarily unavailable"},503);
+const u=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false}}),who=await u.auth.getUser();if(who.error||!who.data.user)return res({success:false,message:"Session expired"},401);
+const a=createClient(url,srv,{auth:{persistSession:false}}),b=await req.json().catch(()=>({})),id=String(b.request_id||"").trim();if(!id)return res({success:false,message:"Order reference required"},400);
+const q=await a.from("sparkle_sms_otp_orders").select("*").eq("user_id",who.data.user.id).eq("request_id",id).maybeSingle();if(q.error)return res({success:false,message:"Could not load order"},500);const o=q.data;if(!o)return res({success:false,message:"Order not found"},404);
+if(o.status==="success"||o.provider_response?.sms_code)return res({success:false,message:"Code already received; cancellation unavailable"},409);
+if(o.status==="cancelled")return res({success:true,status:"cancelled",message:"Already cancelled"});if(o.status==="failed")return res({success:false,status:"failed",message:"Already failed"},409);if(!o.provider_request_id)return res({success:false,status:"unknown",message:"Order details are not available yet; contact support"},409);
+try{const p=await fetch(B+"/order/"+encodeURIComponent(String(o.provider_request_id))+"/cancel",{method:"POST",headers:{Authorization:"Bearer "+key,Accept:"application/json","Content-Type":"application/json"},body:"{}",signal:AbortSignal.timeout(20000)}),d=await p.json().catch(()=>null);
+if(!p.ok||d?.status!=="success")return res({success:false,status:o.status,message:"Cancellation could not be confirmed; no refund has been recorded"},409);
+const f=await a.rpc("sparkle_finish_sms_otp",{p_request_id:id,p_status:"cancelled",p_provider_response:d,p_error:"Number order cancellation confirmed"});if(f.error||!f.data?.success)return res({success:false,status:"unknown",message:"Cancellation was confirmed but Sparkle could not finalize the refund; contact support and do not repurchase"},202);
+return res({success:true,status:"cancelled",request_id:id,refund_amount:Number(o.amount),message:"Cancellation confirmed and Sparkle refund recorded"});
+}catch{return res({success:false,status:"unknown",message:"Cancellation outcome uncertain; check status before retrying"},202);}});

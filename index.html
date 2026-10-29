@@ -1571,7 +1571,7 @@ body.dark-mode #profilePage .profile-logout-row{background:#2b1727;border-color:
 #dataPage .data-plan-price{font-size:14.5px;line-height:1.2;padding-top:7px}
 #dataPage .data-plan-service{font-size:9.5px;line-height:1.2;margin-top:4px}
 /* Medium, readable controls consistently across service pages */
-.service-page .form-input,.service-page .field input,.service-page .field select,.service-page select.form-select:not(#electricityType),.service-page textarea,.form-select:not(#electricityType),#svbCountrySelect,#svbAppSelect{min-height:44px;box-sizing:border-box;padding:11px 12px;font-size:14px;border-radius:11px}
+.service-page .form-input,.service-page .field input,.service-page .field select,.service-page select.form-select:not(#electricityType),.service-page textarea,.form-select:not(#electricityType),#numberCountrySelect,#numberAppSelect{min-height:44px;box-sizing:border-box;padding:11px 12px;font-size:14px;border-radius:11px}
 .form-field label,.field label{font-size:13px}
 #educationPage .education-service-card{padding:16px;border-radius:15px;min-height:92px}
 #educationPage .education-service-card h3{font-size:15px;line-height:1.3;margin-bottom:6px}
@@ -2937,7 +2937,7 @@ support@sparkle.com
     <nav class="sidebar-nav">
       <button class="nav-item active" onclick="showDashPage('home',this)"><span class="nav-icon">⌂</span>Home</button>
       <button class="nav-item" onclick="showDashPage('transactionsPage',this)"><span class="nav-icon">↔</span>Transactions</button>
-      <button class="nav-item" onclick="openSvbOrderPage(this)"><span class="nav-icon">📩</span>US Number Orders</button>
+      <button class="nav-item" onclick="openNumberOrderPage(this)"><span class="nav-icon">📩</span>US Number Orders</button>
       <button class="nav-item" onclick="showDashPage('marketPage',this)"><span class="nav-icon">🛍</span>Market</button>
       <button class="nav-item" onclick="showDashPage('earnPage',this)"><span class="nav-icon">₦</span>Earn</button>
       <button class="nav-item" onclick="showDashPage('profilePage',this)"><span class="nav-icon">◉</span>Profile</button>
@@ -3092,7 +3092,7 @@ support@sparkle.com
             <div class="service" role="button" tabindex="0" onclick="openServicePage('electricity')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('electricity')}"><span aria-hidden="true">💡</span><div>Electricity</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('cable')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('cable')}"><span aria-hidden="true">📺</span><div>Cable TV</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('rechargepin')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('rechargepin')}"><span aria-hidden="true">🎟️</span><div>Recharge PIN Printing</div></div>
-            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadSvbCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadSvbCountries()}"><span aria-hidden="true">🇺🇸</span><div>Buy US Number</div></div>
+            <div class="service" role="button" tabindex="0" onclick="openServicePage('smsotp');loadNumberCountries()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('smsotp');loadNumberCountries()}"><span aria-hidden="true">🇺🇸</span><div>Buy US Number</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('education')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('education')}"><span aria-hidden="true">🎓</span><div>Education PIN</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('bulkSms')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('bulkSms')}"><span aria-hidden="true">✉️</span><div>Bulk SMS</div></div>
             <div class="service" role="button" tabindex="0" onclick="openServicePage('socialMarket')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('socialMarket')}"><span aria-hidden="true">📣</span><div>Social Media Market</div></div>
@@ -3120,76 +3120,76 @@ support@sparkle.com
     <div class="sparkle-usn-hero-foot"><span><b>01</b> Choose server</span><span><b>02</b> Check live price</span><span><b>03</b> Confirm securely</span></div>
   </div>
   <div class="sparkle-usn-server-grid" role="group" aria-label="Choose a US Number server">
-    <button type="button" class="sparkle-usn-server-card is-selected" data-server-id="server1" onclick="selectSvbServer('server1')">
+    <button type="button" class="sparkle-usn-server-card is-selected" data-server-id="server1" onclick="selectNumberServer('server1')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">01</span><span class="sparkle-usn-selected-mark">✓</span></span>
       <strong>Server 1</strong><span class="sparkle-usn-server-name">USA &amp; Canada</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice1">Choose service</span>
+      <span class="sparkle-usn-server-price" id="numberServerPrice1">Choose service</span>
     </button>
-    <button type="button" class="sparkle-usn-server-card" data-server-id="server2" onclick="selectSvbServer('server2')">
+    <button type="button" class="sparkle-usn-server-card" data-server-id="server2" onclick="selectNumberServer('server2')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">02</span><span class="sparkle-usn-selected-mark">✓</span></span>
       <strong>Server 2</strong><span class="sparkle-usn-server-name">Premium Service</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice2">Choose service</span>
+      <span class="sparkle-usn-server-price" id="numberServerPrice2">Choose service</span>
     </button>
-    <button type="button" class="sparkle-usn-server-card" data-server-id="server3" onclick="selectSvbServer('server3')">
+    <button type="button" class="sparkle-usn-server-card" data-server-id="server3" onclick="selectNumberServer('server3')">
       <span class="sparkle-usn-card-top"><span class="sparkle-usn-server-icon">03</span><span class="sparkle-usn-selected-mark">✓</span></span>
       <strong>Server 3</strong><span class="sparkle-usn-server-name">USA WhatsApp Only</span>
-      <span class="sparkle-usn-server-price" id="svbServerPrice3">Choose service</span>
+      <span class="sparkle-usn-server-price" id="numberServerPrice3">Choose service</span>
     </button>
   </div>
-  <div id="svbServer2AvailabilityNotice" role="status" style="margin:10px 0;padding:11px 13px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:12px;font-size:12px;line-height:1.5">Server 2 is temporarily unavailable while its live catalogue and prices are being verified. No purchase will be charged through this option.</div>
-  <div id="svbCatalogPanel" class="service-page sparkle-usn-form">
+  <div id="numberServer2AvailabilityNotice" role="status" style="margin:10px 0;padding:11px 13px;border:1px solid #fed7aa;background:#fff7ed;color:#9a3412;border-radius:12px;font-size:12px;line-height:1.5">Server 2 is temporarily unavailable while its live catalogue and prices are being verified. No purchase will be charged through this option.</div>
+  <div id="numberCatalogPanel" class="service-page sparkle-usn-form">
     <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3>Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
-    <label for="svbCountrySelect">Country</label>
-    <select id="svbCountrySelect" onchange="onSvbCountryChange()"><option value="us">🇺🇸 United States</option></select>
-    <label for="svbAppSearch">Find an app or service</label>
-    <input id="svbAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterSvbApps()">
-    <label for="svbAppSelect">Verification service</label>
-    <select id="svbAppSelect" onchange="onSvbServiceChange()"><option value="">Loading available services…</option></select>
-    <div id="svbPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
-    <button id="svbBuyButton" class="btn primary full sparkle-usn-buy-button" type="button" onclick="buySvbNumber()" disabled>Check price first</button>
+    <label for="numberCountrySelect">Country</label>
+    <select id="numberCountrySelect" onchange="onNumberCountryChange()"><option value="us">🇺🇸 United States</option></select>
+    <label for="numberAppSearch">Find an app or service</label>
+    <input id="numberAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterNumberApps()">
+    <label for="numberAppSelect">Verification service</label>
+    <select id="numberAppSelect" onchange="onNumberServiceChange()"><option value="">Loading available services…</option></select>
+    <div id="numberPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
+    <button id="numberBuyButton" class="btn primary full sparkle-usn-buy-button" type="button" onclick="buyNumberNumber()" disabled>Check price first</button>
     <p class="sparkle-usn-safety"><span>🔒</span> Your price is checked live. Your wallet is charged only through the verified purchase flow after you confirm with your Transaction PIN.</p>
   </div>
-  <div id="svbReviewPanel" class="service-page sparkle-usn-form" style="display:none">
-    <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromSvbReview()">‹</button><h2 style="margin:0">Review purchase</h2></div>
+  <div id="numberReviewPanel" class="service-page sparkle-usn-form" style="display:none">
+    <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromNumberReview()">‹</button><h2 style="margin:0">Review purchase</h2></div>
     <p style="color:var(--muted);margin-top:0">Check your server, service, and total. Your wallet will not be charged until the purchase is confirmed with your Transaction PIN.</p>
-    <div class="summary-line"><span>Server</span><strong id="svbReviewServer">Server 1</strong></div>
-    <div class="summary-line"><span>Service</span><strong id="svbReviewService">—</strong></div>
-    <div class="summary-line"><span>Wallet charge</span><strong id="svbReviewTotal">—</strong></div>
-    <div class="summary-line"><span>Available wallet balance</span><strong id="svbReviewWalletBalance">Checking…</strong></div>
-    <div class="sparkle-summary-total"><span>Total</span><strong id="svbReviewGrandTotal">—</strong></div>
-    <div id="svbReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
+    <div class="summary-line"><span>Server</span><strong id="numberReviewServer">Server 1</strong></div>
+    <div class="summary-line"><span>Service</span><strong id="numberReviewService">—</strong></div>
+    <div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div>
+    <div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div>
+    <div class="sparkle-summary-total"><span>Total</span><strong id="numberReviewGrandTotal">—</strong></div>
+    <div id="numberReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
     <p style="font-size:12px;color:var(--muted)">If your order is pending, check its status instead of purchasing again.</p>
-    <button id="svbReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmSvbReviewPurchase()">Checking wallet balance…</button>
-    <button class="btn full" type="button" style="margin-top:8px" onclick="backFromSvbReview()">Go back and edit</button>
-    <div id="svbReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
+    <button id="numberReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button>
+    <button class="btn full" type="button" style="margin-top:8px" onclick="backFromNumberReview()">Go back and edit</button>
+    <div id="numberReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
   </div>
 </section>
 
 <!-- Dedicated US Number order page: separate from price preview and purchase form. -->
         <section class="page" id="usNumberOrderPage">
-          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadSvbCountries()">‹</button><h1>Your US Number Order</h1></div>
+          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">‹</button><h1>Your US Number Order</h1></div>
           <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest US Number purchase.</p>
-          <div id="svbOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
+          <div id="numberOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
             <h3 style="margin-top:0">No US Number order to display</h3>
             <p style="color:var(--muted)">After you confirm a US Number purchase with your transaction PIN, its order details will appear on this page.</p>
-            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadSvbCountries()">Buy a US Number</button>
+            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Buy a US Number</button>
           </div>
-          <div id="svbOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
+          <div id="numberOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <h2 style="margin:0 0 16px">Order details</h2>
             <div style="display:grid;gap:10px">
-              <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="svbOrderService">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="svbOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Verification code</div><strong id="svbOrderOtp" style="font-size:24px;overflow-wrap:anywhere">Waiting for SMS…</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Status</div><strong id="svbOrderStatus">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Order reference</div><span id="svbOrderReference" style="overflow-wrap:anywhere">—</span></div>
+              <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="numberOrderService">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="numberOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Verification code</div><strong id="numberOrderOtp" style="font-size:24px;overflow-wrap:anywhere">Waiting for SMS…</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Status</div><strong id="numberOrderStatus">—</strong></div>
+              <div><div style="font-size:12px;color:var(--muted)">Order reference</div><span id="numberOrderReference" style="overflow-wrap:anywhere">—</span></div>
             </div>
-            <div id="svbOrderMessage" role="status" style="margin-top:12px;color:var(--muted)"></div>
+            <div id="numberOrderMessage" role="status" style="margin-top:12px;color:var(--muted)"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-              <button class="btn primary" type="button" onclick="checkSvbOrder()">Check OTP</button>
-              <button class="btn" type="button" onclick="cancelSvbOrder()">Cancel order</button>
+              <button class="btn primary" type="button" onclick="checkNumberOrder()">Check OTP</button>
+              <button class="btn" type="button" onclick="cancelNumberOrder()">Cancel order</button>
             </div>
           </div>
-          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadSvbCountries()">Back to Buy US Number</button>
+          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadNumberCountries()">Back to Buy US Number</button>
         </section>
 
         <!-- CRYPTO TRADE: live reference pricing only; no wallet debits or crypto payouts are enabled. -->
@@ -5675,44 +5675,44 @@ function openServicePage(service){
   if(service==="education") loadEducationPlans();
 }
 
-let svbCountriesCache = [];
-let svbServicesCache = [];
-let svbCountriesLoadPromise = null;
-let svbCurrentQuote = null;
-let svbCurrentServerId = "server1";
-const SVB_SERVER_LABELS = {server1:"Server 1 · USA & Canada",server2:"Server 2 · Standard Number",server3:"Server 3 · Cheap USA WhatsApp"};
-function selectSvbServer(serverId){
-  if(!Object.prototype.hasOwnProperty.call(SVB_SERVER_LABELS,serverId))return;
-  const selectedCode=document.getElementById("svbAppSelect")?.value||"";
-  svbCurrentServerId=serverId;
+let numberCountriesCache = [];
+let numberServicesCache = [];
+let numberCountriesLoadPromise = null;
+let numberCurrentQuote = null;
+let numberCurrentServerId = "server1";
+const NUMBER_SERVER_LABELS = {server1:"Server 1 · USA & Canada",server2:"Server 2 · Standard Number",server3:"Server 3 · USA WhatsApp"};
+function selectNumberServer(serverId){
+  if(!Object.prototype.hasOwnProperty.call(NUMBER_SERVER_LABELS,serverId))return;
+  const selectedCode=document.getElementById("numberAppSelect")?.value||"";
+  numberCurrentServerId=serverId;
   document.querySelectorAll(".sparkle-usn-server-card").forEach(card=>{const active=card.dataset.serverId===serverId;card.classList.toggle("is-selected",active);card.setAttribute("aria-pressed",active?"true":"false");});
   const heading=document.querySelector("#smsotpPage .data-topbar h1");if(heading)heading.textContent="Buy US Number";
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
-  loadSvbCountries(true).then(()=>{const select=document.getElementById("svbAppSelect");if(select&&selectedCode&&svbServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkSvbPrice();}else updateSvbServerPriceCards();});
+  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Checking server price…";}
+  loadNumberCountries(true).then(()=>{const select=document.getElementById("numberAppSelect");if(select&&selectedCode&&numberServicesCache.some(x=>x.code===selectedCode)){select.value=selectedCode;checkNumberPrice();}else updateNumberServerPriceCards();});
 }
-async function updateSvbServerPriceCards(){
-  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
-  const country=document.getElementById("svbCountrySelect")?.value||"us";
-  const targets={server1:"svbServerPrice1",server2:"svbServerPrice2",server3:"svbServerPrice3"};
+async function updateNumberServerPriceCards(){
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const country=document.getElementById("numberCountrySelect")?.value||"us";
+  const targets={server1:"numberServerPrice1",server2:"numberServerPrice2",server3:"numberServerPrice3"};
   if(!serviceCode){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Choose service";});return;}
   Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Checking…";});
   try{
-    const response=await callSvbCatalog({action:"server-prices",country,serviceName:serviceCode,serverId:svbCurrentServerId});
+    const response=await callNumberCatalog({action:"server-prices",country,serviceName:serviceCode,serverId:numberCurrentServerId});
     const data=response?.data||response;const prices=Array.isArray(data.prices)?data.prices:[];
     for(const [serverId,id] of Object.entries(targets)){const el=document.getElementById(id);const item=prices.find(p=>p.server_id===serverId);if(el)el.textContent=item&&Number(item.selling_price_ngn)>0?"₦"+Number(item.selling_price_ngn).toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Unavailable";}
   }catch(_){Object.values(targets).forEach(id=>{const el=document.getElementById(id);if(el)el.textContent="Price unavailable";});}
 }
-let svbCurrentOrder = null;
-let svbAutoCheckTimer = null;
-let svbAutoCheckBusy = false;
-let svbPriceRefreshTimer = null;
-let svbPriceRefreshBusy = false;
-let svbPurchaseInProgress = false;
-let svbAwaitingPin = false;
-const SVB_LIVE_PURCHASES_ENABLED = true;
+let numberCurrentOrder = null;
+let numberAutoCheckTimer = null;
+let numberAutoCheckBusy = false;
+let numberPriceRefreshTimer = null;
+let numberPriceRefreshBusy = false;
+let numberPurchaseInProgress = false;
+let numberAwaitingPin = false;
+const NUMBER_LIVE_PURCHASES_ENABLED = true;
 
-async function callSvbCatalog(payload){
-  const {data,error}=await supabaseClient.functions.invoke("sparkle-svb-catalog",{body:payload});
+async function callNumberCatalog(payload){
+  const {data,error}=await supabaseClient.functions.invoke("sparkle-number-catalog",{body:payload});
   if(error){
     const detail=await sparkleFunctionErrorMessage(error,"Could not load the number catalogue. Please try again shortly.");
     throw new Error(detail);
@@ -5720,7 +5720,7 @@ async function callSvbCatalog(payload){
   if(data?.success===false)throw new Error(String(data.message||data.error||"The number catalogue is temporarily unavailable."));
   return data||{};
 }
-async function callSvbOrderFunction(name,payload){
+async function callNumberOrderFunction(name,payload){
   const {data,error}=await supabaseClient.functions.invoke(name,{body:payload});
   if(!error){
     if(data&&data.success===false&&!["pending","unknown","failed","cancelled"].includes(String(data.status||"")))
@@ -5743,12 +5743,12 @@ async function callSvbOrderFunction(name,payload){
   const err=new Error(/INSUFFICIENT_FUNDS|insufficient.*balance|not enough.*balance/i.test(reason)
     ?"Insufficient Sparkle wallet balance. Please fund your wallet and try again."
     :reason);
-  err.code=body?.code||(/insufficient.*balance|not enough.*balance/i.test(reason)?"INSUFFICIENT_FUNDS":"SVB_REQUEST_FAILED");
+  err.code=body?.code||(/insufficient.*balance|not enough.*balance/i.test(reason)?"INSUFFICIENT_FUNDS":"NUMBER_REQUEST_FAILED");
   err.httpStatus=Number(error?.context?.status||error?.status||0);
   err.payload=body;
   throw err;
 }
-function normalizeSvbCountries(response){
+function normalizeNumberCountries(response){
   const raw=response?.data?.countries??response?.countries??response?.data?.data?.countries??[];
   const items=(Array.isArray(raw)?raw:[]).map(item=>{
     const rawCode=typeof item==="string"?item:(item?.code??item?.country_code??item?.countryCode??item?.iso2??item?.iso_code??item?.value??"");
@@ -5770,7 +5770,7 @@ function normalizeSvbCountries(response){
   const unique=new Map();items.forEach(item=>{if(!unique.has(item.code))unique.set(item.code,item);});
   return [...unique.values()].sort((a,b)=>a.code==="us"?-1:b.code==="us"?1:a.name.localeCompare(b.name));
 }
-function normalizeSvbServices(response){
+function normalizeNumberServices(response){
   const raw=response?.data?.services??response?.services??response?.data?.data?.services??[];
   return (Array.isArray(raw)?raw:[]).map(item=>{
     const code=String(item?.code??item?.service??item?.serviceName??item?.service_name??"").trim();
@@ -5780,172 +5780,172 @@ function normalizeSvbServices(response){
     return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
-function renderSvbCountries(){
-  const select=document.getElementById("svbCountrySelect");if(!select)return;
+function renderNumberCountries(){
+  const select=document.getElementById("numberCountrySelect");if(!select)return;
   const current=select.value||"us";
-  select.innerHTML=svbCountriesCache.map(c=>`<option value="${escapeHtml(c.code)}">${escapeHtml((c.flag?c.flag+" ":"")+c.name)}</option>`).join("");
-  select.value=svbCountriesCache.some(c=>c.code===current)?current:(svbCountriesCache.some(c=>c.code==="us")?"us":svbCountriesCache[0]?.code||"us");
+  select.innerHTML=numberCountriesCache.map(c=>`<option value="${escapeHtml(c.code)}">${escapeHtml((c.flag?c.flag+" ":"")+c.name)}</option>`).join("");
+  select.value=numberCountriesCache.some(c=>c.code===current)?current:(numberCountriesCache.some(c=>c.code==="us")?"us":numberCountriesCache[0]?.code||"us");
 }
-function renderSvbApps(items){
-  const select=document.getElementById("svbAppSelect");if(!select)return;
+function renderNumberApps(items){
+  const select=document.getElementById("numberAppSelect");if(!select)return;
   const current=select.value;
   select.innerHTML='<option value="">Choose a service</option>';
   items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name+(item.sellingPrice!=null?" — ₦"+item.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):" — price check required");select.appendChild(option);});
   if(items.some(item=>item.code===current))select.value=current;
 }
-async function loadSvbCountries(force=false){
-  const select=document.getElementById("svbCountrySelect");
-  const result=document.getElementById("svbPriceResult");
+async function loadNumberCountries(force=false){
+  const select=document.getElementById("numberCountrySelect");
+  const result=document.getElementById("numberPriceResult");
   if(!select)return;
-  if(svbCountriesLoadPromise&&!force)return svbCountriesLoadPromise;
-  if(!force&&svbCountriesCache.length&&select.options.length>1){
+  if(numberCountriesLoadPromise&&!force)return numberCountriesLoadPromise;
+  if(!force&&numberCountriesCache.length&&select.options.length>1){
     // Re-query supplier services every time this page is reopened so cached customer prices cannot linger.
-    await loadSvbServices();
-    await restoreSavedSvbOrder();
-    startSvbPriceAutoRefresh();
+    await loadNumberServices();
+    await restoreSavedNumberOrder();
+    startNumberPriceAutoRefresh();
     return;
   }
   select.innerHTML='<option value="us">🇺🇸 United States</option>';
   if(result)result.textContent="Loading available countries…";
-  svbCountriesLoadPromise=(async()=>{
+  numberCountriesLoadPromise=(async()=>{
     try{
-      const response=await callSvbCatalog({action:"countries",serverId:svbCurrentServerId});
-      svbCountriesCache=normalizeSvbCountries(response);
+      const response=await callNumberCatalog({action:"countries",serverId:numberCurrentServerId});
+      numberCountriesCache=normalizeNumberCountries(response);
     }catch(error){
       // US remains available as a fallback; the service function will show any real provider error.
-      svbCountriesCache=normalizeSvbCountries({data:{countries:[]}});
+      numberCountriesCache=normalizeNumberCountries({data:{countries:[]}});
     }
-    renderSvbCountries();
-    await loadSvbServices();
-    await restoreSavedSvbOrder();
+    renderNumberCountries();
+    await loadNumberServices();
+    await restoreSavedNumberOrder();
   })();
-  try{await svbCountriesLoadPromise;}finally{svbCountriesLoadPromise=null;}
+  try{await numberCountriesLoadPromise;}finally{numberCountriesLoadPromise=null;}
 }
-async function onSvbCountryChange(){
-  svbCurrentQuote=null;
-  svbServicesCache=[];
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-  await loadSvbServices();
+async function onNumberCountryChange(){
+  numberCurrentQuote=null;
+  numberServicesCache=[];
+  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  await loadNumberServices();
 }
-let svbCatalogLoadSequence = 0;
-async function loadSvbServices(){
-  const country=document.getElementById("svbCountrySelect")?.value||"us";
-  const requestSequence=++svbCatalogLoadSequence;
-  const requestedServer=svbCurrentServerId;
-  const select=document.getElementById("svbAppSelect");
-  const result=document.getElementById("svbPriceResult");
+let numberCatalogLoadSequence = 0;
+async function loadNumberServices(){
+  const country=document.getElementById("numberCountrySelect")?.value||"us";
+  const requestSequence=++numberCatalogLoadSequence;
+  const requestedServer=numberCurrentServerId;
+  const select=document.getElementById("numberAppSelect");
+  const result=document.getElementById("numberPriceResult");
   if(!select)return;
-  svbCurrentQuote=null;
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  numberCurrentQuote=null;
+  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
   select.innerHTML='<option value="">Loading services…</option>';
   if(result)result.textContent="Loading available number services for this country…";
   try{
-    const response=await callSvbCatalog({action:"services",country,serverId:requestedServer});
-    if(requestSequence!==svbCatalogLoadSequence || country!==(document.getElementById("svbCountrySelect")?.value||"us") || requestedServer!==svbCurrentServerId)return;
-    svbServicesCache=normalizeSvbServices(response);
-    renderSvbApps(svbServicesCache);
-    if(result)result.textContent=svbServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
-    startSvbPriceAutoRefresh();
+    const response=await callNumberCatalog({action:"services",country,serverId:requestedServer});
+    if(requestSequence!==numberCatalogLoadSequence || country!==(document.getElementById("numberCountrySelect")?.value||"us") || requestedServer!==numberCurrentServerId)return;
+    numberServicesCache=normalizeNumberServices(response);
+    renderNumberApps(numberServicesCache);
+    if(result)result.textContent=numberServicesCache.length?"Live catalogue prices shown. Select a service to verify its current price before purchase.":"No services are currently listed for this country. Choose another country and try again.";
+    startNumberPriceAutoRefresh();
   }catch(error){
-    svbServicesCache=[];
+    numberServicesCache=[];
     select.innerHTML='<option value="">Could not load services</option>';
     if(result)result.textContent="Could not load available services: "+String(error.message||error);
   }
 }
-function startSvbPriceAutoRefresh(){
-  if(svbPriceRefreshTimer)clearInterval(svbPriceRefreshTimer);
-  svbPriceRefreshTimer=setInterval(async()=>{
-    if(svbPriceRefreshBusy||document.hidden)return;
+function startNumberPriceAutoRefresh(){
+  if(numberPriceRefreshTimer)clearInterval(numberPriceRefreshTimer);
+  numberPriceRefreshTimer=setInterval(async()=>{
+    if(numberPriceRefreshBusy||document.hidden)return;
     const page=document.getElementById("smsotpPage");
     if(!page||!page.classList.contains("active"))return;
-    svbPriceRefreshBusy=true;
+    numberPriceRefreshBusy=true;
     try{
-      const selectedCode=document.getElementById("svbAppSelect")?.value||"";
-      const country=document.getElementById("svbCountrySelect")?.value||"us";
-      const response=await callSvbCatalog({action:"services",country,serverId:svbCurrentServerId});
-      svbServicesCache=normalizeSvbServices(response);
-      renderSvbApps(svbServicesCache);
-      if(selectedCode&&svbServicesCache.some(item=>item.code===selectedCode)){
-        const select=document.getElementById("svbAppSelect");if(select)select.value=selectedCode;
-        if(svbCurrentQuote&&svbCurrentQuote.serviceCode===selectedCode)await checkSvbPrice();
+      const selectedCode=document.getElementById("numberAppSelect")?.value||"";
+      const country=document.getElementById("numberCountrySelect")?.value||"us";
+      const response=await callNumberCatalog({action:"services",country,serverId:numberCurrentServerId});
+      numberServicesCache=normalizeNumberServices(response);
+      renderNumberApps(numberServicesCache);
+      if(selectedCode&&numberServicesCache.some(item=>item.code===selectedCode)){
+        const select=document.getElementById("numberAppSelect");if(select)select.value=selectedCode;
+        if(numberCurrentQuote&&numberCurrentQuote.serviceCode===selectedCode)await checkNumberPrice();
       }
     }catch(_){
       // Keep the last catalogue visible. Purchase still requires a fresh server-side price check.
-    }finally{svbPriceRefreshBusy=false;}
+    }finally{numberPriceRefreshBusy=false;}
   },60000);
 }
-function filterSvbApps(){
-  const query=(document.getElementById("svbAppSearch")?.value||"").toLowerCase().trim();
-  renderSvbApps(svbServicesCache.filter(item=>item.name.toLowerCase().includes(query)||item.code.toLowerCase().includes(query)));
-  svbCurrentQuote=null;
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+function filterNumberApps(){
+  const query=(document.getElementById("numberAppSearch")?.value||"").toLowerCase().trim();
+  renderNumberApps(numberServicesCache.filter(item=>item.name.toLowerCase().includes(query)||item.code.toLowerCase().includes(query)));
+  numberCurrentQuote=null;
+  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
 }
-function onSvbServiceChange(){
-  svbCurrentQuote=null;
-  const result=document.getElementById("svbPriceResult");
+function onNumberServiceChange(){
+  numberCurrentQuote=null;
+  const result=document.getElementById("numberPriceResult");
   if(result)result.textContent="Choose a service and check its current Sparkle price.";
-  const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-  void updateSvbServerPriceCards();
+  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  void updateNumberServerPriceCards();
 }
-async function checkSvbPrice(){
-  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
-  const country=document.getElementById("svbCountrySelect")?.value||"us";
-  const result=document.getElementById("svbPriceResult");
-  const buy=document.getElementById("svbBuyButton");
+async function checkNumberPrice(){
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const country=document.getElementById("numberCountrySelect")?.value||"us";
+  const result=document.getElementById("numberPriceResult");
+  const buy=document.getElementById("numberBuyButton");
   if(!serviceCode){if(result)result.textContent="Choose a country and service first.";return;}
   if(result)result.textContent="Checking the current Sparkle price…";
   if(buy){buy.disabled=true;buy.textContent="Checking price…";buy.style.opacity=".55";}
-  svbCurrentQuote=null;
+  numberCurrentQuote=null;
   try{
-    const response=await callSvbCatalog({action:"price",country,serviceName:serviceCode,serverId:svbCurrentServerId});
+    const response=await callNumberCatalog({action:"price",country,serviceName:serviceCode,serverId:numberCurrentServerId});
     const quote=response?.data||response;
     const sellingPrice=Number(quote?.selling_price_ngn);
     if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw new Error("Sparkle could not verify the current selling price. Please try another service or country.");
-    const selected=svbServicesCache.find(item=>item.code===serviceCode);
-    svbCurrentQuote={serviceCode,country,serverId:svbCurrentServerId,serverLabel:String(quote.server_label||SVB_SERVER_LABELS[svbCurrentServerId]),serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:Math.round((sellingPrice+Number.EPSILON)*100)/100,network:String(quote.network||selected?.network||"")};
-    await updateSvbServerPriceCards();
-    if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the full amount charged by Sparkle. Supplier costs and profit are not shown.</div></div>';
+    const selected=numberServicesCache.find(item=>item.code===serviceCode);
+    numberCurrentQuote={serviceCode,country,serverId:numberCurrentServerId,serverLabel:String(quote.server_label||NUMBER_SERVER_LABELS[numberCurrentServerId]),serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:Math.round((sellingPrice+Number.EPSILON)*100)/100,network:String(quote.network||selected?.network||"")};
+    await updateNumberServerPriceCards();
+    if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+numberCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the full amount charged by Sparkle. Supplier costs and profit are not shown.</div></div>';
     if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
   }catch(error){
     if(result)result.textContent="Could not check price: "+String(error.message||error);
     if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
   }
 }
-function svbOrderStorageKey(userId){return "sparkle_svb_active_order_"+String(userId||"");}
-async function saveSvbOrderSnapshot(order){
+function numberOrderStorageKey(userId){return "sparkle_number_active_order_"+String(userId||"");}
+async function saveNumberOrderSnapshot(order){
   try{
     const auth=await supabaseClient.auth.getUser();
     const userId=auth?.data?.user?.id;
     if(!userId||!order?.requestId)return;
     const safe={requestId:String(order.requestId),serviceName:String(order.serviceName||"US number"),phoneNumber:String(order.phoneNumber||""),smsCode:String(order.smsCode||""),status:String(order.status||"unknown"),message:String(order.message||""),savedAt:Date.now()};
-    localStorage.setItem(svbOrderStorageKey(userId),JSON.stringify(safe));
+    localStorage.setItem(numberOrderStorageKey(userId),JSON.stringify(safe));
   }catch(_){}
 }
-async function restoreSavedSvbOrder(){
+async function restoreSavedNumberOrder(){
   try{
     const auth=await supabaseClient.auth.getUser();
     const userId=auth?.data?.user?.id;
     if(!userId)return;
-    const saved=JSON.parse(localStorage.getItem(svbOrderStorageKey(userId))||"null");
+    const saved=JSON.parse(localStorage.getItem(numberOrderStorageKey(userId))||"null");
     if(!saved?.requestId)return;
-    showSvbOrder({...saved,smsCode:""});
+    showNumberOrder({...saved,smsCode:""});
     const status=String(saved.status||"unknown").toLowerCase();
     if(!["success","failed","cancelled","expired"].includes(status)){
-      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order active — check status";buy.style.opacity=".55";}
+      const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order active — check status";buy.style.opacity=".55";}
     }
   }catch(_){}
 }
-function openSvbOrderPage(button){
-  showDashPage("usNumberOrderPage",button||document.querySelector('.sidebar-nav .nav-item[onclick*="openSvbOrderPage"]'));
-  if(svbCurrentOrder){
-    showSvbOrder(svbCurrentOrder);
+function openNumberOrderPage(button){
+  showDashPage("usNumberOrderPage",button||document.querySelector('.sidebar-nav .nav-item[onclick*="openNumberOrderPage"]'));
+  if(numberCurrentOrder){
+    showNumberOrder(numberCurrentOrder);
     return;
   }
-  const card=document.getElementById("svbOrderCard");if(card)card.style.display="none";
-  const empty=document.getElementById("svbOrderEmpty");if(empty)empty.style.display="block";
-  void restoreSavedSvbOrder();
+  const card=document.getElementById("numberOrderCard");if(card)card.style.display="none";
+  const empty=document.getElementById("numberOrderEmpty");if(empty)empty.style.display="block";
+  void restoreSavedNumberOrder();
 }
-function showSvbOrder(order,options={}){
+function showNumberOrder(order,options={}){
   const normalizedStatus=String(order?.status||"pending").toLowerCase();
   const terminalStatuses=["success","failed","cancelled","canceled","expired"];
   const terminal=terminalStatuses.includes(normalizedStatus);
@@ -5961,140 +5961,140 @@ function showSvbOrder(order,options={}){
     statusMessage=smsCode?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Check again shortly.";
   }
   order={...order,status:normalizedStatus,smsCode,message:statusMessage};
-  svbCurrentOrder=order;
-  void saveSvbOrderSnapshot(order);
+  numberCurrentOrder=order;
+  void saveNumberOrderSnapshot(order);
   // Automatically reconcile active number orders while Sparkle is open.
   // Terminal orders stop polling; the server-side finalizer prevents duplicate refunds.
   if(["success","failed","cancelled","canceled","expired"].includes(normalizedStatus)){
-    if(svbAutoCheckTimer){clearInterval(svbAutoCheckTimer);svbAutoCheckTimer=null;}
-  }else if(!svbAutoCheckTimer){
-    svbAutoCheckTimer=setInterval(async()=>{
-      if(svbAutoCheckBusy || document.hidden || !svbCurrentOrder?.requestId)return;
-      const status=String(svbCurrentOrder.status||"pending").toLowerCase();
+    if(numberAutoCheckTimer){clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;}
+  }else if(!numberAutoCheckTimer){
+    numberAutoCheckTimer=setInterval(async()=>{
+      if(numberAutoCheckBusy || document.hidden || !numberCurrentOrder?.requestId)return;
+      const status=String(numberCurrentOrder.status||"pending").toLowerCase();
       if(["success","failed","cancelled","canceled","expired"].includes(status)){
-        clearInterval(svbAutoCheckTimer);svbAutoCheckTimer=null;return;
+        clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;return;
       }
-      svbAutoCheckBusy=true;
-      try{await checkSvbOrder({silent:true});}catch(e){console.warn("Sparkle automatic SMS order reconciliation:",e);}
-      finally{svbAutoCheckBusy=false;}
+      numberAutoCheckBusy=true;
+      try{await checkNumberOrder({silent:true});}catch(e){console.warn("Sparkle automatic SMS order reconciliation:",e);}
+      finally{numberAutoCheckBusy=false;}
     },20000);
   }
-  const card=document.getElementById("svbOrderCard");if(!card)return;
+  const card=document.getElementById("numberOrderCard");if(!card)return;
   card.style.display="block";
-  const empty=document.getElementById("svbOrderEmpty");if(empty)empty.style.display="none";
-  document.getElementById("svbOrderService").textContent=order.serviceName||"US number";
-  document.getElementById("svbOrderPhone").textContent=order.phoneNumber||"No phone number available";
-  document.getElementById("svbOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
-  document.getElementById("svbOrderStatus").textContent=normalizedStatus;
-  document.getElementById("svbOrderReference").textContent=order.requestId||"—";
-  document.getElementById("svbOrderMessage").textContent=statusMessage;
+  const empty=document.getElementById("numberOrderEmpty");if(empty)empty.style.display="none";
+  document.getElementById("numberOrderService").textContent=order.serviceName||"US number";
+  document.getElementById("numberOrderPhone").textContent=order.phoneNumber||"No phone number available";
+  document.getElementById("numberOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
+  document.getElementById("numberOrderStatus").textContent=normalizedStatus;
+  document.getElementById("numberOrderReference").textContent=order.requestId||"—";
+  document.getElementById("numberOrderMessage").textContent=statusMessage;
   if(options?.navigate){
-    showDashPage("usNumberOrderPage",document.querySelector('.sidebar-nav .nav-item[onclick*="openSvbOrderPage"]'));
+    showDashPage("usNumberOrderPage",document.querySelector('.sidebar-nav .nav-item[onclick*="openNumberOrderPage"]'));
   }
   if(terminal){
-    const buy=document.getElementById("svbBuyButton");
+    const buy=document.getElementById("numberBuyButton");
     if(buy){buy.disabled=false;buy.textContent="Check price first";buy.style.opacity="1";}
-    if(normalizedStatus!=="success")svbCurrentQuote=null;
+    if(normalizedStatus!=="success")numberCurrentQuote=null;
   }
 }
-function buySvbNumber(){
-  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
-  const country=document.getElementById("svbCountrySelect")?.value||"us";
-  if(!SVB_LIVE_PURCHASES_ENABLED){alert("US number purchases are temporarily unavailable.");return;}
+function buyNumberNumber(){
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const country=document.getElementById("numberCountrySelect")?.value||"us";
+  if(!NUMBER_LIVE_PURCHASES_ENABLED){alert("US number purchases are temporarily unavailable.");return;}
   if(!serviceCode){alert("Choose a verification service first.");return;}
-  const previousStatus=String(svbCurrentOrder?.status||"").toLowerCase();
-  if(svbCurrentOrder?.requestId&&! ["success","failed","cancelled","expired"].includes(previousStatus)){
+  const previousStatus=String(numberCurrentOrder?.status||"").toLowerCase();
+  if(numberCurrentOrder?.requestId&&! ["success","failed","cancelled","expired"].includes(previousStatus)){
     alert("You already have a number order that may still be active. Check or cancel that order before buying another number.");return;
   }
-  if(!svbCurrentQuote||svbCurrentQuote.serviceCode!==serviceCode||svbCurrentQuote.country!==country){alert("Check the current price first.");return;}
-  const countryName=svbCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
-  document.getElementById("svbReviewService").textContent=svbCurrentQuote.serviceName+" · "+countryName;
-  const total="₦"+svbCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
-  const reviewServer=document.getElementById("svbReviewServer");if(reviewServer)reviewServer.textContent=svbCurrentQuote.serverLabel||SVB_SERVER_LABELS[svbCurrentServerId];
-  document.getElementById("svbReviewTotal").textContent=total;
-  document.getElementById("svbReviewGrandTotal").textContent=total;
-  document.getElementById("svbReviewMessage").textContent="";
-  const svbBalance=document.getElementById("svbReviewWalletBalance");if(svbBalance)svbBalance.textContent="Checking…";
-  const svbFundsMessage=document.getElementById("svbReviewFundsMessage");if(svbFundsMessage){svbFundsMessage.style.display="none";svbFundsMessage.textContent="";}
-  const svbContinue=document.getElementById("svbReviewConfirm");if(svbContinue){svbContinue.disabled=true;svbContinue.textContent="Checking wallet balance…";}
-  document.getElementById("svbCatalogPanel").style.display="none";
-  document.getElementById("svbReviewPanel").style.display="block";
-  sparkleCheckWalletReview(svbCurrentQuote.sellingPrice,{balanceId:"svbReviewWalletBalance",messageId:"svbReviewFundsMessage",buttonId:"svbReviewConfirm",buttonText:"Buy US Number"});
+  if(!numberCurrentQuote||numberCurrentQuote.serviceCode!==serviceCode||numberCurrentQuote.country!==country){alert("Check the current price first.");return;}
+  const countryName=numberCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
+  document.getElementById("numberReviewService").textContent=numberCurrentQuote.serviceName+" · "+countryName;
+  const total="₦"+numberCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const reviewServer=document.getElementById("numberReviewServer");if(reviewServer)reviewServer.textContent=numberCurrentQuote.serverLabel||NUMBER_SERVER_LABELS[numberCurrentServerId];
+  document.getElementById("numberReviewTotal").textContent=total;
+  document.getElementById("numberReviewGrandTotal").textContent=total;
+  document.getElementById("numberReviewMessage").textContent="";
+  const numberBalance=document.getElementById("numberReviewWalletBalance");if(numberBalance)numberBalance.textContent="Checking…";
+  const numberFundsMessage=document.getElementById("numberReviewFundsMessage");if(numberFundsMessage){numberFundsMessage.style.display="none";numberFundsMessage.textContent="";}
+  const numberContinue=document.getElementById("numberReviewConfirm");if(numberContinue){numberContinue.disabled=true;numberContinue.textContent="Checking wallet balance…";}
+  document.getElementById("numberCatalogPanel").style.display="none";
+  document.getElementById("numberReviewPanel").style.display="block";
+  sparkleCheckWalletReview(numberCurrentQuote.sellingPrice,{balanceId:"numberReviewWalletBalance",messageId:"numberReviewFundsMessage",buttonId:"numberReviewConfirm",buttonText:"Buy US Number"});
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function backFromSvbReview(){
-  if(svbPurchaseInProgress)return;
-  document.getElementById("svbReviewPanel").style.display="none";
-  document.getElementById("svbCatalogPanel").style.display="block";
+function backFromNumberReview(){
+  if(numberPurchaseInProgress)return;
+  document.getElementById("numberReviewPanel").style.display="none";
+  document.getElementById("numberCatalogPanel").style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function confirmSvbReviewPurchase(){
-  if(svbPurchaseInProgress)return;
-  const serviceCode=document.getElementById("svbAppSelect")?.value||"";
-  const country=document.getElementById("svbCountrySelect")?.value||"us";
-  if(!svbCurrentQuote||svbCurrentQuote.serviceCode!==serviceCode||svbCurrentQuote.country!==country){alert("The price quote has changed. Go back and check the current price again.");return;}
+function confirmNumberReviewPurchase(){
+  if(numberPurchaseInProgress)return;
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const country=document.getElementById("numberCountrySelect")?.value||"us";
+  if(!numberCurrentQuote||numberCurrentQuote.serviceCode!==serviceCode||numberCurrentQuote.country!==country){alert("The price quote has changed. Go back and check the current price again.");return;}
   currentService="smsotp";
-  const quotedAmount=Number(svbCurrentQuote.sellingPrice);
-  if(!Number.isFinite(quotedAmount)||quotedAmount<=0){document.getElementById("svbReviewMessage").textContent="The quoted price could not be verified. Please check the price again.";return;}
-  pendingPurchase={type:"single",items:[{service:"US Number",network:country,plan:svbCurrentQuote.serviceName,amount:quotedAmount}],total:quotedAmount};
-  svbAwaitingPin=true;
+  const quotedAmount=Number(numberCurrentQuote.sellingPrice);
+  if(!Number.isFinite(quotedAmount)||quotedAmount<=0){document.getElementById("numberReviewMessage").textContent="The quoted price could not be verified. Please check the price again.";return;}
+  pendingPurchase={type:"single",items:[{service:"US Number",network:country,plan:numberCurrentQuote.serviceName,amount:quotedAmount}],total:quotedAmount};
+  numberAwaitingPin=true;
   openPinForPurchase();
 }
-async function executeSvbPurchase(pin){
-  if(svbPurchaseInProgress)return;
-  if(!svbCurrentQuote){alert("Please check the US number price again.");return;}
+async function executeNumberPurchase(pin){
+  if(numberPurchaseInProgress)return;
+  if(!numberCurrentQuote){alert("Please check the US number price again.");return;}
   if(!/^\d{4}$/.test(String(pin||""))){alert("Enter your 4-digit transaction PIN.");return;}
-  svbPurchaseInProgress=true;
-  const button=document.getElementById("svbReviewConfirm");
-  const message=document.getElementById("svbReviewMessage");
+  numberPurchaseInProgress=true;
+  const button=document.getElementById("numberReviewConfirm");
+  const message=document.getElementById("numberReviewMessage");
   if(button){button.disabled=true;button.textContent="Processing purchase…";}
   if(message)message.textContent="Submitting your order once. Please do not close this page or tap again.";
-  const quote={...svbCurrentQuote};
-  const requestId="SPK-SVB-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
+  const quote={...numberCurrentQuote};
+  const requestId="SPK-NUMBER-"+Date.now()+"-"+Math.random().toString(36).slice(2,10);
   try{
-    const response=await callSvbOrderFunction("sparkle-svb-buy",{service:quote.serviceCode,country:quote.country,server_id:quote.serverId||svbCurrentServerId,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
+    const response=await callNumberOrderFunction("sparkle-number-buy",{service:quote.serviceCode,country:quote.country,server_id:quote.serverId||numberCurrentServerId,request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
     const d=response?.data||response;
     closePinModal();
     if(d.status==="failed"){
       const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
       if(message)message.textContent=text;
-      showSvbOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text},{navigate:true});
+      showNumberOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text},{navigate:true});
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
       alert(text);
-      document.getElementById("svbReviewPanel").style.display="none";
-      document.getElementById("svbCatalogPanel").style.display="block";
-      svbCurrentQuote=null;
-      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      document.getElementById("numberReviewPanel").style.display="none";
+      document.getElementById("numberCatalogPanel").style.display="block";
+      numberCurrentQuote=null;
+      const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       return;
     }
     const returnedRequestId=String(d.request_id||d.requestId||d.id||requestId);
     const pendingStatus=String(d.status||"pending").toLowerCase();
-    showSvbOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")},{navigate:true});
-    document.getElementById("svbReviewPanel").style.display="none";
-    document.getElementById("svbCatalogPanel").style.display="block";
-    const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
-    document.getElementById("svbSafetyNote").textContent="This order is active. Check its status before starting another purchase.";
+    showNumberOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")},{navigate:true});
+    document.getElementById("numberReviewPanel").style.display="none";
+    document.getElementById("numberCatalogPanel").style.display="block";
+    const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
+    document.getElementById("numberSafetyNote").textContent="This order is active. Check its status before starting another purchase.";
     const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
     if(userId){await loadWallet(userId);await loadTransactions(userId);}
   }catch(error){
     const text=String(error?.message||"Purchase could not be confirmed.");
     if(/incorrect|wrong pin|invalid pin|transaction pin verification failed/i.test(text)){
-      svbAwaitingPin=true;
+      numberAwaitingPin=true;
       document.getElementById("pinModal")?.classList.add("show");
       const pinMessage=document.getElementById("pinMessage");if(pinMessage)pinMessage.textContent="Transaction PIN was not accepted. Please try again. No supplier order was sent.";
       document.querySelectorAll(".pin-box").forEach(x=>x.value="");
       document.querySelector(".pin-box")?.focus();
       return;
     }
-    closePinModal();svbAwaitingPin=false;
+    closePinModal();numberAwaitingPin=false;
     const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED"];
     const definitelyNotStarted=safeNoOrderCodes.includes(String(error?.code||""))||/wallet unchanged|no supplier order was sent|price changed|service is unavailable for this country|choose a valid country|please sign in|session expired|could not verify.*wallet/i.test(text);
     if(definitelyNotStarted){
       if(/PRICE_CHANGED|price changed/i.test(String(error?.code||"")+" "+text)){
-        svbCurrentQuote=null;
-        const result=document.getElementById("svbPriceResult");if(result)result.textContent="The price changed. Please check the current price again before continuing.";
-        const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+        numberCurrentQuote=null;
+        const result=document.getElementById("numberPriceResult");if(result)result.textContent="The price changed. Please check the current price again before continuing.";
+        const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       }
       if(message)message.textContent=text+" No supplier order was sent.";
       alert("US number purchase: "+text);
@@ -6102,47 +6102,47 @@ async function executeSvbPurchase(pin){
     }
     // A network failure can hide a response after the supplier has accepted an order.
     // Treat it as unknown and block another purchase until the reference is checked.
-    showSvbOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."},{navigate:true});
-    document.getElementById("svbReviewPanel").style.display="none";
-    document.getElementById("svbCatalogPanel").style.display="block";
-    const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Order outcome unknown — check status";buy.style.opacity=".55";}
+    showNumberOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."},{navigate:true});
+    document.getElementById("numberReviewPanel").style.display="none";
+    document.getElementById("numberCatalogPanel").style.display="block";
+    const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order outcome unknown — check status";buy.style.opacity=".55";}
     if(message)message.textContent=text+" Check order status or transaction history before trying again.";
     alert("US number purchase: "+text+"\nThe outcome may be unknown. Do not submit another order until this reference is checked.");
   }finally{
-    svbPurchaseInProgress=false;
+    numberPurchaseInProgress=false;
     if(button){button.disabled=false;button.textContent="Buy US Number";}
   }
 }
-async function checkSvbOrder(options={}){
+async function checkNumberOrder(options={}){
   const silent=Boolean(options?.silent);
-  if(!svbCurrentOrder?.requestId){if(!silent)alert("No active US number order to check.");return;}
-  const msg=document.getElementById("svbOrderMessage");if(msg&&!silent)msg.textContent="Checking for SMS…";
+  if(!numberCurrentOrder?.requestId){if(!silent)alert("No active US number order to check.");return;}
+  const msg=document.getElementById("numberOrderMessage");if(msg&&!silent)msg.textContent="Checking for SMS…";
   try{
-    const response=await callSvbOrderFunction("sparkle-svb-check",{request_id:svbCurrentOrder.requestId});
+    const response=await callNumberOrderFunction("sparkle-number-check",{request_id:numberCurrentOrder.requestId});
     const d=response?.data||response;
-    const status=String(d.status||svbCurrentOrder.status||"pending").toLowerCase();
+    const status=String(d.status||numberCurrentOrder.status||"pending").toLowerCase();
     const code=String(d.sms_code||d.smsCode||d.code||"");
-    const phone=String(d.phone_number||d.phoneNumber||d.phone||svbCurrentOrder.phoneNumber||"");
-    showSvbOrder({...svbCurrentOrder,phoneNumber:phone,status,smsCode:code||svbCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Check again shortly.")});
+    const phone=String(d.phone_number||d.phoneNumber||d.phone||numberCurrentOrder.phoneNumber||"");
+    showNumberOrder({...numberCurrentOrder,phoneNumber:phone,status,smsCode:code||numberCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Check again shortly.")});
     if(["success","failed","cancelled","expired"].includes(status)){
-      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-      svbCurrentQuote=null;
+      const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      numberCurrentQuote=null;
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
     }
   }catch(error){if(msg&&!silent)msg.textContent="Could not check order: "+String(error.message||error);}
 }
-async function cancelSvbOrder(){
-  if(!svbCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
+async function cancelNumberOrder(){
+  if(!numberCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
   if(!confirm("Cancel this US number order? Only cancel if the provider still allows cancellation."))return;
-  const msg=document.getElementById("svbOrderMessage");if(msg)msg.textContent="Requesting cancellation…";
+  const msg=document.getElementById("numberOrderMessage");if(msg)msg.textContent="Requesting cancellation…";
   try{
-    const response=await callSvbOrderFunction("sparkle-svb-cancel",{request_id:svbCurrentOrder.requestId});
+    const response=await callNumberOrderFunction("sparkle-number-cancel",{request_id:numberCurrentOrder.requestId});
     const d=response?.data||response;
-    showSvbOrder({...svbCurrentOrder,status:String(d.status||"cancellation requested"),message:d.message||"Cancellation request sent. Check its status before buying again."});
+    showNumberOrder({...numberCurrentOrder,status:String(d.status||"cancellation requested"),message:d.message||"Cancellation request sent. Check its status before buying again."});
     if(String(d.status||"").toLowerCase()==="cancelled"){
-      const buy=document.getElementById("svbBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-      svbCurrentQuote=null;
+      const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+      numberCurrentQuote=null;
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
     }
@@ -7610,11 +7610,11 @@ async function sparkleCheckWalletReview(amount, ids={}){
 
 function sparkleShowWalletGuardMessage(message){
   const text=String(message||"Your wallet balance could not be verified. No purchase was made.");
-  const svb=document.getElementById("svbReviewPanel");
-  if(svb&&svb.style.display!=="none"){
-    const funds=document.getElementById("svbReviewFundsMessage");
+  const number=document.getElementById("numberReviewPanel");
+  if(number&&number.style.display!=="none"){
+    const funds=document.getElementById("numberReviewFundsMessage");
     if(funds){funds.style.display="block";funds.style.background="#fee2e2";funds.style.color="#991b1b";funds.textContent=text;funds.setAttribute("role","alert");return;}
-    const box=document.getElementById("svbReviewMessage");
+    const box=document.getElementById("numberReviewMessage");
     if(box){box.textContent=text;box.style.color="#b42318";box.setAttribute("role","alert");return;}
   }
   const screen=document.getElementById("sparkle-purchase-summary-screen");
@@ -7710,9 +7710,9 @@ async function confirmTransactionPIN(){
       const available=Number(walletCheck.data.balance);
       if(available+0.000001<required)throw new Error("Insufficient funds. Your current balance is ₦"+available.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+" and this purchase requires ₦"+required.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet. No purchase was made.");
     }
-    if(currentService==="smsotp" && svbAwaitingPin){
-      svbAwaitingPin=false;
-      await executeSvbPurchase(pin);
+    if(currentService==="smsotp" && numberAwaitingPin){
+      numberAwaitingPin=false;
+      await executeNumberPurchase(pin);
       return;
     }
     const {data,error}=await supabaseClient.functions.invoke("sparkle-transaction-pin",{body:{action:"verify",pin}});
