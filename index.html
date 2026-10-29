@@ -2489,6 +2489,147 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 @media(max-width:600px){#homepage{overflow-x:clip}#homepage h1{line-height:1.08;letter-spacing:-.04em}#homepage .service-card:hover,#homepage .card:hover{transform:none}}
 @media(prefers-reduced-motion:reduce){#homepage *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style>
+<style id="sparkle-number-step-flow">
+.number-screenreader-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+.number-step-summary{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:4px 0 16px;padding:13px 14px;border:1px solid #dbeafe;border-radius:14px;background:linear-gradient(115deg,#eff6ff,#fff)}
+.number-step-summary>div{display:grid;gap:4px;min-width:0}
+.number-step-summary strong{font-size:15px;font-weight:850;color:#13294b;overflow-wrap:anywhere}
+.number-step-label{font-size:9px;letter-spacing:1px;font-weight:900;color:#64748b}
+.number-step-change{flex:0 0 auto;border:1px solid #c8d9f3;border-radius:9px;background:#fff;color:#155fc2;font-size:12px;font-weight:850;padding:8px 11px;cursor:pointer}
+#numberCountryPicker select{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid var(--border,#dbe1ea);border-radius:12px;background:var(--input-bg,#fff);color:var(--text,#111827);font:inherit;font-size:14px}
+#numberContinueCountryButton{min-height:46px;border-radius:12px;font-weight:850}
+</style>
+<style id="sparkle-virtual-number-redesign">
+#smsotpPage,#usNumberOrderPage{--vn-ink:#10264a;--vn-navy:#091b42;--vn-blue:#2269e8;--vn-violet:#7863f6;--vn-border:#e5eaf4;--vn-muted:#687991;--vn-soft:#f5f7fc;color:var(--text,#13243d)}
+#smsotpPage .vn-topbar,#usNumberOrderPage .vn-topbar{margin-bottom:14px}
+#smsotpPage .vn-hero{position:relative;overflow:hidden;margin:0 0 16px;padding:20px 20px 16px;border:1px solid #243d73;border-radius:24px;color:#fff;background:radial-gradient(ellipse at 88% 15%,rgba(122,99,246,.38),transparent 34%),linear-gradient(135deg,#071a41 0%,#102c65 62%,#322b77 100%);box-shadow:0 14px 36px rgba(8,28,72,.17)}
+#smsotpPage .vn-hero:after{content:"";position:absolute;width:220px;height:220px;right:-130px;top:55px;border:1px solid rgba(255,255,255,.13);border-radius:50%;pointer-events:none}
+#smsotpPage .vn-hero-top{display:flex;align-items:center;justify-content:space-between;gap:9px;flex-wrap:wrap}
+#smsotpPage .vn-live-pill,#smsotpPage .vn-currency-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.08);font-size:9px;font-weight:900;letter-spacing:.8px;color:#f3f6ff}
+#smsotpPage .vn-live-pill i,#usNumberOrderPage .vn-order-live-tag i{width:7px;height:7px;border-radius:50%;background:#41e3b2;box-shadow:0 0 0 4px rgba(65,227,178,.13);display:inline-block}
+#smsotpPage .vn-hero-content{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:22px 0 17px}
+#smsotpPage .vn-hero-copy{position:relative;z-index:1;max-width:350px}
+#smsotpPage .vn-eyebrow,#usNumberOrderPage .vn-eyebrow{display:block;font-size:9px;font-weight:900;letter-spacing:1.7px;color:#aaa8ff}
+#smsotpPage .vn-hero h2,#usNumberOrderPage .vn-order-hero h2{font-size:clamp(22px,5.6vw,30px);line-height:1.13;letter-spacing:-.7px;margin:8px 0 8px;color:#fff;font-weight:900}
+#smsotpPage .vn-hero p,#usNumberOrderPage .vn-order-hero p{font-size:12px;line-height:1.65;color:#d7e3ff;max-width:340px;margin:0}
+#smsotpPage .vn-hero-art{position:relative;flex:0 0 86px;height:98px;display:grid;place-items:center}
+#smsotpPage .vn-art-orbit{position:absolute;width:84px;height:84px;border:1px solid rgba(190,199,255,.38);border-radius:50%;box-shadow:0 0 0 9px rgba(255,255,255,.025),0 0 0 18px rgba(255,255,255,.02)}
+#smsotpPage .vn-art-phone{position:relative;z-index:1;width:44px;height:72px;border-radius:12px;border:2px solid #dfe8ff;background:linear-gradient(160deg,#1d55ad,#7b69f8);box-shadow:0 9px 20px #020b2538;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px}
+#smsotpPage .vn-art-phone b{display:grid;place-items:center;width:22px;height:22px;margin-bottom:1px;border-radius:50%;background:#42deb0;color:#082844;font-size:13px}
+#smsotpPage .vn-art-phone i{width:22px;height:3px;border-radius:5px;background:rgba(255,255,255,.62)}
+#smsotpPage .vn-art-phone i:last-child{width:14px}
+#smsotpPage .vn-art-star{position:absolute;right:1px;top:8px;z-index:2;font-size:21px;color:#ffd36a;text-shadow:0 3px 10px #ffd36a44}
+#smsotpPage .vn-progress{display:flex;align-items:center;gap:7px;position:relative;z-index:1}
+#smsotpPage .vn-step-chip{display:flex;align-items:center;gap:6px;min-width:0;padding:7px 9px;border-radius:11px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.09);color:#b8c7e9;font-size:10px;white-space:nowrap}
+#smsotpPage .vn-step-chip span{display:grid;place-items:center;width:19px;height:19px;border-radius:7px;background:rgba(255,255,255,.10);font-size:9px;font-weight:900}
+#smsotpPage .vn-step-chip b{font-size:10px;font-weight:800}
+#smsotpPage .vn-step-chip.is-active{color:#fff;background:rgba(103,117,255,.24);border-color:rgba(172,164,255,.7)}
+#smsotpPage .vn-step-chip.is-active span,#smsotpPage .vn-step-chip.is-done span{background:#a7a4ff;color:#171747}
+#smsotpPage .vn-step-chip.is-done{color:#e9efff}
+#smsotpPage .vn-progress-line{height:1px;flex:1;min-width:4px;background:rgba(226,234,255,.25)}
+#smsotpPage .vn-card,#usNumberOrderPage .vn-card{background:var(--card-bg,#fff);padding:clamp(15px,4vw,22px)!important;margin:0 0 15px!important;border:1px solid var(--vn-border)!important;border-radius:22px!important;box-shadow:0 8px 28px rgba(15,35,75,.055)!important}
+#smsotpPage .vn-card-heading{align-items:center;margin-bottom:12px}
+#smsotpPage .sparkle-usn-eyebrow{font-size:9px;letter-spacing:1.5px;font-weight:900;color:#7667e9}
+#smsotpPage .vn-card-heading h3{font-size:19px;letter-spacing:-.45px;margin:5px 0 0;color:var(--vn-ink)}
+#smsotpPage .sparkle-usn-lock{color:#14785f;background:#e5fbf3;padding:7px 9px;font-size:10px}
+#smsotpPage .vn-help-copy{font-size:12px;line-height:1.6;color:var(--vn-muted);margin:0 0 12px}
+#smsotpPage .vn-field-label{display:block;font-size:11px!important;font-weight:850!important;color:var(--vn-ink);margin:12px 0 7px!important}
+#smsotpPage .vn-search-wrap,#smsotpPage .vn-select-wrap{display:flex;align-items:center;gap:9px;width:100%;box-sizing:border-box;padding:0 12px;border:1px solid #dfe5f0;border-radius:13px;background:#f9faff;color:#6478a0}
+#smsotpPage .vn-search-wrap>span,#smsotpPage .vn-select-wrap>span:first-child{font-size:19px;font-weight:700}
+#smsotpPage .vn-search-wrap input{min-width:0;flex:1;box-sizing:border-box;width:100%;padding:13px 0!important;border:0!important;outline:0!important;background:transparent!important;box-shadow:none!important;color:var(--vn-ink)!important;font-size:13px!important}
+#smsotpPage .vn-search-wrap:focus-within,#smsotpPage .vn-select-wrap:focus-within{border-color:#8f8bf3;box-shadow:0 0 0 3px #7b71ed18}
+#smsotpPage .vn-list-meta{display:flex;justify-content:space-between;align-items:center;font-size:10px;font-weight:800;letter-spacing:.2px;color:#8390a6;margin:14px 1px 8px}
+#smsotpPage .vn-service-grid{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;margin:0!important;border-radius:0!important;background:transparent!important;overflow:visible!important}
+#smsotpPage .sparkle-number-service-row{display:flex;align-items:center;position:relative;min-width:0;min-height:64px!important;gap:9px!important;padding:10px!important;border:1px solid #e6eaf3!important;border-radius:14px!important;background:var(--card-bg,#fff)!important;color:var(--vn-ink)!important;box-shadow:0 2px 7px rgba(22,48,95,.025);text-align:left;cursor:pointer}
+#smsotpPage .sparkle-number-service-row.is-selected{background:#f0f1ff!important;border-color:#8c83f5!important;box-shadow:0 0 0 2px #8479f21a}
+#smsotpPage .sparkle-number-service-row:focus-visible,#smsotpPage .vn-operator-card:focus-visible{outline:3px solid #958af8;outline-offset:2px}
+#smsotpPage .sparkle-number-service-logo{display:grid;place-items:center;flex:0 0 34px;width:34px!important;height:34px!important;border-radius:12px!important;font-size:16px!important;font-weight:900;color:#fff;background:linear-gradient(145deg,#3286ff,#6257dc)!important;box-shadow:0 4px 10px #3959c21a}
+#smsotpPage .sparkle-number-service-name{display:block;min-width:0;font-size:12px!important;font-weight:850!important;line-height:1.3!important;letter-spacing:-.1px!important;overflow-wrap:anywhere}
+#smsotpPage .sparkle-number-row-check{display:none;place-items:center;margin-left:auto;flex:0 0 17px;width:17px;height:17px;border-radius:50%;background:#655beb;color:#fff;font-size:10px}
+#smsotpPage .sparkle-number-service-row.is-selected .sparkle-number-row-check{display:grid}
+#smsotpPage .vn-footnote{display:flex;align-items:flex-start;gap:7px;margin-top:14px;color:#8793a7;font-size:10px;line-height:1.55}
+#smsotpPage .vn-footnote span{color:#7869e9;font-size:13px}
+#smsotpPage .vn-selected-summary{display:flex;align-items:center;gap:10px;min-width:0;padding:12px;margin:0 0 16px;border:1px solid #e0e7ff;border-radius:15px;background:linear-gradient(115deg,#f1f3ff,#fafbff)}
+#smsotpPage .vn-selected-icon{display:grid;place-items:center;flex:0 0 31px;width:31px;height:31px;border-radius:10px;background:#e1e4ff;color:#5950d6;font-weight:900}
+#smsotpPage .vn-selected-copy{display:grid;gap:4px;min-width:0;flex:1}
+#smsotpPage .vn-selected-copy span{font-size:8px;font-weight:900;letter-spacing:1.2px;color:#7b84a1}
+#smsotpPage .vn-selected-copy strong{color:#132b52;font-size:13px;line-height:1.4;overflow-wrap:anywhere}
+#smsotpPage .number-step-change{border:1px solid #d7dcf0;border-radius:9px;background:#fff;color:#5d56c9;font-size:10px;font-weight:850;padding:8px 10px;cursor:pointer}
+#smsotpPage .vn-country-picker h4,#smsotpPage .vn-operator-intro h4{font-size:16px;font-weight:900;letter-spacing:-.25px;color:var(--vn-ink);margin:0 0 6px}
+#smsotpPage .vn-select-wrap select{appearance:none;flex:1;min-width:0;width:100%;padding:14px 0!important;border:0!important;background:transparent!important;box-shadow:none!important;outline:none;color:var(--vn-ink)!important;font-size:13px!important;font-weight:750}
+#smsotpPage .vn-select-chevron{font-size:18px!important;color:#6a6d96}
+#smsotpPage .vn-primary-button{display:flex;align-items:center;justify-content:center;gap:9px;min-height:48px;margin-top:15px!important;border-radius:13px!important;background:linear-gradient(110deg,#285fdd,#7561ee)!important;color:#fff!important;font-size:13px!important;font-weight:900!important;box-shadow:0 8px 17px #3f5bd61c}
+#smsotpPage .vn-primary-button:disabled{opacity:.45;box-shadow:none;cursor:not-allowed}
+#smsotpPage .vn-operator-intro{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 0 8px}
+#smsotpPage .vn-ngn-tag{flex:0 0 auto;border-radius:9px;padding:7px 9px;background:#edf7f3;color:#168064;font-size:9px;font-weight:900}
+#smsotpPage .vn-operator-grid{display:grid;gap:9px;margin:12px 0}
+#smsotpPage .vn-operator-card{display:flex;align-items:center;gap:11px;width:100%;min-width:0;padding:12px;border:1px solid #e4e9f3;border-radius:15px;background:var(--card-bg,#fff);color:var(--vn-ink);text-align:left;cursor:pointer;transition:border-color .15s,background .15s,box-shadow .15s}
+#smsotpPage .vn-operator-card[aria-pressed="true"]{border-color:#8177ef;background:linear-gradient(110deg,#f1f1ff,#fbfbff);box-shadow:0 0 0 2px #8378f21b}
+#smsotpPage .vn-operator-card:disabled{opacity:.58;cursor:not-allowed;background:#f6f7fa}
+#smsotpPage .vn-operator-icon{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:13px;background:#eef1ff;color:#655de0;font-size:16px;font-weight:900}
+#smsotpPage .vn-operator-card[data-operator="any"] .vn-operator-icon{background:#e4f7ef;color:#168466}
+#smsotpPage .vn-operator-info{display:grid;gap:5px;min-width:0;flex:1}
+#smsotpPage .vn-operator-name{font-size:12px;font-weight:900;line-height:1.35;color:#152d50;overflow-wrap:anywhere}
+#smsotpPage .vn-operator-meta{font-size:10px;color:#7a879d;line-height:1.45}
+#smsotpPage .vn-operator-price{font-size:14px;font-weight:950;color:#175ad0;white-space:nowrap;text-align:right;letter-spacing:-.2px}
+#smsotpPage .vn-operator-price small{display:block;margin-top:4px;font-size:8px;letter-spacing:.2px;color:#8693a8;font-weight:800}
+#smsotpPage .vn-operator-selected-mark{display:grid;place-items:center;width:17px;height:17px;flex:0 0 17px;border:1px solid #d7ddec;border-radius:50%;font-size:9px;color:transparent}
+#smsotpPage .vn-operator-card[aria-pressed="true"] .vn-operator-selected-mark{background:#695de6;border-color:#695de6;color:#fff}
+#smsotpPage .vn-operator-badge{display:inline-flex;align-self:start;border-radius:5px;padding:3px 5px;background:#e6f7f0;color:#15765d;font-size:8px;font-weight:900;letter-spacing:.25px}
+#smsotpPage .vn-price-result{margin:10px 0 0!important;border:1px solid #dce5f8;border-radius:15px;background:#f8faff;padding:3px;font-size:12px}
+#smsotpPage .vn-price-result>div{border:0!important;background:transparent!important;padding:12px!important}
+#smsotpPage .vn-safety-note{margin-top:13px!important;border-radius:12px;background:#f5f8ff;padding:10px;font-size:10px}
+#smsotpPage .vn-review-top{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+#smsotpPage .vn-review-top .data-back{flex:0 0 39px;width:39px;height:39px;border-radius:12px;background:#f1f3ff;color:#5149cc}
+#smsotpPage .vn-review-top h2{font-size:20px;letter-spacing:-.55px;color:var(--vn-ink);margin:4px 0 0}
+#smsotpPage .vn-review-shield{display:grid;place-items:center;margin-left:auto;flex:0 0 31px;height:31px;border-radius:10px;background:#e4fbf2;color:#14815e;font-weight:950}
+#smsotpPage .vn-review-summary{margin:16px 0 12px;border:1px solid #e4e9f3;border-radius:15px;padding:4px 13px;background:#fff}
+#smsotpPage .vn-review-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid #eef1f6;font-size:11px;color:#6a7890}
+#smsotpPage .vn-review-row strong{max-width:62%;text-align:right;color:#183153;font-size:11px;font-weight:850;overflow-wrap:anywhere}
+#smsotpPage .vn-grand-total{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 0 12px;font-size:12px;font-weight:900;color:#173257}
+#smsotpPage .vn-grand-total strong{font-size:21px;color:#245fda;letter-spacing:-.55px}
+#smsotpPage .vn-funds-message{margin:10px 0;padding:11px 12px;border-radius:10px;font-size:12px;line-height:1.5}
+#smsotpPage .vn-pending-note{display:flex;gap:8px;align-items:flex-start;margin:14px 0;color:#7b889e;font-size:10px;line-height:1.55}
+#smsotpPage .vn-pending-note span{color:#7066e8;font-size:14px}
+#smsotpPage .vn-pending-note p{margin:0}
+#smsotpPage .vn-secondary-button{min-height:44px;margin-top:8px!important;border:1px solid #dfe5f0!important;border-radius:12px!important;background:transparent!important;color:#54617a!important;font-size:12px!important;font-weight:800!important}
+#smsotpPage .vn-review-message{margin-top:10px!important;color:var(--vn-muted);font-size:11px}
+#usNumberOrderPage .vn-order-hero{position:relative;overflow:hidden;padding:22px 20px;margin-bottom:16px;border-radius:23px;background:radial-gradient(circle at 90% 15%,#655bdc66,transparent 33%),linear-gradient(135deg,#071a41,#143568 65%,#34306f);color:#fff}
+#usNumberOrderPage .vn-order-hero-icon{display:grid;place-items:center;width:38px;height:38px;margin-bottom:14px;border:1px solid #ffffff33;border-radius:12px;background:#ffffff10;color:#ffe08b;font-size:21px}
+#usNumberOrderPage .vn-order-hero h2{font-size:24px;margin:7px 0}
+#usNumberOrderPage .vn-order-empty{text-align:center;padding:26px 20px!important}
+#usNumberOrderPage .vn-empty-art{display:grid;place-items:center;width:52px;height:52px;margin:0 auto 15px;border-radius:17px;background:linear-gradient(140deg,#e4e8ff,#f1eeff);color:#635bdd;font-size:28px;font-weight:500}
+#usNumberOrderPage .vn-order-empty h3{margin:0 0 8px;color:var(--vn-ink);font-size:17px}
+#usNumberOrderPage .vn-order-empty p{max-width:320px;margin:0 auto 16px;color:var(--vn-muted);font-size:12px;line-height:1.65}
+#usNumberOrderPage .vn-order-detail-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}
+#usNumberOrderPage .vn-order-detail-head h2{font-size:17px;color:var(--vn-ink);margin:5px 0 0;overflow-wrap:anywhere}
+#usNumberOrderPage .vn-order-live-tag{display:flex;align-items:center;gap:7px;white-space:nowrap;border-radius:999px;background:#e8faf2;color:#18775f;padding:7px 9px;font-size:8px;font-weight:900;letter-spacing:.7px}
+#usNumberOrderPage .vn-order-live-tag i{width:6px;height:6px;box-shadow:none}
+#usNumberOrderPage .vn-number-display{display:grid;gap:8px;padding:17px 15px;border-radius:16px;background:linear-gradient(115deg,#091d47,#263c79);color:#fff}
+#usNumberOrderPage .vn-number-display span,#usNumberOrderPage .vn-code-display span{font-size:9px;font-weight:900;letter-spacing:1.2px;color:#b9c9f4}
+#usNumberOrderPage .vn-number-display strong{font-size:clamp(21px,5vw,27px);letter-spacing:-.5px;overflow-wrap:anywhere;color:#fff}
+#usNumberOrderPage .vn-code-display{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:10px;padding:15px;border:1px solid #e0e6f4;border-radius:15px;background:#f7f8ff}
+#usNumberOrderPage .vn-code-display>div{display:grid;gap:8px;min-width:0}
+#usNumberOrderPage .vn-code-display span{color:#7c86a2}
+#usNumberOrderPage .vn-code-display strong{font-size:24px;line-height:1.25;letter-spacing:1px;color:#282c73;overflow-wrap:anywhere}
+#usNumberOrderPage .vn-code-spark{color:#7565ea;font-size:20px}
+#usNumberOrderPage .vn-order-facts{display:grid;gap:0;margin-top:12px;border:1px solid #e4e9f3;border-radius:13px;padding:0 12px}
+#usNumberOrderPage .vn-order-facts>div{display:grid;gap:5px;padding:11px 0;border-bottom:1px solid #eef1f6}
+#usNumberOrderPage .vn-order-facts>div:last-child{border-bottom:0}
+#usNumberOrderPage .vn-order-facts span{font-size:10px;color:#8590a3}
+#usNumberOrderPage .vn-order-facts strong{font-size:11px;color:#1c355a;overflow-wrap:anywhere}
+#usNumberOrderPage .vn-order-message{margin-top:12px;padding:10px;border-radius:10px;background:#f6f8fc;color:#64748b;font-size:11px;line-height:1.55}
+#usNumberOrderPage .vn-order-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:14px}
+#usNumberOrderPage .vn-order-actions button{min-height:45px;border-radius:12px;font-size:11px;font-weight:900}
+#usNumberOrderPage .vn-cancel-order-button{border:1px solid #f1dcdc;background:#fff7f7;color:#9a4545}
+#usNumberOrderPage .vn-back-to-buy{margin:0 0 18px!important}
+#usNumberOrderPage .vn-primary-button{display:flex;align-items:center;justify-content:center;gap:8px;min-height:47px;border-radius:13px;background:linear-gradient(110deg,#285fdd,#7561ee);color:white;font-size:12px;font-weight:900}
+#smsotpPage .vn-inline-loading{display:flex;align-items:center;gap:9px;padding:15px;color:#6c7a91;font-size:11px}
+#smsotpPage .vn-spinner{width:15px;height:15px;border:2px solid #dde3f0;border-top-color:#655de8;border-radius:50%;animation:vnspin .7s linear infinite}
+@keyframes vnspin{to{transform:rotate(360deg)}}
+@media(max-width:370px){#smsotpPage .vn-hero{padding:17px 15px 14px}#smsotpPage .vn-hero-art{flex-basis:65px;transform:scale(.86);transform-origin:center right}#smsotpPage .vn-progress{gap:4px}#smsotpPage .vn-step-chip{padding:6px 5px;gap:4px}#smsotpPage .vn-step-chip b{font-size:9px}#smsotpPage .vn-step-chip span{width:17px;height:17px}#smsotpPage .sparkle-number-service-row{padding:9px 7px!important;gap:6px!important}#smsotpPage .sparkle-number-service-logo{width:30px!important;height:30px!important;flex-basis:30px}#smsotpPage .sparkle-number-service-name{font-size:11px!important}#smsotpPage .vn-operator-card{gap:7px;padding:10px 8px}#smsotpPage .vn-operator-price{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#smsotpPage *,#usNumberOrderPage *{animation:none!important;transition:none!important}}
+</style>
 </head>
 
 <body>
@@ -3124,74 +3265,141 @@ support@sparkle.com
         </section>
 
         <!-- US number purchase page: secure Edge Functions. -->
-        <section class="page" id="smsotpPage">
-  <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to home">‹</button><h1>Buy Virtual Number</h1></div>
-  <div class="sparkle-usn-hero">
-    <div class="sparkle-usn-kicker"><span class="sparkle-usn-live-dot"></span> LIVE PRICES · NAIRA</div>
-    <h2>Choose the right number.</h2>
-    <p>Browse available services, compare each operator’s live Sparkle price, and confirm securely with your Transaction PIN.</p>
-    <div class="sparkle-usn-hero-foot"><span><b>01</b> Choose country</span><span><b>02</b> Compare operators</span><span><b>03</b> Confirm securely</span></div>
+         <section class="page" id="smsotpPage">
+  <div class="data-topbar vn-topbar">
+    <button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to home">‹</button>
+    <h1>Virtual Numbers</h1>
   </div>
-  <div id="numberCatalogPanel" class="service-page sparkle-usn-form">
-    <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3>Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
-    <label for="numberCountrySelect">Country</label>
-    <select id="numberCountrySelect" onchange="onNumberCountryChange()"><option value="us">🇺🇸 United States</option></select>
-    <div id="numberCountryCards" class="sparkle-number-country-list" aria-label="Choose a country"></div>
-    <label for="numberAppSearch">Find an app or service</label>
-    <input id="numberAppSearch" type="search" placeholder="Find website or app" oninput="filterNumberApps()">
-    <label for="numberAppSelect">Verification service</label>
-    <select id="numberAppSelect" onchange="onNumberServiceChange()" hidden><option value="">Loading available services…</option></select>
-    <div id="numberServiceCards" class="sparkle-number-service-list" aria-label="Choose a service"><div class="data-empty">Loading available services…</div></div>
-    <label for="numberOperatorSelect">Network operator and price</label>
-    <select id="numberOperatorSelect" onchange="onNumberOperatorChange()"><option value="">Choose a service first</option></select>
-    <div id="numberPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
-    <button id="numberBuyButton" class="btn primary full sparkle-usn-buy-button" type="button" onclick="buyNumberNumber()" disabled>Check price first</button>
-    <p class="sparkle-usn-safety"><span>🔒</span> Your price is checked live. Your wallet is charged only through the verified purchase flow after you confirm with your Transaction PIN.</p>
+
+  <header class="vn-hero">
+    <div class="vn-hero-top">
+      <span class="vn-live-pill"><i aria-hidden="true"></i> LIVE CATALOGUE</span>
+      <span class="vn-currency-pill">Prices in ₦ NGN</span>
+    </div>
+    <div class="vn-hero-content">
+      <div class="vn-hero-copy">
+        <span class="vn-eyebrow">VERIFY WITH SPARKLE</span>
+        <h2 id="numberCurrentStepTitle">Choose your service.</h2>
+        <p id="numberCurrentStepHint">Pick the app or website you want to verify.</p>
+      </div>
+      <div class="vn-hero-art" aria-hidden="true"><span class="vn-art-orbit"></span><span class="vn-art-phone"><b>✓</b><i></i><i></i><i></i></span><span class="vn-art-star">✦</span></div>
+    </div>
+    <div class="vn-progress" aria-label="Virtual number order steps">
+      <div class="vn-step-chip is-active" data-vn-step="service"><span>01</span><b>Service</b></div>
+      <span class="vn-progress-line"></span>
+      <div class="vn-step-chip" data-vn-step="country"><span>02</span><b>Country</b></div>
+      <span class="vn-progress-line"></span>
+      <div class="vn-step-chip" data-vn-step="operator"><span>03</span><b>Operator</b></div>
+    </div>
+  </header>
+
+  <div id="numberCatalogPanel" class="service-page sparkle-usn-form vn-card">
+    <div class="sparkle-usn-section-head vn-card-heading">
+      <div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3 id="numberStepHeading">Choose a service</h3></div>
+      <span class="sparkle-usn-lock"><span aria-hidden="true">♧</span> Secure</span>
+    </div>
+
+    <div id="numberServiceStep" class="vn-step-panel">
+      <p class="vn-help-copy">Search for an app, then tap it to continue. Only the choices for your current step are shown.</p>
+      <label class="vn-field-label" for="numberAppSearch">Search services</label>
+      <div class="vn-search-wrap"><span aria-hidden="true">⌕</span><input id="numberAppSearch" type="search" placeholder="Facebook, WhatsApp, Google…" oninput="filterNumberApps()" autocomplete="off"></div>
+      <div id="numberServiceCount" class="vn-list-meta" aria-live="polite">Loading available services…</div>
+      <label for="numberAppSelect" class="number-screenreader-only">Verification service</label>
+      <select id="numberAppSelect" onchange="onNumberServiceChange()" hidden><option value="">Loading available services…</option></select>
+      <div id="numberServiceCards" class="sparkle-number-service-list vn-service-grid" aria-label="Choose a verification service"><div class="data-empty">Loading available services…</div></div>
+      <div class="vn-footnote"><span aria-hidden="true">ⓘ</span> Availability can differ by country and can change as numbers run out.</div>
+    </div>
+
+    <div id="numberCountryStep" class="vn-step-panel" style="display:none">
+      <div class="vn-selected-summary">
+        <span class="vn-selected-icon" aria-hidden="true">✓</span>
+        <div class="vn-selected-copy"><span>YOUR SERVICE</span><strong id="numberSelectedServiceName">—</strong></div>
+        <button class="number-step-change" type="button" onclick="editNumberService()">Change</button>
+      </div>
+      <div id="numberCountryPicker" class="vn-country-picker">
+        <h4>Where do you need the number?</h4>
+        <p class="vn-help-copy">Choose a country to load the operators and prices available for your selected service.</p>
+        <label class="vn-field-label" for="numberCountrySelect">Country</label>
+        <div class="vn-select-wrap"><span aria-hidden="true">◎</span><select id="numberCountrySelect" onchange="onNumberCountryChange()"><option value="us">🇺🇸 United States</option></select><span aria-hidden="true" class="vn-select-chevron">⌄</span></div>
+        <div id="numberCountryCards" class="sparkle-number-country-list" aria-label="Choose a country" style="display:none"></div>
+        <button id="numberContinueCountryButton" class="btn primary full vn-primary-button" type="button" onclick="continueWithSelectedNumberCountry()">View operators <span aria-hidden="true">→</span></button>
+      </div>
+      <div id="numberCountryChosenSummary" class="vn-selected-summary" style="display:none">
+        <span class="vn-selected-icon" aria-hidden="true">◎</span>
+        <div class="vn-selected-copy"><span>YOUR COUNTRY</span><strong id="numberChosenCountryName">—</strong></div>
+        <button class="number-step-change" type="button" onclick="editNumberCountry()">Change</button>
+      </div>
+    </div>
+
+    <div id="numberOperatorStep" class="vn-step-panel" style="display:none">
+      <div class="vn-operator-intro"><div><span class="sparkle-usn-eyebrow">LIVE COMPARISON</span><h4>Choose an operator</h4></div><span class="vn-ngn-tag">NGN · ₦</span></div>
+      <p class="vn-help-copy">Each operator can have a different price and stock level. Choose the exact offer you want.</p>
+      <label for="numberOperatorSelect" class="number-screenreader-only">Choose an operator</label>
+      <select id="numberOperatorSelect" onchange="onNumberOperatorChange()" hidden aria-hidden="true" tabindex="-1"><option value="">Choose an operator</option></select>
+      <div id="numberOperatorCards" class="vn-operator-grid" aria-label="Operators and prices"><div class="vn-inline-loading"><span class="vn-spinner" aria-hidden="true"></span> Loading live operator offers…</div></div>
+    </div>
+
+    <div id="numberPriceResult" class="sparkle-usn-price-result vn-price-result" role="status" aria-live="polite" style="display:none">Choose an operator to check its live Sparkle price.</div>
+    <button id="numberBuyButton" class="btn primary full sparkle-usn-buy-button vn-primary-button" type="button" onclick="buyNumberNumber()" disabled style="display:none">Check price first</button>
+    <p id="numberSelectionSafetyNote" class="sparkle-usn-safety vn-safety-note" style="display:none"><span aria-hidden="true">🔒</span> The price is checked again before purchase. Your wallet is charged only through the secure purchase process after you confirm with your Transaction PIN.</p>
   </div>
-  <div id="numberReviewPanel" class="service-page sparkle-usn-form" style="display:none">
-    <div class="data-topbar" style="padding:0;margin-bottom:16px"><button class="data-back" type="button" onclick="backFromNumberReview()">‹</button><h2 style="margin:0">Review purchase</h2></div>
-    <p style="color:var(--muted);margin-top:0">Check your country, service, operator, and total. Your wallet will not be charged until the purchase is confirmed with your Transaction PIN.</p>
-    <div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div>
-    <div class="summary-line"><span>Service</span><strong id="numberReviewService">—</strong></div>
-    <div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div>
-    <div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div>
-    <div class="sparkle-summary-total"><span>Total</span><strong id="numberReviewGrandTotal">—</strong></div>
-    <div id="numberReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div>
-    <p style="font-size:12px;color:var(--muted)">If your order is pending, check its status instead of purchasing again.</p>
-    <button id="numberReviewConfirm" class="btn primary full" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button>
-    <button class="btn full" type="button" style="margin-top:8px" onclick="backFromNumberReview()">Go back and edit</button>
-    <div id="numberReviewMessage" role="status" style="margin-top:10px;color:var(--muted)"></div>
+
+  <div id="numberReviewPanel" class="service-page sparkle-usn-form vn-card vn-review-card" style="display:none">
+    <div class="vn-review-top">
+      <button class="data-back" type="button" onclick="backFromNumberReview()" aria-label="Back to operator selection">‹</button>
+      <div><span class="sparkle-usn-eyebrow">FINAL CHECK</span><h2>Review your order</h2></div>
+      <span class="vn-review-shield" aria-hidden="true">✓</span>
+    </div>
+    <p class="vn-help-copy">Confirm the service and operator below. No wallet charge is made until the secure purchase is confirmed.</p>
+    <div class="vn-review-summary">
+      <div class="vn-review-row"><span>Operator</span><strong id="numberReviewServer">—</strong></div>
+      <div class="vn-review-row"><span>Service &amp; country</span><strong id="numberReviewService">—</strong></div>
+      <div class="vn-review-row"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div>
+      <div class="vn-review-row"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div>
+      <div class="vn-grand-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div>
+    </div>
+    <div id="numberReviewFundsMessage" role="status" class="vn-funds-message" style="display:none"></div>
+    <div class="vn-pending-note"><span aria-hidden="true">ⓘ</span><p>If an order is pending, check that order's status instead of purchasing again.</p></div>
+    <button id="numberReviewConfirm" class="btn primary full vn-primary-button" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button>
+    <button class="btn full vn-secondary-button" type="button" onclick="backFromNumberReview()">Go back and edit</button>
+    <div id="numberReviewMessage" role="status" aria-live="polite" class="vn-review-message"></div>
   </div>
 </section>
 
-<!-- Dedicated US Number order page: separate from price preview and purchase form. -->
+
+        <!-- Dedicated Virtual Number order page. -->
         <section class="page" id="usNumberOrderPage">
-          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">‹</button><h1>Your Virtual Number Order</h1></div>
-          <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest virtual number purchase.</p>
-          <div id="numberOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
-            <h3 style="margin-top:0">No virtual number order to display</h3>
-            <p style="color:var(--muted)">After you confirm a virtual number purchase with your transaction PIN, its order details will appear on this page.</p>
-            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Buy Virtual Number</button>
+          <div class="data-topbar vn-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()" aria-label="Back to Virtual Numbers">‹</button><h1>Your Number</h1></div>
+          <div class="vn-order-hero">
+            <span class="vn-order-hero-icon" aria-hidden="true">✦</span>
+            <span class="vn-eyebrow">VIRTUAL NUMBER CENTRE</span>
+            <h2>Your verification, in one place.</h2>
+            <p>View your rented number, check for incoming SMS, and keep track of the order status.</p>
           </div>
-          <div id="numberOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
-            <h2 style="margin:0 0 16px">Order details</h2>
-            <div style="display:grid;gap:10px">
-              <div><div style="font-size:12px;color:var(--muted)">Service</div><strong id="numberOrderService">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Phone number</div><strong id="numberOrderPhone" style="font-size:20px;overflow-wrap:anywhere">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Verification code</div><strong id="numberOrderOtp" style="font-size:24px;overflow-wrap:anywhere">Waiting for SMS…</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Status</div><strong id="numberOrderStatus">—</strong></div>
-              <div><div style="font-size:12px;color:var(--muted)">Order reference</div><span id="numberOrderReference" style="overflow-wrap:anywhere">—</span></div>
+          <div id="numberOrderEmpty" class="service-page vn-card vn-order-empty">
+            <div class="vn-empty-art" aria-hidden="true">＋</div>
+            <h3>No active number order</h3>
+            <p>Your number, SMS code and order details will appear here after you confirm a purchase.</p>
+            <button class="btn primary full vn-primary-button" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Get a virtual number <span aria-hidden="true">→</span></button>
+          </div>
+          <div id="numberOrderCard" class="service-page vn-card vn-order-detail" style="display:none">
+            <div class="vn-order-detail-head"><div><span class="sparkle-usn-eyebrow">ORDER DETAILS</span><h2 id="numberOrderService">Your service</h2></div><span class="vn-order-live-tag"><i aria-hidden="true"></i> LIVE STATUS</span></div>
+            <div class="vn-number-display"><span>YOUR VIRTUAL NUMBER</span><strong id="numberOrderPhone">—</strong></div>
+            <div class="vn-code-display"><div><span>SMS VERIFICATION CODE</span><strong id="numberOrderOtp">Waiting for SMS…</strong></div><span class="vn-code-spark" aria-hidden="true">✦</span></div>
+            <div class="vn-order-facts">
+              <div><span>Order status</span><strong id="numberOrderStatus">—</strong></div>
+              <div><span>Order reference</span><strong id="numberOrderReference">—</strong></div>
             </div>
-            <div id="numberOrderMessage" role="status" style="margin-top:12px;color:var(--muted)"></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px">
-              <button class="btn primary" type="button" onclick="checkNumberOrder()">Check OTP</button>
-              <button class="btn" type="button" onclick="cancelNumberOrder()">Cancel order</button>
+            <div id="numberOrderMessage" role="status" aria-live="polite" class="vn-order-message"></div>
+            <div class="vn-order-actions">
+              <button class="btn primary" type="button" onclick="checkNumberOrder()">↻ Check for SMS</button>
+              <button class="btn vn-cancel-order-button" type="button" onclick="cancelNumberOrder()">Cancel order</button>
             </div>
           </div>
-          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadNumberCountries()">Back to Buy Virtual Number</button>
+          <button class="btn full vn-secondary-button vn-back-to-buy" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Back to Virtual Numbers</button>
         </section>
 
-        <!-- CRYPTO TRADE: live reference pricing only; no wallet debits or crypto payouts are enabled. -->
+<!-- CRYPTO TRADE: live reference pricing only; no wallet debits or crypto payouts are enabled. -->
         <section class="page" id="cryptoTradePage">
           <div class="data-topbar"><button class="data-back" type="button" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to homepage">‹</button><h1>Crypto Trade</h1></div>
           <div class="sparkle-crypto-hero">
@@ -5771,6 +5979,87 @@ function normalizeNumberServices(response){
     return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
+let numberSelectionStep = "service";
+function updateNumberSelectionStep(step){
+  if(step!=="service"&&step!=="country"&&step!=="operator")step="service";
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const service=numberServicesCache.find(item=>item.code===serviceCode);
+  const countryCode=document.getElementById("numberCountrySelect")?.value||"us";
+  const country=numberCountriesCache.find(item=>item.code===countryCode);
+  if(step!=="service"&&!service)step="service";
+  numberSelectionStep=step;
+  const serviceStep=document.getElementById("numberServiceStep");
+  const countryStep=document.getElementById("numberCountryStep");
+  const countryPicker=document.getElementById("numberCountryPicker");
+  const countrySummary=document.getElementById("numberCountryChosenSummary");
+  const operatorStep=document.getElementById("numberOperatorStep");
+  const result=document.getElementById("numberPriceResult");
+  const buy=document.getElementById("numberBuyButton");
+  const safety=document.getElementById("numberSelectionSafetyNote");
+  const serviceName=document.getElementById("numberSelectedServiceName");
+  const countryName=document.getElementById("numberChosenCountryName");
+  const title=document.getElementById("numberCurrentStepTitle");
+  const hint=document.getElementById("numberCurrentStepHint");
+  const heading=document.getElementById("numberStepHeading");
+  if(serviceName)serviceName.textContent=service?.name||"Choose a service";
+  if(countryName)countryName.textContent=(country?.flag?country.flag+" ":"")+(country?.name||countryCode.toUpperCase());
+  const copy={
+    service:["Choose your service.","Pick the app or website you want to verify.","Choose a service"],
+    country:["Choose your country.","Select one country to see its available operators.","Choose a country"],
+    operator:["Compare operator prices.","Pick the exact available offer that fits your budget.","Choose an operator"]
+  }[step];
+  if(title)title.textContent=copy[0];
+  if(hint)hint.textContent=copy[1];
+  if(heading)heading.textContent=copy[2];
+  if(serviceStep)serviceStep.style.display=step==="service"?"block":"none";
+  if(countryStep)countryStep.style.display=step==="service"?"none":"block";
+  if(countryPicker)countryPicker.style.display=step==="country"?"block":"none";
+  if(countrySummary)countrySummary.style.display=step==="operator"?"flex":"none";
+  if(operatorStep)operatorStep.style.display=step==="operator"?"block":"none";
+  if(result)result.style.display=step==="operator"?"block":"none";
+  if(buy)buy.style.display=step==="operator"?"block":"none";
+  if(safety)safety.style.display=step==="operator"?"flex":"none";
+  document.querySelectorAll("#smsotpPage .vn-step-chip").forEach(el=>{
+    const key=el.getAttribute("data-vn-step");
+    const order={service:0,country:1,operator:2};
+    el.classList.toggle("is-active",key===step);
+    el.classList.toggle("is-done",order[key]<order[step]);
+  });
+}
+function resetNumberPriceForStep(message){
+  numberCurrentQuote=null;
+  const buy=document.getElementById("numberBuyButton");
+  if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  const result=document.getElementById("numberPriceResult");
+  if(result&&message)result.textContent=message;
+}
+function editNumberService(){
+  if(numberPurchaseInProgress)return;
+  numberOperatorsCache=[];
+  const op=document.getElementById("numberOperatorSelect");
+  if(op)op.innerHTML='<option value="">Choose a country first</option>';
+  resetNumberPriceForStep("Choose a service, then select a country.");
+  updateNumberSelectionStep("service");
+}
+function editNumberCountry(){
+  if(numberPurchaseInProgress)return;
+  numberOperatorsCache=[];
+  const op=document.getElementById("numberOperatorSelect");
+  if(op)op.innerHTML='<option value="">Choose an operator</option>';
+  resetNumberPriceForStep("Choose your country to load operator prices.");
+  updateNumberSelectionStep("country");
+}
+function continueWithSelectedNumberCountry(){
+  if(numberPurchaseInProgress)return;
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+  const countryCode=document.getElementById("numberCountrySelect")?.value||"";
+  if(!serviceCode){updateNumberSelectionStep("service");return;}
+  if(!countryCode){alert("Choose a country first.");return;}
+  resetNumberPriceForStep("Loading current operator offers…");
+  updateNumberSelectionStep("operator");
+  void loadNumberOperators("any");
+}
+
 function renderNumberCountries(){
    const select=document.getElementById("numberCountrySelect");if(!select)return;
    const current=select.value||"us";
@@ -5781,57 +6070,105 @@ function renderNumberCountries(){
  }
  function chooseNumberCountry(code){const select=document.getElementById("numberCountrySelect");if(!select||!numberCountriesCache.some(c=>c.code===code))return;select.value=code;renderNumberCountries();void onNumberCountryChange();}
 function renderNumberApps(items){
-   const select=document.getElementById("numberAppSelect");if(!select)return;
-   const current=select.value;
-   select.innerHTML='<option value="">Choose a service</option>';
-   items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name;select.appendChild(option);});
-   if(items.some(item=>item.code===current))select.value=current;
-   const list=document.getElementById("numberServiceCards");if(!list)return;
-   const iconFor=name=>{const n=String(name||"").toLowerCase();if(n.includes("amazon"))return "a";if(n.includes("facebook"))return "f";if(n.includes("telegram"))return "➤";if(n.includes("whatsapp"))return "◔";if(n.includes("google")||n.includes("youtube"))return "G";if(n.includes("microsoft"))return "▦";if(n.includes("openai")||n.includes("chatgpt"))return "✳";if(n.includes("instagram")||n.includes("threads"))return "◎";if(n.includes("apple"))return "A";return String(name||"•").trim().charAt(0).toUpperCase()||"•";};
-   list.innerHTML=items.length?items.map(item=>`<button type="button" class="sparkle-number-service-row ${item.code===select.value?"is-selected":""}" onclick="chooseNumberService('${escapeHtml(item.code)}')"><span class="sparkle-number-service-logo">${escapeHtml(iconFor(item.name))}</span><span class="sparkle-number-service-name">${escapeHtml(item.name)}</span><span class="sparkle-number-row-check">✓</span></button>`).join(""):'<div class="data-empty">No services are currently listed for this country.</div>';
- }
- function chooseNumberService(code){const select=document.getElementById("numberAppSelect");if(!select||!numberServicesCache.some(x=>x.code===code))return;select.value=code;renderNumberApps(numberServicesCache);void onNumberServiceChange();}
+  const select=document.getElementById("numberAppSelect");if(!select)return;
+  const current=select.value;
+  select.innerHTML='<option value="">Choose a service</option>';
+  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name;select.appendChild(option);});
+  if(items.some(item=>item.code===current))select.value=current;
+  const list=document.getElementById("numberServiceCards"),count=document.getElementById("numberServiceCount");
+  if(count)count.textContent=items.length===1?"1 service available":items.length.toLocaleString("en-NG")+" services available";
+  if(!list)return;
+  const iconFor=name=>{const n=String(name||"").toLowerCase();if(n.includes("amazon"))return "a";if(n.includes("facebook"))return "f";if(n.includes("telegram"))return "➤";if(n.includes("whatsapp"))return "◔";if(n.includes("google")||n.includes("youtube"))return "G";if(n.includes("microsoft"))return "▦";if(n.includes("openai")||n.includes("chatgpt"))return "✳";if(n.includes("instagram")||n.includes("threads"))return "◎";if(n.includes("apple"))return "A";if(n.includes("tiktok"))return "♪";return String(name||"•").trim().charAt(0).toUpperCase()||"•";};
+  list.innerHTML=items.length?items.map(item=>'<button type="button" class="sparkle-number-service-row '+(item.code===select.value?'is-selected':'')+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')" aria-pressed="'+(item.code===select.value?'true':'false')+'"><span class="sparkle-number-service-logo" aria-hidden="true">'+escapeHtml(iconFor(item.name))+'</span><span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>').join(""):'<div class="data-empty">No services match your search. Try another name or refresh the catalogue.</div>';
+}
+function chooseNumberService(code){
+  const select=document.getElementById("numberAppSelect");
+  if(!select||!numberServicesCache.some(item=>item.code===code)||numberPurchaseInProgress)return;
+  select.value=code;
+  const search=document.getElementById("numberAppSearch");if(search)search.value="";
+  renderNumberApps(numberServicesCache);
+  numberOperatorsCache=[];
+  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose a country first</option>';
+  const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
+  resetNumberPriceForStep("Choose a country to see this service’s operator offers.");
+  updateNumberSelectionStep("country");
+}
 function renderNumberOperators(items,preferred="any"){
- const select=document.getElementById("numberOperatorSelect");if(!select)return;
- select.innerHTML='<option value="">Choose an operator</option>';
- (Array.isArray(items)?items:[]).forEach(item=>{
-  const option=document.createElement("option");option.value=String(item.operator||"");
-  const price=Number(item.selling_price_ngn),priceText=Number.isFinite(price)&&price>0?" — ₦"+price.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
-  const stock=Number(item.stock||0),stockText=stock>0?" · "+stock.toLocaleString("en-NG")+" available":"";
-  const rate=Number(item.rate),rateText=Number.isFinite(rate)&&rate>0?" · "+rate.toFixed(1)+"% delivery rate":"";
-  const unavailableText=item.available===false?" · temporarily unavailable":"";
-  option.textContent=String(item.operator_label||item.operator||"Operator")+priceText+stockText+rateText+unavailableText;
-  option.disabled=item.available===false;
-  select.appendChild(option);
- });
- const enabled=(items||[]).filter(x=>x.available!==false);
- const preferredRow=enabled.find(x=>String(x.operator)===preferred);
- const anyRow=enabled.find(x=>String(x.operator)==="any");
- const chosen=preferredRow?String(preferredRow.operator):anyRow?"any":String(enabled[0]?.operator||"");
- select.value=chosen;
+  const select=document.getElementById("numberOperatorSelect");if(!select)return;
+  const list=document.getElementById("numberOperatorCards");
+  select.innerHTML='<option value="">Choose an operator</option>';
+  (Array.isArray(items)?items:[]).forEach(item=>{
+    const option=document.createElement("option");option.value=String(item.operator||"");
+    const price=Number(item.selling_price_ngn);
+    const priceText=Number.isFinite(price)&&price>0?" — ₦"+price.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
+    const stock=Number(item.stock||0);
+    option.textContent=String(item.operator_label||item.operator||"Operator")+priceText+(stock>0?" · "+stock.toLocaleString("en-NG")+" available":"")+(item.available===false?" · temporarily unavailable":"");
+    option.disabled=item.available===false;select.appendChild(option);
+  });
+  const enabled=(items||[]).filter(x=>x.available!==false);
+  const preferredRow=enabled.find(x=>String(x.operator)===preferred);
+  const anyRow=enabled.find(x=>String(x.operator)==="any");
+  const chosen=preferredRow?String(preferredRow.operator):anyRow?"any":String(enabled[0]?.operator||"");
+  select.value=chosen;
+  if(!list)return;
+  const iconFor=(item)=>String(item.operator)==="any"?"✦":String(item.operator_label||item.operator||"N").trim().charAt(0).toUpperCase()||"N";
+  list.innerHTML=(Array.isArray(items)&&items.length)?items.map(item=>{
+    const operator=String(item.operator||"");
+    const selected=operator===select.value;
+    const available=item.available!==false;
+    const p=Number(item.selling_price_ngn);
+    const price=Number.isFinite(p)&&p>0?"₦"+p.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Price unavailable";
+    const qty=Number(item.stock||0);
+    const rate=Number(item.rate);
+    const meta=(qty>0?qty.toLocaleString("en-NG")+" in stock":"Stock unavailable")+(Number.isFinite(rate)&&rate>0?" · "+rate.toFixed(1)+"% delivery rate":"");
+    const automatic=operator==="any";
+    const badge=automatic?'<span class="vn-operator-badge">AUTOMATIC ROUTING</span>':"";
+    const detail=automatic?"Selects a supported offer within this price cap.":"This price applies to this operator only.";
+    return '<button type="button" class="vn-operator-card" data-operator="'+escapeHtml(operator)+'" aria-pressed="'+(selected?'true':'false')+'" '+(available?'':'disabled')+' onclick="chooseNumberOperator(\''+escapeHtml(operator)+'\')"><span class="vn-operator-icon" aria-hidden="true">'+escapeHtml(iconFor(item))+'</span><span class="vn-operator-info"><span class="vn-operator-name">'+escapeHtml(item.operator_label||operator||"Operator")+'</span>'+badge+'<span class="vn-operator-meta">'+escapeHtml(detail)+'<br>'+escapeHtml(meta)+(available?"":" · Temporarily unavailable")+'</span></span><span class="vn-operator-price">'+escapeHtml(price)+'<small>'+(selected?"SELECTED":"PRICE")+'</small></span><span class="vn-operator-selected-mark" aria-hidden="true">✓</span></button>';
+  }).join(""):'<div class="data-empty">No operators are available for this service and country right now.</div>';
+}
+function chooseNumberOperator(operator){
+  if(numberPurchaseInProgress)return;
+  const select=document.getElementById("numberOperatorSelect");
+  const row=numberOperatorsCache.find(item=>String(item.operator)===String(operator));
+  if(!select||!row||row.available===false)return;
+  select.value=String(operator);
+  renderNumberOperators(numberOperatorsCache,String(operator));
+  onNumberOperatorChange();
 }
 async function loadNumberOperators(preferred){
- const serviceCode=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us";
- const select=document.getElementById("numberOperatorSelect"),result=document.getElementById("numberPriceResult"),buy=document.getElementById("numberBuyButton");
- numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
- if(!select)return;
- if(!serviceCode){numberOperatorsCache=[];select.innerHTML='<option value="">Choose a service first</option>';if(result)result.textContent="Choose a service to load its operators and live naira prices.";return;}
- select.innerHTML='<option value="">Loading operator prices…</option>';if(result)result.textContent="Loading each available operator and its current Sparkle price…";
- try{
-  const response=await callNumberCatalog({action:"operators",country,serviceName:serviceCode,serverId:"server1"});
-  const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
-  renderNumberOperators(numberOperatorsCache,preferred||"any");
-  if(!numberOperatorsCache.length)throw new Error("No operators are currently available for this service and country.");
-  if(!numberOperatorsCache.some(item=>item.available!==false)){
-    if(result)result.textContent="Live operator prices are listed in naira, but the supplier account cannot currently cover these USD prices. No Sparkle wallet funds will be taken.";
-    return;
+  const serviceCode=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us";
+  const select=document.getElementById("numberOperatorSelect"),result=document.getElementById("numberPriceResult"),buy=document.getElementById("numberBuyButton"),cards=document.getElementById("numberOperatorCards");
+  numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Checking price…";buy.style.opacity=".55";}
+  if(!select)return;
+  if(!serviceCode){numberOperatorsCache=[];select.innerHTML='<option value="">Choose a service first</option>';if(cards)cards.innerHTML='<div class="data-empty">Choose a service first.</div>';if(result)result.textContent="Choose a service to load operator prices.";return;}
+  select.innerHTML='<option value="">Loading operator prices…</option>';
+  if(cards)cards.innerHTML='<div class="vn-inline-loading"><span class="vn-spinner" aria-hidden="true"></span> Checking live prices and availability…</div>';
+  if(result)result.textContent="Checking live offers for this country and service…";
+  try{
+    const response=await callNumberCatalog({action:"operators",country,serviceName:serviceCode,serverId:"server1"});
+    const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
+    if(!numberOperatorsCache.length)throw new Error("No operator offers are available for this service and country right now.");
+    renderNumberOperators(numberOperatorsCache,preferred||"any");
+    if(!numberOperatorsCache.some(item=>item.available!==false)){
+      numberCurrentQuote=null;
+      if(result)result.textContent="Operator prices loaded, but none can currently be purchased. No Sparkle wallet funds have been used.";
+      if(buy){buy.disabled=true;buy.textContent="Currently unavailable";buy.style.opacity=".5";}
+      return;
+    }
+    if(!select.value){
+      if(result)result.textContent="Choose an operator that is currently available to check the final naira price.";
+      if(buy){buy.disabled=true;buy.textContent="Choose an operator";buy.style.opacity=".55";}
+      return;
+    }
+    await checkNumberPrice();
+  }catch(error){
+    numberCurrentQuote=null;numberOperatorsCache=[];
+    select.innerHTML='<option value="">No operators available</option>';
+    if(cards)cards.innerHTML='<div class="data-empty">Operator offers could not be loaded. Check your connection and try again.</div>';
+    if(result)result.textContent="Could not load live operator prices: "+String(error.message||error);
+    if(buy){buy.disabled=true;buy.textContent="Try checking prices again";buy.style.opacity=".55";}
   }
-  if(!select.value){
-    if(result)result.textContent="Choose an operator that is currently available to check its naira price.";
-    return;
-  }
-  await checkNumberPrice();
- }catch(error){numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(result)result.textContent="Could not load operator prices: "+String(error.message||error);}
 }
 function onNumberOperatorChange(){numberCurrentQuote=null;void checkNumberPrice();}
 async function loadNumberCountries(force=false){
@@ -5863,10 +6200,12 @@ async function loadNumberCountries(force=false){
   try{await numberCountriesLoadPromise;}finally{numberCountriesLoadPromise=null;}
 }
 async function onNumberCountryChange(){
-  numberCurrentQuote=null;numberOperatorsCache=[];numberServicesCache=[];
-  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Loading operators…</option>';
-  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
-  await loadNumberServices();
+  if(numberPurchaseInProgress)return;
+  resetNumberPriceForStep("Tap View operators to load the offers for this country.");
+  numberOperatorsCache=[];
+  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';
+  const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
+  updateNumberSelectionStep("country");
 }
 let numberCatalogLoadSequence = 0;
 async function loadNumberServices(){
@@ -5884,11 +6223,11 @@ async function loadNumberServices(){
     const response=await callNumberCatalog({action:"services",country,serverId:requestedServer});
     if(requestSequence!==numberCatalogLoadSequence || country!==(document.getElementById("numberCountrySelect")?.value||"us") || requestedServer!==numberCurrentServerId)return;
     numberServicesCache=normalizeNumberServices(response);
+    select.value="";
     renderNumberApps(numberServicesCache);
-    if(result)result.textContent=numberServicesCache.length?"Live services loaded. Select a service to compare operator prices in naira.":"No services are currently listed for this country. Choose another country and try again.";
-    const chosenService=document.getElementById("numberAppSelect")?.value||"";
-    if(chosenService&&numberServicesCache.some(item=>item.code===chosenService))await loadNumberOperators("any");
-    else {const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose a service first</option>';}
+    if(result)result.textContent=numberServicesCache.length?"Choose a service first, then select its country and operator.":"No services are currently listed. Please try another country or refresh the catalogue.";
+    const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose a country first</option>';
+    updateNumberSelectionStep("service");
     startNumberPriceAutoRefresh();
   }catch(error){
     numberServicesCache=[];
@@ -5920,9 +6259,8 @@ function startNumberPriceAutoRefresh(){
 }
 function filterNumberApps(){
   const query=(document.getElementById("numberAppSearch")?.value||"").toLowerCase().trim();
-  renderNumberApps(numberServicesCache.filter(item=>item.name.toLowerCase().includes(query)||item.code.toLowerCase().includes(query)));
-  numberCurrentQuote=null;
-  const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
+  const filtered=numberServicesCache.filter(item=>item.name.toLowerCase().includes(query)||item.code.toLowerCase().includes(query));
+  renderNumberApps(filtered);
 }
 function onNumberServiceChange(){numberCurrentQuote=null;void loadNumberOperators("any");}
 async function checkNumberPrice(){
