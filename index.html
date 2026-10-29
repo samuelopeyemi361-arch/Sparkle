@@ -1246,6 +1246,19 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .sparkle-usn-safety span{flex:none}
 @media(max-width:380px){.sparkle-usn-server-grid{gap:6px}.sparkle-usn-server-card{padding:10px 8px}.sparkle-usn-hero{padding:19px 16px}.sparkle-usn-hero-foot{gap:8px}}
 
+/* 5SIM-inspired premium service/country rows; no catalogue prices or supplier counts shown. */
+.sparkle-number-country-list,.sparkle-number-service-list{display:grid;gap:3px;margin:10px 0 18px;border-radius:20px;overflow:hidden;background:#f3f5f8}
+.sparkle-number-country-row,.sparkle-number-service-row{width:100%;display:flex;align-items:center;gap:13px;min-height:70px;padding:12px 16px;border:0;border-bottom:1px solid #eef0f4;background:#fff;color:#17283c;text-align:left;cursor:pointer;font:inherit}
+.sparkle-number-country-row.is-selected,.sparkle-number-service-row.is-selected{background:#edf5ff;box-shadow:inset 4px 0 #2185e8}
+.sparkle-number-country-flag{width:38px;min-width:38px;text-align:center;font-size:29px;line-height:1.1}
+.sparkle-number-country-name,.sparkle-number-service-name{font-size:20px;font-weight:800;letter-spacing:-.35px;line-height:1.25}
+.sparkle-number-service-logo{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:50%;font-size:19px;font-weight:900;color:#fff;background:linear-gradient(145deg,#1687ee,#1455bc);box-shadow:0 2px 5px #163d6c22}
+.sparkle-number-service-row:nth-child(4n+2) .sparkle-number-service-logo{background:linear-gradient(145deg,#30a5ff,#0871cc)}
+.sparkle-number-service-row:nth-child(4n+3) .sparkle-number-service-logo{background:linear-gradient(145deg,#6c77f8,#4942ba)}
+.sparkle-number-service-row:nth-child(4n+4) .sparkle-number-service-logo{background:linear-gradient(145deg,#23bda0,#07856c)}
+.sparkle-number-row-check{margin-left:auto;color:#1685e8;font-size:22px;font-weight:900;opacity:0}
+.is-selected .sparkle-number-row-check{opacity:1}
+@media(max-width:480px){.sparkle-number-country-row,.sparkle-number-service-row{min-height:68px;padding:11px 13px;gap:11px}.sparkle-number-country-name,.sparkle-number-service-name{font-size:19px}}
 </style>
 
 <style id="sparkle-support-widget-styles">
@@ -3122,11 +3135,13 @@ support@sparkle.com
   <div id="numberCatalogPanel" class="service-page sparkle-usn-form">
     <div class="sparkle-usn-section-head"><div><span class="sparkle-usn-eyebrow">PERSONALISE YOUR ORDER</span><h3>Number details</h3></div><span class="sparkle-usn-lock">Secure checkout</span></div>
     <label for="numberCountrySelect">Country</label>
-    <select id="numberCountrySelect" onchange="onNumberCountryChange()"><option value="us">🇺🇸 United States</option></select>
+    <select id="numberCountrySelect" onchange="onNumberCountryChange()" hidden><option value="us">🇺🇸 United States</option></select>
+    <div id="numberCountryCards" class="sparkle-number-country-list" aria-label="Choose a country"></div>
     <label for="numberAppSearch">Find an app or service</label>
-    <input id="numberAppSearch" type="search" placeholder="Search WhatsApp, Telegram, Google…" oninput="filterNumberApps()">
+    <input id="numberAppSearch" type="search" placeholder="Find website or app" oninput="filterNumberApps()">
     <label for="numberAppSelect">Verification service</label>
-    <select id="numberAppSelect" onchange="onNumberServiceChange()"><option value="">Loading available services…</option></select>
+    <select id="numberAppSelect" onchange="onNumberServiceChange()" hidden><option value="">Loading available services…</option></select>
+    <div id="numberServiceCards" class="sparkle-number-service-list" aria-label="Choose a service"><div class="data-empty">Loading available services…</div></div>
     <label for="numberOperatorSelect">Network operator and price</label>
     <select id="numberOperatorSelect" onchange="onNumberOperatorChange()"><option value="">Choose a service first</option></select>
     <div id="numberPriceResult" class="sparkle-usn-price-result" role="status">Loading live prices…</div>
@@ -5754,18 +5769,25 @@ function normalizeNumberServices(response){
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
 function renderNumberCountries(){
-  const select=document.getElementById("numberCountrySelect");if(!select)return;
-  const current=select.value||"us";
-  select.innerHTML=numberCountriesCache.map(c=>`<option value="${escapeHtml(c.code)}">${escapeHtml((c.flag?c.flag+" ":"")+c.name)}</option>`).join("");
-  select.value=numberCountriesCache.some(c=>c.code===current)?current:(numberCountriesCache.some(c=>c.code==="us")?"us":numberCountriesCache[0]?.code||"us");
-}
+   const select=document.getElementById("numberCountrySelect");if(!select)return;
+   const current=select.value||"us";
+   select.innerHTML=numberCountriesCache.map(c=>`<option value="${escapeHtml(c.code)}">${escapeHtml((c.flag?c.flag+" ":"")+c.name)}</option>`).join("");
+   select.value=numberCountriesCache.some(c=>c.code===current)?current:(numberCountriesCache.some(c=>c.code==="us")?"us":numberCountriesCache[0]?.code||"us");
+   const list=document.getElementById("numberCountryCards");if(!list)return;
+   list.innerHTML=numberCountriesCache.map(c=>`<button type="button" class="sparkle-number-country-row ${c.code===select.value?"is-selected":""}" onclick="chooseNumberCountry('${escapeHtml(c.code)}')"><span class="sparkle-number-country-flag">${escapeHtml(c.flag||"🌐")}</span><span class="sparkle-number-country-name">${escapeHtml(c.name)}</span><span class="sparkle-number-row-check">✓</span></button>`).join("");
+ }
+ function chooseNumberCountry(code){const select=document.getElementById("numberCountrySelect");if(!select||!numberCountriesCache.some(c=>c.code===code))return;select.value=code;renderNumberCountries();void onNumberCountryChange();}
 function renderNumberApps(items){
-  const select=document.getElementById("numberAppSelect");if(!select)return;
-  const current=select.value;
-  select.innerHTML='<option value="">Choose a service</option>';
-  items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name+(item.sellingPrice!=null?" — from ₦"+item.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):" — choose operator for price");select.appendChild(option);});
-  if(items.some(item=>item.code===current))select.value=current;
-}
+   const select=document.getElementById("numberAppSelect");if(!select)return;
+   const current=select.value;
+   select.innerHTML='<option value="">Choose a service</option>';
+   items.forEach(item=>{const option=document.createElement("option");option.value=item.code;option.textContent=item.name;select.appendChild(option);});
+   if(items.some(item=>item.code===current))select.value=current;
+   const list=document.getElementById("numberServiceCards");if(!list)return;
+   const iconFor=name=>{const n=String(name||"").toLowerCase();if(n.includes("amazon"))return "a";if(n.includes("facebook"))return "f";if(n.includes("telegram"))return "➤";if(n.includes("whatsapp"))return "◔";if(n.includes("google")||n.includes("youtube"))return "G";if(n.includes("microsoft"))return "▦";if(n.includes("openai")||n.includes("chatgpt"))return "✳";if(n.includes("instagram")||n.includes("threads"))return "◎";if(n.includes("apple"))return "A";return String(name||"•").trim().charAt(0).toUpperCase()||"•";};
+   list.innerHTML=items.length?items.map(item=>`<button type="button" class="sparkle-number-service-row ${item.code===select.value?"is-selected":""}" onclick="chooseNumberService('${escapeHtml(item.code)}')"><span class="sparkle-number-service-logo">${escapeHtml(iconFor(item.name))}</span><span class="sparkle-number-service-name">${escapeHtml(item.name)}</span><span class="sparkle-number-row-check">✓</span></button>`).join(""):'<div class="data-empty">No services are currently listed for this country.</div>';
+ }
+ function chooseNumberService(code){const select=document.getElementById("numberAppSelect");if(!select||!numberServicesCache.some(x=>x.code===code))return;select.value=code;renderNumberApps(numberServicesCache);void onNumberServiceChange();}
 function renderNumberOperators(items,preferred="any"){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;
  select.innerHTML='<option value="">Choose an operator</option>';
