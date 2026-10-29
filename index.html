@@ -1252,7 +1252,7 @@ body.dark-mode .earn-user-chip{background:#12264a;border-color:#263f70;color:#a9
 .sparkle-number-country-row.is-selected,.sparkle-number-service-row.is-selected{background:#edf5ff;box-shadow:inset 4px 0 #2185e8}
 .sparkle-number-country-flag{width:38px;min-width:38px;text-align:center;font-size:29px;line-height:1.1}
 .sparkle-number-country-name,.sparkle-number-service-name{font-size:20px;font-weight:800;letter-spacing:-.35px;line-height:1.25}
-.sparkle-number-service-logo{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:50%;font-size:19px;font-weight:900;color:#fff;background:linear-gradient(145deg,#1687ee,#1455bc);box-shadow:0 2px 5px #163d6c22}
+.sparkle-number-service-logo{display:grid;place-items:center;flex:0 0 39px;width:39px;height:39px;border-radius:50%;font-size:19px;font-weight:900;color:#fff;background:linear-gradient(145deg,#1687ee,#1455bc);box-shadow:0 2px 5px #163d6c22}.sparkle-number-service-logo.has-brand-logo{background:#fff!important;border:1px solid #e8edf5;overflow:hidden}.sparkle-number-brand-image{display:block;width:23px;height:23px;object-fit:contain}.sparkle-number-brand-fallback{place-items:center;width:100%;height:100%;font-size:14px;font-weight:950;color:#3159a8}
 .sparkle-number-service-row:nth-child(4n+2) .sparkle-number-service-logo{background:linear-gradient(145deg,#30a5ff,#0871cc)}
 .sparkle-number-service-row:nth-child(4n+3) .sparkle-number-service-logo{background:linear-gradient(145deg,#6c77f8,#4942ba)}
 .sparkle-number-service-row:nth-child(4n+4) .sparkle-number-service-logo{background:linear-gradient(145deg,#23bda0,#07856c)}
@@ -6030,17 +6030,30 @@ function resetNumberPriceForStep(message){
   const result=document.getElementById("numberPriceResult");
   if(result&&message)result.textContent=message;
 }
-function editNumberService(){
- if(numberPurchaseInProgress)return;numberOperatorsLoadSequence++;numberOperatorsCache=[];numberServicesExpanded=false;
- const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
- const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Select a country and continue to load live operator prices.";
- resetNumberPriceForStep("");updateNumberSelectionStep("service");
+async function editNumberService(){
+ if(numberPurchaseInProgress)return;
+ numberOperatorsLoadSequence++;numberServiceCountriesLoadSequence++;numberOperatorsCache=[];numberServicesExpanded=false;
+ showSparkleVirtualNumberLoader("Loading services again","Refreshing the service list so you can choose a new app");
+ try{
+  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';
+  const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
+  resetNumberPriceForStep("");updateNumberSelectionStep("service");
+  await loadNumberServices();
+ }finally{hideSparkleVirtualNumberLoader();}
 }
-function editNumberCountry(){
- if(numberPurchaseInProgress)return;numberOperatorsLoadSequence++;numberOperatorsCache=[];
- const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
- const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Tap Continue to load operators for this country.";
- resetNumberPriceForStep("");updateNumberSelectionStep("country");
+async function editNumberCountry(){
+ if(numberPurchaseInProgress)return;
+ const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+ if(!serviceCode){await editNumberService();return;}
+ numberOperatorsLoadSequence++;numberServiceCountriesLoadSequence++;numberOperatorsCache=[];
+ showSparkleVirtualNumberLoader("Loading countries again","Refreshing country availability for your selected service");
+ try{
+  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';
+  const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
+  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Tap Continue to load operators for this country.";
+  resetNumberPriceForStep("");updateNumberSelectionStep("country");
+  await loadCountriesForNumberService(serviceCode);
+ }finally{hideSparkleVirtualNumberLoader();}
 }
 async function continueWithSelectedNumberCountry(){
  if(numberPurchaseInProgress)return;
@@ -6126,11 +6139,32 @@ function renderNumberApps(items){
  const select=document.getElementById("numberAppSelect");if(!select)return;const current=select.value||"";select.innerHTML='<option value="">Choose a service</option>';
  numberServicesCache.forEach(item=>{const o=document.createElement("option");o.value=item.code;o.textContent=item.name;select.appendChild(o);});if(numberServicesCache.some(item=>item.code===current))select.value=current;
  const list=document.getElementById("numberServiceCards");if(!list)return;
- const iconFor=name=>{const n=String(name||"").toLowerCase();if(n.includes("amazon"))return "a";if(n.includes("facebook"))return "f";if(n.includes("telegram"))return "➤";if(n.includes("whatsapp"))return "◔";if(n.includes("google")||n.includes("youtube"))return "G";if(n.includes("microsoft"))return "▦";if(n.includes("openai")||n.includes("chatgpt"))return "✳";if(n.includes("instagram")||n.includes("threads"))return "◎";if(n.includes("apple"))return "A";if(n.includes("tiktok"))return "♪";return String(name||"•").trim().charAt(0).toUpperCase()||"•";};
- const q=(document.getElementById("numberAppSearch")?.value||"").trim();let visible=Array.isArray(items)?items:[];
- if(!numberServicesExpanded&&!q&&visible.length>8){const first=visible.slice(0,8),selected=visible.find(x=>x.code===select.value);visible=selected&&!first.some(x=>x.code===selected.code)?[selected,...first.slice(0,7)]:first;}
- list.innerHTML=visible.length?visible.map(item=>{const chosen=item.code===select.value;return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')"><span class="sparkle-number-service-logo" aria-hidden="true">'+escapeHtml(iconFor(item.name))+'</span><span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';}).join(""):'<div class="data-empty">No matching services. Try a shorter search.</div>';
- const more=document.getElementById("numberServiceShowAll");if(more){more.style.display=!q&&items.length>8?"flex":"none";more.textContent=numberServicesExpanded?"Show fewer services":"Show all services ("+items.length+")";more.setAttribute("aria-expanded",String(numberServicesExpanded));}
+ const brandFor=name=>{
+   const n=String(name||"").toLowerCase();
+   const brands=[
+    [/facebook|\bfb\b/,"facebook","0866FF"],[/whatsapp/,"whatsapp","25D366"],[/instagram|threads/,"instagram","E4405F"],
+    [/google|gmail|youtube|google voice/,"google","4285F4"],[/telegram/,"telegram","26A5E4"],[/tiktok/,"tiktok","000000"],
+    [/amazon/,"amazon","FF9900"],[/microsoft|outlook|hotmail|xbox/,"microsoft","5E5E5E"],[/openai|chatgpt/,"openai","412991"],
+    [/apple|icloud|itunes/,"apple","000000"],[/netflix/,"netflix","E50914"],[/discord/,"discord","5865F2"],
+    [/(^|\W)x(\W|$)|twitter/,"x","000000"],[/snapchat/,"snapchat","FFFC00"],[/yahoo/,"yahoo","6001D2"],
+    [/spotify/,"spotify","1DB954"],[/paypal/,"paypal","003087"],[/linkedin/,"linkedin","0A66C2"],
+    [/reddit/,"reddit","FF4500"],[/twitch/,"twitch","9146FF"],[/canva/,"canva","00C4CC"],
+    [/capcut/,"capcut","000000"],[/uber/,"uber","000000"],[/binance/,"binance","F0B90B"],
+    [/coinbase/,"coinbase","0052FF"],[/viber/,"viber","7360F2"],[/signal/,"signal","3A76F0"],
+    [/line messenger|\bline\b/,"line","06C755"],[/wechat/,"wechat","07C160"],[/steam/,"steam","000000"],
+    [/shein/,"shein","000000"],[/aliexpress/,"aliexpress","FF4747"],[/ebay/,"ebay","E53238"]
+   ];
+   const found=brands.find(([pattern])=>pattern.test(n));
+   return found?{slug:found[1],color:found[2]}:null;
+  };
+  const q=(document.getElementById("numberAppSearch")?.value||"").trim();let visible=Array.isArray(items)?items:[];
+  if(!numberServicesExpanded&&!q&&visible.length>8){const first=visible.slice(0,8),selected=visible.find(x=>x.code===select.value);visible=selected&&!first.some(x=>x.code===selected.code)?[selected,...first.slice(0,7)]:first;}
+  list.innerHTML=visible.length?visible.map(item=>{
+   const chosen=item.code===select.value,brand=brandFor(item.name),initial=String(item.name||"•").trim().charAt(0).toUpperCase()||"•";
+   const logo=brand?'<img class="sparkle-number-brand-image" src="https://cdn.simpleicons.org/'+brand.slug+'/'+brand.color+'" alt="" loading="lazy" onerror="this.style.display=\'none\';this.nextElementSibling.style.display=\'grid\'"><span class="sparkle-number-brand-fallback" aria-hidden="true" style="display:none">'+escapeHtml(initial)+'</span>':'<span class="sparkle-number-brand-fallback" aria-hidden="true">'+escapeHtml(initial)+'</span>';
+   return '<button type="button" class="sparkle-number-service-row '+(chosen?"is-selected":"")+'" aria-pressed="'+(chosen?"true":"false")+'" onclick="chooseNumberService(\''+escapeHtml(item.code)+'\')"><span class="sparkle-number-service-logo '+(brand?'has-brand-logo':'')+'" aria-hidden="true">'+logo+'</span><span class="sparkle-number-service-name">'+escapeHtml(item.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">✓</span></button>';
+  }).join(""):'<div class="data-empty">No matching services. Try a shorter search.</div>';
+const more=document.getElementById("numberServiceShowAll");if(more){more.style.display=!q&&items.length>8?"flex":"none";more.textContent=numberServicesExpanded?"Show fewer services":"Show all services ("+items.length+")";more.setAttribute("aria-expanded",String(numberServicesExpanded));}
 }
 function toggleNumberServices(){numberServicesExpanded=!numberServicesExpanded;const q=(document.getElementById("numberAppSearch")?.value||"").toLowerCase().trim();renderNumberApps(numberServicesCache.filter(x=>x.name.toLowerCase().includes(q)||x.code.toLowerCase().includes(q)));}
 
@@ -8975,6 +9009,12 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
   }
   async function applyCurrentPath(){
     const token = ++renderToken;
+    // Wait for Supabase session restoration before routing; fast taps and refreshes
+    // must not mistake a saved session for a signed-out user.
+    if(!sparkleInitialAuthResolved){
+      await sparkleInitialAuthPromise;
+      if(token!==renderToken)return;
+    }
     const path = normalizePath(window.location.pathname);
     const dashboard = document.getElementById("dashboard");
     const dashboardActive = !!dashboard?.classList.contains("active");
