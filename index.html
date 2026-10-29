@@ -6084,7 +6084,7 @@ function filterNumberApps(){
  renderNumberApps(numberServicesCache.filter(x=>x.name.toLowerCase().includes(q)||x.code.toLowerCase().includes(q)));
 }
 
-function onNumberServiceChange(){numberCurrentQuote=null;void loadNumberOperators("any");}
+function onNumberServiceChange(){const code=document.getElementById("numberAppSelect")?.value||"";if(code)chooseNumberService(code);else{numberCurrentQuote=null;resetNumberPriceForStep("");updateNumberSelectionStep("service");}}
 async function checkNumberPrice(){
  const serviceCode=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us",operator=document.getElementById("numberOperatorSelect")?.value||"";
  const result=document.getElementById("numberPriceResult"),buy=document.getElementById("numberBuyButton");
