@@ -5980,13 +5980,11 @@ function toggleNumberServices(){numberServicesExpanded=!numberServicesExpanded;c
 
 function chooseNumberService(code){
  const select=document.getElementById("numberAppSelect");if(!select||!numberServicesCache.some(x=>x.code===code)||numberPurchaseInProgress)return;
- select.value=code;numberServicesExpanded=false;renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
+ select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Choose a country first, then continue to compare operator prices.";
  resetNumberPriceForStep("");updateNumberSelectionStep("country");
 }
-function onNumberServiceChange(){const code=document.getElementById("numberAppSelect")?.value||"";if(code)chooseNumberService(code);}
-
 function renderNumberOperators(items,preferred=""){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;const rows=Array.isArray(items)?items:[];select.innerHTML='<option value="">Choose an operator</option>';
  rows.forEach(item=>{const o=document.createElement("option");o.value=String(item.operator||"");o.textContent=String(item.operator_label||item.operator||"Operator");o.disabled=item.available===false;select.appendChild(o);});
@@ -6008,7 +6006,7 @@ async function loadNumberOperators(preferred){
   if(seq!==numberOperatorsLoadSequence||serviceCode!==(document.getElementById("numberAppSelect")?.value||"")||country!==(document.getElementById("numberCountrySelect")?.value||"us"))return;
   const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
   renderNumberOperators(numberOperatorsCache,preferred||"");if(!numberOperatorsCache.length)throw new Error("No operators are currently available for this service and country.");
-  const available=numberOperatorsCache.filter(x=>x.available!==false);if(status)status.textContent=available.length?available.length+" available option"+(available.length===1?"":"s")+" · Each operator has its own price.":"Offers are shown, but the supplier cannot currently cover them. No Sparkle wallet funds were used.";
+  const available=numberOperatorsCache.filter(x=>x.available!==false);if(status)status.textContent=available.length?available.length+" available option"+(available.length===1?"":"s")+" · Each operator has its own price.":"These options are temporarily unavailable. No Sparkle wallet funds were used.";
   updateNumberSelectionStep("operator");if(preferred&&select.value)await checkNumberPrice();else{if(result)result.textContent="";numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
  }catch(error){if(seq!==numberOperatorsLoadSequence)return;numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(cards)cards.innerHTML='<div class="data-empty">No operator offers are available right now.</div>';if(status)status.textContent="Could not load operator prices. "+String(error?.message||error);if(result)result.textContent="";if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
 }
@@ -6099,7 +6097,7 @@ async function checkNumberPrice(){
   const operatorLabel=String(quote.operator_label||selectedOperator?.operator_label||operator);
   numberCurrentQuote={serviceCode,country,serverId:"server1",serverLabel:"Live number catalogue",operator:String(quote.operator||operator),operatorLabel,
    serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:cleanPrice,network:String(quote.network||selected?.network||"")};
-  if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price · '+escapeHtml(operatorLabel)+'</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+cleanPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">Converted from the live supplier USD price into naira. This is the full amount charged by Sparkle; supplier costs and profit are not shown.</div></div>';
+  if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price · '+escapeHtml(operatorLabel)+'</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+cleanPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the current total charged by Sparkle for the selected option. The price is checked again before checkout.</div></div>';
   if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
  }catch(error){if(result)result.textContent="Could not check price: "+String(error.message||error);if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}}
 }
