@@ -24,7 +24,7 @@ function operatorDisplayName(code: string): string {
   const key=asText(code).toLowerCase();
   if(key==="any")return "Automatic · price capped";
   const virtual=key.match(/^virtual[-_ ]?(\d+)$/);
-  if(virtual)return "Virtual network "+virtual[1];
+  if(virtual)return "Virtual "+virtual[1];
   return key.replace(/[_-]+/g," ").replace(/\b[a-z]/g,ch=>ch.toUpperCase());
 }
 const profileByServer: Record<string,{markup:number;label:string}> = {
@@ -32,7 +32,7 @@ const profileByServer: Record<string,{markup:number;label:string}> = {
   // Customers see one live catalogue, not supplier server choices.
   server1:{markup:75,label:"Live number catalogue"}
 };
-let fxCache: { rate: number; updatedAt: number } | null = null;
+let fxCache: { rate: number; updatedAt: number; sourceUpdatedAt: number } | null = null;
 
 const reply = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -155,7 +155,15 @@ async function providerProfile(): Promise<{ balance: number }> {
 
 async function usdToNgn(): Promise<number> {
   const now = Date.now();
-  if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000) return fxCache.rate;
+  const maxSourceAgeMs = 36 * 60 * 60 * 1000;
+  const usableCachedRate = () => {
+    if (!fxCache) return null;
+    const sourceAge = now - fxCache.sourceUpdatedAt;
+    return sourceAge >= 0 && sourceAge <= maxSourceAgeMs ? fxCache.rate : null;
+  };
+  if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000 && usableCachedRate() !== null) {
+    return fxCache.rate;
+  }
   let response: Response;
   try {
     response = await fetch("https://open.er-api.com/v6/latest/USD", {
@@ -163,7 +171,10 @@ async function usdToNgn(): Promise<number> {
       signal: AbortSignal.timeout(12000),
     });
   } catch {
-    throw problem("Live pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
+    // Reuse only a previously verified exchange rate, and never one older than 36 hours.
+    const fallbackRate = usableCachedRate();
+    if (fallbackRate !== null) return fallbackRate;
+    throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
   }
   const data: any = await response.json().catch(() => null);
   const last = Number(data?.time_last_update_unix);
@@ -171,9 +182,11 @@ async function usdToNgn(): Promise<number> {
   const age = Math.floor(Date.now() / 1000) - last;
   if (!response.ok || data?.result !== "success" || !Number.isFinite(rate) || rate < 100 || rate > 10000 ||
       !Number.isFinite(last) || age < 0 || age > 36 * 60 * 60) {
-    throw problem("Live pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
+    const fallbackRate = usableCachedRate();
+    if (fallbackRate !== null) return fallbackRate;
+    throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
   }
-  fxCache = { rate, updatedAt: now };
+  fxCache = { rate, updatedAt: now, sourceUpdatedAt: last * 1000 };
   return rate;
 }
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
@@ -228,19 +241,21 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
  return chosen;
 }
 async function getCatalogServices(country:string):Promise<any[]>{
- const pc=providerCountry(country),account=await providerProfile();
- const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc));
+ const pc=providerCountry(country);
+ // Use the provider's product catalogue to discover services. Listing services
+ // must not depend on the separate USD→NGN exchange-rate service being online.
+ const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
- const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root,fx=await usdToNgn();
+ const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
  const items:any[]=[];
- for(const [code,rawNode] of Object.entries(countryNode||{})){
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code))continue;
-  let node:any=rawNode;
-  if(node&&typeof node==="object"&&node[pc]&&typeof node[pc]==="object")node=node[pc];
-  const offers=parseOfferRows(node).filter(x=>x.count>0);
-  if(!offers.length)continue;
-  const prices=offers.map(x=>money(money(x.usd*fx*1.02)*1.75));
-  items.push({code,name:serviceDisplayName(code),country,network:"Multiple operators",stock:offers.reduce((n,x)=>n+x.count,0),selling_price_ngn:Math.min(...prices)});
+ for(const [code,raw] of Object.entries(root||{})){
+  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code)||!raw||typeof raw!=="object")continue;
+  const product:any=raw;
+  const category=asText(product.Category??product.category??"activation").toLowerCase();
+  if(category&&category!=="activation")continue;
+  const stock=Number(product.Qty??product.qty??product.quantity??product.count??product.Count??0);
+  if(!Number.isFinite(stock)||stock<=0)continue;
+  items.push({code,name:serviceDisplayName(code),country,network:"5SIM",stock});
  }
  return items.sort((a,b)=>a.name.localeCompare(b.name));
 }
