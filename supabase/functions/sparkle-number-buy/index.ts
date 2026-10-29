@@ -270,7 +270,7 @@ function safeServiceQuote(q:any){
 function publicError(error: any, fallback = "The number service is temporarily unavailable. Please try again shortly.") {
   const code = String(error?.code || "");
   const status = Number(error?.status);
-  if (code === "NO_STOCK") return reply({ success: false, code, message: "No number is currently available for this service and country. Try again later." }, 409);
+  if (code === "NO_STOCK") return reply({ success: false, code, message: "Service unavailable. Please try again later." }, 409);
   if (code === "PRICE_CHANGED") return reply({ success: false, code, message: "The Sparkle price changed. No money was deducted; check the current price again." }, 409);
   if (code === "INSUFFICIENT_FUNDS") return reply({ success: false, code, message: "Insufficient Sparkle wallet balance. Please fund your wallet and try again." }, 402);
   if (code === "AUTH_REQUIRED") return reply({ success: false, code, message: "Please sign in again to continue." }, 401);
@@ -280,7 +280,7 @@ function publicError(error: any, fallback = "The number service is temporarily u
   if (code === "SERVER_UNAVAILABLE") return reply({ success: false, code, message: error.message }, 503);
   if (code === "CONFIG_MISSING") return reply({ success: false, code, message: "The number service is temporarily unavailable. Please try again shortly." }, 503);
   if (code === "PROVIDER_AUTH_FAILED") return reply({ success: false, code, message: "The number service is not ready yet. Please try again later." }, 503);
-  if (code === "PROVIDER_BALANCE_LOW") return reply({ success: false, code, message: "This number option is temporarily unavailable. Please try another option later." }, 503);
+  if (code === "PROVIDER_BALANCE_LOW" || code === "OPERATOR_UNAVAILABLE") return reply({ success: false, code, message: "Service unavailable. Please try again later." }, 503);
   if (code === "FX_UNAVAILABLE" || code === "PRICE_UNAVAILABLE") return reply({ success: false, code, message: fallback }, 503);
   return reply({ success: false, code: code || "NUMBER_UNAVAILABLE", message: fallback }, status >= 400 && status < 600 ? status : 503);
 }
