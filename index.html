@@ -6312,7 +6312,7 @@ async function copyNumberOtp(){
  if(navigator.clipboard?.writeText){navigator.clipboard.writeText(code).then(done).catch(()=>alert("Could not copy automatically. Please select and copy the code."));return;}
  const field=document.createElement("textarea");field.value=code;field.readOnly=true;field.style.position="absolute";field.style.left="-9999px";document.body.appendChild(field);field.select();try{document.execCommand("copy");done();}catch(_){alert("Could not copy automatically. Please select and copy the code.");}field.remove();
 }
-function checkNumberOrder(options={}){
+async function checkNumberOrder(options={}){
   const silent=Boolean(options?.silent);
   if(!numberCurrentOrder?.requestId){if(!silent)alert("No active virtual number order to check.");return;}
   const msg=document.getElementById("numberOrderMessage");if(msg&&!silent)msg.textContent="Checking for SMS…";
