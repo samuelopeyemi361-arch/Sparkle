@@ -36,10 +36,19 @@ jobs:
         with:
           version: latest
 
+      - name: Verify 5SIM secret is present
+        run: |
+          set -euo pipefail
+          if ! supabase secrets list --project-ref "$SUPABASE_PROJECT_ID" | grep -Fq "FIVESIM_API_KEY"; then
+            echo "::error::FIVESIM_API_KEY is missing from Supabase Edge Function Secrets."
+            exit 1
+          fi
+          echo "5SIM secret is configured (value was not displayed)."
+
       - name: Deploy active Edge Functions
         run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
 
-      - name: Remove retired Fleexa function registrations
+      - name: Remove retired provider registrations and secret
         run: |
           set -euo pipefail
           for fn in \
@@ -47,8 +56,21 @@ jobs:
             sparkle-fleexa-cancel \
             sparkle-fleexa-catalog \
             sparkle-fleexa-check \
-            sparkle-fleexa-test
+            sparkle-fleexa-test \
+            sparkle-svb-buy \
+            sparkle-svb-cancel \
+            sparkle-svb-catalog \
+            sparkle-svb-check \
+            svb-canada-cost-check-once
           do
-            echo "Removing retired function: $fn"
+            echo "Removing retired provider function: $fn"
             supabase functions delete "$fn" --project-ref "$SUPABASE_PROJECT_ID" --yes
           done
+
+          # Remove the retired key only after verifying the replacement key exists.
+          if supabase secrets list --project-ref "$SUPABASE_PROJECT_ID" | grep -Fq "SOFTVIRALBOOST_API_KEY"; then
+            supabase secrets unset SOFTVIRALBOOST_API_KEY --project-ref "$SUPABASE_PROJECT_ID"
+            echo "Retired provider secret removed."
+          else
+            echo "Retired provider secret already absent."
+          fi
