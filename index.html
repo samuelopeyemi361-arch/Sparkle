@@ -5934,7 +5934,7 @@ function normalizeNumberServices(response){
     const name=String(item?.name??item?.service_name??item?.serviceName??item?.title??code).trim();
     if(!code||!name)return null;
     const sellingPrice=Number(item?.selling_price_ngn??item?.sellingPrice);
-    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
+    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),availableCountries:Array.isArray(item?.available_countries)?item.available_countries.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean):[],sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
 let numberSelectionStep = "service";
@@ -6000,9 +6000,13 @@ function filterNumberCountries(){
  const select=document.getElementById("numberCountrySelect"),search=String(document.getElementById("numberCountrySearch")?.value||"").trim().toLowerCase();
  if(!list)return;
  const chosen=select?.value||"us";
+ const serviceCode=document.getElementById("numberAppSelect")?.value||"";
+ const selectedService=numberServicesCache.find(item=>item.code===serviceCode);
+ const supportedCountries=Array.isArray(selectedService?.availableCountries)?selectedService.availableCountries:[];
  const rows=numberCountriesCache.filter(c=>{
   const hay=[c.name,c.code,c.iso_code,c.dial].map(x=>String(x||"").toLowerCase()).join(" ");
-  return !search||hay.includes(search);
+  const supported=!supportedCountries.length||supportedCountries.includes(String(c.code||"").toLowerCase());
+  return supported&&(!search||hay.includes(search));
  });
  list.innerHTML=rows.map(c=>{
   const selected=String(c.code)===String(chosen);
@@ -6048,10 +6052,13 @@ function renderNumberApps(items){
 function toggleNumberServices(){numberServicesExpanded=!numberServicesExpanded;const q=(document.getElementById("numberAppSearch")?.value||"").toLowerCase().trim();renderNumberApps(numberServicesCache.filter(x=>x.name.toLowerCase().includes(q)||x.code.toLowerCase().includes(q)));}
 
 function chooseNumberService(code){
- const select=document.getElementById("numberAppSelect");if(!select||!numberServicesCache.some(x=>x.code===code)||numberPurchaseInProgress)return;
- select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
+ const select=document.getElementById("numberAppSelect"),service=numberServicesCache.find(x=>x.code===code);if(!select||!service||numberPurchaseInProgress)return;
+ select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";
+ const countrySelect=document.getElementById("numberCountrySelect"),supported=Array.isArray(service.availableCountries)?service.availableCountries:[];
+ if(countrySelect&&supported.length&&!supported.includes(String(countrySelect.value||"us").toLowerCase()))countrySelect.value=supported[0];
+ renderNumberCountries();renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
- const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Choose a country first, then continue to compare operator prices.";
+ const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Choose a country that supports this service, then continue to compare operator prices.";
  resetNumberPriceForStep("");updateNumberSelectionStep("country");
 }
 function renderNumberOperators(items,preferred=""){
