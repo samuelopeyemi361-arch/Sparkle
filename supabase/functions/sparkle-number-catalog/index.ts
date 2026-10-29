@@ -249,7 +249,7 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
  if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  return chosen;
 }
-async function getCatalogServices(country:string):Promise<any[]>{
+async function getCatalogServicesForCountry(country:string):Promise<any[]>{
  const pc=providerCountry(country);
  const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
@@ -273,12 +273,62 @@ async function getCatalogServices(country:string):Promise<any[]>{
   const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
   const stock=hasStock?Number(stockRaw):null;
   if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
-  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null});
+  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null,available_countries:[country]});
  }
  const unique=new Map<string,any>();
  for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
  return [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
+async function getGlobalCatalogServices():Promise<any[]>{
+ const [pricesResult,productsResult,countries]=await Promise.all([
+  apiGet("/guest/prices"),
+  apiGet("/guest/products/any/any"),
+  getProviderCountries()
+ ]);
+ if(!pricesResult.ok||!pricesResult.data||typeof pricesResult.data!=="object")throw problem("The global service list is temporarily unavailable.",503,"CATALOG_UNAVAILABLE");
+ if(!productsResult.ok||!productsResult.data||typeof productsResult.data!=="object")throw problem("The global service list is temporarily unavailable.",503,"CATALOG_UNAVAILABLE");
+ const unwrap=(value:any)=>value?.data&&typeof value.data==="object"?value.data:value;
+ const prices:any=unwrap(pricesResult.data);
+ let products:any=unwrap(productsResult.data);
+ if(!Array.isArray(products)&&products&&typeof products==="object"){
+  const wrapped=products.products??products.Products??products.items??products.Items;
+  if(wrapped&&(Array.isArray(wrapped)||typeof wrapped==="object"))products=wrapped;
+ }
+ const productEntries:Array<[string,any]>=Array.isArray(products)
+  ?products.map((item:any,index:number)=>[asText(item?.product??item?.Product??item?.code??item?.Code??item?.slug??item?.name??item?.Name??("service-"+index)),item])
+  :Object.entries(products||{});
+ const activationCodes=new Set<string>();
+ for(const [rawCode,raw] of productEntries){
+  const code=asText(rawCode).toLowerCase();
+  const categoryRaw=raw?.Category??raw?.category??raw?.type??raw?.Type;
+  const category=typeof categoryRaw==="string"?categoryRaw.trim().toLowerCase():"";
+  if(/^[a-z0-9][a-z0-9._-]{0,79}$/.test(code)&&category==="activation")activationCodes.add(code);
+ }
+ if(!activationCodes.size)throw problem("The global service list could not be verified.",503,"CATALOG_UNAVAILABLE");
+ const serviceRows=new Map<string,{code:string;name:string;network:string;stock:number;available_countries:string[]}>();
+ for(const countryRow of countries){
+  const countryCode=asText(countryRow?.code).toLowerCase();
+  if(!countryCode)continue;
+  let providerCode:string;
+  try{providerCode=providerCountry(countryCode);}catch{continue;}
+  const countryNode=prices[providerCode]||prices[providerCode.toUpperCase()]||prices[countryCode]||prices[countryCode.toUpperCase()];
+  if(!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
+  for(const code of activationCodes){
+   let node=countryNode[code];
+   if(node&&typeof node==="object"&&node[providerCode]&&typeof node[providerCode]==="object")node=node[providerCode];
+   const offers=parseOfferRows(node).filter(x=>x.count>0);
+   if(!offers.length)continue;
+   const row=serviceRows.get(code)||{code,name:serviceDisplayName(code),network:"Live availability",stock:0,available_countries:[]};
+   if(!row.available_countries.includes(countryCode))row.available_countries.push(countryCode);
+   row.stock+=offers.reduce((sum,offer)=>sum+offer.count,0);
+   serviceRows.set(code,row);
+  }
+ }
+ const items=[...serviceRows.values()].sort((a,b)=>a.name.localeCompare(b.name));
+ if(!items.length)throw problem("No live activation services are currently listed.",503,"CATALOG_UNAVAILABLE");
+ return items;
+}
+
 async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
@@ -345,7 +395,10 @@ Deno.serve(async (req:Request)=>{
   }
   providerCountry(country);
   if(action==="services"){
-   const services=await getCatalogServices(country);
+   let services:any[];
+   try{services=await getGlobalCatalogServices();}
+   catch{services=await getCatalogServicesForCountry(country);}
+   if(!services.length)services=await getCatalogServicesForCountry(country);
    return reply({success:true,data:{country,country_name:country==="us"?"United States":country==="ca"?"Canada":country,currency:"NGN",services}});
   }
   if(action==="operators"){
