@@ -242,8 +242,8 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
 }
 async function getCatalogServices(country:string):Promise<any[]>{
  const pc=providerCountry(country);
- // Use the provider's product catalogue to discover services. Listing services
- // must not depend on the separate USD→NGN exchange-rate service being online.
+ // Use 5SIM's product list for service discovery. Do not make the service picker
+ // depend on FX conversion; conversion is only required when operator prices load.
  const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
  const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
