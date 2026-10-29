@@ -195,7 +195,16 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
 }
 async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service);
- const chosen=requestedOperator&&requestedOperator!=="any"?offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase()):offers;
+ if(!requestedOperator||requestedOperator==="any"){
+  // The automatic route must use 5SIM's own "any" quote when it exists,
+  // because this exact USD value becomes the enforced maxPrice on purchase.
+  const automatic=offers.find(x=>x.operator.toLowerCase()==="any");
+  if(automatic)return automatic;
+  // If the provider has no separate "any" row, cap automatic buying at the
+  // cheapest currently available operator. It can reject/refund, but cannot exceed the cap.
+  return [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
+ }
+ const chosen=offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!chosen.length)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
  return chosen[0];
 }

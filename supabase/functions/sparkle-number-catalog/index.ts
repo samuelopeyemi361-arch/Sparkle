@@ -193,7 +193,16 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
 }
 async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service);
- const chosen=requestedOperator&&requestedOperator!=="any"?offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase()):offers;
+ if(!requestedOperator||requestedOperator==="any"){
+  // The automatic route must use 5SIM's own "any" quote when it exists,
+  // because this exact USD value becomes the enforced maxPrice on purchase.
+  const automatic=offers.find(x=>x.operator.toLowerCase()==="any");
+  if(automatic)return automatic;
+  // If the provider has no separate "any" row, cap automatic buying at the
+  // cheapest currently available operator. It can reject/refund, but cannot exceed the cap.
+  return [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
+ }
+ const chosen=offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!chosen.length)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
  return chosen[0];
 }
@@ -285,10 +294,11 @@ Deno.serve(async (req:Request)=>{
   }
   if(action==="operators"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
-   const offers=await getProductOffers(country,service),best=offers[0];
-   const automatic={operator:"any",operator_label:"Automatic · price capped",selling_price_ngn:money(best.providerCostNgn*1.75),stock:offers.reduce((n,x)=>n+x.count,0),rate:best.rate};
-   const specific=offers.map(x=>({operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*1.75),stock:x.count,rate:x.rate}));
-   return reply({success:true,data:{country,service,currency:"NGN",operators:[automatic,...specific]}});
+   const offers=await getProductOffers(country,service);
+   const automatic=offers.find(x=>x.operator.toLowerCase()==="any")||[...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
+   const automaticRow={operator:"any",operator_label:"Automatic · price capped",selling_price_ngn:money(automatic.providerCostNgn*1.75),stock:automatic.count,rate:automatic.rate};
+   const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>({operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*1.75),stock:x.count,rate:x.rate}));
+   return reply({success:true,data:{country,service,currency:"NGN",operators:[automaticRow,...specific]}});
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
