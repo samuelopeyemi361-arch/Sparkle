@@ -146,7 +146,7 @@ async function providerProfile(): Promise<{ balance: number }> {
         }
         throw problem("Sparkle could not verify the number service account. No wallet funds were used.", 503, "PROVIDER_AUTH_FAILED");
       }
-      providerProfileCache = { balance, expiresAt: Date.now() + 30_000 };
+      providerProfileCache = { balance, expiresAt: Date.now() + 5_000 };
       return { balance };
     })().finally(() => { providerProfilePromise = null; });
   }
@@ -415,10 +415,12 @@ Deno.serve(async (req:Request)=>{
    const automatic=affordable.find(x=>x.operator.toLowerCase()==="any")||
      [...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0]||
      [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
-   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,available:automatic.usd<=automatic.providerBalanceUsd};
-   const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>({
-     operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,available:x.usd<=x.providerBalanceUsd
-   }));
+   const automaticAvailable=automatic.count>0&&automatic.usd<=automatic.providerBalanceUsd;
+   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,in_stock:automatic.count>0,available:automaticAvailable,unavailable_reason:automaticAvailable?null:"Supplier USD balance is too low to fulfil this option"};
+   const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
+     const available=x.count>0&&x.usd<=x.providerBalanceUsd;
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,in_stock:x.count>0,available,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+   });
    return reply({success:true,data:{country,service,currency:"NGN",operators:[automaticRow,...specific]}});
   }
   if(action==="price"){
