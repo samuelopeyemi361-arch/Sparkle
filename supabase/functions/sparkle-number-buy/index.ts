@@ -95,6 +95,35 @@ async function apiGet(path: string): Promise<{ ok: boolean; status: number; data
   try { data = JSON.parse(raw); } catch { data = { message: raw }; }
   return { ok: response.ok, status: response.status, data };
 }
+
+let providerProfileCache: { balance: number; expiresAt: number } | null = null;
+let providerProfilePromise: Promise<{ balance: number }> | null = null;
+
+// Check an authenticated 5SIM endpoint before showing any live prices.
+// A wrong/deprecated API1 key must never appear to work until after a customer pays.
+async function providerProfile(): Promise<{ balance: number }> {
+  if (providerProfileCache && providerProfileCache.expiresAt > Date.now()) {
+    return { balance: providerProfileCache.balance };
+  }
+  if (!providerProfilePromise) {
+    providerProfilePromise = (async () => {
+      const result = await apiGet("/user/profile");
+      const id = Number(result.data?.id);
+      const balance = Number(result.data?.balance);
+      if (!result.ok || !result.data || !Number.isFinite(id) || id <= 0 ||
+          !Number.isFinite(balance) || balance < 0) {
+        if (result.status === 401 || result.status === 403) {
+          throw problem("The number service connection is not verified. Please check the configured 5SIM key.", 503, "PROVIDER_AUTH_FAILED");
+        }
+        throw problem("Sparkle could not verify the number service account. No wallet funds were used.", 503, "PROVIDER_AUTH_FAILED");
+      }
+      providerProfileCache = { balance, expiresAt: Date.now() + 30_000 };
+      return { balance };
+    })().finally(() => { providerProfilePromise = null; });
+  }
+  return await providerProfilePromise;
+}
+
 async function usdToNgn(): Promise<number> {
   const now = Date.now();
   if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000) return fxCache.rate;
@@ -118,9 +147,10 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now };
   return rate;
 }
-async function bestOffer(country: string, service: string): Promise<{ operator: string; usd: number; count: number; rate: number | null; fx: number; providerCostNgn: number }> {
+async function bestOffer(country: string, service: string): Promise<{ operator: string; usd: number; count: number; rate: number | null; fx: number; providerCostNgn: number; providerBalanceUsd: number }> {
   const c = providerCountry(country);
   if (!services[service]) throw problem("Choose a supported verification service.", 400, "INVALID_SERVICE");
+  const account = await providerProfile();
   const result = await apiGet("/guest/prices?country=" + encodeURIComponent(c) + "&product=" + encodeURIComponent(service));
   if (!result.ok || !result.data || typeof result.data !== "object") {
     throw problem("Current number prices could not be verified. Please try again shortly.", 503, "PRICE_UNAVAILABLE");
@@ -144,6 +174,9 @@ async function bestOffer(country: string, service: string): Promise<{ operator: 
     return { operator, usd, count, rate: deliveryRate };
   }).filter((x): x is { operator: string; usd: number; count: number; rate: number | null } => x !== null);
   if (!rows.length) throw problem("No number is currently available for this service and country. Try again later.", 409, "NO_STOCK");
+  // Never show an option that would require more supplier balance than the account has.
+  rows = rows.filter((row) => row.usd <= account.balance);
+  if (!rows.length) throw problem("The number service is temporarily unable to fulfil this option. Please try again later.", 503, "PROVIDER_BALANCE_LOW");
   // Prefer operators with stronger reported delivery rates; then use price and stock as tie-breakers.
   rows.sort((a, b) => {
     if (a.rate !== null && b.rate !== null && a.rate !== b.rate) return b.rate - a.rate;
@@ -159,7 +192,7 @@ async function bestOffer(country: string, service: string): Promise<{ operator: 
   if (!Number.isFinite(providerCostNgn) || providerCostNgn <= 0) {
     throw problem("Current number prices could not be verified. No wallet funds were used.", 503, "PRICE_UNAVAILABLE");
   }
-  return { ...offer, fx, providerCostNgn };
+  return { ...offer, fx, providerCostNgn, providerBalanceUsd: account.balance };
 }
 async function getQuote(country: string, service: string, serverId: string) {
   const profile = validateRoute(serverId, country, service);
@@ -180,6 +213,7 @@ async function getQuote(country: string, service: string, serverId: string) {
     provider_cost_ngn: offer.providerCostNgn,
     provider_cost_usd: offer.usd,
     provider_operator: offer.operator,
+    provider_balance_usd: offer.providerBalanceUsd,
     fx_rate: offer.fx,
   };
 }
@@ -206,7 +240,9 @@ function publicError(error: any, fallback = "The number service is temporarily u
     return reply({ success: false, code, message: error.message || "Choose a valid server, country and service." }, status || 400);
   }
   if (code === "SERVER_UNAVAILABLE") return reply({ success: false, code, message: error.message }, 503);
-  if (code === "CONFIG_MISSING") return reply({ success: false, code, message: fallback }, 503);
+  if (code === "CONFIG_MISSING") return reply({ success: false, code, message: "The number service is temporarily unavailable. Please try again shortly." }, 503);
+  if (code === "PROVIDER_AUTH_FAILED") return reply({ success: false, code, message: "The number service is not ready yet. Please try again later." }, 503);
+  if (code === "PROVIDER_BALANCE_LOW") return reply({ success: false, code, message: "This number option is temporarily unavailable. Please try another option later." }, 503);
   if (code === "FX_UNAVAILABLE" || code === "PRICE_UNAVAILABLE") return reply({ success: false, code, message: fallback }, 503);
   return reply({ success: false, code: code || "NUMBER_UNAVAILABLE", message: fallback }, status >= 400 && status < 600 ? status : 503);
 }
@@ -273,8 +309,10 @@ Deno.serve(async (req: Request) => {
       if (/insufficient|not enough|wallet balance/i.test(msg)) throw problem("Insufficient Sparkle wallet balance. Please fund your wallet and try again.", 402, "INSUFFICIENT_FUNDS");
       throw problem("Sparkle could not reserve your wallet. No supplier order was sent.", 503, "RESERVATION_FAILED");
     }
-    const orderPath = "/user/buy/activation/" + encodeURIComponent(providerCountry(country)) + "/" +
-      encodeURIComponent(quote.provider_operator) + "/" + encodeURIComponent(service);
+    // 5SIM only honours maxPrice when operator=any. This caps the supplier charge
+    // at the quoted USD price so a live supplier price change cannot eat the wallet reserve.
+    const orderPath = "/user/buy/activation/" + encodeURIComponent(providerCountry(country)) + "/any/" +
+      encodeURIComponent(service) + "?maxPrice=" + encodeURIComponent(Number(quote.provider_cost_usd).toFixed(2));
     let placed: { ok: boolean; status: number; data: any };
     try {
       placed = await apiGet(orderPath);
@@ -304,8 +342,21 @@ Deno.serve(async (req: Request) => {
       }
       return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, service: quote.name, country, network: "Available network", selling_price_ngn: quote.selling_price_ngn, server_id: serverId, server_label: profile.label, currency: "NGN", message: "Number purchased. Check again shortly for the SMS code." });
     }
-    if (!placed.ok && placed.status >= 400 && placed.status < 500 && !providerId) {
-      const f = await finalize(ctx.admin, requestId, "failed", { status: "REJECTED" }, "The number order was rejected before a number was issued.");
+    const providerErrorText = String(
+      typeof data === "string" ? data : (data?.message || data?.error || data?.detail || data?.description || "")
+    ).trim();
+    // 5SIM documents some explicit rejections (notably "no free phones") as HTTP 200.
+    // Treat only known, explicit no-order responses as safe failures; ambiguous outcomes remain reserved.
+    const supplierExplicitRejection =
+      /\\b(no free phones|no numbers available|not enough user balance|not enough rating|bad country|bad operator|no product|server offline|select country|select operator|unauthorized|invalid token|forbidden|max price exceeded)\\b/i.test(providerErrorText);
+    const explicitReject = !providerId && (
+      (!placed.ok && placed.status >= 400 && placed.status < 500) || supplierExplicitRejection
+    );
+    if (explicitReject) {
+      const safeProviderMessage = providerErrorText
+        ? providerErrorText.slice(0, 180)
+        : "Supplier explicitly rejected the number order.";
+      const f = await finalize(ctx.admin, requestId, "failed", { status: "REJECTED", reason: safeProviderMessage }, "The number provider explicitly rejected the order before issuing a number.");
       const refunded = !f.error && f.data?.success === true;
       return reply({ success: false, status: refunded ? "failed" : "unknown", refunded, request_id: requestId, message: refunded ? "The order was not completed. Sparkle has recorded your wallet refund." : "The order was not completed, but its refund needs support review. Do not buy again." }, refunded ? 502 : 202);
     }
