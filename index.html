@@ -6706,7 +6706,7 @@ async function executeNumberPurchase(pin){
       return;
     }
     closePinModal();numberAwaitingPin=false;
-    const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED"];
+    const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED","PROVIDER_BALANCE_LOW","NO_STOCK","OPERATOR_UNAVAILABLE","NUMBER_UNAVAILABLE","PROVIDER_AUTH_FAILED"];
     const definitelyNotStarted=safeNoOrderCodes.includes(String(error?.code||""))||/wallet unchanged|no supplier order was sent|price changed|service is unavailable for this country|choose a valid country|please sign in|session expired|could not verify.*wallet/i.test(text);
     if(definitelyNotStarted){
       if(/PRICE_CHANGED|price changed/i.test(String(error?.code||"")+" "+text)){
@@ -6714,8 +6714,10 @@ async function executeNumberPurchase(pin){
         const result=document.getElementById("numberPriceResult");if(result)result.textContent="The price changed. Please check the current price again before continuing.";
         const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       }
-      if(message)message.textContent=text+" No supplier order was sent.";
-      alert("Virtual number purchase: "+text);
+      const safeUnavailable=["PROVIDER_BALANCE_LOW","NO_STOCK","OPERATOR_UNAVAILABLE","NUMBER_UNAVAILABLE","PROVIDER_AUTH_FAILED"].includes(String(error?.code||""))||/temporarily unavailable|no number is currently available|no operator currently has/i.test(text);
+      const customerText=safeUnavailable?"Service unavailable. Please try again later.":text;
+      if(message)message.textContent=customerText+(safeUnavailable?"":" No supplier order was sent.");
+      alert(customerText);
       return;
     }
     // A network failure can hide a response after the supplier has accepted an order.
