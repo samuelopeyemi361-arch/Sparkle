@@ -249,7 +249,7 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
  if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  return chosen;
 }
-async function getCatalogServices(country:string):Promise<any[]>{
+async function getCatalogServicesForCountry(country:string):Promise<any[]>{
  const pc=providerCountry(country);
  const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
@@ -273,12 +273,65 @@ async function getCatalogServices(country:string):Promise<any[]>{
   const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
   const stock=hasStock?Number(stockRaw):null;
   if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
-  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null});
+  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null,available_countries:[country],country_availability_loaded:true});
  }
  const unique=new Map<string,any>();
  for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
  return [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
 }
+async function getGlobalCatalogServices():Promise<any[]>{
+ const response=await apiGet("/guest/products/any/any");
+ if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The global service list is temporarily unavailable.",503,"CATALOG_UNAVAILABLE");
+ let root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
+ if(!Array.isArray(root)&&root&&typeof root==="object"){
+  const wrapped=root.products??root.Products??root.items??root.Items;
+  if(wrapped&&(Array.isArray(wrapped)||typeof wrapped==="object"))root=wrapped;
+ }
+ const entries:Array<[string,any]>=Array.isArray(root)
+  ?root.map((item:any,index:number)=>[asText(item?.product??item?.Product??item?.code??item?.Code??item?.slug??item?.name??item?.Name??("service-"+index)),item])
+  :Object.entries(root||{});
+ const items:any[]=[];
+ for(const [rawCode,raw] of entries){
+  const code=asText(rawCode).toLowerCase();
+  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(code)||!raw||typeof raw!=="object")continue;
+  const product:any=raw;
+  const categoryRaw=product.Category??product.category??product.type??product.Type;
+  const category=typeof categoryRaw==="string"?categoryRaw.trim().toLowerCase():"";
+  if(category!=="activation")continue;
+  const stockRaw=product.Qty??product.qty??product.quantity??product.count??product.Count;
+  const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
+  const stock=hasStock?Number(stockRaw):null;
+  if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
+  items.push({code,name:serviceDisplayName(code),network:"Live availability",stock:Number.isFinite(stock)?stock:null,available_countries:[],country_availability_loaded:false});
+ }
+ const unique=new Map<string,any>();
+ for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
+ const result=[...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
+ if(!result.length)throw problem("No activation services are currently listed.",503,"CATALOG_UNAVAILABLE");
+ return result;
+}
+
+async function getCountriesForService(service:string):Promise<string[]>{
+ if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
+ const response=await apiGet("/guest/prices?product="+encodeURIComponent(service));
+ if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified.",503,"COUNTRIES_UNAVAILABLE");
+ const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
+ const serviceNode:any=root[service]||root[service.toUpperCase()]||root;
+ if(!serviceNode||typeof serviceNode!=="object"||Array.isArray(serviceNode))throw problem("No countries currently list this service.",409,"NO_STOCK");
+ const catalogueCountries=await getProviderCountries();
+ const result:string[]=[];
+ for(const item of catalogueCountries){
+  const code=asText(item?.code).toLowerCase();
+  if(!code)continue;
+  let providerCode:string;
+  try{providerCode=providerCountry(code);}catch{continue;}
+  const countryNode=serviceNode[providerCode]||serviceNode[providerCode.toUpperCase()]||serviceNode[code]||serviceNode[code.toUpperCase()];
+  if(!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
+  if(parseOfferRows(countryNode).some(offer=>offer.count>0))result.push(code);
+ }
+ return result;
+}
+
 async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
@@ -345,8 +398,15 @@ Deno.serve(async (req:Request)=>{
   }
   providerCountry(country);
   if(action==="services"){
-   const services=await getCatalogServices(country);
+   let services:any[];
+   try{services=await getGlobalCatalogServices();}
+   catch{services=await getCatalogServicesForCountry(country);}
+   if(!services.length)services=await getCatalogServicesForCountry(country);
    return reply({success:true,data:{country,country_name:country==="us"?"United States":country==="ca"?"Canada":country,currency:"NGN",services}});
+  }
+  if(action==="service-countries"){
+   const available_countries=await getCountriesForService(service);
+   return reply({success:true,data:{service,available_countries}});
   }
   if(action==="operators"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
