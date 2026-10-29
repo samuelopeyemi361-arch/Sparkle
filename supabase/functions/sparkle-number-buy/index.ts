@@ -348,7 +348,7 @@ Deno.serve(async (req: Request) => {
     // 5SIM documents some explicit rejections (notably "no free phones") as HTTP 200.
     // Treat only known, explicit no-order responses as safe failures; ambiguous outcomes remain reserved.
     const supplierExplicitRejection =
-      /\\b(no free phones|no numbers available|not enough user balance|not enough rating|bad country|bad operator|no product|server offline|select country|select operator|unauthorized|invalid token|forbidden|max price exceeded)\\b/i.test(providerErrorText);
+      /\b(no free phones|no numbers available|not enough user balance|not enough rating|bad country|bad operator|no product|server offline|select country|select operator|unauthorized|invalid token|forbidden|max price exceeded)\b/i.test(providerErrorText);
     const explicitReject = !providerId && (
       (!placed.ok && placed.status >= 400 && placed.status < 500) || supplierExplicitRejection
     );
