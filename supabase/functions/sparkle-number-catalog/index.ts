@@ -95,6 +95,33 @@ async function apiGet(path: string): Promise<{ ok: boolean; status: number; data
   try { data = JSON.parse(raw); } catch { data = { message: raw }; }
   return { ok: response.ok, status: response.status, data };
 }
+let providerProfileCache: { balance: number; expiresAt: number } | null = null;
+let providerProfilePromise: Promise<{ balance: number }> | null = null;
+
+// Validate the authenticated provider account before showing live quotes.
+async function providerProfile(): Promise<{ balance: number }> {
+  if (providerProfileCache && providerProfileCache.expiresAt > Date.now()) {
+    return { balance: providerProfileCache.balance };
+  }
+  if (!providerProfilePromise) {
+    providerProfilePromise = (async () => {
+      const result = await apiGet("/user/profile");
+      const id = Number(result.data?.id);
+      const balance = Number(result.data?.balance);
+      if (!result.ok || !result.data || !Number.isFinite(id) || id <= 0 ||
+          !Number.isFinite(balance) || balance < 0) {
+        if (result.status === 401 || result.status === 403) {
+          throw problem("The number service connection is not verified. Please check the configured 5SIM key.", 503, "PROVIDER_AUTH_FAILED");
+        }
+        throw problem("Sparkle could not verify the number service account. No wallet funds were used.", 503, "PROVIDER_AUTH_FAILED");
+      }
+      providerProfileCache = { balance, expiresAt: Date.now() + 30_000 };
+      return { balance };
+    })().finally(() => { providerProfilePromise = null; });
+  }
+  return await providerProfilePromise;
+}
+
 async function usdToNgn(): Promise<number> {
   const now = Date.now();
   if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000) return fxCache.rate;
@@ -118,9 +145,10 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now };
   return rate;
 }
-async function bestOffer(country: string, service: string): Promise<{ operator: string; usd: number; count: number; rate: number | null; fx: number; providerCostNgn: number }> {
+async function bestOffer(country: string, service: string): Promise<{ operator: string; usd: number; count: number; rate: number | null; fx: number; providerCostNgn: number; providerBalanceUsd: number }> {
   const c = providerCountry(country);
   if (!services[service]) throw problem("Choose a supported verification service.", 400, "INVALID_SERVICE");
+  const account = await providerProfile();
   const result = await apiGet("/guest/prices?country=" + encodeURIComponent(c) + "&product=" + encodeURIComponent(service));
   if (!result.ok || !result.data || typeof result.data !== "object") {
     throw problem("Current number prices could not be verified. Please try again shortly.", 503, "PRICE_UNAVAILABLE");
@@ -144,6 +172,8 @@ async function bestOffer(country: string, service: string): Promise<{ operator: 
     return { operator, usd, count, rate: deliveryRate };
   }).filter((x): x is { operator: string; usd: number; count: number; rate: number | null } => x !== null);
   if (!rows.length) throw problem("No number is currently available for this service and country. Try again later.", 409, "NO_STOCK");
+  rows = rows.filter((row) => row.usd <= account.balance);
+  if (!rows.length) throw problem("This number option is temporarily unavailable. Please try again later.", 503, "PROVIDER_BALANCE_LOW");
   // Prefer operators with stronger reported delivery rates; then use price and stock as tie-breakers.
   rows.sort((a, b) => {
     if (a.rate !== null && b.rate !== null && a.rate !== b.rate) return b.rate - a.rate;
@@ -159,7 +189,7 @@ async function bestOffer(country: string, service: string): Promise<{ operator: 
   if (!Number.isFinite(providerCostNgn) || providerCostNgn <= 0) {
     throw problem("Current number prices could not be verified. No wallet funds were used.", 503, "PRICE_UNAVAILABLE");
   }
-  return { ...offer, fx, providerCostNgn };
+  return { ...offer, fx, providerCostNgn, providerBalanceUsd: account.balance };
 }
 async function getQuote(country: string, service: string, serverId: string) {
   const profile = validateRoute(serverId, country, service);
@@ -180,6 +210,7 @@ async function getQuote(country: string, service: string, serverId: string) {
     provider_cost_ngn: offer.providerCostNgn,
     provider_cost_usd: offer.usd,
     provider_operator: offer.operator,
+    provider_balance_usd: offer.providerBalanceUsd,
     fx_rate: offer.fx,
   };
 }
@@ -206,7 +237,9 @@ function publicError(error: any, fallback = "The number service is temporarily u
     return reply({ success: false, code, message: error.message || "Choose a valid server, country and service." }, status || 400);
   }
   if (code === "SERVER_UNAVAILABLE") return reply({ success: false, code, message: error.message }, 503);
-  if (code === "CONFIG_MISSING") return reply({ success: false, code, message: fallback }, 503);
+  if (code === "CONFIG_MISSING") return reply({ success: false, code, message: "The number service is temporarily unavailable. Please try again shortly." }, 503);
+  if (code === "PROVIDER_AUTH_FAILED") return reply({ success: false, code, message: "The number service is not ready yet. Please try again later." }, 503);
+  if (code === "PROVIDER_BALANCE_LOW") return reply({ success: false, code, message: "This number option is temporarily unavailable. Please try another option later." }, 503);
   if (code === "FX_UNAVAILABLE" || code === "PRICE_UNAVAILABLE") return reply({ success: false, code, message: fallback }, 503);
   return reply({ success: false, code: code || "NUMBER_UNAVAILABLE", message: fallback }, status >= 400 && status < 600 ? status : 503);
 }
