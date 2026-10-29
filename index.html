@@ -5197,27 +5197,40 @@ if(sparklePasswordRecoveryMode){
   return;
 }
 
-const {data,error} =
-await supabaseClient.auth.getUser();
+// Wait for Supabase's initial session restoration before deciding the user is
+// signed out. This prevents a transient getUser() response from winning a race.
+const initialSession = await sparkleInitialAuthPromise;
+if(sparklePasswordRecoveryMode){
+  showHomepage();
+  return;
+}
 
+const {data,error} = await supabaseClient.auth.getSession();
+const user = data?.session?.user || initialSession?.user || null;
 
-if(error || !data.user){
-
-showHomepage();
-
-return;
-
+if(error || !user){
+  showHomepage();
+  sparkleFlushQueuedServiceOpen();
+  return;
 }
 
 // Central access check: an unverified account must never load the dashboard,
 // even if a stale session exists from before email confirmation was enabled.
-if(!(data.user.email_confirmed_at || data.user.confirmed_at)){
+if(!(user.email_confirmed_at || user.confirmed_at)){
   showHomepage();
   await supabaseClient.auth.signOut();
+  sparkleFlushQueuedServiceOpen();
   return;
 }
 
-showDashboard(data.user);
+// The auth-state listener may already have opened the dashboard for this user.
+// Avoid rebuilding it, because rebuilding resets the visible page back to Home.
+const dashboardActive = !!document.getElementById("dashboard")?.classList.contains("active");
+const currentUserId = String(window.currentSparkleUser?.id || "");
+if(!(dashboardActive && currentUserId === String(user.id || ""))){
+  await showDashboard(user);
+}
+sparkleFlushQueuedServiceOpen();
 
 }
 
@@ -5854,6 +5867,16 @@ function showDashPage(pageId, button){
 }
 
 function openServicePage(service){
+  // A fast tap during refresh is queued until Supabase finishes restoring auth.
+  // Never let dashboard initialization or a delayed route callback cancel the tap.
+  if(!sparkleInitialAuthResolved){
+    sparkleQueuedServiceOpen = service;
+    return;
+  }
+  if(!window.currentSparkleUser || !document.getElementById("dashboard")?.classList.contains("active")){
+    openAuth("login");
+    return;
+  }
   const id = service + "Page";
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
   document.getElementById(id).classList.add("active");
@@ -8749,8 +8772,28 @@ document.getElementById("homepage").classList.remove("hidden");
 /* =====================================================
    AUTH STATE
    ===================================================== */
+// Supabase restores persisted sessions asynchronously. Do not let the initial
+// loadUser() request race that restoration and incorrectly reveal the public home.
+let sparkleInitialAuthResolved = false;
+let sparkleResolveInitialAuth;
+const sparkleInitialAuthPromise = new Promise(resolve => { sparkleResolveInitialAuth = resolve; });
+let sparkleQueuedServiceOpen = "";
+function sparkleFlushQueuedServiceOpen(){
+  const service = sparkleQueuedServiceOpen;
+  if(!service || !sparkleInitialAuthResolved) return;
+  sparkleQueuedServiceOpen = "";
+  if(window.currentSparkleUser && document.getElementById("dashboard")?.classList.contains("active")){
+    openServicePage(service);
+  }else{
+    openAuth("login");
+  }
+}
 
 supabaseClient.auth.onAuthStateChange((event, session)=>{
+  if(event === "INITIAL_SESSION" && !sparkleInitialAuthResolved){
+    sparkleInitialAuthResolved = true;
+    sparkleResolveInitialAuth(session || null);
+  }
   if(event === "PASSWORD_RECOVERY"){
     sparklePasswordRecoveryMode = true;
     window.currentSparkleUser = null;
