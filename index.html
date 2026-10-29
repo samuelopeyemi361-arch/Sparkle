@@ -5934,7 +5934,7 @@ function normalizeNumberServices(response){
     const name=String(item?.name??item?.service_name??item?.serviceName??item?.title??code).trim();
     if(!code||!name)return null;
     const sellingPrice=Number(item?.selling_price_ngn??item?.sellingPrice);
-    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),availableCountries:Array.isArray(item?.available_countries)?item.available_countries.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean):[],countryAvailabilityLoaded:item?.country_availability_loaded===true,sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
+    return {code,name,network:String(item?.network||""),country:String(item?.country||""),stock:Number(item?.stock??0),availableCountries:Array.isArray(item?.available_countries)?item.available_countries.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean):[],countryAvailabilityLoaded:item?.country_availability_loaded===true,countryAvailabilityFailed:false,sellingPrice:Number.isFinite(sellingPrice)&&sellingPrice>0?Math.round((sellingPrice+Number.EPSILON)*100)/100:null};
   }).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
 }
 let numberSelectionStep = "service";
@@ -6021,7 +6021,7 @@ function filterNumberCountries(){
   const label=numberCountryLabel(c);
   return '<button type="button" class="sparkle-number-country-row '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" onclick="selectNumberCountry(\''+escapeHtml(c.code)+'\')"><span class="sparkle-number-country-flag">'+escapeHtml(c.flag||"🌐")+'</span><span class="sparkle-number-country-name">'+escapeHtml(c.name)+'</span><span class="sparkle-number-row-check" aria-hidden="true">'+(selected?"✓":"")+'</span></button>';
  }).join("");
- if(empty){empty.style.display=rows.length?"none":"block";empty.textContent=serviceCode&&!availabilityReady?"Checking countries for this service…":serviceCode?"No countries currently have this service in stock.":"No matching country. Try another search.";}
+ if(empty){empty.style.display=rows.length?"none":"block";empty.textContent=serviceCode&&!availabilityReady?(selectedService?.countryAvailabilityFailed?"Country availability could not be verified. Tap Retry country list.":"Checking countries for this service…"):serviceCode?"No countries currently have this service in stock.":"No matching country. Try another search.";}
 }
 function selectNumberCountry(code){
  if(numberPurchaseInProgress)return;
@@ -6062,7 +6062,7 @@ function toggleNumberServices(){numberServicesExpanded=!numberServicesExpanded;c
 function chooseNumberService(code){
  const select=document.getElementById("numberAppSelect"),service=numberServicesCache.find(x=>x.code===code);if(!select||!service||numberPurchaseInProgress)return;
  select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";
- service.countryAvailabilityLoaded=false;service.availableCountries=[];
+ service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=false;service.availableCountries=[];
  renderNumberCountries();renderNumberApps(numberServicesCache);numberOperatorsLoadSequence++;numberOperatorsCache=[];
  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Choose a country that supports this service, then continue to compare operator prices.";
@@ -6098,7 +6098,7 @@ async function loadCountriesForNumberService(serviceCode){
  const service=numberServicesCache.find(x=>x.code===serviceCode);
  if(!service||numberPurchaseInProgress)return;
  const seq=++numberServiceCountriesLoadSequence;
- service.countryAvailabilityLoaded=false;service.availableCountries=[];
+ service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=false;service.availableCountries=[];
  const continueButton=document.getElementById("numberContinueCountryButton");
  const help=document.querySelector("#numberCountryPicker .vn-country-help span");
  if(continueButton){continueButton.disabled=true;continueButton.textContent="Checking countries…";}
@@ -6110,7 +6110,7 @@ async function loadCountriesForNumberService(serviceCode){
   const data=response?.data||response;
   const countries=Array.isArray(data.available_countries)?data.available_countries.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean):[];
   service.availableCountries=[...new Set(countries)];
-  service.countryAvailabilityLoaded=true;
+  service.countryAvailabilityLoaded=true;service.countryAvailabilityFailed=false;
   const countrySelect=document.getElementById("numberCountrySelect");
   if(!service.availableCountries.length){
    if(continueButton){continueButton.disabled=true;continueButton.textContent="No countries available";}
@@ -6126,7 +6126,7 @@ async function loadCountriesForNumberService(serviceCode){
   renderNumberCountries();
  }catch(error){
   if(seq!==numberServiceCountriesLoadSequence)return;
-  service.countryAvailabilityLoaded=false;service.availableCountries=[];
+  service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=true;service.availableCountries=[];
   if(continueButton){continueButton.disabled=false;continueButton.textContent="Retry country list";}
   if(help)help.textContent="Sparkle could not verify country availability. Tap Retry country list to try again; no wallet funds were used.";
   renderNumberCountries();
