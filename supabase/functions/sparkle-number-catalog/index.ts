@@ -435,10 +435,10 @@ Deno.serve(async (req:Request)=>{
    const automatic=affordable.find(x=>x.operator.toLowerCase()==="any")||
      [...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0]||
      [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
-   const automaticAvailable=automatic.count>0&&automatic.usd<=automatic.providerBalanceUsd;
+   const automaticAvailable=automatic.count>0;
    const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,in_stock:automatic.count>0,available:automaticAvailable,unavailable_reason:automaticAvailable?null:"Supplier USD balance is too low to fulfil this option"};
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
-     const available=x.count>0&&x.usd<=x.providerBalanceUsd;
+     const available=x.count>0;
      return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,in_stock:x.count>0,available,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
    return reply({success:true,data:{country,service,currency:"NGN",operators:[automaticRow,...specific]}});
