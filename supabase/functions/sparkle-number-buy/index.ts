@@ -52,17 +52,40 @@ function asText(v: unknown): string {
   return typeof v === "string" ? v.trim() : String(v ?? "").trim();
 }
 function providerCountry(country: string): string {
-  if (country === "us") return "usa";
-  if (country === "ca") return "canada";
-  throw problem("Choose a supported country.", 400, "INVALID_COUNTRY");
+  const value = asText(country).toLowerCase();
+  if (value === "us" || value === "usa") return "usa";
+  if (value === "ca" || value === "canada") return "canada";
+  if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(value)) {
+    throw problem("Choose a country from the live catalogue.", 400, "INVALID_COUNTRY");
+  }
+  return value;
 }
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
-  const profile=profileByServer[serverId];
-  if(!profile)throw problem("Use the live number catalogue.",400,"INVALID_SERVER");
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
+  const profile = profileByServer[serverId];
+  if (!profile || serverId !== "server1") throw problem("Use the live 5SIM number catalogue.", 400, "INVALID_SERVER");
+  if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service)) throw problem("Choose a valid verification service.", 400, "INVALID_SERVICE");
   providerCountry(country);
-  if(!["us","ca"].includes(country))throw problem("Choose USA or Canada.",400,"INVALID_COUNTRY");
   return profile;
+}
+async function getProviderCountries(): Promise<any[]> {
+  const response = await apiGet("/guest/countries");
+  if (!response.ok || !response.data || typeof response.data !== "object") throw problem("The live country list could not be loaded. Please try again shortly.", 503, "COUNTRIES_UNAVAILABLE");
+  const raw = response.data?.data && typeof response.data.data === "object" ? response.data.data : response.data;
+  const rows = Object.entries(raw).map(([slug, value]: [string, any]) => {
+    if (!/^[a-z0-9][a-z0-9-]{1,39}$/.test(slug) || !value || typeof value !== "object") return null;
+    const iso = Object.keys(value.iso || {}).find((x) => /^[a-z]{2}$/i.test(x)) || "";
+    return {
+      code: slug === "usa" ? "us" : slug === "canada" ? "ca" : slug,
+      name: String(value.text_en || slug.replace(/[-_]+/g, " ").replace(/\b[a-z]/g, ch => ch.toUpperCase())),
+      iso_code: iso.toLowerCase(),
+      dial: Object.keys(value.prefix || {})[0] || "",
+    };
+  }).filter(Boolean);
+  const unique = new Map<string, any>();
+  for (const item of rows as any[]) if (!unique.has(item.code)) unique.set(item.code, item);
+  return [...unique.values()].sort((a, b) =>
+    a.code === "us" ? -1 : b.code === "us" ? 1 : a.code === "ca" ? -1 : b.code === "ca" ? 1 : a.name.localeCompare(b.name)
+  );
 }
 function configured(): string {
   const key = Deno.env.get("FIVESIM_API_KEY");
@@ -177,12 +200,10 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  let productNode:any=countryNode?.[service]||root?.[service]||null;
  if(productNode&&typeof productNode==="object"&&productNode[pc]&&typeof productNode[pc]==="object")productNode=productNode[pc];
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
- const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0&&x.usd<=account.balance);
- if(!rows.length){
-  if(parsed.some(x=>x.count>0))throw problem("This service is temporarily unavailable. Please try another option later.",503,"PROVIDER_BALANCE_LOW");
-  throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
- }
+ const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
+ if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
  const fx=await usdToNgn();
+ // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:account.balance}));
  offers.sort((a,b)=>{
   if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
@@ -195,18 +216,18 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
 }
 async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service);
+ const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd);
  if(!requestedOperator||requestedOperator==="any"){
-  // The automatic route must use 5SIM's own "any" quote when it exists,
-  // because this exact USD value becomes the enforced maxPrice on purchase.
-  const automatic=offers.find(x=>x.operator.toLowerCase()==="any");
+  const automatic=affordable.find(x=>x.operator.toLowerCase()==="any");
   if(automatic)return automatic;
-  // If the provider has no separate "any" row, cap automatic buying at the
-  // cheapest currently available operator. It can reject/refund, but cannot exceed the cap.
-  return [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
+  const cheapest=[...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
+  if(cheapest)return cheapest;
+  throw problem("The supplier account balance is too low to buy this service right now. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  }
- const chosen=offers.filter(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!chosen.length)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
- return chosen[0];
+ const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
+ if(!chosen)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
+ if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable because the supplier account cannot cover its USD price. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
+ return chosen;
 }
 async function getCatalogServices(country:string):Promise<any[]>{
  const pc=providerCountry(country),account=await providerProfile();

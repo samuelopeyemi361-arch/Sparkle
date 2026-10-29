@@ -29,7 +29,35 @@ BEGIN
   IF lower(trim(p_server_id)) <> 'server1' OR p_markup_percent IS DISTINCT FROM 75::numeric THEN
     RAISE EXCEPTION 'Only the live number catalogue is available';
   END IF;
-  IF lower(trim(p_country)) NOT IN ('us','ca') THEN RAISE EXCEPTION 'Choose USA or Canada'; END IF;
+  IF lower(trim(p_country)) !~ '^[a-z0-9][a-z0-9-]{1,39}
+  v_cost := round(p_provider_cost,2);
+  v_amount := round(v_cost * 1.75,2);
+  IF v_cost <= 0 OR v_amount <= 0 OR v_amount > 1000000 THEN RAISE EXCEPTION 'Invalid number price'; END IF;
+  SELECT * INTO v_existing FROM public.sparkle_sms_otp_orders WHERE request_id=trim(p_request_id) FOR UPDATE;
+  IF FOUND THEN
+    RETURN jsonb_build_object('success',false,'duplicate',true,
+      'message','This number request already exists. Check its status before retrying.','status',v_existing.status);
+  END IF;
+  SELECT balance INTO v_balance FROM public.wallets WHERE user_id=p_user_id FOR UPDATE;
+  IF NOT FOUND OR v_balance IS NULL THEN RAISE EXCEPTION 'Wallet not found'; END IF;
+  IF v_balance < v_amount THEN RAISE EXCEPTION 'Insufficient wallet balance'; END IF;
+  INSERT INTO public.sparkle_sms_otp_orders(user_id,request_id,service_name,country,amount,provider_cost,status)
+    VALUES(p_user_id,trim(p_request_id),trim(p_service_name),lower(trim(p_country)),v_amount,v_cost,'pending');
+  UPDATE public.wallets SET balance=balance-v_amount,updated_at=now() WHERE user_id=p_user_id;
+  INSERT INTO public.wallet_transactions(user_id,type,amount,service,reference,status,metadata)
+    VALUES(p_user_id,'debit',v_amount,'sms_otp',trim(p_request_id),'pending',
+      jsonb_build_object('service_name',trim(p_service_name),'country',lower(trim(p_country)),
+        'provider_cost',v_cost,'markup_percent',75,'server_id','server1'))
+    RETURNING id INTO v_tx;
+  UPDATE public.sparkle_sms_otp_orders SET wallet_transaction_id=v_tx,updated_at=now()
+    WHERE request_id=trim(p_request_id);
+  RETURN jsonb_build_object('success',true,'status','pending','request_id',trim(p_request_id),
+    'amount',v_amount,'server_id','server1');
+END;
+$function$;
+ THEN
+    RAISE EXCEPTION 'Choose a valid country from the live catalogue';
+  END IF;
   v_cost := round(p_provider_cost,2);
   v_amount := round(v_cost * 1.75,2);
   IF v_cost <= 0 OR v_amount <= 0 OR v_amount > 1000000 THEN RAISE EXCEPTION 'Invalid number price'; END IF;

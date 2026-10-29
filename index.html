@@ -3112,7 +3112,7 @@ support@sparkle.com
 
         <!-- US number purchase page: secure Edge Functions. -->
         <section class="page" id="smsotpPage">
-  <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to home">‹</button><h1>Buy US Number</h1></div>
+  <div class="data-topbar"><button class="data-back" onclick="showDashPage('home',document.querySelector('.nav-item'))" aria-label="Back to home">‹</button><h1>Buy Virtual Number</h1></div>
   <div class="sparkle-usn-hero">
     <div class="sparkle-usn-kicker"><span class="sparkle-usn-live-dot"></span> LIVE PRICES · NAIRA</div>
     <h2>Choose the right number.</h2>
@@ -3151,12 +3151,12 @@ support@sparkle.com
 
 <!-- Dedicated US Number order page: separate from price preview and purchase form. -->
         <section class="page" id="usNumberOrderPage">
-          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">‹</button><h1>Your US Number Order</h1></div>
+          <div class="data-topbar"><button class="data-back" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">‹</button><h1>Your Virtual Number Order</h1></div>
           <p class="dashboard-subtitle">View the phone number, verification code, current status, and order reference for your latest US Number purchase.</p>
           <div id="numberOrderEmpty" class="service-page" style="padding:18px;margin-top:14px">
-            <h3 style="margin-top:0">No US Number order to display</h3>
-            <p style="color:var(--muted)">After you confirm a US Number purchase with your transaction PIN, its order details will appear on this page.</p>
-            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Buy a US Number</button>
+            <h3 style="margin-top:0">No virtual number order to display</h3>
+            <p style="color:var(--muted)">After you confirm a virtual number purchase with your transaction PIN, its order details will appear on this page.</p>
+            <button class="btn primary full" type="button" onclick="openServicePage('smsotp');loadNumberCountries()">Buy Virtual Number</button>
           </div>
           <div id="numberOrderCard" class="service-page" style="display:none;padding:18px;margin-top:14px">
             <h2 style="margin:0 0 16px">Order details</h2>
@@ -3173,7 +3173,7 @@ support@sparkle.com
               <button class="btn" type="button" onclick="cancelNumberOrder()">Cancel order</button>
             </div>
           </div>
-          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadNumberCountries()">Back to Buy US Number</button>
+          <button class="btn full" type="button" style="margin-top:12px" onclick="openServicePage('smsotp');loadNumberCountries()">Back to Buy Virtual Number</button>
         </section>
 
         <!-- CRYPTO TRADE: live reference pricing only; no wallet debits or crypto payouts are enabled. -->
@@ -5718,12 +5718,11 @@ function normalizeNumberCountries(response){
     const rawCode=typeof item==="string"?item:(item?.code??item?.country_code??item?.countryCode??item?.iso2??item?.iso_code??item?.value??"");
     let code=String(rawCode||"").trim().toLowerCase();
     if(code==="usa")code="us";
-    const name=String((typeof item==="string"?item:(item?.name??item?.country_name??item?.countryName??item?.label))||(code==="us"?"United States":code.toUpperCase())).trim();
-    if(!/^[a-z]{2,3}$/.test(code)||!name)return null;
-    // Country dropdowns cannot render an image URL inside an <option>.
-    // Always derive a real emoji flag from the ISO country code instead of
-    // accidentally showing a supplier flag/logo URL as literal text.
-    const flagCode=code==="uk"?"gb":code;
+    if(code==="canada")code="ca";
+    const name=String((typeof item==="string"?item:(item?.name??item?.country_name??item?.countryName??item?.label))||(code==="us"?"United States":code==="ca"?"Canada":code.toUpperCase())).trim();
+    if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(code)||!name)return null;
+    const isoValue=typeof item?.iso_code==="string"?item.iso_code.toLowerCase():"";
+    const flagCode=(isoValue||code)==="uk"?"gb":(isoValue||code);
     const flag= /^[a-z]{2}$/.test(flagCode)
       ? String.fromCodePoint(...[...flagCode.toUpperCase()].map(ch=>127397+ch.charCodeAt(0)))
       : "🌐";
@@ -5765,9 +5764,15 @@ function renderNumberOperators(items,preferred="any"){
   const price=Number(item.selling_price_ngn),priceText=Number.isFinite(price)&&price>0?" — ₦"+price.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"";
   const stock=Number(item.stock||0),stockText=stock>0?" · "+stock.toLocaleString("en-NG")+" available":"";
   const rate=Number(item.rate),rateText=Number.isFinite(rate)&&rate>0?" · "+rate.toFixed(1)+"% delivery rate":"";
-  option.textContent=String(item.operator_label||item.operator||"Operator")+priceText+stockText+rateText;select.appendChild(option);
+  const unavailableText=item.available===false?" · temporarily unavailable":"";
+  option.textContent=String(item.operator_label||item.operator||"Operator")+priceText+stockText+rateText+unavailableText;
+  option.disabled=item.available===false;
+  select.appendChild(option);
  });
- const chosen=(items||[]).some(x=>String(x.operator)===preferred)?preferred:((items||[]).some(x=>String(x.operator)==="any")?"any":String(items?.[0]?.operator||""));
+ const enabled=(items||[]).filter(x=>x.available!==false);
+ const preferredRow=enabled.find(x=>String(x.operator)===preferred);
+ const anyRow=enabled.find(x=>String(x.operator)==="any");
+ const chosen=preferredRow?String(preferredRow.operator):anyRow?"any":String(enabled[0]?.operator||"");
  select.value=chosen;
 }
 async function loadNumberOperators(preferred){
@@ -5782,6 +5787,14 @@ async function loadNumberOperators(preferred){
   const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
   renderNumberOperators(numberOperatorsCache,preferred||"any");
   if(!numberOperatorsCache.length)throw new Error("No operators are currently available for this service and country.");
+  if(!numberOperatorsCache.some(item=>item.available!==false)){
+    if(result)result.textContent="Live operator prices are listed in naira, but the supplier account cannot currently cover these USD prices. No Sparkle wallet funds will be taken.";
+    return;
+  }
+  if(!select.value){
+    if(result)result.textContent="Choose an operator that is currently available to check its naira price.";
+    return;
+  }
   await checkNumberPrice();
  }catch(error){numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(result)result.textContent="Could not load operator prices: "+String(error.message||error);}
 }
@@ -6028,7 +6041,7 @@ function confirmNumberReviewPurchase(){
 }
 async function executeNumberPurchase(pin){
   if(numberPurchaseInProgress)return;
-  if(!numberCurrentQuote){alert("Please check the US number price again.");return;}
+  if(!numberCurrentQuote){alert("Please check the current virtual number price again.");return;}
   if(!/^\d{4}$/.test(String(pin||""))){alert("Enter your 4-digit transaction PIN.");return;}
   numberPurchaseInProgress=true;
   const button=document.getElementById("numberReviewConfirm");
@@ -6083,7 +6096,7 @@ async function executeNumberPurchase(pin){
         const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       }
       if(message)message.textContent=text+" No supplier order was sent.";
-      alert("US number purchase: "+text);
+      alert("Virtual number purchase: "+text);
       return;
     }
     // A network failure can hide a response after the supplier has accepted an order.
@@ -6101,7 +6114,7 @@ async function executeNumberPurchase(pin){
 }
 async function checkNumberOrder(options={}){
   const silent=Boolean(options?.silent);
-  if(!numberCurrentOrder?.requestId){if(!silent)alert("No active US number order to check.");return;}
+  if(!numberCurrentOrder?.requestId){if(!silent)alert("No active virtual number order to check.");return;}
   const msg=document.getElementById("numberOrderMessage");if(msg&&!silent)msg.textContent="Checking for SMS…";
   try{
     const response=await callNumberOrderFunction("sparkle-number-check",{request_id:numberCurrentOrder.requestId});
@@ -6119,8 +6132,8 @@ async function checkNumberOrder(options={}){
   }catch(error){if(msg&&!silent)msg.textContent="Could not check order: "+String(error.message||error);}
 }
 async function cancelNumberOrder(){
-  if(!numberCurrentOrder?.requestId){alert("No active US number order to cancel.");return;}
-  if(!confirm("Cancel this US number order? Only cancel if the provider still allows cancellation."))return;
+  if(!numberCurrentOrder?.requestId){alert("No active virtual number order to cancel.");return;}
+  if(!confirm("Cancel this virtual number order? Only cancel if the provider still allows cancellation."))return;
   const msg=document.getElementById("numberOrderMessage");if(msg)msg.textContent="Requesting cancellation…";
   try{
     const response=await callNumberOrderFunction("sparkle-number-cancel",{request_id:numberCurrentOrder.requestId});
