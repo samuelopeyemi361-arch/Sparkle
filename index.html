@@ -6516,7 +6516,7 @@ function backFromNumberReview(){
   const catalog=document.getElementById("numberCatalogPanel");if(catalog)catalog.style.display="block";
   window.scrollTo({top:0,behavior:"smooth"});
 }
-function confirmNumberReviewPurchase(){
+async function confirmNumberReviewPurchase(){
   if(numberPurchaseInProgress)return;
   const serviceCode=document.getElementById("numberAppSelect")?.value||"";
   const country=document.getElementById("numberCountrySelect")?.value||"us";
@@ -6527,7 +6527,9 @@ function confirmNumberReviewPurchase(){
   if(!Number.isFinite(quotedAmount)||quotedAmount<=0){document.getElementById("numberReviewMessage").textContent="The quoted price could not be verified. Please check the price again.";return;}
   pendingPurchase={type:"single",items:[{service:"US Number",network:country,plan:numberCurrentQuote.serviceName,amount:quotedAmount}],total:quotedAmount};
   numberAwaitingPin=true;
-  openPinForPurchase();
+  const opened=await openPinForPurchase();
+  if(!opened){numberAwaitingPin=false;return;}
+  const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your Virtual Number purchase with your 4-digit Transaction PIN.";
 }
 async function executeNumberPurchase(pin){
   if(numberPurchaseInProgress)return;
