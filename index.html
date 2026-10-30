@@ -7754,10 +7754,8 @@ async function loadRechargePinPrices(force=false){
   if(sparkleRechargePinPricesLoaded && !force) return sparkleRechargePinPrices;
   if(sparkleRechargePinPriceLoadPromise && !force) return sparkleRechargePinPriceLoadPromise;
   sparkleRechargePinPriceLoadPromise=(async()=>{
-    const {data,error}=await supabaseClient
-      .from("sparkle_recharge_pin_prices")
-      .select("network,denomination,selling_price_per_pin,min_quantity")
-      .not("selling_price_per_pin","is",null);
+    // Expose only the customer selling prices. Provider costs stay server-side.
+    const {data,error}=await supabaseClient.rpc("sparkle_get_recharge_pin_prices");
     if(error) throw new Error("Could not load Recharge PIN prices. Please try again later.");
     const prices={};
     (data||[]).forEach(row=>{
