@@ -2702,448 +2702,251 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 
 <!-- ================= LANDING PAGE ================= -->
 
+<style id="sparkle-public-homepage-redesign">
+/* Public landing page only. Signed-in dashboard and application flows are intentionally untouched. */
+.homepage{--pub-ink:#102348;--pub-muted:#667795;--pub-blue:#1768f5;--pub-deep:#071b4d;--pub-line:#e6edf8;background:#fff;color:var(--pub-ink);overflow:hidden}
+.homepage .wrap{max-width:1200px;padding-left:24px;padding-right:24px}
+.homepage .nav{height:82px;gap:22px;position:relative;z-index:5}
+.homepage .brand{font-size:25px;letter-spacing:-.7px;color:var(--pub-deep)}
+.homepage .brand .logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(145deg,#287dff,#0646c8);box-shadow:0 8px 18px #1768f52b}
+.homepage .links{gap:26px;color:#536481}
+.homepage .actions{gap:10px}
+.homepage .btn{border-radius:12px;padding:12px 19px;font-weight:800;transition:transform .2s,box-shadow .2s}
+.homepage .btn:hover{transform:translateY(-2px);box-shadow:0 9px 22px #0b34731a}
+.homepage .btn.primary{background:linear-gradient(135deg,#2478ff,#0752dc);border-color:#1768f5;box-shadow:0 9px 22px #1768f52b}
+.homepage .hero{position:relative;padding:78px 0 76px;background:radial-gradient(ellipse at 82% 28%,#dceaff 0,transparent 34%),linear-gradient(135deg,#f5f8ff 0%,#fff 58%,#f5f8ff 100%)}
+.homepage .hero:before{content:"";position:absolute;width:460px;height:460px;border:1px solid #dce8fb;border-radius:50%;right:-190px;top:-245px;pointer-events:none}
+.homepage .hero-grid{position:relative;grid-template-columns:1.05fr .95fr;gap:56px}
+.homepage .eyebrow{align-items:center;gap:8px;padding:9px 14px;background:#e8f1ff;color:#1554bd;border:1px solid #d7e6ff;font-size:12px;letter-spacing:.35px}
+.homepage .hero h1{max-width:650px;font-size:clamp(42px,5.1vw,66px);line-height:1.02;letter-spacing:-2.8px;color:#0b1e42;margin:22px 0 19px}
+.homepage .hero h1 em{font-style:normal;color:#1768f5}
+.homepage .hero p{max-width:590px;font-size:16px;line-height:1.8;color:#62718d}
+.homepage .hero-buttons{align-items:center;gap:13px;margin-top:30px}
+.homepage .hero-buttons .btn{min-height:49px;padding:14px 22px}
+.homepage .hero-proof{display:flex;flex-wrap:wrap;gap:18px;margin-top:27px;color:#52627e;font-size:12px;font-weight:750}
+.homepage .hero-proof span{display:flex;align-items:center;gap:7px}
+.homepage .hero-proof b{color:#0d9b69;font-size:15px}
+.homepage .mock{position:relative;padding:14px;border:1px solid #e2eafa;border-radius:28px;background:#ffffffd9;box-shadow:0 30px 80px #163d7d1c;transform:rotate(1deg)}
+.homepage .mock:before{content:"";position:absolute;inset:18px -14px -14px 18px;border-radius:28px;background:linear-gradient(135deg,#d9e8ff,#f1f5ff);z-index:-1}
+.homepage .mocktop{min-height:300px;padding:27px;border-radius:21px;background:radial-gradient(circle at 90% 5%,#4a91ff 0,transparent 35%),linear-gradient(135deg,#071b4d,#0b5cff 72%,#347cff);box-shadow:inset 0 1px #ffffff38}
+.homepage .mocktop small{font-size:11px;letter-spacing:1.7px;font-weight:850;color:#d8e7ff}
+.homepage .balance{font-size:30px;margin:12px 0 24px;letter-spacing:-.8px}
+.homepage .mock-summary{display:flex;align-items:center;justify-content:space-between;padding:14px 15px;border:1px solid #ffffff35;background:#ffffff16;border-radius:14px;color:#fff;font-size:12px}
+.homepage .mock-summary strong{font-size:15px}
+.homepage .quick{grid-template-columns:repeat(2,1fr);gap:10px;margin-top:13px}
+.homepage .q{display:flex;align-items:center;gap:10px;text-align:left;padding:13px;border:1px solid #e8eef9;border-radius:13px;font-size:12px;box-shadow:0 4px 12px #071b4d0a}
+.homepage .q i{display:grid;place-items:center;width:31px;height:31px;flex:0 0 31px;margin:0;border-radius:10px;background:#edf4ff;font-size:16px}
+.homepage .mock-note{display:flex;align-items:center;gap:8px;padding:14px 5px 2px;color:#6c7c98;font-size:11px;font-weight:700}
+.homepage .mock-note b{color:#0d9b69}
+.homepage .strip{padding:19px 0;background:#fff;border-top:1px solid #edf1f8;border-bottom:1px solid #edf1f8}
+.homepage .brands{justify-content:center;gap:clamp(20px,4vw,55px);color:#7888a3;font-size:12px;letter-spacing:1px}
+.homepage .public-stats{padding:25px 0;background:#f8faff}
+.homepage .public-stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.homepage .public-stat{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 15px}
+.homepage .public-stat strong{display:block;color:#102b59;font-size:23px;line-height:1.1;letter-spacing:-.6px}
+.homepage .public-stat span{display:block;margin-top:4px;color:#71809a;font-size:11px;font-weight:700}
+.homepage .public-stat-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:#eaf2ff;color:#1768f5;font-size:20px}
+.homepage .section{padding:82px 0}
+.homepage .center h2{font-size:clamp(29px,3.5vw,40px);line-height:1.12;letter-spacing:-1.2px;color:#102348;margin:10px 0 13px}
+.homepage .center p{font-size:15px;color:#71809a;line-height:1.75}
+.homepage .section-kicker{display:inline-block;color:#1768f5;font-size:11px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase}
+.homepage .cards{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-top:38px}
+.homepage .card{position:relative;min-height:190px;padding:23px;border:1px solid #e7edf7;border-radius:18px;box-shadow:0 8px 25px #0b2c6410;transition:transform .2s,border-color .2s,box-shadow .2s}
+.homepage .card:hover{transform:translateY(-4px);border-color:#c7dcff;box-shadow:0 16px 32px #0b2c6416}
+.homepage .card .icon{display:grid;place-items:center;width:46px;height:46px;margin-bottom:17px;border-radius:14px;background:linear-gradient(145deg,#edf4ff,#dceaff);font-size:22px}
+.homepage .card h3{font-size:16px;letter-spacing:-.2px;color:#14294d;margin:0 0 8px}
+.homepage .card p{font-size:12px;line-height:1.65;color:#71809a;margin:0 0 13px}
+.homepage .seo-service-link{font-size:12px;margin-top:0}
+.homepage .how-section{background:#f7f9fe}
+.homepage .steps{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+.homepage .step{padding:23px;border:1px solid #e6edf8;border-radius:17px;background:#fff}
+.homepage .step-number{display:grid;place-items:center;width:34px;height:34px;border-radius:11px;background:#eaf2ff;color:#1768f5;font-weight:900;font-size:13px;margin-bottom:16px}
+.homepage .step h3{font-size:16px;margin:0 0 8px}
+.homepage .step p{font-size:13px;line-height:1.7;color:#71809a;margin:0}
+.homepage .trust-panel{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center;padding:34px;border-radius:25px;background:linear-gradient(135deg,#071b4d,#0b4ebc 72%,#1768f5);color:#fff;overflow:hidden}
+.homepage .trust-panel h2{font-size:clamp(27px,3.2vw,38px);letter-spacing:-1px;line-height:1.1;margin:12px 0}
+.homepage .trust-panel p{font-size:13px;line-height:1.75;color:#d6e4ff;max-width:520px}
+.homepage .trust-list{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.homepage .trust-item{padding:16px;border:1px solid #ffffff2b;border-radius:15px;background:#ffffff12}
+.homepage .trust-item b{display:block;font-size:13px;margin-bottom:5px}
+.homepage .trust-item span{font-size:11px;line-height:1.5;color:#d6e4ff}
+.homepage .faq{max-width:820px;margin:35px auto 0}
+.homepage .faq details{padding:18px 20px;margin-bottom:10px;border:1px solid #e7edf7;border-radius:14px;background:#fff}
+.homepage .faq summary{font-size:14px;font-weight:850;color:#183052;cursor:pointer}
+.homepage .faq details p{font-size:13px;line-height:1.7;color:#71809a;margin:12px 0 0}
+.homepage .final-cta{padding:0 0 82px}
+.homepage .cta-panel{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:31px 34px;border:1px solid #dce8fc;border-radius:22px;background:linear-gradient(120deg,#eff5ff,#f9fbff)}
+.homepage .cta-panel h2{font-size:25px;letter-spacing:-.7px;margin:0 0 7px}
+.homepage .cta-panel p{font-size:13px;color:#71809a;margin:0}
+.homepage .footer{padding:48px 0 22px;background:#071b3f;color:#d9e5fb}
+.homepage .footer .brand{color:#fff}
+.homepage .footer .logo{background:linear-gradient(145deg,#287dff,#0646c8)}
+.homepage .footer p,.homepage .footer a{color:#aebfdd;font-size:12px;line-height:1.8}
+.homepage .footer h4{font-size:12px;color:#fff}
+.homepage .footer .copy{border-top:1px solid #ffffff1c;color:#8fa4c7;font-size:11px}
+@media(max-width:900px){
+ .homepage .links{gap:15px}
+ .homepage .hero-grid{gap:32px}
+ .homepage .hero h1{font-size:48px}
+ .homepage .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:650px){
+ .homepage .nav{height:auto;min-height:70px;flex-wrap:wrap;padding-top:13px;padding-bottom:13px;gap:12px}
+ .homepage .brand{font-size:21px}
+ .homepage .brand .logo{width:37px;height:37px}
+ .homepage .links{order:3;width:100%;justify-content:space-between;gap:8px;font-size:11px;padding:3px 0}
+ .homepage .actions{gap:7px}
+ .homepage .actions .btn{padding:10px 12px;font-size:12px}
+ .homepage .hero{padding:48px 0 52px}
+ .homepage .hero-grid{grid-template-columns:1fr;gap:35px}
+ .homepage .hero h1{font-size:43px;letter-spacing:-1.8px}
+ .homepage .hero p{font-size:14px}
+ .homepage .hero-proof{gap:12px;font-size:11px}
+ .homepage .mock{max-width:480px;width:100%;margin:auto;transform:none}
+ .homepage .mocktop{min-height:0;padding:21px}
+ .homepage .balance{font-size:27px;margin-bottom:18px}
+ .homepage .strip{padding:16px 0}
+ .homepage .brands{gap:13px 22px;font-size:10px}
+ .homepage .public-stats-grid{grid-template-columns:1fr;gap:2px}
+ .homepage .public-stat{justify-content:flex-start;padding:9px 12px}
+ .homepage .section{padding:60px 0}
+ .homepage .cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;margin-top:27px}
+ .homepage .card{min-height:185px;padding:16px;border-radius:15px}
+ .homepage .card .icon{width:40px;height:40px;font-size:19px;margin-bottom:13px}
+ .homepage .card h3{font-size:14px}
+ .homepage .card p{font-size:11px}
+ .homepage .seo-service-link{font-size:11px}
+ .homepage .steps{grid-template-columns:1fr;gap:11px}
+ .homepage .step{padding:18px}
+ .homepage .trust-panel{grid-template-columns:1fr;gap:22px;padding:24px 20px;border-radius:20px}
+ .homepage .trust-list{gap:9px}
+ .homepage .trust-item{padding:13px}
+ .homepage .cta-panel{display:block;padding:24px 20px}
+ .homepage .cta-panel .btn{display:inline-block;margin-top:17px}
+ .homepage .final-cta{padding-bottom:58px}
+ .homepage .footgrid{grid-template-columns:1fr 1fr;gap:25px}
+}
+@media(max-width:370px){
+ .homepage .hero h1{font-size:38px}
+ .homepage .cards{grid-template-columns:1fr}
+ .homepage .links{font-size:10px}
+}
+</style>
+
 <div class="homepage" id="homepage">
-
 <header class="nav wrap">
-
-<a class="brand" href="#">
-<span class="logo">S</span> Sparkle
-</a>
-
-<nav class="links">
-<a href="#services">Services</a>
-<a href="#api">API</a>
-<a href="#faq">FAQ</a>
-<a href="#download">App</a>
-</nav>
-
-<div class="actions">
-<a class="btn" href="/login">Log In</a>
-<a class="btn primary" href="/register">Register</a>
-</div>
-
+  <a class="brand" href="/" aria-label="TheSparkle home"><span class="logo">✦</span> TheSparkle</a>
+  <nav class="links" aria-label="Main navigation">
+    <a href="#services">Services</a><a href="#how-it-works">How it works</a><a href="#trust">Why Sparkle</a><a href="#faq">FAQ</a>
+  </nav>
+  <div class="actions"><a class="btn" href="/login">Log In</a><a class="btn primary" href="/register">Create Account</a></div>
 </header>
 
-
 <section class="hero">
-
-<div class="wrap hero-grid">
-
-<div>
-
-<span class="eyebrow">✦ Simple. Fast. Reliable.</span>
-
-<h1>Pay your bills faster, easier and smarter.</h1>
-
-<p>
-Buy affordable data, airtime and pay utility bills instantly.
-Sparkle brings everyday Nigerian bill payments together in one simple platform.
-Find affordable MTN, Airtel, Glo and 9mobile data bundles, recharge airtime, and pay supported bills online with TheSparkle.
-</p>
-
-<div class="hero-buttons">
-
-<a class="btn primary" href="/register">Get Started</a>
-
-<a class="btn" href="#services">
-Explore Services
-</a>
-
-</div>
-
-</div>
-
-
-<div class="mock">
-
-<div class="mocktop">
-
-<small>SPARKLE WALLET</small>
-
-<div class="balance">₦0.00</div>
-
-<div class="quick">
-
-<div class="q">
-<i>📱</i>Airtime
-</div>
-
-<div class="q">
-<i>🌐</i>Data
-</div>
-
-<div class="q">
-<i>📺</i>Cable
-</div>
-
-<div class="q">
-<i>⚡</i>Electricity
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow">✦ Your everyday digital services, made simple</span>
+      <h1>One platform.<br><em>More possibilities.</em></h1>
+      <p>From affordable data and airtime to bill payments, virtual numbers and digital services, Sparkle brings the essentials together in one convenient place.</p>
+      <div class="hero-buttons"><a class="btn primary" href="/register">Get Started <span aria-hidden="true">→</span></a><a class="btn" href="#services">Explore Services</a></div>
+      <div class="hero-proof"><span><b>✓</b> Simple to use</span><span><b>✓</b> Naira-friendly payments</span><span><b>✓</b> Support when you need it</span></div>
+    </div>
+    <div class="mock" aria-label="Illustration of Sparkle services">
+      <div class="mocktop">
+        <small>THE SPARKLE EXPERIENCE</small>
+        <div class="balance">Everything, in one place.</div>
+        <div class="mock-summary"><span>Everyday digital services</span><strong>✦ Sparkle</strong></div>
+        <div class="quick">
+          <div class="q"><i>📱</i>Airtime & Data</div><div class="q"><i>⚡</i>Electricity</div>
+          <div class="q"><i>📺</i>Cable TV</div><div class="q"><i>🌐</i>Virtual Numbers</div>
+        </div>
+      </div>
+      <div class="mock-note"><b>✓</b> A simpler way to handle everyday digital needs</div>
+    </div>
+  </div>
 </section>
 
+<div class="strip"><div class="wrap brands"><span>MTN</span><span>AIRTEL</span><span>GLO</span><span>9MOBILE</span><span>DSTV</span><span>GOTV</span><span>STARTIMES</span></div></div>
 
-<div class="strip">
-
-<div class="wrap brands">
-
-<span>MTN</span>
-<span>AIRTEL</span>
-<span>GLO</span>
-<span>9MOBILE</span>
-<span>DSTV</span>
-<span>GOTV</span>
-<span>STARTIMES</span>
-
-</div>
-
-</div>
-
+<section class="public-stats" aria-label="Sparkle at a glance">
+  <div class="wrap public-stats-grid">
+    <div class="public-stat"><div class="public-stat-icon">👥</div><div><strong>1,000+</strong><span>Customers served</span></div></div>
+    <div class="public-stat"><div class="public-stat-icon">🔐</div><div><strong>Security-minded</strong><span>Account and transaction safeguards</span></div></div>
+    <div class="public-stat"><div class="public-stat-icon">🇳🇬</div><div><strong>Made for Nigeria</strong><span>Everyday services with Naira payments</span></div></div>
+  </div>
+</section>
 
 <section class="section" id="services">
-
-<div class="wrap">
-
-<div class="center">
-
-<h2>Comprehensive Services Tailored for You</h2>
-
-<p>
-Everything you need for instant recharge, subscriptions and everyday utility payments in one place.
-</p>
-
-</div>
-
-
-<div class="cards">
-
-<div class="card">
-<div class="icon">🌐</div>
-<h3>Mobile Data</h3>
-<p>Access affordable data plans across all major networks in Nigeria.</p>
-<a class="seo-service-link" href="/data">Buy Data →</a>
-</div>
-
-<div class="card">
-<div class="icon">🎟️</div>
-<h3>Exam Pins</h3>
-<p>Buy WAEC and NECO examination pins and scratch cards.</p>
-<a class="seo-service-link" href="/education">Buy Exam Pins →</a>
-</div>
-
-<div class="card">
-<div class="icon">📺</div>
-<h3>Cable TV</h3>
-<p>Activate DSTV, GOtv and Startimes subscriptions with ease.</p>
-<a class="seo-service-link" href="/cable-tv">Pay Cable TV →</a>
-</div>
-
-<div class="card">
-<div class="icon">📱</div>
-<h3>Airtime</h3>
-<p>Recharge any Nigerian network instantly from your wallet.</p>
-<a class="seo-service-link" href="/airtime">Buy Airtime →</a>
-</div>
-
-<div class="card">
-<div class="icon">💳</div>
-<h3>Virtual Cards</h3>
-<p>Access convenient virtual cards for online payments.</p>
-</div>
-
-<div class="card">
-<div class="icon">⚡</div>
-<h3>Utility Bills</h3>
-<p>Pay electricity and other supported utility bills.</p>
-<a class="seo-service-link" href="/electricity">Pay Electricity →</a>
-</div>
-
-<div class="card">
-<div class="icon">🪪</div>
-<h3>Recharge Pin Printing</h3>
-<p>Buy and print recharge cards for supported networks.</p>
-<a class="seo-service-link" href="/recharge-pin-printing">Print Recharge PINs →</a>
-</div>
-
-<div class="card">
-<div class="icon">👥</div>
-<h3>Referral & Reseller</h3>
-<p>Earn through referrals and reseller activity.</p>
-</div>
-
-<div class="card">
-<div class="icon">🔔</div>
-<h3>Notifications</h3>
-<p>Receive updates for wallet funding and transactions.</p>
-</div>
-
-</div>
-
-</div>
-
+  <div class="wrap">
+    <div class="center"><span class="section-kicker">What you can do</span><h2>All your digital essentials, together</h2><p>Explore the services available on Sparkle. Sign in to access your account and complete a transaction.</p></div>
+    <div class="cards">
+      <div class="card"><div class="icon">📱</div><h3>Airtime</h3><p>Recharge supported Nigerian mobile networks with ease.</p><a class="seo-service-link" href="/airtime">Explore Airtime →</a></div>
+      <div class="card"><div class="icon">🌐</div><h3>Mobile Data</h3><p>Choose data bundles for MTN, Airtel, Glo and 9mobile.</p><a class="seo-service-link" href="/data">Explore Data →</a></div>
+      <div class="card"><div class="icon">⚡</div><h3>Electricity</h3><p>Pay supported electricity distribution company bills.</p><a class="seo-service-link" href="/electricity">Pay Electricity →</a></div>
+      <div class="card"><div class="icon">📺</div><h3>Cable TV</h3><p>Manage supported DStv, GOtv and Startimes subscriptions.</p><a class="seo-service-link" href="/cable-tv">Explore Cable TV →</a></div>
+      <div class="card"><div class="icon">🎫</div><h3>Recharge PIN Printing</h3><p>Purchase and print recharge PINs for supported networks.</p><a class="seo-service-link" href="/recharge-pin-printing">Print Recharge PINs →</a></div>
+      <div class="card"><div class="icon">📲</div><h3>Virtual Numbers</h3><p>Browse available services, countries and operators for virtual numbers.</p><a class="seo-service-link" href="/us-number">Explore Virtual Numbers →</a></div>
+      <div class="card"><div class="icon">🎓</div><h3>Education PINs</h3><p>Access supported examination and education PIN services.</p><a class="seo-service-link" href="/education">Explore Education PINs →</a></div>
+      <div class="card"><div class="icon">✉️</div><h3>Bulk SMS</h3><p>Send messages to your audience using Sparkle Bulk SMS.</p><a class="seo-service-link" href="/bulk-sms">Explore Bulk SMS →</a></div>
+      <div class="card"><div class="icon">📣</div><h3>Social Media Market</h3><p>Explore available social media growth and engagement services.</p><a class="seo-service-link" href="/social-media-market">Explore Social Media →</a></div>
+      <div class="card"><div class="icon">₿</div><h3>Crypto Trade</h3><p>Access Sparkle's cryptocurrency trading service.</p><a class="seo-service-link" href="/crypto">Explore Crypto →</a></div>
+    </div>
+  </div>
 </section>
 
-
-<section class="section" id="api">
-
-<div class="wrap">
-
-<div class="api">
-
-<div>
-
-<h2>Integrate Our API</h2>
-
-<p>
-Build powerful bill-payment products with Sparkle's developer-ready API.
-</p>
-
-<button class="btn primary">
-View Documentation
-</button>
-
-</div>
-
-
-<div class="code">
-
-POST /api/v1/airtime
-
-<br><br>
-
-{
-<br>
-&nbsp;&nbsp;"network": "MTN",
-<br>
-&nbsp;&nbsp;"phone": "080********",
-<br>
-&nbsp;&nbsp;"amount": 500
-<br>
-}
-
-</div>
-
-</div>
-
-</div>
-
+<section class="section how-section" id="how-it-works">
+  <div class="wrap">
+    <div class="center"><span class="section-kicker">Getting started</span><h2>Simple from the first step</h2><p>Getting started with Sparkle is straightforward.</p></div>
+    <div class="steps">
+      <div class="step"><div class="step-number">01</div><h3>Create your account</h3><p>Register with your details to set up your personal Sparkle account.</p></div>
+      <div class="step"><div class="step-number">02</div><h3>Fund your wallet</h3><p>Add funds to your Sparkle wallet using the available funding option.</p></div>
+      <div class="step"><div class="step-number">03</div><h3>Choose a service</h3><p>Select the service you need and follow the steps shown to complete your order.</p></div>
+    </div>
+  </div>
 </section>
 
+<section class="section" id="trust">
+  <div class="wrap">
+    <div class="trust-panel">
+      <div><span class="section-kicker" style="color:#a9cbff">A platform built around confidence</span><h2>Convenience matters.<br>Trust matters more.</h2><p>We want every Sparkle customer to know what they are selecting, what they are paying for and where to get help. Your account and transactions are handled through Sparkle's protected account and payment flows.</p></div>
+      <div class="trust-list">
+        <div class="trust-item"><b>🔐 Account protection</b><span>Sign-in and transaction safeguards help protect account access.</span></div>
+        <div class="trust-item"><b>₦ Clear Naira pricing</b><span>Review the amount before confirming an eligible purchase.</span></div>
+        <div class="trust-item"><b>🧾 Transaction records</b><span>Keep track of wallet activity and purchase history in your account.</span></div>
+        <div class="trust-item"><b>💬 Customer support</b><span>Reach Sparkle when you need help with your account or a service.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <section class="section" id="faq">
-
-<div class="wrap">
-
-<div class="center">
-
-<h2>Frequently Asked Questions</h2>
-
-<p>Quick answers about using Sparkle.</p>
-
-</div>
-
-
-<div class="faq">
-
-<details open>
-
-<summary>
-What can I pay for on Sparkle?
-</summary>
-
-<p>
-Airtime, data, cable TV, electricity, exam pins and other supported services.
-</p>
-
-</details>
-
-
-<details>
-
-<summary>
-How do I fund my wallet?
-</summary>
-
-<p>
-Wallet funding will be connected to our verified payment provider.
-</p>
-
-</details>
-
-
-<details>
-
-<summary>
-Can I become a reseller?
-</summary>
-
-<p>
-Yes. Sparkle is designed to support referrals, resellers and API access.
-</p>
-
-</details>
-
-
-<details>
-
-<summary>
-Are my transactions secure?
-</summary>
-
-<p>
-Wallet balances are controlled by the secure backend rather than the browser.
-</p>
-
-</details>
-
-</div>
-
-</div>
-
+  <div class="wrap">
+    <div class="center"><span class="section-kicker">Need to know</span><h2>Frequently asked questions</h2><p>A few quick answers before you get started.</p></div>
+    <div class="faq">
+      <details><summary>What services can I use on Sparkle?</summary><p>You can access airtime, mobile data, electricity, cable TV, recharge PIN printing, virtual numbers, education PINs, bulk SMS, social media services and crypto trade.</p></details>
+      <details><summary>Do I need an account to make a purchase?</summary><p>Yes. Create an account or log in to access your wallet and complete purchases.</p></details>
+      <details><summary>How do I get help with a transaction?</summary><p>Contact Sparkle support with the relevant transaction details so the team can assist.</p></details>
+      <details><summary>Can I use Sparkle in Nigeria?</summary><p>Sparkle offers services for customers in Nigeria, with prices and payments displayed in Naira where applicable.</p></details>
+    </div>
+  </div>
 </section>
 
-
-<section class="section" id="download">
-
-<div class="wrap">
-
-<div class="download">
-
-<div>
-
-<h2>Download the Sparkle App</h2>
-
-<p>
-Manage your everyday payments from your phone.
-</p>
-
-<a class="store" href="#">Android</a>
-<a class="store" href="#">iOS</a>
-
-</div>
-
-
-<div class="mock">
-
-<div class="mocktop">
-
-<small>SPARKLE</small>
-
-<div class="balance">
-Everything in one place.
-</div>
-
-<div class="quick">
-
-<div class="q">
-<i>📱</i>Airtime
-</div>
-
-<div class="q">
-<i>🌐</i>Data
-</div>
-
-<div class="q">
-<i>📺</i>Cable
-</div>
-
-<div class="q">
-<i>⚡</i>Power
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
-</div>
-
+<section class="final-cta">
+  <div class="wrap"><div class="cta-panel"><div><h2>Ready to make everyday payments simpler?</h2><p>Create your Sparkle account and explore the services in one place.</p></div><a class="btn primary" href="/register">Create Your Account →</a></div></div>
 </section>
-
 
 <footer class="footer">
-
-<div class="wrap">
-
-<div class="footgrid">
-
-<div>
-
-<div class="brand">
-<span class="logo">S</span> Sparkle
-</div>
-
-<p>
-Simple, secure and convenient bill payments.
-</p>
-
-</div>
-
-
-<div>
-
-<h4>Quick Links</h4>
-
-<a href="/login">Log In</a>
-<a href="/register">Register</a>
-<a href="#services">Services</a>
-<a href="#api">API</a>
-<a href="#faq">FAQ</a>
-
-</div>
-
-
-<div>
-
-<h4>Services</h4>
-
-<a href="/data">Buy Data</a>
-<a href="/airtime">Buy Airtime</a>
-<a href="/crypto">Buy Crypto</a>
-<a href="/cable-tv">Cable TV</a>
-<a href="/electricity">Electricity</a>
-
-</div>
-
-
-<div>
-
-<h4>Support</h4>
-
-<a href="mailto:support@sparkle.com">
-support@sparkle.com
-</a>
-
-<a href="/terms">Terms & Conditions</a>
-
-<a href="/privacy-policy">Privacy Policy</a>
-
-</div>
-
-</div>
-
-
-<div class="copy">
-© 2026 Sparkle. All Rights Reserved.
-</div>
-
-</div>
-
+  <div class="wrap">
+    <div class="footgrid">
+      <div><div class="brand"><span class="logo">✦</span> TheSparkle</div><p>Everyday digital services, brought together in one convenient platform.</p></div>
+      <div><h4>Quick Links</h4><a href="/login">Log In</a><a href="/register">Create Account</a><a href="#services">Services</a><a href="#faq">FAQ</a></div>
+      <div><h4>Services</h4><a href="/data">Buy Data</a><a href="/airtime">Buy Airtime</a><a href="/us-number">Virtual Numbers</a><a href="/crypto">Crypto Trade</a><a href="/electricity">Electricity</a></div>
+      <div><h4>Support</h4><a href="/support">Customer Support</a><a href="/terms">Terms & Conditions</a><a href="/privacy-policy">Privacy Policy</a></div>
+    </div>
+    <div class="copy">© 2026 TheSparkle. All Rights Reserved.</div>
+  </div>
 </footer>
-
 </div>
-
 
 <!-- ================= DASHBOARD ================= -->
 
