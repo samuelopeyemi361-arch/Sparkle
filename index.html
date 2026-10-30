@@ -10031,40 +10031,26 @@ function toggleSparkleMoreServices(){
     }catch(e){setResult(targetId,"pending","Status check unavailable",e.message||"Try the status check again shortly. Do not place a duplicate order.",reference);}
   }
 
-  // Give digital-service PIN confirmation its own explicit button handler.
-  // The server still verifies the 4-digit PIN before reserving funds or contacting GSubz.
-  window.sparkleConfirmDigitalServicePin = async function(){
-    const pin=[...document.querySelectorAll("#pinModal .pin-box")].map(x=>x.value).join("");
-    const msg=document.getElementById("pinMessage");
-    if(!/^\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
-    if(!activeDigitalRequest || !["bulkSms","socialMarket"].includes(currentService)){
-      if(msg)msg.textContent="Your order session has expired. Return to the service and review the order again.";
+  // Route a queued Bulk SMS or Social Market order directly to its secure server checkout.
+  // Do not depend on currentService: the review page can restore its own route state.
+  const originalConfirm = window.confirmTransactionPIN;
+  window.sparkleHandlePinPayment = async function(){
+    if(activeDigitalRequest){
+      const pin=[...document.querySelectorAll("#pinModal .pin-box")].map(x=>x.value).join("");
+      const msg=document.getElementById("pinMessage");
+      if(!/^\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
+      await executePendingDigitalPurchase(pin);
       return;
     }
-    await executePendingDigitalPurchase(pin);
+    if(typeof originalConfirm==="function") return originalConfirm.apply(this,arguments);
+    const msg=document.getElementById("pinMessage");
+    if(msg)msg.textContent="Checkout could not be started. Return to Order Review and try again. No payment was made.";
   };
+  window.sparkleConfirmDigitalServicePin = window.sparkleHandlePinPayment;
   const pinActionButton=document.querySelector("#pinModal .modal-box > button.btn.primary.full");
   if(pinActionButton){
-    pinActionButton.onclick=function(){
-      if(activeDigitalRequest && (currentService==="bulkSms"||currentService==="socialMarket")){
-        return window.sparkleConfirmDigitalServicePin();
-      }
-      return window.confirmTransactionPIN();
-    };
-  }
-
-  // Add a safe dispatcher in front of the existing PIN flow; all other purchases continue unchanged.
-  const originalConfirm = window.confirmTransactionPIN;
-  if(typeof originalConfirm==="function"){
-    window.confirmTransactionPIN = async function(){
-      if(activeDigitalRequest && (currentService==="bulkSms"||currentService==="socialMarket")){
-        const pin=[...document.querySelectorAll("#pinModal .pin-box")].map(x=>x.value).join("");
-        const msg=document.getElementById("pinMessage");
-        if(!/^\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
-        await executePendingDigitalPurchase(pin);return;
-      }
-      return originalConfirm.apply(this,arguments);
-    };
+    pinActionButton.setAttribute("onclick","sparkleHandlePinPayment()");
+    pinActionButton.onclick=window.sparkleHandlePinPayment;
   }
 
   // Preserve existing navigation and service logic; only trigger loaders for the two new pages.
