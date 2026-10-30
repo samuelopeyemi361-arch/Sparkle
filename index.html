@@ -8157,9 +8157,11 @@ function sparkleShowWalletGuardMessage(message){
 async function openPinForPurchase(options={}){
   const skip=options?.skipBalanceCheck===true,service=String(currentService||"").toLowerCase();
   if(!skip&&!["cryptotrade","crypto"].includes(service)){
-    let amount=Number(pendingPurchase?.total||0);
-    if(!(amount>0)&&activeDigitalRequest?.payload)amount=Number(activeDigitalRequest.payload.expectedTotal||activeDigitalRequest.payload.amount||0);
-    if(!(amount>0)&&window.sparkleRechargePinPending){const p=window.sparkleRechargePinPending;amount=Number(p.total||p.amount||p.expectedTotal||0);}
+    // Digital-service requests live inside their own module scope. Their caller must
+    // pass the quoted amount explicitly; never reference that private module variable here.
+    const hasExplicitAmount=Object.prototype.hasOwnProperty.call(options||{},"amount");
+    let amount=hasExplicitAmount?Number(options.amount):Number(pendingPurchase?.total||0);
+    if(!(amount>0)&&!hasExplicitAmount&&window.sparkleRechargePinPending){const p=window.sparkleRechargePinPending;amount=Number(p.total||p.amount||p.expectedTotal||0);}
     if(!(amount>0)){const m=document.getElementById("pinMessage");if(m)m.textContent="Purchase amount could not be verified. Return to review and try again.";return false;}
     try{const a=await supabaseClient.auth.getUser(),uid=a?.data?.user?.id;if(a?.error||!uid)throw new Error("Please sign in again to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance could not be verified. No purchase was made.");const b=Number(r.data.balance);if(b+0.000001<amount)throw new Error("Insufficient funds. Balance: ₦"+b.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Amount required: ₦"+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet first.");}
     catch(e){sparkleShowWalletGuardMessage(e?.message||"Could not verify wallet balance. No purchase was made.");return false;}
@@ -8224,8 +8226,9 @@ async function confirmTransactionPIN(){
   try{
     // Recheck the latest wallet balance after PIN entry and immediately before any wallet-funded order.
     if(!["cryptotrade","crypto"].includes(String(currentService||"").toLowerCase())){
+      // This shared handler must not reference activeDigitalRequest, which is private
+      // to the digital-services module. Digital-service PINs use their dedicated handler.
       let required=Number(pendingPurchase?.total||0);
-      if(!(required>0)&&activeDigitalRequest?.payload)required=Number(activeDigitalRequest.payload.expectedTotal||activeDigitalRequest.payload.amount||0);
       if(!(required>0)&&window.sparkleRechargePinPending&&pendingPurchase)required=Number(pendingPurchase.total||0);
       if(!(required>0))throw new Error("Purchase amount could not be verified. No purchase was made.");
       const authCheck=await supabaseClient.auth.getUser(),uid=authCheck?.data?.user?.id;
@@ -9912,7 +9915,7 @@ function toggleSparkleMoreServices(){
     activeDigitalRequest={kind:"social",payload:socialReviewPending.payload};currentService="socialMarket";
     // Open and validate the PIN dialog BEFORE dismissing the dedicated review.
     // If wallet/auth checks fail, keep the review visible so the user is not sent back to checkout.
-    const opened=await openPinForPurchase();
+    const opened=await openPinForPurchase({amount:activeDigitalRequest.payload.expectedTotal});
     if(!opened){
       activeDigitalRequest=null;
       const content=document.getElementById("sparkle-summary-screen-content");
@@ -9963,7 +9966,7 @@ function toggleSparkleMoreServices(){
     activeDigitalRequest={kind:"sms",payload:{action:"send_bulk_sms",sender,recipients,message,expectedTotal:smsQuote.estimatedRetail,requestID:crypto.randomUUID()}};
     currentService="bulkSms";
     void (async()=>{
-      const opened=await openPinForPurchase();
+      const opened=await openPinForPurchase({amount:activeDigitalRequest.payload.expectedTotal});
       if(!opened){activeDigitalRequest=null;return;}
       const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm this Bulk SMS send with your 4-digit Transaction PIN.";
     })();
@@ -9972,7 +9975,7 @@ function toggleSparkleMoreServices(){
     if(!activeDigitalRequest)throw new Error("No digital-service order is waiting for confirmation.");
     const pending=activeDigitalRequest;
     const payload={...pending.payload,pin};
-    const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
+    const button=document.querySelector("#pinModal .modal-box > button.btn.primary.full");
     if(button){button.disabled=true;button.textContent="Processing securely…";}
     const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Checking PIN and securing your order…";
     try{
