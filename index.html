@@ -9905,10 +9905,12 @@ function toggleSparkleMoreServices(){
     const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Social Media Market</div><div class="sparkle-summary-network-label">Order Review</div></div></div><div class="summary-line"><span>Service</span><strong>${esc(socialReviewPending.planName)}</strong></div><div class="summary-line"><span>Target link</span><strong>${esc(link)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity.toLocaleString("en-NG")}</strong></div><div class="summary-line"><span>Rate per 1,000</span><strong>${fmt(socialReviewPending.rate)}</strong></div><div class="summary-line"><span>Estimated price</span><strong>${fmt(socialReviewPending.estimated)}</strong></div><div class="summary-line"><span>Maximum temporary reserve</span><strong>${fmt(socialReviewPending.maximumReserve)}</strong></div><p class="electricity-note">Check the platform, service, link, quantity and price carefully. A valid Transaction PIN is required before Sparkle sends the order. Final charge depends on the supplier-confirmed cost; unused reserved funds are returned.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="confirmSparkleSocialReview()">Confirm Order · Enter Transaction PIN</button>`;
     if(typeof window.sparkleShowDedicatedReview==="function")window.sparkleShowDedicatedReview("Order Review",reviewHtml,"order-review",{service:"socialMarket",pending:socialReviewPending,plan:socialReviewPending.planName,link,quantity,estimated:socialReviewPending.estimated});
   }
-  window.confirmSparkleSocialReview=function(){
+  window.confirmSparkleSocialReview=async function(){
     if(!socialReviewPending){setResult("sparkleSocialResult","error","Review expired","Please check the service price again before ordering.");window.sparkleCloseDedicatedReview?.(true);return;}
     activeDigitalRequest={kind:"social",payload:socialReviewPending.payload};currentService="socialMarket";
-    window.sparkleCloseDedicatedReview?.(false);openPinForPurchase();
+    window.sparkleCloseDedicatedReview?.(false);
+    const opened=await openPinForPurchase();
+    if(!opened){activeDigitalRequest=null;return;}
     const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your Social Media Market order with your 4-digit Transaction PIN.";
   };
   function recipientsForCount(raw){
@@ -9945,8 +9947,12 @@ function toggleSparkleMoreServices(){
     const message=document.getElementById("sparkleSmsMessage")?.value||"";
     if(!smsQuote||smsQuote.sender!==sender||smsQuote.recipients!==recipients||smsQuote.message!==message){setResult("sparkleSmsResult","error","Review the price again","The sender, recipients or message changed. Calculate the current price again before continuing.");return;}
     activeDigitalRequest={kind:"sms",payload:{action:"send_bulk_sms",sender,recipients,message,expectedTotal:smsQuote.estimatedRetail,requestID:crypto.randomUUID()}};
-    currentService="bulkSms";openPinForPurchase();
-    const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm this Bulk SMS send with your 4-digit Transaction PIN.";
+    currentService="bulkSms";
+    void (async()=>{
+      const opened=await openPinForPurchase();
+      if(!opened){activeDigitalRequest=null;return;}
+      const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm this Bulk SMS send with your 4-digit Transaction PIN.";
+    })();
   }
   async function executePendingDigitalPurchase(pin){
     if(!activeDigitalRequest)throw new Error("No digital-service order is waiting for confirmation.");
