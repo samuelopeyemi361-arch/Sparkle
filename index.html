@@ -10036,7 +10036,7 @@ function toggleSparkleMoreServices(){
   window.sparkleConfirmDigitalServicePin = async function(){
     const pin=[...document.querySelectorAll("#pinModal .pin-box")].map(x=>x.value).join("");
     const msg=document.getElementById("pinMessage");
-    if(!/^\\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
+    if(!/^\d{4}$/.test(pin)){if(msg)msg.textContent="Enter your 4-digit transaction PIN.";return;}
     if(!activeDigitalRequest || !["bulkSms","socialMarket"].includes(currentService)){
       if(msg)msg.textContent="Your order session has expired. Return to the service and review the order again.";
       return;
