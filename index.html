@@ -9910,9 +9910,21 @@ function toggleSparkleMoreServices(){
   window.confirmSparkleSocialReview=async function(){
     if(!socialReviewPending){setResult("sparkleSocialResult","error","Review expired","Please check the service price again before ordering.");window.sparkleCloseDedicatedReview?.(true);return;}
     activeDigitalRequest={kind:"social",payload:socialReviewPending.payload};currentService="socialMarket";
-    window.sparkleCloseDedicatedReview?.(false);
+    // Open and validate the PIN dialog BEFORE dismissing the dedicated review.
+    // If wallet/auth checks fail, keep the review visible so the user is not sent back to checkout.
     const opened=await openPinForPurchase();
-    if(!opened){activeDigitalRequest=null;return;}
+    if(!opened){
+      activeDigitalRequest=null;
+      const content=document.getElementById("sparkle-summary-screen-content");
+      if(content){
+        let note=content.querySelector("#sparkleSocialPinOpenError");
+        if(!note){note=document.createElement("p");note.id="sparkleSocialPinOpenError";note.setAttribute("role","alert");note.style.cssText="margin:12px 0;padding:12px;border-radius:10px;background:#fff1f0;color:#b42318;font-size:13px;line-height:1.5";content.appendChild(note);}
+        const guard=document.getElementById("sparkleWalletGuardMessage");
+        note.textContent=guard?.textContent||document.getElementById("pinMessage")?.textContent||"Sparkle could not open secure PIN checkout. Your order has not been placed.";
+      }
+      return;
+    }
+    window.sparkleCloseDedicatedReview?.(false);
     const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm your Social Media Market order with your 4-digit Transaction PIN.";
   };
   function recipientsForCount(raw){
