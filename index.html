@@ -6953,6 +6953,8 @@ let selectedServiceID = null;
 let selectedNetwork = "";
 let selectedDataServiceLabel = "";
 let dataPlansCache = {};
+let dataPlansCacheUpdatedAt = {};
+const DATA_PLANS_CACHE_TTL_MS = 30000;
 let dataServiceLoadToken = 0;
 let selectedCablePlan = null;
 
@@ -7163,6 +7165,7 @@ function onDataNetworkChange(){
   selectedServiceID=null;
   selectedDataServiceLabel="";
   dataPlansCache={};
+  dataPlansCacheUpdatedAt={};
   renderDataServiceOptions(network);
 
   if(!network){
@@ -7231,11 +7234,17 @@ async function loadDataPlans(serviceID){
   if(error) error.innerHTML="";
 
   try{
-    if(!dataPlansCache[requestedServiceID]){
-      console.log("[Sparkle DATA] Calling GSUBZ with serviceID:",requestedServiceID);
-      dataPlansCache[requestedServiceID]=normalizePlans(
+    const mainCacheFresh=Array.isArray(dataPlansCache[requestedServiceID])
+      && Number.isFinite(Number(dataPlansCacheUpdatedAt[requestedServiceID]))
+      && Date.now()-Number(dataPlansCacheUpdatedAt[requestedServiceID])<DATA_PLANS_CACHE_TTL_MS;
+    if(!mainCacheFresh){
+      console.log("[Sparkle DATA] Refreshing live GSUBZ plans for serviceID:",requestedServiceID);
+      const freshPlans=normalizePlans(
         await gsubzRequest("/api/plans/?service="+encodeURIComponent(requestedServiceID),"GET")
       );
+      if(!isRequestCurrent())return;
+      dataPlansCache[requestedServiceID]=freshPlans;
+      dataPlansCacheUpdatedAt[requestedServiceID]=Date.now();
     }
     if(!isRequestCurrent())return;
 
@@ -7246,10 +7255,16 @@ async function loadDataPlans(serviceID){
       const mtnFallbacks=["mtn_sme","mtn_gifting","mtn_fibrex"].filter(id=>id!==requestedServiceID);
       for(const fallback of mtnFallbacks){
         try{
-          if(!dataPlansCache[fallback]){
-            dataPlansCache[fallback]=normalizePlans(
+          const fallbackCacheFresh=Array.isArray(dataPlansCache[fallback])
+            && Number.isFinite(Number(dataPlansCacheUpdatedAt[fallback]))
+            && Date.now()-Number(dataPlansCacheUpdatedAt[fallback])<DATA_PLANS_CACHE_TTL_MS;
+          if(!fallbackCacheFresh){
+            const freshFallbackPlans=normalizePlans(
               await gsubzRequest("/api/plans/?service="+encodeURIComponent(fallback),"GET")
             );
+            if(!isRequestCurrent())return;
+            dataPlansCache[fallback]=freshFallbackPlans;
+            dataPlansCacheUpdatedAt[fallback]=Date.now();
           }
           if(!isRequestCurrent())return;
           if(dataPlansCache[fallback]?.length){
@@ -8462,6 +8477,21 @@ async function processPendingPurchase(transactionPin){
     }
     throw new Error(data?.error||(isData?"Data purchase was not completed.":"Airtime purchase was not completed."));
   }catch(error){
+    const errorText=String(error?.message||"");
+    if(isData&&/displayed price for this plan is outdated|data plan price is outdated|price.*outdated/i.test(errorText)){
+      // The supplier changed this plan after it was displayed. The server rejects
+      // stale prices before wallet reservation; refresh the catalogue and require
+      // the customer to select/review the new price rather than retrying the old one.
+      pendingPurchase=null;
+      try{sessionStorage.removeItem("sparklePendingPurchase");}catch(_){}
+      if(p?.serviceID){
+        delete dataPlansCache[p.serviceID];
+        delete dataPlansCacheUpdatedAt[p.serviceID];
+        try{await loadDataPlans(p.serviceID);}catch(_){}
+      }
+      alert("GSubz has updated this plan's price. Sparkle has refreshed the available plans. Please select the plan and review the new price again. No payment was taken.");
+      return;
+    }
     console.error(isData?"Secure Sparkle data purchase:":"Secure Sparkle airtime purchase:",error);
     alert((isData?"Data purchase":"Airtime purchase")+" was not confirmed. Check your transaction history before trying again. "+(error.message||""));
   }finally{
