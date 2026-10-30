@@ -3196,6 +3196,12 @@ support@sparkle.com
           <h1 class="dashboard-title">Welcome back <span class="welcome-wave" aria-hidden="true">👋</span></h1>
           <p class="dashboard-subtitle">Everything you need, in one place.</p>
 
+          <section class="sparkle-trust-strip" aria-label="TheSparkle platform highlights">
+            <div class="sparkle-trust-item"><span class="sparkle-trust-icon">✦</span><div><strong>10 digital services</strong><small>Everyday essentials in one account</small></div></div>
+            <div class="sparkle-trust-item"><span class="sparkle-trust-icon">₦</span><div><strong>Naira-first experience</strong><small>Clear prices before you confirm</small></div></div>
+            <div class="sparkle-trust-item"><span class="sparkle-trust-icon">✓</span><div><strong>Order visibility</strong><small>Review your activity in one place</small></div></div>
+          </section>
+
           <div class="wallet-card">
             <div class="wallet-card-top">
               <div class="wallet-balance-block">
@@ -3303,8 +3309,9 @@ support@sparkle.com
             </div>
           </section>
 
-          <div class="sparkle-section-heading" id="quickServicesSection">
-            <h2>Quick Services</h2>
+          <div class="sparkle-section-heading sparkle-services-heading" id="quickServicesSection">
+            <div><span class="sparkle-section-kicker">MADE FOR EVERYDAY</span><h2>Explore Sparkle Services</h2><p>Choose what you need. Your essentials are just a tap away.</p></div>
+            <span class="sparkle-services-count">10 SERVICES</span>
           </div>
           <div class="service-grid sparkle-home-service-grid" aria-label="Sparkle Quick Services">
             <div class="service" role="button" tabindex="0" onclick="openServicePage('airtime')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openServicePage('airtime')}"><span aria-hidden="true">📱</span><div>Buy Airtime</div></div>
@@ -10866,5 +10873,77 @@ window.addEventListener("DOMContentLoaded",function(){
   },450);
 });
 </script>
+
+<style id="sparkle-premium-dashboard-refresh">
+/* Premium dashboard visual system — presentation only; existing actions and payment logic stay unchanged. */
+.dashboard{background:#f3f6fc!important;color:#14233e!important}
+.dashboard .dash-sidebar{background:linear-gradient(180deg,#071a43 0%,#0a2860 58%,#103b83 100%)!important;border-right:1px solid rgba(255,255,255,.08)!important;box-shadow:12px 0 36px rgba(8,28,69,.08)!important}
+.dashboard .sidebar-brand{padding:25px 22px 28px!important}
+.dashboard .sidebar-brand .brand,.dashboard .dashnav .brand{font-weight:900!important;letter-spacing:-.5px!important}
+.dashboard .sidebar-nav{gap:7px!important;padding:10px 12px!important}
+.dashboard .sidebar-nav .nav-item{border:1px solid transparent!important;border-radius:13px!important;color:#d8e5ff!important;font-weight:650!important;padding:12px 13px!important;transition:background .18s ease,border-color .18s ease,transform .18s ease!important}
+.dashboard .sidebar-nav .nav-item:hover{background:rgba(255,255,255,.09)!important;border-color:rgba(255,255,255,.1)!important;transform:translateX(2px)}
+.dashboard .sidebar-nav .nav-item.active{background:linear-gradient(100deg,rgba(79,145,255,.28),rgba(255,255,255,.09))!important;border-color:rgba(147,190,255,.24)!important;color:#fff!important;box-shadow:inset 3px 0 #79b5ff!important}
+.dashboard .nav-icon{width:31px!important;height:31px!important;border-radius:10px!important;background:rgba(255,255,255,.1)!important;display:inline-grid!important;place-items:center!important}
+.dashboard .dash-main{background:#f3f6fc!important}
+.dashboard .dashnav{background:rgba(255,255,255,.92)!important;border-bottom:1px solid #e5ebf5!important;box-shadow:0 5px 24px rgba(24,48,89,.035)!important;backdrop-filter:blur(16px)}
+.dashboard .dashnav-inner{min-height:72px!important}
+.dashboard .dashnav .brand{color:#102b58!important}
+.dashboard .dash-actions .icon-btn{border:1px solid #e7edf6!important;border-radius:12px!important;background:#fff!important;color:#29436b!important;box-shadow:0 3px 10px rgba(26,54,98,.045)!important}
+.dashboard .userbox{padding:6px 10px!important;border:1px solid #e8edf5!important;border-radius:14px!important;background:#fff!important}
+.dashboard .avatar{background:linear-gradient(145deg,#2878f6,#1743a5)!important;box-shadow:0 4px 12px rgba(31,94,202,.22)!important}
+.dashboard .dashbody{padding-top:28px!important;padding-bottom:44px!important}
+.dashboard #home .dashboard-title{font-size:clamp(25px,3vw,34px)!important;letter-spacing:-1.1px!important;font-weight:850!important;color:#10264b!important;margin-bottom:5px!important}
+.dashboard #home .dashboard-subtitle{font-size:14px!important;color:#73829a!important;margin-bottom:18px!important}
+.dashboard #home .wallet-card{position:relative!important;overflow:hidden!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:23px!important;background:radial-gradient(circle at 88% 12%,rgba(94,160,255,.38),transparent 29%),linear-gradient(118deg,#081d4a 0%,#10469c 58%,#1768d5 100%)!important;box-shadow:0 17px 36px rgba(13,55,125,.18)!important;padding:25px 27px!important}
+.dashboard #home .wallet-card:after{content:"✦";position:absolute;right:7%;top:-40px;font-size:190px;line-height:1;color:rgba(255,255,255,.055);pointer-events:none}
+.dashboard #home .wallet-card-label{color:#e4efff!important;letter-spacing:.6px!important}
+.dashboard #home .wallet-balance{font-size:clamp(30px,4vw,40px)!important;letter-spacing:-1px!important;color:#fff!important}
+.dashboard #home .fund-wallet-btn{border:0!important;border-radius:12px!important;background:#fff!important;color:#1450ad!important;font-weight:800!important;box-shadow:0 8px 20px rgba(0,0,0,.14)!important}
+.dashboard #home .sparkle-trust-strip{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:15px 0 20px}
+.dashboard #home .sparkle-trust-item{display:flex;align-items:center;gap:11px;min-width:0;padding:13px 14px;border:1px solid #e5ebf5;border-radius:15px;background:linear-gradient(145deg,#fff,#f9fbff);box-shadow:0 5px 16px rgba(27,55,99,.035)}
+.dashboard #home .sparkle-trust-icon{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:linear-gradient(145deg,#e7f1ff,#d7e7ff);color:#2464c5;font-size:16px;font-weight:900}
+.dashboard #home .sparkle-trust-item strong{display:block;color:#19345e;font-size:11px;font-weight:850;line-height:1.3}
+.dashboard #home .sparkle-trust-item small{display:block;margin-top:3px;color:#7b8ba3;font-size:9.5px;line-height:1.35}
+.dashboard #home .sparkle-promo-carousel{overflow:hidden;border:1px solid rgba(255,255,255,.8)!important;border-radius:23px!important;box-shadow:0 12px 28px rgba(21,48,92,.09)!important}
+.dashboard #home .sparkle-promo-slide{min-height:220px!important}
+.dashboard #home .sparkle-promo-copy h2{letter-spacing:-1px!important;font-weight:850!important}
+.dashboard #home .sparkle-promo-cta{border-radius:11px!important;font-weight:800!important}
+.dashboard #home .sparkle-services-heading{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin:26px 0 12px!important}
+.dashboard #home .sparkle-services-heading h2{margin:3px 0 0!important;color:#142d55!important;font-size:20px!important;font-weight:850!important;letter-spacing:-.55px!important}
+.dashboard #home .sparkle-section-kicker{font-size:9px;font-weight:850;letter-spacing:1.5px;color:#3975cf}
+.dashboard #home .sparkle-services-heading p{margin:5px 0 0;color:#7a899f;font-size:11px}
+.dashboard #home .sparkle-services-count{flex:0 0 auto;padding:7px 10px;border:1px solid #dce7f8;border-radius:999px;background:#edf4ff;color:#3569b8;font-size:9px;font-weight:850;letter-spacing:.7px}
+.dashboard #home .sparkle-home-service-grid{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:11px!important;margin-top:0!important}
+.dashboard #home .sparkle-home-service-grid .service{min-height:112px!important;justify-content:center!important;gap:2px!important;padding:13px 7px!important;border:1px solid #e4ebf5!important;border-radius:17px!important;background:linear-gradient(155deg,#fff 0%,#f8fbff 100%)!important;color:#1d365d!important;font-size:11px!important;font-weight:800!important;box-shadow:0 5px 15px rgba(24,54,101,.045)!important}
+.dashboard #home .sparkle-home-service-grid .service span{width:40px!important;height:40px!important;min-width:40px!important;flex-basis:40px!important;margin:0 auto 8px!important;border-radius:13px!important;background:linear-gradient(145deg,#a8d2ff,#4b8df1 60%,#315fd0)!important;box-shadow:inset 0 1px 2px rgba(255,255,255,.75),0 5px 12px rgba(45,102,205,.16)!important;font-size:18px!important}
+.dashboard #home .sparkle-home-service-grid .service:hover{transform:translateY(-3px)!important;border-color:#b9d0f5!important;box-shadow:0 11px 23px rgba(37,83,153,.1)!important}
+.dashboard #home .sparkle-transaction-section{margin-top:26px!important}
+.dashboard #home .sparkle-transaction-section .txbox{border:1px solid #e5ebf4!important;border-radius:18px!important;background:#fff!important;box-shadow:0 7px 22px rgba(24,51,93,.04)!important;overflow:hidden}
+.dashboard #home .sparkle-section-heading h2{color:#17335e!important;font-weight:850!important;letter-spacing:-.4px!important}
+.dashboard #home .sparkle-section-heading button{border-radius:10px!important;color:#2464c4!important;font-weight:800!important}
+.dashboard .page:not(#home){color:#1a2f50}
+.dashboard .page:not(#home) h1,.dashboard .page:not(#home) h2{letter-spacing:-.45px}
+.dashboard .page:not(#home) input,.dashboard .page:not(#home) select,.dashboard .page:not(#home) textarea{border-radius:11px}
+@media(max-width:900px){
+ .dashboard #home .sparkle-home-service-grid{grid-template-columns:repeat(4,minmax(0,1fr))!important}
+}
+@media(max-width:600px){
+ .dashboard .dashbody{padding-top:18px!important}
+ .dashboard #home .wallet-card{padding:20px 17px!important;border-radius:19px!important}
+ .dashboard #home .sparkle-trust-strip{grid-template-columns:1fr;gap:7px;margin:12px 0 16px}
+ .dashboard #home .sparkle-trust-item{padding:10px 12px}
+ .dashboard #home .sparkle-trust-item small{font-size:9px}
+ .dashboard #home .sparkle-promo-slide{min-height:190px!important}
+ .dashboard #home .sparkle-services-heading h2{font-size:18px!important}
+ .dashboard #home .sparkle-home-service-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:8px!important}
+ .dashboard #home .sparkle-home-service-grid .service{min-height:96px!important;padding:10px 4px!important;font-size:10px!important}
+ .dashboard #home .sparkle-home-service-grid .service span{width:35px!important;height:35px!important;min-width:35px!important;flex-basis:35px!important;font-size:16px!important}
+}
+@media(max-width:360px){
+ .dashboard #home .sparkle-home-service-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+</style>
+
 </body>
 </html>
