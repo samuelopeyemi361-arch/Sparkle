@@ -6549,7 +6549,7 @@ async function loadNumberCountries(force=false){
   try{await numberCountriesLoadPromise;}finally{numberCountriesLoadPromise=null;}
 }
 function onNumberCountryChange(){
- if(numberPurchaseInProgress)return;numberOperatorsLoadSequence++;numberOperatorsCache=[];resetNumberPriceForStep("");
+ if(numberPurchaseInProgress)return;numberOperatorManuallySelected=false;numberOperatorsLoadSequence++;numberOperatorsCache=[];resetNumberPriceForStep("");
  const op=document.getElementById("numberOperatorSelect");if(op)op.innerHTML='<option value="">Choose an operator</option>';const cards=document.getElementById("numberOperatorCards");if(cards)cards.innerHTML="";
  const status=document.getElementById("numberOperatorStatus");if(status)status.textContent="Tap Continue to load operators for this country.";updateNumberSelectionStep("country");
 }
