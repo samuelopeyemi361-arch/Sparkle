@@ -54,13 +54,15 @@ function socialPaymentSuccess(status: string) {
   return isSuccess(status) || ["transaction_successful", "transaction_success"].includes(status);
 }
 function socialPaymentFailure(status: string) {
-  return isFailure(status) || ["transaction_failed", "transaction_failure"].includes(status);
+  return isFailure(status) || ["transaction_failed", "transaction_failure", "transaction_refunded"].includes(status);
 }
 function socialOrderHasNoDelivery(order: any, quantity: number) {
   const status = socialOrderStatus(order);
-  if (["failed", "failure"].includes(status)) return true;
+  const terminalFailure = ["failed", "failure", "error", "rejected", "cancelled", "canceled", "refunded"].includes(status);
   const remains = Number(order?.remains);
-  return ["cancelled", "canceled"].includes(status)
+  // A full refund is safe only when the supplier confirms the entire requested
+  // quantity remains undelivered. Partial or ambiguous failures need review.
+  return terminalFailure
     && Number.isSafeInteger(quantity) && quantity > 0
     && Number.isFinite(remains) && remains >= quantity;
 }
@@ -401,9 +403,9 @@ Deno.serve(async (req: Request) => {
       if (!gsubzKey) return reply({ success: false, status: "pending", reference, error: "Order status is temporarily unavailable. Your Sparkle order record remains safe; please check again shortly." }, 503);
       const providerRequestId = str(meta.providerRequestID);
       if (!providerRequestId) return reply({ success: false, status: "pending", reference, error: "The order reference is saved but its status reference is missing. Please contact Sparkle support before placing another order." }, 202);
-      const transactionID = meta.provider_response?.transactionID ?? meta.provider_response?.content?.transactionID ?? meta.provider_transaction_id ?? null;
+      // GSubz verification accepts one lookup key at a time. Sparkle always saves
+      // the unique requestID with the purchase, so use that canonical reference.
       const verifyFields: Record<string, string> = { api: gsubzKey, requestID: providerRequestId };
-      if (isSocial && transactionID != null && String(transactionID).trim()) verifyFields.transactionID = String(transactionID);
       const checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
       const provider = checked.data, pStatus = statusOf(provider);
       const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
@@ -444,7 +446,7 @@ Deno.serve(async (req: Request) => {
           if (saved.error) console.error("[sparkle-social-status-save]", saved.error.message);
         }
 
-        if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled"].includes(orderStatus)) {
+        if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled", "failed", "failure", "error", "rejected", "refunded"].includes(orderStatus)) {
           if (["partial", "partially_completed", "partially_complete"].includes(orderStatus)
               && str(tx.status).toLowerCase() === "pending" && checked.response.ok && providerSuccess) {
             const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
@@ -460,8 +462,8 @@ Deno.serve(async (req: Request) => {
           }
           return reply({ success: false, status: "partial", reference, amount: Number(tx.amount), orderProgress: progress,
             message: ["cancelled", "canceled"].includes(orderStatus)
-              ? "The supplier reports a cancellation but has not confirmed that the full quantity was undelivered. No automatic full refund was issued. This order needs review."
-              : "The supplier reports partial delivery. Sparkle has recorded the supplier charge, but a full refund is not safe because part of the order may have been delivered. This order needs review." }, 202);
+              ? "The supplier reports a cancellation or failure but has not confirmed that the full quantity was undelivered. No automatic full refund was issued. This order needs review."
+              : "The supplier reports partial delivery or an unresolved failure. Sparkle has not issued an unsafe full refund. This order needs review." }, 202);
         }
 
         const socialTransactionFailure = providerFailure;
@@ -508,7 +510,7 @@ Deno.serve(async (req: Request) => {
         if (isSocial) {
           const refund = await admin.rpc("sparkle_social_refund_order", {
             p_user_id: user.id, p_reference: reference,
-            p_provider_order: order || { status: "failed" },
+            p_provider_order: order || { status: "failed", source: "transaction" },
             p_reason: "Supplier transaction verification confirmed failure"
           });
           if (refund.error || refund.data?.success !== true) return reply({ success: false, status: "pending", reference, error: refund.data?.error || "The supplier confirmed a failure, but Sparkle is reconciling the wallet refund. Do not retry yet." }, 202);
