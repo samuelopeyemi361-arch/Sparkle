@@ -6404,7 +6404,16 @@ function renderNumberOperators(items,preferred=""){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;const rows=Array.isArray(items)?items:[];select.innerHTML='<option value="">Choose an operator</option>';
  const isAvailable=item=>item.available!==false&&item.in_stock!==false&&Number(item.stock)>0&&Number.isFinite(Number(item.selling_price_ngn))&&Number(item.selling_price_ngn)>0;
  rows.forEach(item=>{const o=document.createElement("option");o.value=String(item.operator||"");o.textContent=String(item.operator_label||item.operator||"Operator");o.disabled=!isAvailable(item);select.appendChild(o);});
- const chosen=preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:"";select.value=chosen;
+ const chosen=preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:(()=>{
+  // Preselect the highest supplier-published delivery rate when the customer has
+  // not already chosen an operator. Equal rates keep the lower-priced option first
+  // because the catalogue is already sorted by rate, then supplier price.
+  const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
+   .map(item=>({item,rate:(item.rate===null||item.rate===undefined||String(item.rate).trim()===""?null:Number(item.rate))}))
+   .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>0&&x.rate<=100)
+   .sort((a,b)=>b.rate-a.rate||Number(a.item.selling_price_ngn)-Number(b.item.selling_price_ngn));
+  return ranked.length?String(ranked[0].item.operator):"";
+})();select.value=chosen;
  const list=document.getElementById("numberOperatorCards");if(!list)return;if(!rows.length){list.innerHTML='<div class="data-empty">No operators are available for this selection right now.</div>';return;}
  const money=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Price unavailable";};
  const selectable=rows.filter(isAvailable);
