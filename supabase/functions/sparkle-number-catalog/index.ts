@@ -414,23 +414,19 @@ async function getGlobalCatalogServices():Promise<any[]>{
 async function getCountriesForService(service:string):Promise<string[]>{
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  const response=await apiGet("/guest/prices?product="+encodeURIComponent(service));
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified.",503,"COUNTRIES_UNAVAILABLE");
+ if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified. Please try again.",503,"COUNTRIES_UNAVAILABLE");
  const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- const catalogueCountries=await getProviderCountries();
  const result:string[]=[];
- for(const item of catalogueCountries){
-  const code=asText(item?.code).toLowerCase();
-  if(!code)continue;
-  let providerCode:string;
-  try{providerCode=providerCountry(code);}catch{continue;}
-  // 5SIM guest prices is country-first; product is nested inside each country.
-  const countryNode=root[providerCode]||root[providerCode.toUpperCase()]||root[code]||root[code.toUpperCase()];
-  if(!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
-  const productNode=countryNode[service]||countryNode[service.toUpperCase()];
+ for(const [providerCode,countryNode] of Object.entries(root)){
+  if(!/^[a-z0-9][a-z0-9-]{1,39}$/i.test(providerCode)||!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
+  const node:any=countryNode;
+  const productNode=node[service]||node[service.toUpperCase()];
   if(!productNode||typeof productNode!=="object"||Array.isArray(productNode))continue;
-  if(parseOfferRows(productNode).some(offer=>offer.count>0))result.push(code);
+  if(!parseOfferRows(productNode).some(offer=>offer.count>0))continue;
+  const code=providerCode.toLowerCase()==="usa"?"us":providerCode.toLowerCase()==="canada"?"ca":providerCode.toLowerCase();
+  if(!result.includes(code))result.push(code);
  }
- return result;
+ return result.sort((a,b)=>a==="us"?-1:b==="us"?1:a==="ca"?-1:b==="ca"?1:a.localeCompare(b));
 }
 
 function recommendedOffer(offers:ProviderOffer[],service:string,country:string):ProviderOffer|undefined{
