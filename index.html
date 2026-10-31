@@ -10505,6 +10505,7 @@ function toggleSparkleMoreServices(){
         closePinModal();
         const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
         setResult(target,"pending","Order is being checked",data.error||data.message||"Do not try again until the status is checked.",data.reference);
+        if(pending.kind==="social"&&data.reference)startSocialOrderPolling(data.reference,true);
         return;
       }
       if(data.success===true&&data.status==="successful"){
@@ -10523,6 +10524,7 @@ function toggleSparkleMoreServices(){
           const link=document.getElementById("sparkleSocialLink");if(link)link.value="";invalidateSparkleSocialQuote();
         }
         activeDigitalRequest=null;
+        if(pending.kind==="social"&&data.reference)startSocialOrderPolling(data.reference,true);
         if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}
         if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}
         return;
@@ -10530,6 +10532,7 @@ function toggleSparkleMoreServices(){
       closePinModal();
       const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
       setResult(target,"error",data.status==="refunded"?"Order not completed — refunded":"Order was not completed",data.message||data.error||"The supplier did not accept the order. Check your Sparkle transaction history.",data.reference);
+      if(pending.kind==="social")stopSocialOrderPolling();
       activeDigitalRequest=null;
     }catch(e){
       const detail=e.message||"Sparkle could not confirm the supplier response.";
