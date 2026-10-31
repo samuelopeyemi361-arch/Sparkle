@@ -10044,9 +10044,15 @@ function toggleSparkleMoreServices(){
   const fmt = value => new Intl.NumberFormat("en-NG", {style:"currency",currency:"NGN",minimumFractionDigits:2,maximumFractionDigits:2}).format(Number(value)||0);
   const esc = value => typeof escapeHtml === "function" ? escapeHtml(String(value ?? "")) : String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;", "'":"&#39;"}[c]));
   let socialPlans = [];
-  let socialFilter = "all";
+  let socialSelectedPlatform = "";
+  let socialSelectedType = "";
+  let socialSelectedFollowerType = "";
   let socialQuote = null;
   let smsQuote = null;
+  let socialTrackTimer = null;
+  let socialTrackReference = "";
+  let socialTrackChecks = 0;
+  let socialTrackBusy = false;
   let socialLoading = false;
   let smsLoading = false;
   let activeDigitalRequest = null;
@@ -10096,68 +10102,250 @@ function toggleSparkleMoreServices(){
   function setLoading(id, text){
     const box=document.getElementById(id);if(!box)return;box.hidden=false;box.className="sparkle-digital-result";box.innerHTML=`<span class="sparkle-digital-spinner" aria-hidden="true"></span>${esc(text)}`;
   }
+  const SOCIAL_PLATFORM_DEFS=[
+    {id:"instagram",name:"Instagram",test:/instagram|\binsta\b|\big\b/},
+    {id:"tiktok",name:"TikTok",test:/tiktok|tik[\s_-]*tok/},
+    {id:"facebook",name:"Facebook",test:/facebook|\bfb\b/},
+    {id:"youtube",name:"YouTube",test:/youtube|\byt\b|\bytb\b/},
+    {id:"telegram",name:"Telegram",test:/telegram|\btg\b/},
+    {id:"x",name:"X",test:/twitter|x[\s_-]*\(?(?:twitter)?\)?|\btwitter\b/},
+    {id:"whatsapp",name:"WhatsApp",test:/whatsapp|\bwa\b/},
+    {id:"snapchat",name:"Snapchat",test:/snapchat|\bsnap\b/},
+    {id:"threads",name:"Threads",test:/threads/},
+    {id:"pinterest",name:"Pinterest",test:/pinterest/},
+    {id:"linkedin",name:"LinkedIn",test:/linkedin/}
+  ];
+  const SOCIAL_SERVICE_DEFS=[
+    {id:"followers",label:"Followers",icon:"♙",hint:"Grow your profile audience"},
+    {id:"likes",label:"Likes",icon:"♥",hint:"Increase post engagement"},
+    {id:"views",label:"Views",icon:"▶",hint:"Boost video and post views"},
+    {id:"shares",label:"Shares",icon:"↗",hint:"Expand post reach"},
+    {id:"saves",label:"Save / Favorite",icon:"▮",hint:"Increase saves and bookmarks"},
+    {id:"downloads",label:"Downloads",icon:"↓",hint:"Increase app or media downloads"},
+    {id:"comments_random",label:"Comment Random",icon:"☷",hint:"Random engagement comments"},
+    {id:"comments_custom",label:"Comment Custom",icon:"✎",hint:"Custom comment options"},
+    {id:"comment_likes",label:"Comment Likes",icon:"♥+",hint:"Likes on selected comments"},
+    {id:"live_viewers",label:"Live Stream Viewers",icon:"◉",hint:"Audience for live streams"},
+    {id:"other",label:"Other services",icon:"✦",hint:"More options available on this platform"}
+  ];
+  function socialBrandIcon(id){
+    const paths={
+      instagram:'<rect x="8" y="8" width="24" height="24" rx="7" fill="none" stroke="white" stroke-width="3"/><circle cx="20" cy="20" r="6" fill="none" stroke="white" stroke-width="3"/><circle cx="28" cy="12" r="1.8" fill="white"/>',
+      tiktok:'<path d="M23 7v17a6.2 6.2 0 1 1-5.3-6.1" fill="none" stroke="#25F4EE" stroke-width="5" stroke-linecap="round"/><path d="M26 7c.4 3.2 2.6 5.6 6 6.2" fill="none" stroke="#FE2C55" stroke-width="5" stroke-linecap="round"/><path d="M23 7v17a6.2 6.2 0 1 1-5.3-6.1M26 7c.4 3.2 2.6 5.6 6 6.2" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round"/>',
+      facebook:'<path d="M23.8 34V21.7h4.1l.6-4.8h-4.7v-3.1c0-1.4.4-2.4 2.4-2.4h2.5V7.1c-.4-.1-1.9-.2-3.7-.2-3.7 0-6.2 2.2-6.2 6.4v3.6h-4.2v4.8h4.2V34z" fill="white"/>',
+      youtube:'<rect x="5" y="10" width="30" height="20" rx="6" fill="white"/><path d="m17 15 10 5-10 5z" fill="#ff1738"/>',
+      telegram:'<path d="m6 19 27-11-6 25-8-7-5 5-1-9z" fill="white"/><path d="m13 22 13-9-8 13" fill="none" stroke="#27a5df" stroke-width="1.7"/>',
+      x:'<path d="M7 7h8l7 9 7-9h4L24 19l9 14h-8l-7.5-10L10 33H6l10-13z" fill="white"/>',
+      whatsapp:'<path d="M20 6a13 13 0 0 0-11 20l-2 8 8-2A13 13 0 1 0 20 6zm0 23a10 10 0 0 1-5-1.4l-.6-.3-4.2 1.1 1.1-4.1-.4-.7A10 10 0 1 1 20 29z" fill="white"/><path d="M16 13c-.5-1-1-1-1.5-1s-.8 0-1.2.5c-.5.5-1.5 1.5-1.5 3.4s1.5 3.9 1.7 4.2c.2.3 3 4.8 7.3 6.5 3.6 1.4 4.3 1.1 5.1 1 .8-.1 2.5-1 2.9-2.1.4-1 .4-1.9.3-2.1-.1-.2-.5-.3-1-.6l-2.8-1.4c-.4-.2-.7-.2-1 .3-.3.5-1.1 1.4-1.3 1.7-.3.3-.5.4-1 .1-.5-.2-2-.7-3.8-2.3-1.4-1.2-2.3-2.7-2.6-3.2-.3-.5 0-.7.2-1 .2-.2.5-.5.7-.8.2-.3.3-.5.5-.8.2-.3.1-.6 0-.8z" fill="white"/>',
+      snapchat:'<path d="M20 6c-5 0-7.5 3.8-7.5 8.3 0 1.2.2 2.5.2 3.5 0 .7-.7 1-1.7 1.3-.8.2-1.6.5-1.6 1.2 0 1.1 2.4 1.3 3.1 1.8.5.4.2 1.3-.7 2.3-.9 1.1-2.2 1.8-3.3 2.1.3.8 1.7 1.1 2.8 1.2.8.1 1.1.7 1.3 1.2.7-.1 1.8-.5 3.3-.2 1.5.3 2.2 1.2 4.1 1.2s2.6-.9 4.1-1.2c1.5-.3 2.6.1 3.3.2.2-.5.5-1.1 1.3-1.2 1.1-.1 2.5-.4 2.8-1.2-1.1-.3-2.4-1-3.3-2.1-.9-1-1.2-1.9-.7-2.3.7-.5 3.1-.7 3.1-1.8 0-.7-.8-1-1.6-1.2-1-.3-1.7-.6-1.7-1.3 0-1 .2-2.3.2-3.5C27.5 9.8 25 6 20 6z" fill="#171717"/>',
+      threads:'<path d="M25 15c-.8-2.2-2.8-3.5-5.3-3.5-4 0-6.6 3.1-6.6 8.2 0 5.4 2.7 8.7 7.1 8.7 3.5 0 5.8-1.8 5.8-4.7 0-2.8-2.2-4.5-5.3-4.5-2.1 0-3.8.8-4.9 2.2M15 8c1.4-1.2 3.3-1.8 5.5-1.8 6.6 0 11 4.9 11 13.2 0 7.6-4.1 13-11.2 13-6.8 0-11.2-5.1-11.2-13 0-7.9 4.3-13 11.1-13" fill="none" stroke="white" stroke-width="2.8" stroke-linecap="round"/>',
+      pinterest:'<path d="M20 5C11 5 6 11 6 18c0 5 2 8 5 9 .5.2 1-.1 1.2-.7l.7-2.8c.2-.7.1-1-.4-1.6-.9-1.1-1.5-2.5-1.5-4.6 0-5 3.7-9.1 9.7-9.1 5.3 0 8.3 3.2 8.3 7.5 0 5.7-2.5 10.5-6.2 10.5-2.1 0-3.7-1.7-3.2-3.8.6-2.5 1.7-5.2 1.7-7 0-1.6-.9-2.9-2.7-2.9-2.2 0-3.9 2.3-3.9 5.4 0 2 .7 3.3.7 3.3l-2.8 11.3c-.8 3.3-.1 7.3-.1 7.7.1.3.5.4.7.2.3-.4 3.5-4.3 4.6-7.5l1.6-6.3c.8 1.6 3.1 2.9 5.6 2.9 7.4 0 12.4-6.8 12.4-15.9C36.2 11.1 29.8 5 20 5z" fill="white" transform="translate(0 -2) scale(.95)"/>',
+      linkedin:'<path d="M10 15h5v17h-5zM12.5 8a2.9 2.9 0 1 1 0 5.8 2.9 2.9 0 0 1 0-5.8zM19 15h4.8v2.3c.7-1.3 2.1-2.7 4.6-2.7 4.9 0 5.8 3.2 5.8 7.4V32h-5v-8.9c0-2.1 0-4.1-2.6-4.1s-3 1.9-3 4V32h-5z" fill="white"/>',
+      other:'<path d="m20 4 4.4 10.7L36 20l-11.6 4.4L20 36l-4.4-11.6L4 20l11.6-5.3z" fill="white"/>'
+    };
+    return '<span class="sm-brand-icon '+(SOCIAL_PLATFORM_DEFS.some(x=>x.id===id)?id:"other")+'" aria-hidden="true"><svg viewBox="0 0 40 40" role="img">'+(paths[id]||paths.other)+'</svg></span>';
+  }
   function socialPlatform(name){
-    const n=String(name||"").toLowerCase();
-    if(/instagram|\big\b|insta/.test(n))return "instagram";
-    if(/tiktok|tik tok/.test(n))return "tiktok";
-    if(/facebook|\bfb\b/.test(n))return "facebook";
-    if(/youtube|\byt\b|shorts/.test(n))return "youtube";
-    if(/telegram|\btg\b/.test(n))return "telegram";
-    if(/twitter|\bx\.com\b/.test(n))return "x";
+    const value=String(name||"").toLowerCase();
+    const found=SOCIAL_PLATFORM_DEFS.find(p=>p.test.test(value));
+    return found?.id||"other";
+  }
+  function socialServiceType(plan){
+    const name=String((plan?.displayName||"")+" "+(plan?.description||"")+" "+(plan?.category||"")).toLowerCase();
+    if(/comment[\s_-]*likes?|likes?[\s_-]*on[\s_-]*comments?|comments?[\s_-]*likes?/.test(name))return "comment_likes";
+    if(/live[\s_-]*(?:stream|video)?[\s_-]*(?:viewers?|views?)|(?:viewers?|views?)[\s_-]*on[\s_-]*live|stream[\s_-]*viewers?/.test(name))return "live_viewers";
+    if(/custom[\s_-]*comments?|comments?[\s_-]*custom/.test(name))return "comments_custom";
+    if(/\bcomments?\b/.test(name))return "comments_random";
+    if(/\bfollowers?\b|\bsubscribers?\b|\bmembers?\b/.test(name))return "followers";
+    if(/\blikes?\b|\bhearts?\b|\breactions?\b/.test(name))return "likes";
+    if(/\bviews?\b|\bplays?\b|\bwatch[\s_-]*hours?\b/.test(name))return "views";
+    if(/\bshares?\b|\breposts?\b|\bretweets?\b/.test(name))return "shares";
+    if(/\bsaves?\b|\bfavorites?\b|\bfavourites?\b|\bbookmarks?\b/.test(name))return "saves";
+    if(/\bdownloads?\b|\binstalls?\b/.test(name))return "downloads";
     return "other";
   }
-  function visibleSocialPlans(){
-    const query=(document.getElementById("sparkleSocialSearch")?.value||"").trim().toLowerCase();
-    return socialPlans.filter(p=>{
-      const platform=socialPlatform(p.displayName+" "+p.category);
-      return (socialFilter==="all"||platform===socialFilter||socialFilter==="other"&&platform==="other") && (!query||String(p.displayName+" "+p.category+" "+p.description).toLowerCase().includes(query));
+  function socialFollowerVariant(plan){
+    const name=String((plan?.displayName||"")+" "+(plan?.description||"")+" "+(plan?.category||"")).toLowerCase();
+    if(/real[\s_-]*nigerian?|nigerian?|nigeria|real[\s_-]*ng\b/.test(name))return "real_nigerian";
+    if(/guarantee|guaranteed|refill[\s:_-]*(?:yes|included|available)|refill\s+available|drop[\s_-]*protection/.test(name))return "guaranteed";
+    return "other";
+  }
+  function socialPlatformName(id){return SOCIAL_PLATFORM_DEFS.find(p=>p.id===id)?.name||(id==="other"?"Other platforms":id);}
+  function socialServiceDef(id){return SOCIAL_SERVICE_DEFS.find(x=>x.id===id)||SOCIAL_SERVICE_DEFS[SOCIAL_SERVICE_DEFS.length-1];}
+  function socialPlansForPlatform(id){return socialPlans.filter(p=>socialPlatform([p.displayName,p.category,p.description].join(" "))===id);}
+  function socialPlansForService(id){return socialPlansForPlatform(socialSelectedPlatform).filter(p=>socialServiceType(p)===id);}
+  function showSocialWizardStep(step){
+    const ids={platform:"sparkleSocialPlatformStep",service:"sparkleSocialServiceStep",follower:"sparkleSocialFollowerStep",plans:"sparkleSocialPlanStep",details:"sparkleSocialCheckoutFields"};
+    Object.entries(ids).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.hidden=key!==step;});
+    const progressStep=step==="follower"||step==="plans"?"option":step;
+    const order=["platform","service","option","details"],index=order.indexOf(progressStep);
+    document.querySelectorAll("#sparkleSocialProgress [data-social-progress]").forEach((el,i)=>{
+      const at=order.indexOf(el.dataset.socialProgress);
+      el.classList.toggle("is-active",at===index);
+      el.classList.toggle("is-done",at>=0&&at<index);
     });
+    if(step==="platform")socialSelectedPlatform="";
+    const page=document.getElementById("socialMarketPage");
+    if(page)page.scrollIntoView({behavior:"smooth",block:"start"});
+  }
+  async function withSocialLogoLoader(title,sub,work){
+    const hasLoader=typeof showSparkleVirtualNumberLoader==="function";
+    if(hasLoader)showSparkleVirtualNumberLoader(title,sub);
+    else window.sparkleShowLogoLoading?.(title||"Loading Social Market…");
+    try{
+      await new Promise(resolve=>setTimeout(resolve,360));
+      return await work();
+    }finally{
+      if(hasLoader&&typeof hideSparkleVirtualNumberLoader==="function")hideSparkleVirtualNumberLoader();
+      else window.sparkleHideLogoLoading?.();
+    }
+  }
+  function renderSocialPlatformGrid(){
+    const grid=document.getElementById("sparkleSocialPlatformGrid");if(!grid)return;
+    const counts=new Map();
+    socialPlans.forEach(p=>{const id=socialPlatform([p.displayName,p.category,p.description].join(" "));counts.set(id,(counts.get(id)||0)+1);});
+    const ordered=SOCIAL_PLATFORM_DEFS.filter(x=>counts.has(x.id)).map(x=>({id:x.id,name:x.name,count:counts.get(x.id)}));
+    if(counts.has("other"))ordered.push({id:"other",name:"Other platforms",count:counts.get("other")});
+    if(!ordered.length){grid.innerHTML='<div class="sparkle-social-empty">No active social platforms were returned by the live catalogue. Refresh to check again.</div>';return;}
+    grid.innerHTML=ordered.map(p=>'<button type="button" class="sparkle-social-platform-card" onclick="chooseSparkleSocialPlatform(\''+p.id+'\')">'+socialBrandIcon(p.id)+'<span class="sparkle-social-platform-copy"><strong>'+esc(p.name)+'</strong><small>'+p.count.toLocaleString("en-NG")+' live options</small></span><span class="sparkle-social-arrow" aria-hidden="true">›</span></button>').join("");
+  }
+  function renderSocialServiceGrid(){
+    const grid=document.getElementById("sparkleSocialServiceGrid");if(!grid)return;
+    const plans=socialPlansForPlatform(socialSelectedPlatform);
+    const groups=new Map();
+    plans.forEach(p=>{const id=socialServiceType(p);groups.set(id,(groups.get(id)||0)+1);});
+    const order=SOCIAL_SERVICE_DEFS.filter(x=>groups.has(x.id));
+    if(!order.length){grid.innerHTML='<div class="sparkle-social-empty">No service options were found for this platform. Go back and choose another platform.</div>';return;}
+    grid.innerHTML=order.map(x=>'<button type="button" class="sparkle-social-service-card" onclick="chooseSparkleSocialService(\''+x.id+'\')"><span class="sparkle-social-type-mark" aria-hidden="true">'+x.icon+'</span><span class="sparkle-social-service-card-copy"><strong>'+x.label+'</strong><small>'+x.hint+'</small></span><span class="sparkle-social-type-count">'+groups.get(x.id).toLocaleString("en-NG")+' options</span><span class="sparkle-social-arrow" aria-hidden="true">›</span></button>').join("");
+    const brand=document.getElementById("sparkleSocialServiceBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+  }
+  async function chooseSparkleSocialPlatform(id){
+    if(socialLoading)return;
+    if(!SOCIAL_PLATFORM_DEFS.some(x=>x.id===id)&&id!=="other")return;
+    socialSelectedPlatform=id;socialSelectedType="";socialSelectedFollowerType="";
+    socialQuote=null;
+    const checkout=document.getElementById("sparkleSocialCheckoutFields");if(checkout)checkout.hidden=true;
+    try{
+      socialLoading=true;
+      await withSocialLogoLoader("Loading "+socialPlatformName(id),"Preparing the available "+socialPlatformName(id)+" services and checking current Sparkle options",async()=>{
+        const data=await call({action:"social_plans"});
+        if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"The live social catalogue could not be refreshed.");
+        socialPlans=data.plans.filter(p=>p&&p.value!=null&&String(p.value).trim()!==""&&p.displayName!=null&&String(p.displayName).trim()!=="");
+        const select=document.getElementById("sparkleSocialPlan");
+        if(select)select.innerHTML='<option value="">Choose a live plan</option>'+socialPlans.map(p=>'<option value="'+esc(p.value)+'">'+esc(p.displayName)+'</option>').join("");
+      });
+      if(!socialPlansForPlatform(id).length){
+        setResult("sparkleSocialResult","error","No live options","There are no current options for this platform. Choose another platform or refresh the catalogue.");
+        showSocialWizardStep("platform");renderSocialPlatformGrid();return;
+      }
+      renderSocialServiceGrid();
+      showSocialWizardStep("service");
+    }catch(e){
+      showSocialWizardStep("platform");
+      setResult("sparkleSocialResult","error","Could not refresh services",e.message||"The live options are temporarily unavailable.");
+    }finally{socialLoading=false;}
+  }
+  async function chooseSparkleSocialService(id){
+    const def=socialServiceDef(id),plans=socialPlansForService(id);
+    if(!plans.length)return;
+    socialSelectedType=id;socialSelectedFollowerType="";
+    const checkout=document.getElementById("sparkleSocialCheckoutFields");if(checkout)checkout.hidden=true;
+    if(id==="followers"){
+      await withSocialLogoLoader("Loading follower types","Checking guaranteed and real Nigerian follower options for "+socialPlatformName(socialSelectedPlatform),async()=>{
+        renderSocialFollowerTypes();
+      });
+      showSocialWizardStep("follower");return;
+    }
+    await withSocialLogoLoader("Loading "+def.label,"Finding the current Sparkle options and rates",async()=>{
+      const brand=document.getElementById("sparkleSocialPlanBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+      const title=document.getElementById("sparkleSocialPlanTitle");if(title)title.textContent=def.label;
+      const subtitle=document.getElementById("sparkleSocialPlanSubtitle");if(subtitle)subtitle.textContent="Choose the live option that matches what you need.";
+      const search=document.getElementById("sparkleSocialSearch");if(search)search.value="";
+      renderSparkleSocialPlanOptions();
+    });
+    showSocialWizardStep("plans");
+  }
+  function renderSocialFollowerTypes(){
+    const grid=document.getElementById("sparkleSocialFollowerTypes");if(!grid)return;
+    const plans=socialPlansForService("followers");
+    const variants=[
+      {id:"guaranteed",name:"Guaranteed",icon:"🛡️",description:"Plans labelled with guarantee or refill protection",count:plans.filter(p=>socialFollowerVariant(p)==="guaranteed").length},
+      {id:"real_nigerian",name:"Real Nigerian",icon:"🇳🇬",description:"Plans specifically labelled as Nigerian followers",count:plans.filter(p=>socialFollowerVariant(p)==="real_nigerian").length},
+      {id:"other",name:"Other follower options",icon:"👥",description:"Other live follower plans not labelled in either group",count:plans.filter(p=>socialFollowerVariant(p)==="other").length}
+    ];
+    grid.innerHTML=variants.map(v=>'<button type="button" class="sparkle-social-type-card" '+(v.count?'':'disabled')+' onclick="chooseSparkleSocialFollowerType(\''+v.id+'\')"><span class="sparkle-social-type-mark">'+v.icon+'</span><span class="sparkle-social-type-copy"><strong>'+v.name+'</strong><small>'+v.description+'</small></span><span class="sparkle-social-type-count">'+v.count.toLocaleString("en-NG")+' options</span><span class="sparkle-social-arrow">›</span></button>').join("");
+    const brand=document.getElementById("sparkleSocialFollowerBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+  }
+  async function chooseSparkleSocialFollowerType(id){
+    const plans=socialPlansForService("followers").filter(p=>socialFollowerVariant(p)===id);
+    if(!plans.length)return;
+    socialSelectedFollowerType=id;
+    await withSocialLogoLoader("Loading "+(id==="real_nigerian"?"Real Nigerian":id==="guaranteed"?"Guaranteed":"other")+" followers","Preparing live follower options for "+socialPlatformName(socialSelectedPlatform),async()=>{
+      const brand=document.getElementById("sparkleSocialPlanBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+      const label=id==="real_nigerian"?"Real Nigerian Followers":id==="guaranteed"?"Guaranteed Followers":"Other Follower Options";
+      const title=document.getElementById("sparkleSocialPlanTitle");if(title)title.textContent=label;
+      const subtitle=document.getElementById("sparkleSocialPlanSubtitle");if(subtitle)subtitle.textContent="Compare the current options and choose the plan you prefer.";
+      const search=document.getElementById("sparkleSocialSearch");if(search)search.value="";
+      renderSparkleSocialPlanOptions();
+    });
+    showSocialWizardStep("plans");
+  }
+  function backSocialFromPlans(){
+    if(socialSelectedType==="followers"&&socialSelectedFollowerType)showSocialWizardStep("follower");
+    else showSocialWizardStep("service");
   }
   function renderSparkleSocialPlanOptions(){
-    const select=document.getElementById("sparkleSocialPlan");if(!select)return;
-    const prior=select.value;const items=visibleSocialPlans();
-    select.innerHTML='<option value="">Choose a social-media service</option>'+items.map(p=>{
+    const grid=document.getElementById("sparkleSocialPlanOptions");if(!grid)return;
+    const query=(document.getElementById("sparkleSocialSearch")?.value||"").trim().toLowerCase();
+    const items=socialPlansForService(socialSelectedType).filter(p=>{
+      if(socialSelectedType==="followers"&&socialSelectedFollowerType&&socialFollowerVariant(p)!==socialSelectedFollowerType)return false;
+      return !query||String(p.displayName+" "+p.category+" "+p.description).toLowerCase().includes(query);
+    }).sort((a,b)=>{
+      const ap=a.priceAvailable?Number(a.retailRatePerThousand):Number.POSITIVE_INFINITY;
+      const bp=b.priceAvailable?Number(b.retailRatePerThousand):Number.POSITIVE_INFINITY;
+      return ap-bp||String(a.displayName).localeCompare(String(b.displayName));
+    });
+    const selected=document.getElementById("sparkleSocialPlan")?.value||"";
+    if(!items.length){grid.innerHTML='<div class="sparkle-social-empty">No matching options were returned for this selection. Try another type or refresh.</div>';return;}
+    grid.innerHTML=items.map(p=>{
       const priced=p.priceAvailable===true&&Number.isFinite(Number(p.retailRatePerThousand))&&Number(p.retailRatePerThousand)>0;
-      const priceLabel=priced?` — ${fmt(p.retailRatePerThousand)} / 1,000`:' — Price unavailable';
-      return `<option value="${esc(p.value)}">${esc(p.displayName)}${priceLabel}</option>`;
+      const price=priced?fmt(p.retailRatePerThousand):"Price unavailable";
+      const meta="Min "+Number(p.min||1).toLocaleString("en-NG")+" · Max "+Number(p.max||1000000).toLocaleString("en-NG");
+      return '<button type="button" class="sparkle-social-plan-option '+(String(p.value)===String(selected)?'is-selected':'')+'" '+(priced?'':'disabled')+' onclick="chooseSparkleSocialPlan(\''+esc(p.value)+'\')"><span class="sparkle-social-plan-main">'+socialBrandIcon(socialSelectedPlatform)+'<span class="sparkle-social-plan-copy"><strong>'+esc(p.displayName)+'</strong><small>'+meta+'</small></span></span><span class="sparkle-social-plan-price"><strong>'+price+'</strong><small>'+(priced?'per 1,000':'not available')+'</small></span></button>';
     }).join("");
-    if(items.some(p=>String(p.value)===String(prior)))select.value=prior;
-    // Show live supplier services even when the supplier omits API prices, but never enable checkout without verified pricing.
-    onSparkleSocialPlanChange(false);
-    if(!items.length&&socialPlans.length){
-      const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.textContent="No services match your search or platform filter. Try another filter or refresh the catalogue.";
+  }
+  function chooseSparkleSocialPlan(code){
+    const plan=socialPlans.find(p=>String(p.value)===String(code));
+    if(!plan||!plan.priceAvailable||!Number.isFinite(Number(plan.retailRatePerThousand))||Number(plan.retailRatePerThousand)<=0){
+      setResult("sparkleSocialResult","error","Price unavailable","Sparkle cannot verify a current naira price for this option. No money will be reserved.");return;
     }
+    const select=document.getElementById("sparkleSocialPlan");if(!select)return;
+    select.value=String(code);if(select.value!==String(code))select.add(new Option(plan.displayName,String(code),true,true));
+    onSparkleSocialPlanChange();
+    const checkout=document.getElementById("sparkleSocialCheckoutFields");if(checkout)checkout.hidden=false;
+    const brand=document.getElementById("sparkleSocialCheckoutBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+    showSocialWizardStep("details");
+    const result=document.getElementById("sparkleSocialResult");if(result)result.hidden=true;
   }
   async function loadSparkleSocialPlans(force){
     if(socialLoading)return;
-    if(socialPlans.length&&!force){renderSparkleSocialPlanOptions();return;}
-    socialLoading=true;setLoading("sparkleSocialResult","Loading the live social-media catalogue…");
-    if(force||!socialPlans.length)window.sparkleShowLogoLoading?.("Loading Social Media Market…");
-    const info=document.getElementById("sparkleSocialPlanInfo");if(info)info.innerHTML='<span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading current Sparkle plans and prices…';
+    if(socialPlans.length&&!force){renderSocialPlatformGrid();return;}
+    socialLoading=true;
     try{
-      const data=await call({action:"social_plans"});
-      if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"No social-media plans are available right now.");
-      // Keep every real supplier plan visible, including plans whose API-price field is missing.
-      // This is display-only: quoteSparkleSocialOrder and the server both reject unpriced plans.
-      socialPlans=data.plans.filter(p=>p && p.value!=null && String(p.value).trim()!=="" && p.displayName!=null && String(p.displayName).trim()!=="");
-      const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
-      renderSparkleSocialPlanOptions();
-      const pricedCount=socialPlans.filter(p=>p.priceAvailable===true&&Number.isFinite(Number(p.apiPricePerThousand))&&Number(p.apiPricePerThousand)>0&&Number.isFinite(Number(p.retailRatePerThousand))&&Number(p.retailRatePerThousand)>0).length;
-      if(!socialPlans.length){
-        if(info)info.textContent="GSubz returned no usable social-media service names. Tap Refresh to try again. No money has been reserved.";
-      }else if(!pricedCount){
-        if(info)info.textContent=`${socialPlans.length.toLocaleString("en-NG")} live services loaded. GSubz has not supplied verified API prices, so checkout is disabled until pricing is fixed. No money has been reserved.`;
-        setResult("sparkleSocialResult","error","Supplier pricing needs attention",`${socialPlans.length.toLocaleString("en-NG")} services are visible, but GSubz did not return verified API prices. Sparkle will not guess a cost or reserve your money. Please try again after the supplier pricing feed is corrected.`);
-      }
+      await withSocialLogoLoader("Loading Social Media Market","Checking active platforms and current Sparkle options",async()=>{
+        const data=await call({action:"social_plans"});
+        if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"No social-media plans are available right now.");
+        socialPlans=data.plans.filter(p=>p&&p.value!=null&&String(p.value).trim()!==""&&p.displayName!=null&&String(p.displayName).trim()!=="");
+        const select=document.getElementById("sparkleSocialPlan");
+        if(select)select.innerHTML='<option value="">Choose a live plan</option>'+socialPlans.map(p=>'<option value="'+esc(p.value)+'">'+esc(p.displayName)+'</option>').join("");
+        renderSocialPlatformGrid();
+        const result=document.getElementById("sparkleSocialResult");if(result){result.hidden=true;result.innerHTML="";}
+        if(!socialPlans.length)throw new Error("The live catalogue returned no social-media options.");
+      });
     }catch(e){
-      if(info)info.textContent=e.message||"Could not load live plans.";
-      setResult("sparkleSocialResult","error","Catalogue unavailable",e.message||"Could not load live social-media prices.");
-    }finally{socialLoading=false;window.sparkleHideLogoLoading?.();}
-  }
-  function filterSparkleSocialPlans(platform,button){
-    socialFilter=platform||"all";
-    document.querySelectorAll("#sparkleSocialPlatformFilters button").forEach(b=>b.classList.toggle("active",b===button));
-    renderSparkleSocialPlanOptions();
+      const grid=document.getElementById("sparkleSocialPlatformGrid");if(grid)grid.innerHTML='<div class="sparkle-social-empty">The live social catalogue could not be loaded. Tap Refresh to try again. '+esc(e.message||"")+'</div>';
+      setResult("sparkleSocialResult","error","Catalogue unavailable",e.message||"Could not load the live social-media options.");
+    }finally{socialLoading=false;}
   }
   function selectedSocialPlan(){
     const code=document.getElementById("sparkleSocialPlan")?.value;
