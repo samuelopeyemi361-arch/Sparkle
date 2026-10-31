@@ -51,6 +51,19 @@ function money(n: number): number {
 function asText(v: unknown): string {
   return typeof v === "string" ? v.trim() : String(v ?? "").trim();
 }
+function extractSms(payload: any): { code: string; text: string; hasMessage: boolean } {
+  const rows = Array.isArray(payload?.sms) ? payload.sms : [];
+  for (const row of rows) {
+    const text = asText(row?.text);
+    let code = asText(row?.code);
+    if (!code && text) {
+      const labelled = new RegExp("\\b(?:code|otp|verification(?:\\s+code)?|pin)\\b[^A-Z0-9]{0,12}([A-Z0-9]{4,10})", "i").exec(text);
+      if (labelled) code = labelled[1];
+    }
+    if (code || text) return { code, text, hasMessage: true };
+  }
+  return { code: "", text: "", hasMessage: false };
+}
 function providerCountry(country: string): string {
   const value = asText(country).toLowerCase();
   if (value === "us" || value === "usa") return "usa";
