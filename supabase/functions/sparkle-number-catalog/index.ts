@@ -196,7 +196,9 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- const candidates=[raw?.rate,raw?.Rate,raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
+ // Only accept fields explicitly identified as delivery/success rate.
+ // The generic 5SIM API "rate" field is not the same as the public SMS delivery percentage.
+ const candidates=[raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
  for(let value of candidates){
   if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??value.rate??null;
   if(value===null||value===undefined||value==="")continue;
@@ -244,7 +246,7 @@ function operatorPagePattern(operator:string):string{
 }
 
 async function enrichOfficialRates(service:string,country:string,offers:ProviderOffer[]):Promise<ProviderOffer[]>{
-  if(!offers.some(o=>o.rate===null||o.rate===0))return offers;
+  // Always consult the public 5SIM service page: the generic API "rate" is not a trustworthy SMS delivery percentage.
   const labels=await countryPageLabels(country);
   const now=Date.now();
   let html="";
@@ -277,7 +279,7 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
    return found;
   }).filter((x):x is {operator:string;start:number;end:number}=>x!==null);
   return offers.map(offer=>{
-   if(offer.rate!==null&&offer.rate>0)return offer;
+   // Prefer the explicit percentage scraped from the matching service/country/operator row.
    const key=service+":"+providerCountry(country)+":"+offer.operator.toLowerCase();
    const cached=publicRateCache.get(key);
    if(cached&&cached.expiresAt>now)return {...offer,rate:cached.rate};
@@ -453,7 +455,7 @@ async function getCountriesForService(service:string):Promise<string[]>{
 }
 
 function recommendedOffer(offers:ProviderOffer[],service:string,country:string):ProviderOffer|undefined{
- const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.usd<=x.providerBalanceUsd&&x.rate!==null&&x.rate>0);
+ const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.rate!==null&&x.rate>0);
  return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.usd-b.usd)[0];
 }
 
