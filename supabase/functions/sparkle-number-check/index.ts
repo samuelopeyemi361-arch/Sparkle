@@ -364,7 +364,7 @@ Deno.serve(async (req: Request) => {
           .update({ status: "successful" })
           .eq("id", order.wallet_transaction_id)
           .eq("status", "pending");
-        if (debit.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "5SIM confirms an SMS arrived, but Sparkle could not finalize the wallet transaction. Refresh or contact support." }, 202);
+        if (debit.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction. Refresh or contact support." }, 202);
       }
       const saved = await ctx.admin.from("sparkle_sms_otp_orders").update({
         phone_number: phone,
@@ -372,7 +372,7 @@ Deno.serve(async (req: Request) => {
         updated_at: new Date().toISOString(),
       }).eq("user_id", ctx.user.id).eq("request_id", requestId);
       if (saved.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The supplier reports an SMS arrived, but Sparkle could not save the latest message state. Refresh or contact support." }, 202);
-      return reply({ success: true, status: "pending", request_id: requestId, phone_number: phone, sms_text: smsText || null, message: "5SIM confirms an SMS has arrived. Sparkle finalized the wallet charge; refresh again to retrieve the SMS code." }, 200);
+      return reply({ success: true, status: "pending", request_id: requestId, phone_number: phone, sms_text: smsText || null, message: "The number service confirms an SMS has arrived. Sparkle finalized the wallet charge; refresh again to retrieve the SMS code." }, 200);
     }
     return reply({ success: true, status: safeStatus, request_id: requestId, phone_number: phone, message: safeStatus === "pending" ? "No SMS code yet. Check again shortly." : "The provider returned an unrecognized order state. Sparkle kept the funds reserved while support checks it." }, safeStatus === "unknown" ? 202 : 200);
   } catch {
