@@ -10090,13 +10090,35 @@ function toggleSparkleMoreServices(){
     button.addEventListener("click",()=>showReceipt(receipt));
     box.appendChild(button);
   }
+  function stopSocialOrderPolling(){
+    if(socialTrackTimer){clearInterval(socialTrackTimer);socialTrackTimer=null;}
+    socialTrackReference="";socialTrackChecks=0;
+  }
+  function startSocialOrderPolling(reference,checkImmediately=false){
+    const ref=String(reference||"").trim();
+    if(!/^SPKDIG-[A-Za-z0-9_-]{8,100}$/.test(ref))return;
+    if(socialTrackReference===ref&&socialTrackTimer)return;
+    stopSocialOrderPolling();
+    socialTrackReference=ref;socialTrackChecks=0;
+    const input=document.getElementById("sparkleSocialOrderReference");if(input)input.value=ref;
+    if(checkImmediately)void checkSparkleDigitalOrder(ref,"sparkleSocialResult",{silent:true,automatic:true});
+    socialTrackTimer=setInterval(()=>{
+      if(document.hidden||socialTrackBusy||socialTrackReference!==ref)return;
+      const page=document.getElementById("socialMarketPage");
+      if(!page||!page.classList.contains("active"))return;
+      if(socialTrackChecks>=120){stopSocialOrderPolling();return;}
+      socialTrackChecks++;
+      void checkSparkleDigitalOrder(ref,"sparkleSocialResult",{silent:true,automatic:true});
+    },25000);
+  }
   function trackSparkleSocialOrder(){
     const input=document.getElementById("sparkleSocialOrderReference");
     const reference=String(input?.value||"").trim();
     if(!/^SPKDIG-[A-Za-z0-9_-]{8,100}$/.test(reference)){
-      setResult("sparkleSocialResult","error","Check the order reference","Enter the complete Social Media Market reference shown in your Sparkle transaction history.");
+      setResult("sparkleSocialResult","error","Check the order reference","Enter a complete new Social Media Market reference beginning with SPKDIG-.");
       return;
     }
+    startSocialOrderPolling(reference,false);
     checkSparkleDigitalOrder(reference,"sparkleSocialResult");
   }
   function setLoading(id, text){
@@ -10352,15 +10374,16 @@ function toggleSparkleMoreServices(){
     return socialPlans.find(p=>String(p.value)===String(code))||null;
   }
   function onSparkleSocialPlanChange(clearQuote=true){
-    const plan=selectedSocialPlan();const info=document.getElementById("sparkleSocialPlanInfo");const help=document.getElementById("sparkleSocialQuantityHelp");
+    const plan=selectedSocialPlan(),info=document.getElementById("sparkleSocialPlanInfo"),help=document.getElementById("sparkleSocialQuantityHelp");
     if(info){
       if(plan){
         const hasVerifiedPrice=plan.priceAvailable===true&&Number.isFinite(Number(plan.apiPricePerThousand))&&Number(plan.apiPricePerThousand)>0&&Number.isFinite(Number(plan.retailRatePerThousand))&&Number(plan.retailRatePerThousand)>0;
-        info.innerHTML=`<strong>${esc(plan.displayName)}</strong>${hasVerifiedPrice?`<div>Current Sparkle rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div>`:'<div><b>Price unavailable</b></div><div>This service is visible, but checkout stays disabled until GSubz supplies a verified API price. No money will be reserved.</div>'}<div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
-      }else info.textContent=socialPlans.length?"Choose a service to view its price and quantity range.":"No live social-media services are available in this view yet. Tap Refresh to check the supplier catalogue again.";
+        info.innerHTML=\`<strong>\${esc(plan.displayName)}</strong>\${hasVerifiedPrice?\`<div>Sparkle selling rate: <b>\${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div>\`:'<div><b>Price unavailable</b></div><div>A verified live price is not available for this option. Checkout remains disabled; no money will be reserved.</div>'}<div>Minimum \${Number(plan.min||1).toLocaleString("en-NG")} · Maximum \${Number(plan.max||1000000).toLocaleString("en-NG")}</div>\`;
+      }else info.textContent=socialPlans.length?"Choose a live option to view its price and quantity range.":"No live social-media services are available. Refresh the platform list to try again.";
     }
-    const qty=document.getElementById("sparkleSocialQuantity");if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
-    if(help)help.textContent=plan?`Enter a whole number between ${Number(plan.min||1).toLocaleString("en-NG")} and ${Number(plan.max||1000000).toLocaleString("en-NG")}.`:"Choose a plan to see its permitted range.";
+    const qty=document.getElementById("sparkleSocialQuantity");
+    if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
+    if(help)help.textContent=plan?\`Enter a whole number between \${Number(plan.min||1).toLocaleString("en-NG")} and \${Number(plan.max||1000000).toLocaleString("en-NG")}.\`:"Choose an option to see its allowed quantity.";
     if(clearQuote)invalidateSparkleSocialQuote();
   }
   function invalidateSparkleSocialQuote(){
@@ -10526,27 +10549,50 @@ function toggleSparkleMoreServices(){
       }
     }finally{if(button){button.disabled=false;button.textContent="MAKE PAYMENT";}}
   }
-  async function checkSparkleDigitalOrder(reference,targetId){
-    setLoading(targetId,"Checking the supplier status. Do not submit a duplicate order…");
+  async function checkSparkleDigitalOrder(reference,targetId,options={}){
+    if(socialTrackBusy)return;
+    socialTrackBusy=true;
+    if(!options.silent)setLoading(targetId,"Checking live order progress…");
     try{
       const data=await call({action:"check_order",reference});
-      if(data.status==="pending")setResult(targetId,"pending","Still pending",data.error||data.message||"The order is still being checked. Please check again shortly.",reference);
-      else if(data.status==="partial")setResult(targetId,"pending","Order needs review",data.message||"The supplier reports partial delivery. A full refund was not issued because some delivery may have occurred.",reference);
-      else if(data.status==="successful"){
-        const progress=data.orderProgress;
-        const progressText=progress?.status?` Delivery status: ${progress.status}.${progress.remains!=null?` Remaining: ${Number(progress.remains).toLocaleString("en-NG")}.`:""}${progress.start_count!=null?` Starting count: ${Number(progress.start_count).toLocaleString("en-NG")}.`:""}`:"";
-        setResult(targetId,"success",progress?.status?.toLowerCase()==="completed"?"Order delivered":"Order accepted",(data.message||`Your order is accepted. Final charge: ${fmt(data.amount)}.`)+progressText,reference);
-        if(targetId==="sparkleSocialResult"){
-          const pending=activeDigitalRequest&&activeDigitalRequest.kind==="social"?activeDigitalRequest:null;
-          if(pending&&pending.payload){
-            const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
-            attachSocialReceiptButton(targetId,{service:"Social Media Market",reference:data.reference||reference,status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"Sparkle",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0});
-          }
+      const progress=data.orderProgress||null;
+      const orderStatus=String(progress?.status||"").toLowerCase().replace(/[\s-]+/g,"_");
+      const remains=progress?.remains==null?null:Number(progress.remains);
+      const completed=["completed","complete","successful","success","finished","delivered"].includes(orderStatus)||(remains===0);
+      const failed=["failed","failure","cancelled","canceled","refunded"].includes(orderStatus);
+      if(data.status==="pending"){
+        setResult(targetId,"pending","Order is being checked",data.error||data.message||"The supplier has not returned a final update yet. Sparkle will check again automatically.",reference);
+      }else if(data.status==="partial"){
+        setResult(targetId,"pending","Order needs review",data.message||"The supplier reports partial delivery. Sparkle will not issue a full refund while some delivery may have occurred.",reference);
+        if(failed)stopSocialOrderPolling();
+      }else if(data.status==="successful"){
+        const progressText=progress?.status?\` Delivery status: \${progress.status}.\${progress.remains!=null?\` Remaining: \${Number(progress.remains).toLocaleString("en-NG")}.\`:""}\${progress.start_count!=null?\` Starting count: \${Number(progress.start_count).toLocaleString("en-NG")}.\`:""}\`:"";
+        const title=completed?"Order delivered":"Order accepted";
+        setResult(targetId,"success",title,(data.message||\`Your order is accepted. Final charge: \${fmt(data.amount)}.\`)+progressText,reference);
+        if(completed||failed)stopSocialOrderPolling();
+      }else if(data.status==="refunded"||data.status==="failed"){
+        setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order failed",data.message||data.error||"The supplier confirmed that the order did not complete.",reference);
+        stopSocialOrderPolling();
+      }else{
+        setResult(targetId,"pending","Order status",data.message||data.error||"Sparkle is waiting for a supplier update.",reference);
+      }
+      if(targetId==="sparkleSocialResult"&&data.status==="successful"){
+        const pending=activeDigitalRequest&&activeDigitalRequest.kind==="social"?activeDigitalRequest:null;
+        if(pending&&pending.payload){
+          const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
+          attachSocialReceiptButton(targetId,{service:"Social Media Market",reference:data.reference||reference,status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"Sparkle",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0});
         }
       }
-      else setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order status",data.message||data.error||"The order has been resolved.",reference);
-      if(data.status==="successful"||data.status==="partial"||data.status==="refunded"){if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}}
-    }catch(e){setResult(targetId,"pending","Status check unavailable",e.message||"Try the status check again shortly. Do not place a duplicate order.",reference);}
+      if(data.status==="successful"||data.status==="partial"||data.status==="refunded"||data.status==="failed"){
+        if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}
+        if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}
+      }
+      return data;
+    }catch(e){
+      if(!options.silent)setResult(targetId,"pending","Status check unavailable",e.message||"Sparkle could not refresh the supplier status. Your existing order reference is unchanged.",reference);
+      else console.warn("[sparkle-social-tracking]",e?.message||e);
+      return null;
+    }finally{socialTrackBusy=false;}
   }
 
   // Route a queued Bulk SMS or Social Market order directly to its secure server checkout.
@@ -10583,7 +10629,12 @@ function toggleSparkleMoreServices(){
   }
 
   window.loadSparkleSocialPlans=loadSparkleSocialPlans;
-  window.filterSparkleSocialPlans=filterSparkleSocialPlans;
+  window.chooseSparkleSocialPlatform=chooseSparkleSocialPlatform;
+  window.chooseSparkleSocialService=chooseSparkleSocialService;
+  window.chooseSparkleSocialFollowerType=chooseSparkleSocialFollowerType;
+  window.chooseSparkleSocialPlan=chooseSparkleSocialPlan;
+  window.showSocialWizardStep=showSocialWizardStep;
+  window.backSocialFromPlans=backSocialFromPlans;
   window.renderSparkleSocialPlanOptions=renderSparkleSocialPlanOptions;
   window.onSparkleSocialPlanChange=onSparkleSocialPlanChange;
   window.invalidateSparkleSocialQuote=invalidateSparkleSocialQuote;
