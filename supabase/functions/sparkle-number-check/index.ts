@@ -340,15 +340,48 @@ Deno.serve(async (req: Request) => {
       }
     }
     if (smsCode) {
-      // Finishing a received activation is best effort; the verified code is still recorded by Sparkle.
-      try { await apiGet("/user/finish/" + encodeURIComponent(id)); } catch {}
-      const sanitized = { status: status || "RECEIVED", price_usd: storedResponse.price_usd ?? null, expires_at: data.expires || storedResponse.expires_at || null, sms_code: smsCode, sms_text: smsText };
+      let finished = status === "FINISHED";
+      if (!finished) {
+        try {
+          const finish = await apiGet("/user/finish/" + encodeURIComponent(id));
+          finished = finish.ok && String(finish.data?.status || "").toUpperCase() === "FINISHED";
+          if (finished) {
+            data = finish.data;
+            status = "FINISHED";
+          }
+        } catch {
+          // The follow-up status check below decides whether the provider finished.
+        }
+      }
+      if (!finished) {
+        try {
+          const refreshed = await apiGet("/user/check/" + encodeURIComponent(id));
+          if (refreshed.ok && refreshed.data && typeof refreshed.data === "object") {
+            data = refreshed.data;
+            status = String(data.status || "").toUpperCase();
+            const refreshedSms = extractSms(data);
+            if (refreshedSms.code) {
+              smsCode = refreshedSms.code;
+              smsText = refreshedSms.text;
+            }
+            finished = status === "FINISHED";
+          }
+        } catch {
+          // Keep the original reserved debit pending if provider completion is uncertain.
+        }
+      }
+      if (!finished) {
+        const waiting = { ...storedResponse, status: status || "RECEIVED", sms_code: smsCode, sms_text: smsText || null, expires_at: data.expires || storedResponse.expires_at || null };
+        await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: waiting, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+        return reply({ success: true, status: "pending", request_id: requestId, phone_number: phone, message: "The SMS arrived. Sparkle is confirming completion with the number service before finalizing the purchase. Please check again shortly." }, 202);
+      }
+      const sanitized = { status: "FINISHED", price_usd: storedResponse.price_usd ?? data.price ?? null, expires_at: data.expires || storedResponse.expires_at || null, sms_code: smsCode, sms_text: smsText };
       const f = await finalize(ctx.admin, requestId, "success", sanitized, null);
       if (f.error || f.data?.success !== true) {
-        return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The SMS arrived, but Sparkle could not finalize the order yet. Do not buy again; contact support." }, 202);
+        return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service finished the order, but Sparkle could not finalize the wallet record. Do not buy again; contact support." }, 202);
       }
       await ctx.admin.from("sparkle_sms_otp_orders").update({ phone_number: phone, provider_response: sanitized, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
-      return reply({ success: true, status: "success", request_id: requestId, phone_number: phone, sms_code: smsCode, sms_text: smsText, message: "SMS code received." });
+      return reply({ success: true, status: "success", request_id: requestId, phone_number: phone, sms_code: smsCode, sms_text: smsText, message: "SMS code received and number order completed." });
     }
     if (["CANCELED", "CANCELLED", "TIMEOUT"].includes(status)) {
       const f = await finalize(ctx.admin, requestId, "cancelled", { status, expires_at: data.expires || storedResponse.expires_at || null }, "The number order ended without an SMS code.");
@@ -358,22 +391,6 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, status: "cancelled", request_id: requestId, phone_number: phone, refund_status: "processed", refund_amount: Number(order.amount), message: "The order did not deliver an SMS code. Sparkle has recorded your wallet refund." });
     }
     const safeStatus = status === "RECEIVED" || status === "FINISHED" ? "received" : (status === "PENDING" ? "pending" : "unknown");
-    if (safeStatus === "received") {
-      if (order.wallet_transaction_id) {
-        const debit = await ctx.admin.from("wallet_transactions")
-          .update({ status: "successful" })
-          .eq("id", order.wallet_transaction_id)
-          .eq("status", "pending");
-        if (debit.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction. Refresh or contact support." }, 202);
-      }
-      const saved = await ctx.admin.from("sparkle_sms_otp_orders").update({
-        phone_number: phone,
-        provider_response: { ...storedResponse, status, sms_code: null, sms_text: smsText || null, expires_at: data.expires || storedResponse.expires_at || null },
-        updated_at: new Date().toISOString(),
-      }).eq("user_id", ctx.user.id).eq("request_id", requestId);
-      if (saved.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The supplier reports an SMS arrived, but Sparkle could not save the latest message state. Refresh or contact support." }, 202);
-      return reply({ success: true, status: "pending", request_id: requestId, phone_number: phone, sms_text: smsText || null, message: "The number service confirms an SMS has arrived. Sparkle finalized the wallet charge; refresh again to retrieve the SMS code." }, 200);
-    }
     return reply({ success: true, status: safeStatus, request_id: requestId, phone_number: phone, message: safeStatus === "pending" ? "No SMS code yet. Check again shortly." : "The provider returned an unrecognized order state. Sparkle kept the funds reserved while support checks it." }, safeStatus === "unknown" ? 202 : 200);
   } catch {
     return reply({ success: false, status: "pending", request_id: requestId, message: "The order status could not be reached. Funds remain reserved while Sparkle checks the result; do not buy again." }, 202);
