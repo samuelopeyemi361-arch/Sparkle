@@ -3371,47 +3371,87 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
           <div class="sparkle-market-promo-note"><span aria-hidden="true">🛡️</span><div><strong>Know what you’re ordering</strong><p>Every social-media plan shows its available quantity limits and current price before you approve it with your Transaction PIN.</p></div></div>
         </section>
 
-        <!-- SOCIAL MEDIA MARKET: live catalogue, Sparkle pricing and delivery tracking. -->
+        <!-- SOCIAL MEDIA MARKET: Virtual Number-style, platform-first catalogue. -->
         <section class="page" id="socialMarketPage">
           <div class="data-topbar"><button class="data-back" type="button" onclick="showDashPage('marketPage',null)">‹</button><h1>Social Media Market</h1></div>
-          <p class="dashboard-subtitle">A cleaner way to choose the right growth service, see the current naira price and follow your order.</p>
+          <p class="dashboard-subtitle">Choose a platform, select the service you need, then compare its live Sparkle options.</p>
           <div class="sparkle-digital-hero sparkle-social-hero">
             <div>
               <span class="sparkle-digital-eyebrow">THE SPARKLE SOCIAL STUDIO</span>
-              <h2>Your brand,<br>in motion.</h2>
-              <p>Explore current social services with clear pricing, secure checkout and order progress in one place.</p>
-              <div class="sparkle-social-hero-meta"><span><i></i>Live catalogue</span><span>₦ Naira pricing</span><span>Secure checkout</span></div>
+              <h2>Grow with<br>more control.</h2>
+              <p>Live social services, transparent naira pricing and order progress — all in one premium flow.</p>
+              <div class="sparkle-social-hero-meta"><span><i></i>Live catalogue</span><span>₦ Naira checkout</span><span>Secure PIN</span></div>
             </div>
             <div class="sparkle-social-hero-art" aria-hidden="true"><span>◎</span><b>▶</b><i>♡</i><em>↗</em></div>
           </div>
-          <div class="sparkle-digital-card">
-            <div class="sparkle-digital-section-title"><div><h2>Find your growth service</h2><p>Choose a platform, compare available plans and review the exact price before payment.</p></div><button type="button" class="sparkle-refresh-button" onclick="loadSparkleSocialPlans(true)">↻ Update plans</button></div>
-            <div class="sparkle-platform-filters" id="sparkleSocialPlatformFilters" role="group" aria-label="Filter social-media platform">
-              <button type="button" class="active" data-platform="all" onclick="filterSparkleSocialPlans('all',this)">All</button>
-              <button type="button" data-platform="instagram" onclick="filterSparkleSocialPlans('instagram',this)">Instagram</button>
-              <button type="button" data-platform="tiktok" onclick="filterSparkleSocialPlans('tiktok',this)">TikTok</button>
-              <button type="button" data-platform="facebook" onclick="filterSparkleSocialPlans('facebook',this)">Facebook</button>
-              <button type="button" data-platform="youtube" onclick="filterSparkleSocialPlans('youtube',this)">YouTube</button>
-              <button type="button" data-platform="telegram" onclick="filterSparkleSocialPlans('telegram',this)">Telegram</button>
-              <button type="button" data-platform="x" onclick="filterSparkleSocialPlans('x',this)">X / Twitter</button>
-              <button type="button" data-platform="other" onclick="filterSparkleSocialPlans('other',this)">Other</button>
+
+          <div class="sparkle-social-wizard">
+            <div class="sparkle-social-progress" id="sparkleSocialProgress" aria-label="Social Market order steps">
+              <span class="is-active" data-social-progress="platform"><i>01</i> Platform</span>
+              <b></b><span data-social-progress="service"><i>02</i> Service</span>
+              <b></b><span data-social-progress="option"><i>03</i> Option</span>
+              <b></b><span data-social-progress="details"><i>04</i> Details</span>
             </div>
-            <label class="sparkle-digital-label" for="sparkleSocialSearch">Find a service</label>
-            <input id="sparkleSocialSearch" class="sparkle-digital-input" type="search" placeholder="Search followers, likes, views…" oninput="renderSparkleSocialPlanOptions()" autocomplete="off">
-            <label class="sparkle-digital-label" for="sparkleSocialPlan">Available plans</label>
-            <select id="sparkleSocialPlan" class="sparkle-digital-input" onchange="onSparkleSocialPlanChange()"><option value="">Loading current plans…</option></select>
-            <div class="sparkle-social-selected-plan" id="sparkleSocialPlanInfo"><span class="sparkle-digital-spinner" aria-hidden="true"></span> Loading Sparkle services and prices…</div>
-            <div class="sparkle-digital-fields">
-              <div><label class="sparkle-digital-label" for="sparkleSocialQuantity">Quantity</label><input id="sparkleSocialQuantity" class="sparkle-digital-input" type="number" inputmode="numeric" min="1" step="1" value="100" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help" id="sparkleSocialQuantityHelp">Choose a plan to see the allowed quantity.</small></div>
-              <div><label class="sparkle-digital-label" for="sparkleSocialLink">Target profile or post</label><input id="sparkleSocialLink" class="sparkle-digital-input" type="url" placeholder="Paste your public link…" inputmode="url" autocomplete="url" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help">Use the public profile, post or video link required by the selected plan.</small></div>
-            </div>
-            <button type="button" class="btn primary full sparkle-digital-primary" onclick="quoteSparkleSocialOrder()">Review live price</button>
-            <div id="sparkleSocialQuote" class="sparkle-digital-quote" hidden aria-live="polite"></div>
-            <div class="sparkle-digital-policy"><span aria-hidden="true">🛡️</span><p>Only order for profiles or posts you are authorised to promote. Delivery times and limits depend on the selected service. Sparkle will show progress when the service reports it.</p></div>
+
+            <section class="sparkle-digital-card sparkle-social-step" id="sparkleSocialPlatformStep">
+              <div class="sparkle-digital-section-title">
+                <div><span class="sparkle-digital-eyebrow">STEP 01</span><h2>Choose a platform</h2><p>Select the social app where you want to grow.</p></div>
+                <button type="button" class="sparkle-refresh-button" onclick="loadSparkleSocialPlans(true)">↻ Refresh</button>
+              </div>
+              <div class="sparkle-social-platform-grid" id="sparkleSocialPlatformGrid"><div class="sparkle-social-empty"><span class="sparkle-digital-spinner"></span> Loading available platforms…</div></div>
+              <div class="sparkle-social-live-note"><span class="sparkle-social-live-dot"></span> Only platforms with current supplier services are shown.</div>
+            </section>
+
+            <section class="sparkle-digital-card sparkle-social-step" id="sparkleSocialServiceStep" hidden>
+              <div class="sparkle-social-step-heading">
+                <button type="button" class="sparkle-social-back" onclick="showSocialWizardStep('platform')">‹ Back</button>
+                <div class="sparkle-social-step-title"><span class="sparkle-digital-eyebrow">STEP 02</span><h2>What do you want?</h2><p>Choose the service for this platform.</p></div>
+                <div id="sparkleSocialServiceBrand" class="sparkle-social-selected-brand"></div>
+              </div>
+              <div class="sparkle-social-service-grid" id="sparkleSocialServiceGrid"></div>
+            </section>
+
+            <section class="sparkle-digital-card sparkle-social-step" id="sparkleSocialFollowerStep" hidden>
+              <div class="sparkle-social-step-heading">
+                <button type="button" class="sparkle-social-back" onclick="showSocialWizardStep('service')">‹ Back</button>
+                <div class="sparkle-social-step-title"><span class="sparkle-digital-eyebrow">STEP 03</span><h2>Choose follower type</h2><p>Select the follower category you prefer.</p></div>
+                <div id="sparkleSocialFollowerBrand" class="sparkle-social-selected-brand"></div>
+              </div>
+              <div class="sparkle-social-type-grid" id="sparkleSocialFollowerTypes"></div>
+            </section>
+
+            <section class="sparkle-digital-card sparkle-social-step" id="sparkleSocialPlanStep" hidden>
+              <div class="sparkle-social-step-heading">
+                <button type="button" class="sparkle-social-back" onclick="backSocialFromPlans()">‹ Back</button>
+                <div class="sparkle-social-step-title"><span class="sparkle-digital-eyebrow">STEP 03 · LIVE OPTIONS</span><h2 id="sparkleSocialPlanTitle">Choose an option</h2><p id="sparkleSocialPlanSubtitle">Compare the current supplier options and naira rates.</p></div>
+                <div id="sparkleSocialPlanBrand" class="sparkle-social-selected-brand"></div>
+              </div>
+              <label class="sparkle-digital-label" for="sparkleSocialSearch">Search options</label>
+              <input id="sparkleSocialSearch" class="sparkle-digital-input" type="search" placeholder="Search option name…" oninput="renderSparkleSocialPlanOptions()" autocomplete="off">
+              <div class="sparkle-social-plan-grid" id="sparkleSocialPlanOptions"><div class="sparkle-social-empty">Choose a service to load its options.</div></div>
+            </section>
+
+            <section class="sparkle-digital-card sparkle-social-step sparkle-social-checkout" id="sparkleSocialCheckoutFields" hidden>
+              <div class="sparkle-social-step-heading">
+                <button type="button" class="sparkle-social-back" onclick="showSocialWizardStep('plans')">‹ Back to options</button>
+                <div class="sparkle-social-step-title"><span class="sparkle-digital-eyebrow">STEP 04</span><h2>Order details</h2><p>Enter the target and quantity for your selected option.</p></div>
+                <div id="sparkleSocialCheckoutBrand" class="sparkle-social-selected-brand"></div>
+              </div>
+              <select id="sparkleSocialPlan" hidden aria-hidden="true"><option value="">Choose a live plan</option></select>
+              <div class="sparkle-social-selected-plan" id="sparkleSocialPlanInfo">Choose a live option above.</div>
+              <div class="sparkle-digital-fields">
+                <div><label class="sparkle-digital-label" for="sparkleSocialQuantity">Quantity</label><input id="sparkleSocialQuantity" class="sparkle-digital-input" type="number" inputmode="numeric" min="1" step="1" value="100" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help" id="sparkleSocialQuantityHelp">Choose a plan to see the permitted range.</small></div>
+                <div><label class="sparkle-digital-label" for="sparkleSocialLink">Target profile or post link</label><input id="sparkleSocialLink" class="sparkle-digital-input" type="url" placeholder="Paste your public profile or post link…" inputmode="url" autocomplete="url" oninput="invalidateSparkleSocialQuote()"><small class="sparkle-digital-help">Use the exact public link requested by the selected option.</small></div>
+              </div>
+              <button type="button" class="btn primary full sparkle-digital-primary" onclick="quoteSparkleSocialOrder()">Review live price</button>
+              <div id="sparkleSocialQuote" class="sparkle-digital-quote" hidden aria-live="polite"></div>
+              <div class="sparkle-digital-policy"><span aria-hidden="true">🛡️</span><p>Only order for profiles or posts you are authorised to promote. Delivery times and limits depend on the selected plan. Sparkle checks order progress before confirming completion.</p></div>
+            </section>
           </div>
+
           <div class="sparkle-social-track">
-            <div class="sparkle-social-track-copy"><strong>Track an existing order</strong><span>Paste a reference from your Sparkle transaction history to refresh its supplier delivery status.</span></div>
-            <input id="sparkleSocialOrderReference" type="text" placeholder="SPKDIG-…" autocomplete="off" spellcheck="false" aria-label="Social Media Market order reference">
+            <div class="sparkle-social-track-copy"><strong>Live order tracking</strong><span>New orders are checked automatically while this page is open. You can also paste a new Sparkle order reference here.</span></div>
+            <input id="sparkleSocialOrderReference" type="text" placeholder="Enter your new SPKDIG order reference…" autocomplete="off" spellcheck="false" aria-label="Social Media Market order reference">
             <button type="button" onclick="trackSparkleSocialOrder()">Track order</button>
           </div>
           <div class="sparkle-digital-result" id="sparkleSocialResult" hidden role="status" aria-live="polite"></div>
