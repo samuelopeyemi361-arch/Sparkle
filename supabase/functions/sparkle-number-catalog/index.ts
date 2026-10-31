@@ -205,6 +205,40 @@ function parseDeliveryRate(raw:any):number|null{
  // delivery-rate field. Prefer the populated percentage, never convert missing to 0%.
  return parsed.find(n=>n>0)??(parsed.length?parsed[0]:null);
 }
+const publicRateCache=new Map<string,{rate:number;expiresAt:number}>();
+function countryPageLabel(country:string):string{
+ const v=country.toLowerCase();
+ if(v==="usa"||v==="us")return "USA";
+ if(v==="uk")return "England";
+ return v.replace(/[-_]+/g," ").replace(/\\b[a-z]/g,c=>c.toUpperCase());
+}
+async function enrichOfficialRates(service:string,country:string,offers:ProviderOffer[]):Promise<ProviderOffer[]>{
+ const label=countryPageLabel(country);
+ const missing=offers.filter(o=>o.rate===null||o.rate===0);
+ if(!missing.length)return offers;
+ const now=Date.now();
+ let html="";
+ try{
+  const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{headers:{Accept:"text/html"},signal:AbortSignal.timeout(7000)});
+  if(response.ok)html=await response.text();
+ }catch{/* Keep the authenticated guest-prices response if the public statistics page is unavailable. */}
+ if(!html)return offers;
+ const text=html.replace(/<script[\\s\\S]*?<\\/script>/gi," ").replace(/<style[\\s\\S]*?<\\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\\d+);/g,(_,n)=>String.fromCharCode(Number(n))).replace(/\\s+/g," ");
+ return offers.map(offer=>{
+  if(offer.rate!==null&&offer.rate>0)return offer;
+  const key=service+":"+country+":"+offer.operator.toLowerCase();
+  const cached=publicRateCache.get(key);
+  if(cached&&cached.expiresAt>now)return {...offer,rate:cached.rate};
+  const op=offer.operator.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function parseOfferRows(node:any):ParsedOffer[]{");
+  const countryRx=label.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function parseOfferRows(node:any):ParsedOffer[]{");
+  const match=new RegExp("\\\\b"+countryRx+"\\\\s+"+op+"\\\\s+[\\\\d,\\\\s]+?\\\\s+([0-9]+(?:[.,][0-9]+)?)\\\\s*%","i").exec(text);
+  if(!match)return offer;
+  const rate=Number(match[1].replace(",","."));
+  if(!Number.isFinite(rate)||rate<0||rate>100)return offer;
+  publicRateCache.set(key,{rate,expiresAt:now+120000});
+  return {...offer,rate};
+ });
+}
 function parseOfferRows(node:any):ParsedOffer[]{
  if(!node||typeof node!=="object"||Array.isArray(node))return [];
  return Object.entries(node).map(([operator,raw]:[string,any])=>{
@@ -239,14 +273,15 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
- offers.sort((a,b)=>{
+ const ratedOffers=await enrichOfficialRates(service,pc,offers);
+ ratedOffers.sort((a,b)=>{
   if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
   if(a.rate!==null&&b.rate===null)return -1;
   if(a.rate===null&&b.rate!==null)return 1;
   if(a.usd!==b.usd)return a.usd-b.usd;
   return b.count-a.count;
  });
- return offers;
+ return ratedOffers;
 }
 async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service);
