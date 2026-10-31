@@ -10569,9 +10569,9 @@ function toggleSparkleMoreServices(){
         setResult(targetId,"pending","Order needs review",data.message||"The supplier reports partial delivery. Sparkle will not issue a full refund while some delivery may have occurred.",reference);
         if(failed)stopSocialOrderPolling();
       }else if(data.status==="successful"){
-        const progressText=progress?.status?\` Delivery status: \${progress.status}.\${progress.remains!=null?\` Remaining: \${Number(progress.remains).toLocaleString("en-NG")}.\`:""}\${progress.start_count!=null?\` Starting count: \${Number(progress.start_count).toLocaleString("en-NG")}.\`:""}\`:"";
+        const progressText=progress?.status?` Delivery status: ${progress.status}.${progress.remains!=null?` Remaining: ${Number(progress.remains).toLocaleString("en-NG")}.`:""}${progress.start_count!=null?` Starting count: ${Number(progress.start_count).toLocaleString("en-NG")}.`:""}`:"";
         const title=completed?"Order delivered":"Order accepted";
-        setResult(targetId,"success",title,(data.message||\`Your order is accepted. Final charge: \${fmt(data.amount)}.\`)+progressText,reference);
+        setResult(targetId,"success",title,(data.message||`Your order is accepted. Final charge: ${fmt(data.amount)}.`)+progressText,reference);
         if(completed||failed)stopSocialOrderPolling();
       }else if(data.status==="refunded"||data.status==="failed"){
         setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order failed",data.message||data.error||"The supplier confirmed that the order did not complete.",reference);
