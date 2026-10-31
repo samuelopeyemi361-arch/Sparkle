@@ -9597,6 +9597,58 @@ document.addEventListener("DOMContentLoaded",()=>{
 });
 </script>
 
+<!-- Direct auth entry fallback: open the existing auth modal without waiting for route/session restoration. -->
+<script id="sparkle-auth-entry-fallback">
+(function(){
+  "use strict";
+  function showAuth(mode, updateUrl){
+    var modal=document.getElementById("authModal");
+    if(!modal) return;
+    if(updateUrl){
+      var path=mode==="signup"?"/register":"/login";
+      if(window.location.pathname!==path){
+        try{window.history.pushState({sparkleRoute:true},"",path);}catch(_){}
+      }
+    }
+    if(typeof window.openAuth==="function"){
+      window.openAuth(mode==="signup"?"signup":"login");
+    }else{
+      modal.classList.add("show");
+      var title=document.getElementById("authTitle");
+      var button=document.getElementById("authButton");
+      var signup=mode==="signup";
+      if(title)title.textContent=signup?"Create Sparkle Account":"Login to Sparkle";
+      if(button)button.textContent=signup?"Create Account":"Login";
+      ["firstNameField","lastNameField","phoneField","usernameField","referralField"].forEach(function(id){
+        var el=document.getElementById(id);if(el)el.style.display=signup?"block":"none";
+      });
+      var username=document.getElementById("username");if(username)username.required=signup;
+    }
+  }
+  document.addEventListener("click",function(event){
+    var target=event.target;
+    var link=target&&target.closest?target.closest('a[href]'):null;
+    if(!link)return;
+    var url;try{url=new URL(link.href,window.location.href);}catch(_){return;}
+    if(url.origin!==window.location.origin)return;
+    var path=url.pathname.replace(/\/+$/,"").toLowerCase();
+    if(path!=="/login"&&path!=="/register")return;
+    if(event.button!==0||event.metaKey||event.ctrlKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();
+    showAuth(path==="/register"?"signup":"login",true);
+  },true);
+  function openDirectRoute(){
+    var path=window.location.pathname.replace(/\/+$/,"").toLowerCase();
+    if(path==="/login"||path==="/register"){
+      showAuth(path==="/register"?"signup":"login",false);
+    }
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",openDirectRoute,{once:true});
+  else openDirectRoute();
+  window.addEventListener("popstate",openDirectRoute);
+})();
+</script>
+
 
 <!-- Sparkle customer support widget -->
 <div id="sparkle-continue-roll" aria-hidden="true"><div class="sparkle-roll-mark">S</div><div class="sparkle-roll-caption">Preparing your purchase summary…</div></div>
