@@ -51,6 +51,17 @@ function money(n: number): number {
 function asText(v: unknown): string {
   return typeof v === "string" ? v.trim() : String(v ?? "").trim();
 }
+const PROVIDER_SUCCESS_STATES = new Set(["FINISHED", "SUCCESS", "SUCCESSFUL", "COMPLETED"]);
+const PROVIDER_FAILURE_STATES = new Set(["CANCELED", "CANCELLED", "TIMEOUT", "FAILED", "FAILURE", "REJECTED", "BANNED", "EXPIRED"]);
+function providerSucceeded(value: unknown): boolean {
+  return PROVIDER_SUCCESS_STATES.has(asText(value).toUpperCase());
+}
+function providerFailed(value: unknown): boolean {
+  return PROVIDER_FAILURE_STATES.has(asText(value).toUpperCase());
+}
+function providerFailureAppStatus(value: unknown): "failed" | "cancelled" {
+  return ["CANCELED", "CANCELLED", "TIMEOUT", "EXPIRED"].includes(asText(value).toUpperCase()) ? "cancelled" : "failed";
+}
 function extractSms(payload: any): { code: string; text: string; hasMessage: boolean } {
   const rows = Array.isArray(payload?.sms) ? payload.sms : [];
   for (const row of rows) {
@@ -376,17 +387,32 @@ Deno.serve(async (req: Request) => {
       await finalize(ctx.admin, requestId, "unknown", { status: "unknown" }, "Supplier response timed out; outcome requires reconciliation.");
       return reply({ success: false, status: "unknown", request_id: requestId, message: "Sparkle is still confirming your number order. Do not buy again; check the order status shortly." }, 202);
     }
-    const data = placed.data || {};
+    let data = placed.data || {};
     const providerId = String(data.id ?? "");
-    const phone = String(data.phone ?? "");
+    let phone = String(data.phone ?? "");
     const accepted = placed.ok && /^\d{1,20}$/.test(providerId) && phone.length >= 5;
     if (accepted) {
       const actualUsd = Number(data.price);
       const actualProviderCost = Number.isFinite(actualUsd) && actualUsd > 0
         ? money(actualUsd * quote.fx_rate * 1.02)
         : quote.provider_cost_ngn;
-      const smsDetails = extractSms(data);
-      const providerStatus = String(data.status || "PENDING").toUpperCase();
+      let smsDetails = extractSms(data);
+      let providerStatus = String(data.status || "PENDING").toUpperCase();
+      if (!smsDetails.code && (providerStatus === "RECEIVED" || providerSucceeded(providerStatus))) {
+        try {
+          const history = await apiGet("/user/orders?category=activation&limit=100&offset=0&order=id&reverse=true");
+          const rows = Array.isArray(history.data?.Data) ? history.data.Data : [];
+          const historical = rows.find((row: Obj) => String(row?.id ?? "") === providerId);
+          if (history.ok && historical) {
+            data = historical;
+            providerStatus = String(data.status || providerStatus).toUpperCase();
+            smsDetails = extractSms(data);
+            phone = String(data.phone || phone);
+          }
+        } catch {
+          // History is a recovery path only; retain the original supplier response on error.
+        }
+      }
       const sanitized = { status: providerStatus, operator: String(data.operator || quote.provider_operator || quote.operator), price_usd: Number.isFinite(actualUsd) ? actualUsd : quote.provider_cost_usd, expires_at: data.expires || null, sms_code: smsDetails.code || null, sms_text: smsDetails.text || null };
       const update = await ctx.admin.from("sparkle_sms_otp_orders").update({
         provider_request_id: providerId,
@@ -398,35 +424,79 @@ Deno.serve(async (req: Request) => {
       if (update.error) {
         return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "Sparkle received your order but could not finish saving it. Do not buy again; contact support." }, 202);
       }
+      if (providerFailed(providerStatus)) {
+        const appStatus = providerFailureAppStatus(providerStatus);
+        const completed = await finalize(ctx.admin, requestId, appStatus, sanitized, "The number provider confirmed a terminal unsuccessful order: " + providerStatus);
+        const refunded = !completed.error && completed.data?.success === true;
+        return reply({
+          success: false,
+          status: refunded ? appStatus : "unknown",
+          refunded,
+          request_id: requestId,
+          message: refunded
+            ? "The number order was not completed. Sparkle has recorded your full wallet refund."
+            : "The supplier ended the order, but Sparkle could not confirm the refund. Do not buy again; contact support."
+        }, refunded ? 502 : 202);
+      }
       if (smsDetails.code) {
-        let finished = providerStatus === "FINISHED";
+        let finished = providerSucceeded(providerStatus);
         if (!finished) {
           try {
             const finish = await apiGet("/user/finish/" + encodeURIComponent(providerId));
-            finished = finish.ok && String(finish.data?.status || "").toUpperCase() === "FINISHED";
-            if (finished) {
-              sanitized.status = "FINISHED";
-              sanitized.sms_code = smsDetails.code;
-              sanitized.sms_text = smsDetails.text || null;
-              await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: sanitized, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+            const finishStatus = String(finish.data?.status || "").toUpperCase();
+            if (finish.ok && providerSucceeded(finishStatus)) {
+              data = finish.data;
+              providerStatus = finishStatus;
+              finished = true;
+              const finalSms = extractSms(data);
+              if (finalSms.code) smsDetails = finalSms;
             }
           } catch {
-            // Keep the wallet reservation pending until provider finish is confirmed.
+            // Do not settle the Sparkle debit until the supplier's final state is confirmed.
           }
         }
         if (!finished) {
-          return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, message: "The SMS arrived. Sparkle is confirming completion with the number service before finalizing this purchase. Do not buy again." }, 202);
+          try {
+            const refreshed = await apiGet("/user/check/" + encodeURIComponent(providerId));
+            if (refreshed.ok && refreshed.data && typeof refreshed.data === "object") {
+              data = refreshed.data;
+              providerStatus = String(data.status || providerStatus).toUpperCase();
+              const refreshedSms = extractSms(data);
+              if (refreshedSms.code) smsDetails = refreshedSms;
+              finished = providerSucceeded(providerStatus);
+            }
+          } catch {
+            // Leave the customer's debit pending when the supplier result is uncertain.
+          }
+        }
+        if (providerFailed(providerStatus)) {
+          const appStatus = providerFailureAppStatus(providerStatus);
+          const completed = await finalize(ctx.admin, requestId, appStatus, { ...sanitized, status: providerStatus }, "The number provider confirmed a terminal unsuccessful order: " + providerStatus);
+          const refunded = !completed.error && completed.data?.success === true;
+          return reply({ success: false, status: refunded ? appStatus : "unknown", refunded, request_id: requestId, message: refunded ? "The number order was not completed. Sparkle has recorded your full wallet refund." : "The supplier ended the order, but Sparkle could not confirm the refund. Do not buy again; contact support." }, refunded ? 502 : 202);
+        }
+        if (!finished || !smsDetails.code) {
+          const waiting = { ...sanitized, status: providerStatus || "RECEIVED", sms_code: smsDetails.code || null, sms_text: smsDetails.text || null, expires_at: data.expires || sanitized.expires_at || null };
+          await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: waiting, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+          return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, message: finished ? "The supplier completed the order, but Sparkle is still recovering the SMS content. Your payment is being held safely while we retrieve it." : "The SMS is available. Sparkle is waiting for the supplier's final completion confirmation. Do not buy again." }, 202);
+        }
+        sanitized.status = providerStatus;
+        sanitized.sms_code = smsDetails.code;
+        sanitized.sms_text = smsDetails.text || null;
+        const saved = await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: sanitized, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+        if (saved.error) {
+          return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The supplier completed the order, but Sparkle could not save the final SMS record. Do not buy again; contact support." }, 202);
         }
         const completed = await finalize(ctx.admin, requestId, "success", sanitized, null);
         if (completed.error || completed.data?.success !== true) {
-          return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The number service finished the order, but Sparkle could not finalize the wallet record. Do not buy again; contact support." }, 202);
+          return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The number service completed the order, but Sparkle could not finalize the wallet record. Do not buy again; contact support." }, 202);
         }
         return reply({ success: true, status: "success", request_id: requestId, order_id: providerId, phone_number: phone, sms_code: smsDetails.code, sms_text: smsDetails.text, service: quote.name, country, selling_price_ngn: quote.selling_price_ngn, currency: "NGN", message: "Number purchased and SMS received." });
       }
-      if (["CANCELED", "CANCELLED", "TIMEOUT"].includes(providerStatus)) {
-        const completed = await finalize(ctx.admin, requestId, "cancelled", sanitized, "5SIM confirmed that the activation ended without an SMS code.");
-        const refunded = !completed.error && completed.data?.success === true;
-        return reply({ success: false, status: refunded ? "cancelled" : "unknown", refunded, request_id: requestId, message: refunded ? "The number activation expired or was cancelled. Sparkle has recorded your wallet refund." : "The supplier ended the activation, but the refund needs support review. Do not buy again." }, refunded ? 502 : 202);
+      if (providerSucceeded(providerStatus)) {
+        const waiting = { ...sanitized, status: providerStatus, sms_code: null, sms_text: smsDetails.text || null };
+        await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: waiting, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+        return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, message: "The supplier marked this order completed, but its SMS content is not available yet. Sparkle is retrieving it before finalizing your purchase." }, 202);
       }
       return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, service: quote.name, country, network: "Available network", selling_price_ngn: quote.selling_price_ngn, server_id: serverId, server_label: profile.label, currency: "NGN", message: smsDetails.hasMessage ? "The SMS arrived but its code could not be read yet. Refresh the order to retrieve it." : "Number purchased. Check again shortly for the SMS code." });
     }
@@ -436,10 +506,11 @@ Deno.serve(async (req: Request) => {
     // 5SIM documents some explicit rejections (notably "no free phones") as HTTP 200.
     // Treat only known, explicit no-order responses as safe failures; ambiguous outcomes remain reserved.
     const supplierExplicitRejection =
+      providerFailed(data?.status) ||
       /\b(no free phones|no numbers available|not enough user balance|not enough rating|bad country|bad operator|no product|server offline|select country|select operator|unauthorized|invalid token|forbidden|max price exceeded)\b/i.test(providerErrorText);
-    const explicitReject = !providerId && (
+    const explicitReject = providerFailed(data?.status) || (!providerId && (
       (!placed.ok && placed.status >= 400 && placed.status < 500) || supplierExplicitRejection
-    );
+    ));
     if (explicitReject) {
       const safeProviderMessage = providerErrorText
         ? providerErrorText.slice(0, 180)
