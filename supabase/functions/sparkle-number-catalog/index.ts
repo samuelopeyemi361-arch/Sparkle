@@ -196,17 +196,15 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- // 5SIM documents guest/prices.rate as its SMS delivery success percentage.
- // Missing rate means 5SIM has no published percentage (low volume or below its reporting threshold).
- const candidates=[raw?.rate,raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
- for(let value of candidates){
-  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??value.rate??null;
-  if(value===null||value===undefined||value==="")continue;
-  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
-  const n=Number(normalized);
-  if(Number.isFinite(n)&&n>=0&&n<=100)return n;
- }
- return null;
+ // Only 5SIM's documented guest/prices.rate field is authoritative for delivery percentage.
+ // Do not substitute delivery_rate/success_rate aliases: those fields may use a different
+ // metric or reporting window and caused Sparkle to display percentages unlike 5SIM.
+ let value=raw?.rate;
+ if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
+ if(value===null||value===undefined||value==="")return null;
+ const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
+ const n=Number(normalized);
+ return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
 
 const publicRateCache=new Map<string,{rate:number;expiresAt:number}>();
@@ -329,6 +327,8 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const ratedOffers=offers;
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
   country:pc,service,rate_source:"5sim_guest_prices.rate",
+  rate_policy:"documented_rate_field_only",
+  fetched_at:new Date().toISOString(),
   offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_reported:x.rate!==null,count:x.count}))
  }));
  ratedOffers.sort((a,b)=>{
