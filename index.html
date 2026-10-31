@@ -10131,7 +10131,7 @@ function toggleSparkleMoreServices(){
     {id:"facebook",name:"Facebook",test:/facebook|\bfb\b/},
     {id:"youtube",name:"YouTube",test:/youtube|\byt\b|\bytb\b/},
     {id:"telegram",name:"Telegram",test:/telegram|\btg\b/},
-    {id:"x",name:"X",test:/twitter|x[\s_-]*\(?(?:twitter)?\)?|\btwitter\b/},
+    {id:"x",name:"X",test:/twitter|\bx\b/},
     {id:"whatsapp",name:"WhatsApp",test:/whatsapp|\bwa\b/},
     {id:"snapchat",name:"Snapchat",test:/snapchat|\bsnap\b/},
     {id:"threads",name:"Threads",test:/threads/},
@@ -10190,7 +10190,7 @@ function toggleSparkleMoreServices(){
   function socialFollowerVariant(plan){
     const name=String((plan?.displayName||"")+" "+(plan?.description||"")+" "+(plan?.category||"")).toLowerCase();
     if(/real[\s_-]*nigerian?|nigerian?|nigeria|real[\s_-]*ng\b/.test(name))return "real_nigerian";
-    if(/guarantee|guaranteed|refill[\s:_-]*(?:yes|included|available)|refill\s+available|drop[\s_-]*protection/.test(name))return "guaranteed";
+    if(/guarantee|guaranteed|refill[\s:_-]*(?:yes|included|available)|refill\s+available|refill(?:\s*[:=-]\s*\d+|\s+\d+\s*days?)|drop[\s_-]*protection/.test(name))return "guaranteed";
     return "other";
   }
   function socialPlatformName(id){return SOCIAL_PLATFORM_DEFS.find(p=>p.id===id)?.name||(id==="other"?"Other platforms":id);}
@@ -10292,9 +10292,8 @@ function toggleSparkleMoreServices(){
     const grid=document.getElementById("sparkleSocialFollowerTypes");if(!grid)return;
     const plans=socialPlansForService("followers");
     const variants=[
-      {id:"guaranteed",name:"Guaranteed",icon:"🛡️",description:"Plans labelled with guarantee or refill protection",count:plans.filter(p=>socialFollowerVariant(p)==="guaranteed").length},
-      {id:"real_nigerian",name:"Real Nigerian",icon:"🇳🇬",description:"Plans specifically labelled as Nigerian followers",count:plans.filter(p=>socialFollowerVariant(p)==="real_nigerian").length},
-      {id:"other",name:"Other follower options",icon:"👥",description:"Other live follower plans not labelled in either group",count:plans.filter(p=>socialFollowerVariant(p)==="other").length}
+      {id:"guaranteed",name:"Guaranteed",icon:"🛡️",description:"Plans explicitly labelled as guaranteed or refill-protected",count:plans.filter(p=>socialFollowerVariant(p)==="guaranteed").length},
+      {id:"real_nigerian",name:"Real Nigerian",icon:"🇳🇬",description:"Plans explicitly labelled as real Nigerian followers",count:plans.filter(p=>socialFollowerVariant(p)==="real_nigerian").length}
     ];
     grid.innerHTML=variants.map(v=>'<button type="button" class="sparkle-social-type-card" '+(v.count?'':'disabled')+' onclick="chooseSparkleSocialFollowerType(\''+v.id+'\')"><span class="sparkle-social-type-mark">'+v.icon+'</span><span class="sparkle-social-type-copy"><strong>'+v.name+'</strong><small>'+v.description+'</small></span><span class="sparkle-social-type-count">'+v.count.toLocaleString("en-NG")+' options</span><span class="sparkle-social-arrow">›</span></button>').join("");
     const brand=document.getElementById("sparkleSocialFollowerBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
