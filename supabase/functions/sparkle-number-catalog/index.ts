@@ -333,15 +333,31 @@ async function getCountriesForService(service:string):Promise<string[]>{
  return result;
 }
 
+function recommendedOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
+ // Match 5SIM's strongest in-stock delivery-rate option. Ignore the synthetic
+ // "any" route for Smart Buy so the chosen named operator is explicit and repeatable.
+ const named=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.usd<=x.providerBalanceUsd);
+ return [...named].sort((a,b)=>{
+  if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
+  if(a.rate!==null&&b.rate===null)return -1;
+  if(a.rate===null&&b.rate!==null)return 1;
+  if(a.usd!==b.usd)return a.usd-b.usd;
+  return b.count-a.count;
+ })[0];
+}
 async function getDisplayQuote(country:string,service:string,serverId:string,requestedOperator="any"){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
  const offers=await getProductOffers(country,service);
- const offer=requestedOperator==="any"
-   ?(offers.find(x=>x.operator.toLowerCase()==="any")||[...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0])
-   :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
+ const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd&&x.count>0);
+ const offer=requestedOperator==="smart"
+   ?recommendedOffer(offers)
+   :requestedOperator==="any"
+     ?(affordable.find(x=>x.operator.toLowerCase()==="any")||[...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0])
+     :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!offer||offer.count<=0)throw problem("Service unavailable. Please try again later.",409,"NO_STOCK");
+ if(offer.usd>offer.providerBalanceUsd)throw problem("This number option is temporarily unavailable because the supplier balance cannot cover it.",503,"PROVIDER_BALANCE_LOW");
  const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
  const chosen=requestedOperator==="any"?"any":offer.operator;
@@ -431,17 +447,18 @@ Deno.serve(async (req:Request)=>{
   if(action==="operators"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
    const offers=await getProductOffers(country,service);
-   const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd);
+   const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd&&x.count>0);
+   const recommended=recommendedOffer(offers);
    const automatic=affordable.find(x=>x.operator.toLowerCase()==="any")||
      [...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0]||
      [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
-   const automaticAvailable=automatic.count>0;
-   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,in_stock:automatic.count>0,available:automaticAvailable,unavailable_reason:automaticAvailable?null:"Supplier USD balance is too low to fulfil this option"};
+   const automaticAvailable=!!automatic&&automatic.count>0&&automatic.usd<=automatic.providerBalanceUsd;
+   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,in_stock:automatic.count>0,available:automaticAvailable,recommended:false,unavailable_reason:automaticAvailable?null:(automatic.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
-     const available=x.count>0;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,in_stock:x.count>0,available,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+     const available=x.count>0&&x.usd<=x.providerBalanceUsd;
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,in_stock:x.count>0,available,recommended:!!recommended&&x.operator===recommended.operator,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
-   return reply({success:true,data:{country,service,currency:"NGN",operators:[automaticRow,...specific]}});
+   return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,recommended_rate:recommended?.rate??null,operators:[automaticRow,...specific]}});
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
