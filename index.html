@@ -6378,7 +6378,7 @@ const more=document.getElementById("numberServiceShowAll");if(more){more.style.d
 }
 function toggleNumberServices(){numberServicesExpanded=!numberServicesExpanded;const q=(document.getElementById("numberAppSearch")?.value||"").toLowerCase().trim();renderNumberApps(numberServicesCache.filter(x=>x.name.toLowerCase().includes(q)||x.code.toLowerCase().includes(q)));}
 
-function chooseNumberService(code){
+function chooseNumberService(code){numberOperatorManuallySelected=false;
  const select=document.getElementById("numberAppSelect"),service=numberServicesCache.find(x=>x.code===code);if(!select||!service||numberPurchaseInProgress)return;
  select.value=code;numberServicesExpanded=false;const search=document.getElementById("numberAppSearch");if(search)search.value="";
  service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=false;service.availableCountries=[];
@@ -6400,12 +6400,13 @@ async function continueWithSelectedNumberService(){
   await loadCountriesForNumberService(serviceCode);
  }finally{hideSparkleVirtualNumberLoader();}
 }
+let numberOperatorManuallySelected=false;
 function renderNumberOperators(items,preferred=""){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;const rows=Array.isArray(items)?items:[];select.innerHTML='<option value="">Choose an operator</option>';
  const isAvailable=item=>item.available!==false&&item.in_stock!==false&&Number(item.stock)>0&&Number.isFinite(Number(item.selling_price_ngn))&&Number(item.selling_price_ngn)>0;
  rows.forEach(item=>{const o=document.createElement("option");o.value=String(item.operator||"");o.textContent=String(item.operator_label||item.operator||"Operator");o.disabled=!isAvailable(item);select.appendChild(o);});
  const supplierRecommended=rows.find(x=>x.recommended===true&&isAvailable(x));
- const chosen=preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:
+ const chosen=numberOperatorManuallySelected&&preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:
   (supplierRecommended?String(supplierRecommended.operator):(()=>{
    // Compatibility fallback for older catalogue responses without a supplier recommendation.
    const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
@@ -6417,7 +6418,7 @@ function renderNumberOperators(items,preferred=""){
  const list=document.getElementById("numberOperatorCards");if(!list)return;if(!rows.length){list.innerHTML='<div class="data-empty">No operators are available for this selection right now.</div>';return;}
  const money=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Price unavailable";};
  const selectable=rows.filter(isAvailable);
- const readRate=item=>{if(item.rate===null||item.rate===undefined||String(item.rate).trim()==="")return null;const n=Number(item.rate);return Number.isFinite(n)&&n>=0&&n<=100?n:null;};
+ const readRate=item=>{if(item.rate===null||item.rate===undefined||String(item.rate).trim()==="")return null;const n=Number(String(item.rate).trim().replace(/%/g,"").replace(",", "."));return Number.isFinite(n)&&n>=0&&n<=100?n:null;};
  // 5SIM's published rate is the sole recommendation signal. Automatic routing is not
  // a named operator, so it is not compared against individual operator delivery rates.
  const rated=selectable.filter(x=>String(x.operator||"").toLowerCase()!=="any").map(item=>({item,rate:readRate(item)})).filter(x=>x.rate!==null);
@@ -6433,7 +6434,7 @@ function renderNumberOperators(items,preferred=""){
   return '<button type="button" class="sparkle-number-operator-card '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" '+(disabled?'disabled aria-disabled="true"':"")+' onclick="chooseNumberOperator(\''+escapeHtml(code)+'\')"><span class="sparkle-number-operator-left"><span class="sparkle-number-operator-mark" aria-hidden="true">'+escapeHtml(mark)+'</span><span class="sparkle-number-operator-copy"><strong>'+escapeHtml(label)+'</strong><span class="sparkle-number-operator-meta">'+escapeHtml(meta)+'</span></span></span><span class="sparkle-number-operator-right"><span class="sparkle-number-operator-tags">'+tags+'</span><strong class="sparkle-number-operator-price">'+escapeHtml(money(item.selling_price_ngn))+'</strong><span class="sparkle-number-operator-status">'+(disabled?"Currently unavailable":"Select to review")+'</span></span></button>';
  }).join("");
 }
-async function chooseNumberOperator(operator){if(numberPurchaseInProgress)return;const row=numberOperatorsCache.find(x=>String(x.operator)===String(operator));if(!row)return;const select=document.getElementById("numberOperatorSelect");if(select)select.value=String(operator);renderNumberOperators(numberOperatorsCache,String(operator));await checkNumberPrice();}
+async function chooseNumberOperator(operator){if(numberPurchaseInProgress)return;numberOperatorManuallySelected=true;const row=numberOperatorsCache.find(x=>String(x.operator)===String(operator));if(!row)return;const select=document.getElementById("numberOperatorSelect");if(select)select.value=String(operator);renderNumberOperators(numberOperatorsCache,String(operator));await checkNumberPrice();}
 
 async function loadNumberOperators(preferred){
  const serviceCode=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us",select=document.getElementById("numberOperatorSelect"),status=document.getElementById("numberOperatorStatus"),cards=document.getElementById("numberOperatorCards"),result=document.getElementById("numberPriceResult"),buy=document.getElementById("numberBuyButton"),seq=++numberOperatorsLoadSequence;
@@ -6719,14 +6720,14 @@ async function copyNumberReviewLink(){
  try{await navigator.clipboard.writeText(url);alert("Shareable Sparkle Virtual Number link copied.");}
  catch(_){window.prompt("Copy this Sparkle link",url);}
 }
-async function openNumberCategoryRoute(){
+async function openNumberCategoryRoute(){numberOperatorManuallySelected=false;
  const params=new URLSearchParams(window.location.search),service=params.get("service"),country=params.get("country")||"us",operator=params.get("operator");
  await loadNumberCountries();
  const cs=document.getElementById("numberCountrySelect");if(cs&&Array.from(cs.options).some(o=>o.value===country))cs.value=country;
  if(service){
    await loadNumberServices();
    const ss=document.getElementById("numberAppSelect");if(ss&&Array.from(ss.options).some(o=>o.value===service)){ss.value=service;renderNumberApps(numberServicesCache);updateNumberSelectionStep("country");}
-   if(operator&&ss?.value===service){await loadNumberOperators(operator);if(numberCurrentQuote)renderNumberOperators(numberOperatorsCache,operator);}
+   if(operator&&ss?.value===service){numberOperatorManuallySelected=true;await loadNumberOperators(operator);if(numberCurrentQuote)renderNumberOperators(numberOperatorsCache,operator);}
  }
 }
 function shareVirtualNumberLink(){
@@ -6737,7 +6738,7 @@ function shareVirtualNumberLink(){
  if(operator)url.searchParams.set("operator",operator);
  return url.toString();
 }
-async function openNumberReviewRoute(){
+async function openNumberReviewRoute(){numberOperatorManuallySelected=true;
  const params=new URLSearchParams(window.location.search),service=params.get("service"),country=params.get("country")||"us",operator=params.get("operator");
  if(!service||!operator){showDashPage("smsotpPage",null);await loadNumberCountries();return;}
  showDashPage("smsotpPage",null);
