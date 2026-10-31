@@ -251,16 +251,6 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
   return {...offer,rate};
  });
 }
-function parseOfferRows(node:any):ParsedOffer[]{");
-  const countryRx=label.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function parseOfferRows(node:any):ParsedOffer[]{");
-  const match=new RegExp("\\\\b"+countryRx+"\\\\s+"+op+"\\\\s+[\\\\d,\\\\s]+?\\\\s+([0-9]+(?:[.,][0-9]+)?)\\\\s*%","i").exec(text);
-  if(!match)return offer;
-  const rate=Number(match[1].replace(",","."));
-  if(!Number.isFinite(rate)||rate<0||rate>100)return offer;
-  publicRateCache.set(key,{rate,expiresAt:now+120000});
-  return {...offer,rate};
- });
-}
 function parseOfferRows(node:any):ParsedOffer[]{
  if(!node||typeof node!=="object"||Array.isArray(node))return [];
  return Object.entries(node).map(([operator,raw]:[string,any])=>{
