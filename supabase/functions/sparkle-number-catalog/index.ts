@@ -196,9 +196,9 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- // Only accept fields explicitly identified as delivery/success rate.
- // The generic 5SIM API "rate" field is not the same as the public SMS delivery percentage.
- const candidates=[raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
+ // 5SIM documents guest/prices.rate as its SMS delivery success percentage.
+ // Missing rate means 5SIM has no published percentage (low volume or below its reporting threshold).
+ const candidates=[raw?.rate,raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
  for(let value of candidates){
   if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??value.rate??null;
   if(value===null||value===undefined||value==="")continue;
@@ -324,10 +324,12 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
  const rawRates=new Map(offers.map(x=>[x.operator,x.rate]));
- const ratedOffers=await enrichOfficialRates(service,pc,offers);
+ // Read delivery rates directly from the live 5SIM guest/prices response.
+ // Do not scrape the marketing page: it only highlights selected rows and may be stale/incomplete.
+ const ratedOffers=offers;
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,
-  offers:ratedOffers.map(x=>({operator:x.operator,api_rate:rawRates.get(x.operator)??null,effective_rate:x.rate,count:x.count}))
+  country:pc,service,rate_source:"5sim_guest_prices.rate",
+  offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_reported:x.rate!==null,count:x.count}))
  }));
  ratedOffers.sort((a,b)=>{
   const ar=a.rate??-1,br=b.rate??-1;
