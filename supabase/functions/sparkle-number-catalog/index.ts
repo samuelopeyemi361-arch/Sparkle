@@ -418,9 +418,9 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
  const chosen=requestedOperator==="any"?"any":offer.operator;
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
-  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
+  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),recommendation_label:requestedOperator==="smart"?"Recommended · Best rate":null,
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,markup_percent:profile.markup,
+  stock:offer.count,markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
@@ -442,7 +442,7 @@ async function getQuote(country:string,service:string,serverId:string,requestedO
 function safeServiceQuote(q:any){
  return {code:q.code,name:q.name,country:q.country,network:q.network||"Available network",
   operator:q.operator,operator_label:q.operator_label,selling_price_ngn:q.selling_price_ngn,
-  server_id:"server1",stock:q.stock,rate:q.rate};
+  server_id:"server1",stock:q.stock};
 }
 
 function publicError(error: any, fallback = "The number service is temporarily unavailable. Please try again shortly.") {
@@ -509,12 +509,12 @@ Deno.serve(async (req:Request)=>{
      [...affordable].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0]||
      [...offers].sort((a,b)=>a.usd-b.usd||b.count-a.count)[0];
    const automaticAvailable=!!automatic&&automatic.count>0&&automatic.usd<=automatic.providerBalanceUsd;
-   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,rate:automatic.rate,in_stock:automatic.count>0,available:automaticAvailable,recommended:false,unavailable_reason:automaticAvailable?null:(automatic.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+   const automaticRow={operator:"any",operator_label:"Automatic routing",selling_price_ngn:money(automatic.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:automatic.count,in_stock:automatic.count>0,available:automaticAvailable,recommended:false,unavailable_reason:automaticAvailable?null:(automatic.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
      const available=x.count>0&&x.usd<=x.providerBalanceUsd;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,rate:x.rate,in_stock:x.count>0,available,recommended:!!recommended&&x.operator===recommended.operator,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,recommended:!!recommended&&x.operator===recommended.operator,recommendation_label:!!recommended&&x.operator===recommended.operator?"Recommended · Best rate":null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
-   return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,recommended_rate:recommended?.rate??null,operators:[automaticRow,...specific]}});
+   return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,operators:[automaticRow,...specific]}});
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
