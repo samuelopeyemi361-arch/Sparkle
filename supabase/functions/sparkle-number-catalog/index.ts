@@ -226,6 +226,15 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  if(productNode&&typeof productNode==="object"&&productNode[pc]&&typeof productNode[pc]==="object")productNode=productNode[pc];
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
  const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
+ // Safe diagnostic: capture only supplier offer identifiers, rate values and stock.
+ // Never log API credentials, customer data, phone numbers or wallet details.
+ console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
+  country:pc,service,
+  offers:Object.entries(productNode).map(([operator,raw]:[string,any])=>({
+   operator,rate:raw?.rate??null,rateType:typeof raw?.rate,
+   delivery_rate:raw?.delivery_rate??null,count:raw?.count??null
+  }))
+ }));
  if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
