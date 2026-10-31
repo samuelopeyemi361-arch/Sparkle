@@ -6404,16 +6404,16 @@ function renderNumberOperators(items,preferred=""){
  const select=document.getElementById("numberOperatorSelect");if(!select)return;const rows=Array.isArray(items)?items:[];select.innerHTML='<option value="">Choose an operator</option>';
  const isAvailable=item=>item.available!==false&&item.in_stock!==false&&Number(item.stock)>0&&Number.isFinite(Number(item.selling_price_ngn))&&Number(item.selling_price_ngn)>0;
  rows.forEach(item=>{const o=document.createElement("option");o.value=String(item.operator||"");o.textContent=String(item.operator_label||item.operator||"Operator");o.disabled=!isAvailable(item);select.appendChild(o);});
- const chosen=preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:(()=>{
-  // Preselect the highest supplier-published delivery rate when the customer has
-  // not already chosen an operator. Equal rates keep the lower-priced option first
-  // because the catalogue is already sorted by rate, then supplier price.
-  const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
-   .map(item=>({item,rate:(item.rate===null||item.rate===undefined||String(item.rate).trim()===""?null:Number(item.rate))}))
-   .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>0&&x.rate<=100)
-   .sort((a,b)=>b.rate-a.rate||Number(a.item.selling_price_ngn)-Number(b.item.selling_price_ngn));
-  return ranked.length?String(ranked[0].item.operator):"";
-})();select.value=chosen;
+ const supplierRecommended=rows.find(x=>x.recommended===true&&isAvailable(x));
+ const chosen=preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:
+  (supplierRecommended?String(supplierRecommended.operator):(()=>{
+   // Compatibility fallback for older catalogue responses without a supplier recommendation.
+   const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
+    .map(item=>({item,rate:(item.rate===null||item.rate===undefined||String(item.rate).trim()===""?null:Number(item.rate))}))
+    .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>0&&x.rate<=100)
+    .sort((a,b)=>b.rate-a.rate||Number(a.item.selling_price_ngn)-Number(b.item.selling_price_ngn));
+   return ranked.length?String(ranked[0].item.operator):"";
+  })());select.value=chosen;
  const list=document.getElementById("numberOperatorCards");if(!list)return;if(!rows.length){list.innerHTML='<div class="data-empty">No operators are available for this selection right now.</div>';return;}
  const money=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Price unavailable";};
  const selectable=rows.filter(isAvailable);
@@ -6426,7 +6426,8 @@ function renderNumberOperators(items,preferred=""){
  list.innerHTML=rows.map(item=>{
   const code=String(item.operator||""),stock=Number(item.stock||0),available=isAvailable(item),selected=code===chosen&&available,rate=readRate(item),label=String(item.operator_label||item.operator||"Operator"),mark=label.toLowerCase().includes("automatic")?"↗":label.trim().charAt(0).toUpperCase()||"•";
   const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · "+rate.toFixed(1)+"% delivery":" · Delivery rate unavailable");
-  const isBest=available&&bestRateItem===item;
+  const hasSupplierRecommendation=rows.some(x=>x.recommended===true);
+  const isBest=available&&(hasSupplierRecommendation?item.recommended===true:bestRateItem===item);
   const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best rate · Recommended</span>':"";
   const disabled=!available;
   return '<button type="button" class="sparkle-number-operator-card '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" '+(disabled?'disabled aria-disabled="true"':"")+' onclick="chooseNumberOperator(\''+escapeHtml(code)+'\')"><span class="sparkle-number-operator-left"><span class="sparkle-number-operator-mark" aria-hidden="true">'+escapeHtml(mark)+'</span><span class="sparkle-number-operator-copy"><strong>'+escapeHtml(label)+'</strong><span class="sparkle-number-operator-meta">'+escapeHtml(meta)+'</span></span></span><span class="sparkle-number-operator-right"><span class="sparkle-number-operator-tags">'+tags+'</span><strong class="sparkle-number-operator-price">'+escapeHtml(money(item.selling_price_ngn))+'</strong><span class="sparkle-number-operator-status">'+(disabled?"Currently unavailable":"Select to review")+'</span></span></button>';
