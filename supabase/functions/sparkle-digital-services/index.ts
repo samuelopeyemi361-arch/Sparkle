@@ -30,6 +30,40 @@ function statusOf(d: any) {
 }
 function isSuccess(s: string) { return ["successful", "success", "completed", "complete"].includes(s); }
 function isFailure(s: string) { return ["failed", "failure", "error", "rejected", "cancelled", "canceled"].includes(s); }
+function socialOrderOf(d: any) {
+  return d?.order ?? d?.content?.order ?? d?.data?.order ?? d?.data?.content?.order ?? d?.result?.order ?? null;
+}
+function socialOrderStatus(order: any) {
+  return str(order?.status).toLowerCase().replace(/[\\s-]+/g, "_");
+}
+function socialOrderProgress(order: any, quantity = 0) {
+  if (!order || typeof order !== "object") return null;
+  const numeric = (value: unknown) => {
+    if (value === null || value === undefined || String(value).trim() === "") return null;
+    const n = Number(value);
+    return Number.isFinite(n) ? n : null;
+  };
+  return {
+    status: str(order.status) || "Processing",
+    start_count: numeric(order.start_count ?? order.startCount),
+    remains: numeric(order.remains),
+    quantity: Number.isSafeInteger(quantity) && quantity > 0 ? quantity : null
+  };
+}
+function socialPaymentSuccess(status: string) {
+  return isSuccess(status) || ["transaction_successful", "transaction_success"].includes(status);
+}
+function socialPaymentFailure(status: string) {
+  return isFailure(status) || ["transaction_failed", "transaction_failure"].includes(status);
+}
+function socialOrderHasNoDelivery(order: any, quantity: number) {
+  const status = socialOrderStatus(order);
+  if (["failed", "failure"].includes(status)) return true;
+  const remains = Number(order?.remains);
+  return ["cancelled", "canceled"].includes(status)
+    && Number.isSafeInteger(quantity) && quantity > 0
+    && Number.isFinite(remains) && remains >= quantity;
+}
 function numericPrice(v: unknown): number {
   if (typeof v === "number") return v;
   if (v === null || v === undefined || String(v).trim() === "") return NaN;
@@ -161,14 +195,10 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
   if (!p || typeof p !== "object") return null;
   const value = planCode(p), name = planName(p);
   const explicitApiRate = planRate(p, defaultDiscount);
-  // GSubz's live legacy catalogue omits api_price and discount. Its documented
-  // "price" field is the current published plan price in NGN. Use that as a
-  // conservative fallback and apply Sparkle's owner-approved 25% markup.
-  // Never invent a price: only accept a positive live price from this response.
-  const listedRate = numericPrice(p?.price ?? p?.normal_price ?? p?.normalPrice ?? p?.list_price ?? p?.listPrice);
-  const useListedFallback = !(Number.isFinite(explicitApiRate) && explicitApiRate > 0)
-    && Number.isFinite(listedRate) && listedRate > 0;
-  const rate = Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? explicitApiRate : (useListedFallback ? listedRate : NaN);
+  // Current catalogue exposes api_price separately from the normal display price.
+  // Only use the API price (or an explicit supplier discount derived by planRate).
+  // Never treat the public normal price as Sparkle's supplier cost.
+  const rate = Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? explicitApiRate : NaN;
   if (!value || !name) return null;
   const minRaw = Number(p?.min ?? p?.minimum ?? p?.min_quantity ?? p?.minQuantity ?? p?.min_order ?? p?.minOrder ?? 1);
   const maxRaw = Number(p?.max ?? p?.maximum ?? p?.max_quantity ?? p?.maxQuantity ?? p?.max_order ?? p?.maxOrder ?? 1000000);
@@ -176,7 +206,7 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
     value, displayName: name,
     apiPricePerThousand: Number.isFinite(rate) && rate > 0 ? rate : null,
     priceAvailable: Number.isFinite(rate) && rate > 0,
-    priceSource: useListedFallback ? "gsubz_live_list_price" : (Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? "gsubz_api_cost" : null),
+    priceSource: Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? "verified_api_price" : null,
     min: Number.isSafeInteger(minRaw) && minRaw > 0 ? minRaw : 1,
     max: Number.isSafeInteger(maxRaw) && maxRaw >= 1 ? Math.min(maxRaw, 1000000) : 1000000,
     category: str(p?.category ?? p?.platform ?? p?.service ?? p?.network ?? ""),
@@ -363,30 +393,107 @@ Deno.serve(async (req: Request) => {
       const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
       const { data: tx, error: txError } = await admin.from("wallet_transactions").select("user_id,reference,amount,service,status,metadata").eq("reference", reference).eq("user_id", user.id).maybeSingle();
       if (txError || !tx) return reply({ success: false, error: "Order not found in your Sparkle account." }, 404);
-      if (["successful", "refunded", "failed"].includes(str(tx.status).toLowerCase())) return reply({ success: true, status: tx.status, reference, amount: Number(tx.amount), message: tx.status === "successful" ? "Your order is complete." : "This order has already been resolved." });
+      const meta: any = tx.metadata || {};
+      const isSocial = meta.digitalKind === "social" && tx.service === "Social Media Market";
+      if (["refunded", "failed"].includes(str(tx.status).toLowerCase())) return reply({ success: true, status: tx.status, reference, amount: Number(tx.amount), message: "This order has already been resolved." });
+      if (str(tx.status).toLowerCase() === "successful" && !isSocial) return reply({ success: true, status: tx.status, reference, amount: Number(tx.amount), message: "Your order is complete." });
       const gsubzKey = Deno.env.get("GSUBZ_API_KEY");
-      if (!gsubzKey) return reply({ success: false, status: "pending", reference, error: "The supplier connection is not configured. Your funds remain reserved; contact Sparkle support before retrying." }, 503);
-      const providerRequestId = str((tx.metadata as any)?.providerRequestID);
-      if (!providerRequestId) return reply({ success: false, status: "pending", reference, error: "Order reference is saved but the supplier reference is missing. Do not reorder yet." }, 202);
-      const checked = await providerPost("/api/verify/", gsubzKey, { api: gsubzKey, requestID: providerRequestId });
+      if (!gsubzKey) return reply({ success: false, status: "pending", reference, error: "Order status is temporarily unavailable. Your Sparkle order record remains safe; please check again shortly." }, 503);
+      const providerRequestId = str(meta.providerRequestID);
+      if (!providerRequestId) return reply({ success: false, status: "pending", reference, error: "The order reference is saved but its status reference is missing. Please contact Sparkle support before placing another order." }, 202);
+      const transactionID = meta.provider_response?.transactionID ?? meta.provider_response?.content?.transactionID ?? meta.provider_transaction_id ?? null;
+      const verifyFields: Record<string, string> = { api: gsubzKey, requestID: providerRequestId };
+      if (isSocial && transactionID != null && String(transactionID).trim()) verifyFields.transactionID = String(transactionID);
+      const checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
       const provider = checked.data, pStatus = statusOf(provider);
-      if (checked.response.ok && isSuccess(pStatus)) {
-        const meta: any = tx.metadata || {}, which = meta.digitalKind === "social" ? "social" : "sms";
-        if (which === "sms" && provider?.amountPaid == null && provider?.amount == null) return reply({ success: false, status: "pending", reference, error: "GSubz confirmed the SMS status but did not return the final amount paid. Sparkle is keeping the reservation safe until the exact charge can be reconciled. Do not resend this campaign." }, 202);
+
+      let order: any = null, orderStatus = "", progress: any = null;
+      if (isSocial) {
+        order = socialOrderOf(provider);
+        orderStatus = socialOrderStatus(order);
+        progress = socialOrderProgress(order, Number(meta.quantity || 0));
+
+        if (order && socialOrderHasNoDelivery(order, Number(meta.quantity || 0))) {
+          const refund = await admin.rpc("sparkle_social_refund_order", {
+            p_user_id: user.id,
+            p_reference: reference,
+            p_provider_order: order,
+            p_reason: "Supplier status confirmed that the social order was not delivered"
+          });
+          if (refund.error || refund.data?.success !== true) {
+            const partial = refund.data?.status === "partial_or_unconfirmed";
+            return reply({ success: false, status: partial ? "partial" : "pending", reference,
+              orderProgress: progress,
+              error: refund.data?.error || "The supplier confirmed an issue, but Sparkle could not safely complete the refund. Support reconciliation is required." }, 202);
+          }
+          return reply({ success: true, status: "refunded", reference, amount: Number(refund.data.amount || tx.amount),
+            message: "The supplier confirmed that this order was not delivered. The full Sparkle wallet refund has been processed." });
+        }
+
+        if (order) {
+          const updatedMetadata = {
+            ...meta,
+            provider_verification: provider,
+            socialOrderProgress: progress,
+            lastSocialStatusCheckAt: new Date().toISOString()
+          };
+          const saved = await admin.from("wallet_transactions").update({ metadata: updatedMetadata })
+            .eq("reference", reference).eq("user_id", user.id).eq("service", "Social Media Market");
+          if (saved.error) console.error("[sparkle-social-status-save]", saved.error.message);
+        }
+
+        if (order && ["partial", "partially_completed", "partially_complete"].includes(orderStatus)) {
+          return reply({ success: false, status: "partial", reference, amount: Number(tx.amount), orderProgress: progress,
+            message: "The supplier reports partial delivery. Sparkle has not issued a full refund because part of the order may have been delivered. This order needs review." }, 202);
+        }
+
+        if (str(tx.status).toLowerCase() === "successful") {
+          const deliveryStatus = progress?.status || "Progress unavailable";
+          return reply({ success: true, status: "successful", reference, amount: Number(tx.amount), orderProgress: progress,
+            deliveryStatus,
+            message: progress
+              ? `Order accepted. Delivery status: ${progress.status}.${progress.remains != null ? ` Remaining: ${Number(progress.remains).toLocaleString("en-NG")}.` : ""}${progress.start_count != null ? ` Starting count: ${Number(progress.start_count).toLocaleString("en-NG")}.` : ""}`
+              : "The order payment was accepted. Delivery progress is not available right now; check again shortly." });
+        }
+      }
+
+      const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
+      const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
+      if (checked.response.ok && providerSuccess) {
+        const which = meta.digitalKind === "social" ? "social" : "sms";
+        if (which === "sms" && provider?.amountPaid == null && provider?.amount == null) return reply({ success: false, status: "pending", reference, error: "The supplier confirmed the SMS status but did not return the final amount paid. Sparkle is keeping the reservation safe until the exact charge can be reconciled. Do not resend this campaign." }, 202);
         const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
         const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), Number(meta.reservedAmount || tx.amount), which);
         const result = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "success", p_reference: reference, p_amount: finalAmount, p_service: tx.service,
-          p_metadata: { status_checked: true, provider_verification: provider, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : null, final_customer_charge: finalAmount } });
+          p_metadata: { status_checked: true, provider_verification: provider, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : null,
+            final_customer_charge: finalAmount, ...(isSocial && progress ? { socialOrderProgress: progress } : {}) } });
         if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Supplier reports completion, but wallet settlement needs reconciliation. Do not retry." }, 202);
-        return reply({ success: true, status: "successful", reference, amount: finalAmount, message: "Supplier confirmed the order. Your final Sparkle charge has been settled." });
+        if (isSocial && progress && ["partial", "partially_completed", "partially_complete"].includes(orderStatus)) {
+          return reply({ success: true, status: "partial", reference, amount: finalAmount, orderProgress: progress,
+            message: "The supplier reports partial delivery. Sparkle has recorded the supplier update; this order needs review." });
+        }
+        return reply({ success: true, status: "successful", reference, amount: finalAmount,
+          ...(isSocial && progress ? { orderProgress: progress, deliveryStatus: progress.status } : {}),
+          message: isSocial ? "The order has been accepted. Sparkle has updated its delivery status." : "Supplier confirmed the order. Your final Sparkle charge has been settled." });
       }
-      if (isFailure(pStatus) || (Number(provider?.code) >= 400 && pStatus !== "" && !isSuccess(pStatus))) {
+      if (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess)) {
+        if (isSocial) {
+          const refund = await admin.rpc("sparkle_social_refund_order", {
+            p_user_id: user.id, p_reference: reference,
+            p_provider_order: order || { status: "failed" },
+            p_reason: "Supplier transaction verification confirmed failure"
+          });
+          if (refund.error || refund.data?.success !== true) return reply({ success: false, status: "pending", reference, error: refund.data?.error || "The supplier confirmed a failure, but Sparkle is reconciling the wallet refund. Do not retry yet." }, 202);
+          return reply({ success: true, status: "refunded", reference, amount: Number(refund.data.amount || tx.amount),
+            message: "The supplier confirmed failure. Your full Sparkle wallet refund has been processed." });
+        }
         const result = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "failure", p_reference: reference, p_amount: Number(tx.amount), p_service: tx.service,
           p_metadata: { status_checked: true, provider_verification: provider, reason: "Provider confirmed failure" } });
         if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Provider reports failure, but the refund needs reconciliation. Do not reorder yet." }, 202);
         return reply({ success: false, status: "refunded", reference, message: "The provider confirmed failure. Your Sparkle wallet has been refunded." });
       }
-      await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "pending", p_reference: reference, p_amount: Number(tx.amount), p_service: tx.service, p_metadata: { status_checked: true, provider_verification: provider } });
+      await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "pending", p_reference: reference, p_amount: Number(tx.amount), p_service: tx.service,
+        p_metadata: { status_checked: true, provider_verification: provider } });
       return reply({ success: false, status: "pending", reference, error: "The supplier still has not confirmed the order. Funds remain reserved; check again shortly. Do not place a duplicate order." }, 202);
     }
     if (!["send_bulk_sms", "buy_social"].includes(action)) return reply({ success: false, error: "Unsupported digital-service action." }, 400);
@@ -470,19 +577,29 @@ Deno.serve(async (req: Request) => {
       }
     }
     const supplierStatus = statusOf(providerResult), smsSent = action === "send_bulk_sms" ? Number(providerResult?.sent ?? providerResult?.recipients ?? 0) : 1;
-    const isDelivered = httpOk && isSuccess(supplierStatus) && smsSent > 0;
+    const socialOrder = action === "buy_social" ? socialOrderOf(providerResult) : null;
+    const socialProgress = action === "buy_social" ? socialOrderProgress(socialOrder, Number(metadata.quantity || 0)) : null;
+    const providerAccepted = action === "buy_social" ? socialPaymentSuccess(supplierStatus) : isSuccess(supplierStatus);
+    const isDelivered = httpOk && providerAccepted && smsSent > 0;
     if (isDelivered) {
       const actualCost = Number(providerResult?.amountPaid ?? providerResult?.amount ?? supplierEstimate);
       const finalAmount = retailFromSupplier(actualCost, quotedRetail, maximumReserve, action === "buy_social" ? "social" : "sms");
       const final = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "success", p_reference: providerRequestId, p_amount: finalAmount, p_service: service,
-        p_metadata: { provider_response: providerResult, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : supplierEstimate, final_customer_charge: finalAmount, stage: "completed" } });
-      if (final.error || final.data?.success !== true) return reply({ success: false, status: "pending", reference: providerRequestId, error: "The supplier completed this order, but wallet settlement needs reconciliation. Do not retry." }, 202);
+        p_metadata: { provider_response: providerResult, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : supplierEstimate, final_customer_charge: finalAmount, stage: "completed",
+          ...(action === "buy_social" ? { provider_transaction_id: providerResult?.transactionID ?? providerResult?.content?.transactionID ?? null,
+            ...(socialProgress ? { socialOrderProgress: socialProgress } : {}) } : {}) } });
+      if (final.error || final.data?.success !== true) return reply({ success: false, status: "pending", reference: providerRequestId, error: "Sparkle received the supplier response, but wallet settlement needs reconciliation. Do not retry." }, 202);
       return reply({ success: true, status: "successful", reference: providerRequestId, service, amount: finalAmount, reservedAmount: maximumReserve, refundDifference: money2(maximumReserve - finalAmount),
-        provider: { sent: providerResult?.sent, failed: providerResult?.failed, skipped: providerResult?.skipped, recipients: providerResult?.recipients, pages: providerResult?.pages, api_response: providerResult?.api_response, transactionID: providerResult?.transactionID, requestID: providerResult?.requestID },
-        message: action === "send_bulk_sms" ? "Bulk SMS was processed. Any unused reservation has been returned to your Sparkle wallet." : "Social-media order was placed. Any unused reservation has been returned to your Sparkle wallet." });
+        ...(action === "buy_social" ? { orderProgress: socialProgress, deliveryStatus: socialProgress?.status || "Processing" } : {}),
+        provider: action === "send_bulk_sms" ? { sent: providerResult?.sent, failed: providerResult?.failed, skipped: providerResult?.skipped, recipients: providerResult?.recipients, pages: providerResult?.pages, api_response: providerResult?.api_response, transactionID: providerResult?.transactionID, requestID: providerResult?.requestID } : undefined,
+        message: action === "send_bulk_sms" ? "Bulk SMS was processed. Any unused reservation has been returned to your Sparkle wallet."
+          : "Your social-media order has been accepted. Delivery progress can be checked from the order status panel." });
     }
-    if (isFailure(supplierStatus) || (!httpOk && Number(providerResult?.code) >= 400 && supplierStatus !== "")) {
-      const fail = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "failure", p_reference: providerRequestId, p_amount: maximumReserve, p_service: service, p_metadata: { provider_response: providerResult, stage: "refunded" } });
+    const providerRejected = action === "buy_social" ? socialPaymentFailure(supplierStatus) : isFailure(supplierStatus);
+    if (providerRejected || (!httpOk && Number(providerResult?.code) >= 400 && supplierStatus !== "")) {
+      const fail = action === "buy_social"
+        ? await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "failure", p_reference: providerRequestId, p_amount: maximumReserve, p_service: service, p_metadata: { provider_response: providerResult, stage: "refunded" } })
+        : await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "failure", p_reference: providerRequestId, p_amount: maximumReserve, p_service: service, p_metadata: { provider_response: providerResult, stage: "refunded" } });
       if (fail.error || fail.data?.success !== true) return reply({ success: false, status: "pending", reference: providerRequestId, error: "The provider rejected the order, but Sparkle is reconciling your refund. Do not retry yet." }, 202);
       return reply({ success: false, status: "refunded", reference: providerRequestId, message: str(providerResult?.api_response ?? providerResult?.description ?? providerResult?.message) || "The provider did not accept this order. Your Sparkle wallet has been refunded.", provider: { code: providerResult?.code, description: providerResult?.description, issues: providerResult?.issues } });
     }
