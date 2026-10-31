@@ -9239,6 +9239,16 @@ document.getElementById("homepage").classList.remove("hidden");
 let sparkleInitialAuthResolved = false;
 let sparkleResolveInitialAuth;
 const sparkleInitialAuthPromise = new Promise(resolve => { sparkleResolveInitialAuth = resolve; });
+// Supabase normally emits INITIAL_SESSION immediately after restoring local auth.
+// If storage/network restoration stalls, public auth routes must still remain usable.
+// Resolve the route gate after a short bounded wait; a later auth event is still
+// processed normally by the listener below and can restore an existing session.
+const sparkleInitialAuthFallbackTimer = window.setTimeout(() => {
+  if (sparkleInitialAuthResolved) return;
+  sparkleInitialAuthResolved = true;
+  console.warn("Sparkle initial session restore timed out; allowing public auth routes to open.");
+  sparkleResolveInitialAuth(null);
+}, 3000);
 let sparkleQueuedServiceOpen = "";
 function sparkleFlushQueuedServiceOpen(){
   const service = sparkleQueuedServiceOpen;
