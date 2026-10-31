@@ -505,7 +505,10 @@ Deno.serve(async (req: Request) => {
           ...(isSocial && progress ? { orderProgress: progress, deliveryStatus: progress.status } : {}),
           message: isSocial ? "The order has been accepted. Sparkle has updated its delivery status." : "Supplier confirmed the order. Your final Sparkle charge has been settled." });
       }
-      if (checked.response.ok && (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess))) {
+      const confirmedFailure = isSocial
+        ? checked.response.ok && (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess))
+        : (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess));
+      if (confirmedFailure) {
         if (isSocial) {
           const refund = await admin.rpc("sparkle_social_refund_order", {
             p_user_id: user.id, p_reference: reference,
