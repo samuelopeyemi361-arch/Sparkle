@@ -377,7 +377,7 @@ Deno.serve(async (req: Request) => {
     if (action === "social_quote") {
       const plans = await fetchSocialPlans(), code = str(body.plan), quantity = Number(body.quantity), plan = plans.find(p => p.value === code);
       if (!plan) return reply({ success: false, error: "That social-media plan is no longer available. Refresh the catalogue." }, 409);
-      if (!plan.priceAvailable) return reply({ success: false, error: "GSubz has not supplied a usable live price for this service. No money has been reserved. Please refresh later." }, 409);
+      if (!plan.priceAvailable) return reply({ success: false, error: "A verified current price is not available for this plan. No money has been reserved. Please refresh the catalogue later." }, 409);
       if (!Number.isSafeInteger(quantity) || quantity < plan.min || quantity > plan.max) return reply({ success: false, error: `Quantity must be a whole number between ${plan.min.toLocaleString("en-NG")} and ${plan.max.toLocaleString("en-NG")}.`, min: plan.min, max: plan.max }, 400);
       return reply({ success: true, ...planQuote(plan, quantity), quantity, plan: plan.value, planName: plan.displayName, min: plan.min, max: plan.max, currency: "NGN" });
     }
@@ -430,11 +430,11 @@ Deno.serve(async (req: Request) => {
             message: "The supplier confirmed that this order was not delivered. The full Sparkle wallet refund has been processed." });
         }
 
-        if (order) {
+        {
           const updatedMetadata = {
             ...meta,
             provider_verification: provider,
-            socialOrderProgress: progress,
+            ...(progress ? { socialOrderProgress: progress } : {}),
             lastSocialStatusCheckAt: new Date().toISOString()
           };
           const saved = await admin.from("wallet_transactions").update({ metadata: updatedMetadata })
@@ -442,9 +442,24 @@ Deno.serve(async (req: Request) => {
           if (saved.error) console.error("[sparkle-social-status-save]", saved.error.message);
         }
 
-        if (order && ["partial", "partially_completed", "partially_complete"].includes(orderStatus)) {
+        if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled"].includes(orderStatus)) {
           return reply({ success: false, status: "partial", reference, amount: Number(tx.amount), orderProgress: progress,
-            message: "The supplier reports partial delivery. Sparkle has not issued a full refund because part of the order may have been delivered. This order needs review." }, 202);
+            message: ["cancelled", "canceled"].includes(orderStatus)
+              ? "The supplier reports a cancellation but has not confirmed that the full quantity was undelivered. No automatic full refund was issued. This order needs review."
+              : "The supplier reports partial delivery. Sparkle has not issued a full refund because part of the order may have been delivered. This order needs review." }, 202);
+        }
+
+        const socialTransactionFailure = socialPaymentFailure(pStatus);
+        if (str(tx.status).toLowerCase() === "successful" && checked.response.ok && socialTransactionFailure && !order) {
+          const refund = await admin.rpc("sparkle_social_refund_order", {
+            p_user_id: user.id, p_reference: reference,
+            p_provider_order: { status: "failed" },
+            p_reason: "Supplier verification confirmed the social transaction failed"
+          });
+          if (refund.error || refund.data?.success !== true) return reply({ success: false, status: "pending", reference,
+            error: refund.data?.error || "The supplier confirmed failure, but Sparkle needs to reconcile the wallet refund." }, 202);
+          return reply({ success: true, status: "refunded", reference, amount: Number(refund.data.amount || tx.amount),
+            message: "The supplier confirmed failure. Your full Sparkle wallet refund has been processed." });
         }
 
         if (str(tx.status).toLowerCase() === "successful") {
