@@ -10057,6 +10057,7 @@ function toggleSparkleMoreServices(){
   let smsLoading = false;
   let activeDigitalRequest = null;
   let socialReviewPending = null;
+  let socialLastReceipt = null;
   try{
     const savedReview=JSON.parse(sessionStorage.getItem("sparkleDedicatedReview")||"null");
     if(savedReview?.pageKey==="order-review"&&savedReview?.storageData?.service==="socialMarket"&&savedReview.storageData.pending){socialReviewPending=savedReview.storageData.pending;}
@@ -10520,6 +10521,7 @@ function toggleSparkleMoreServices(){
         }else{
           const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
           const receipt={service:"Social Media Market",reference:data.reference||"—",status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"Sparkle",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0};
+          socialLastReceipt=receipt;
           attachSocialReceiptButton(target,receipt);
           const link=document.getElementById("sparkleSocialLink");if(link)link.value="";invalidateSparkleSocialQuote();
         }
@@ -10583,8 +10585,9 @@ function toggleSparkleMoreServices(){
         const pending=activeDigitalRequest&&activeDigitalRequest.kind==="social"?activeDigitalRequest:null;
         if(pending&&pending.payload){
           const completedPlan=socialPlans.find(p=>String(p.value)===String(pending.payload.plan));
-          attachSocialReceiptButton(targetId,{service:"Social Media Market",reference:data.reference||reference,status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"Sparkle",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0});
+          socialLastReceipt={service:"Social Media Market",reference:data.reference||reference,status:"successful",amount:Number(data.amount)||0,created_at:new Date().toISOString(),provider:"Sparkle",type_detail:completedPlan?.displayName||String(pending.payload.plan||"Social media plan"),targetLink:String(pending.payload.link||""),quantity:Number(pending.payload.quantity)||0};
         }
+        if(socialLastReceipt&&socialLastReceipt.reference===reference)attachSocialReceiptButton(targetId,socialLastReceipt);
       }
       if(data.status==="successful"||data.status==="partial"||data.status==="refunded"||data.status==="failed"){
         if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}
