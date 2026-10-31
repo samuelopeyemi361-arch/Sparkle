@@ -449,7 +449,7 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
    :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!offer&&smartRequest)throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
  if(!offer||offer.count<=0)throw problem("That operator is no longer available. Choose another operator and check the price again.",409,"OPERATOR_UNAVAILABLE");
- if(offer.usd>offer.providerBalanceUsd)throw problem("This number option is temporarily unavailable because the supplier balance cannot cover it.",503,"PROVIDER_BALANCE_LOW");
+ // Catalogue quotes are independent of transient supplier-profile checks. The purchase function rechecks supplier balance before any wallet reservation or supplier order.
  const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
  const chosen=offer.operator;
@@ -543,7 +543,7 @@ Deno.serve(async (req:Request)=>{
    const offers=await getProductOffers(country,service);
    const recommended=recommendedOffer(offers,service,country);
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
-     const available=x.count>0&&x.usd<=x.providerBalanceUsd;
+     const available=x.count>0;
      return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:x.rate,delivery_rate:x.rate,rate_available:x.rate!==null,recommended:!!recommended&&x.operator===recommended.operator,recommendation_label:!!recommended&&x.operator===recommended.operator?"Recommended · Highest delivery rate":null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
    return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
