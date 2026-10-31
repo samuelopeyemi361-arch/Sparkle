@@ -196,9 +196,11 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- // Prefer an explicitly reported 24-hour window, then 72-hour, then 5SIM's
- // documented aggregate rate. Never use our own customer orders as a substitute.
- const candidates=[raw?.rate24,raw?.rate72,raw?.rate];
+ // Match the aggregate rate shown on 5SIM's public service page first.
+ // Short-window rate24 can differ sharply from the public aggregate (for example,
+ // 10.6% versus 86% for POF USA / Virtual51), so it must not override that figure.
+ // Fall back to 72-hour and then 24-hour data only when aggregate rate is absent.
+ const candidates=[raw?.rate,raw?.rate72,raw?.rate24];
  for(let value of candidates){
   if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
   if(value===null||value===undefined||value==="")continue;
@@ -323,10 +325,10 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
- const rawRates=new Map(offers.map(x=>[x.operator,x.rate]));
- // Read delivery rates directly from the live 5SIM guest/prices response.
- // Do not scrape the marketing page: it only highlights selected rows and may be stale/incomplete.
- const ratedOffers=offers;
+ // Reconcile the API rate with the exact service/country/operator row on 5SIM's
+ // public product page. This is the same rate customers see on 5SIM and prevents
+ // a short-window API rate from being displayed as the public delivery percentage.
+ const ratedOffers=await enrichOfficialRates(service,pc,offers);
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
   country:pc,service,rate_source:"5sim_guest_prices",
   rate_policy:"rate24_then_rate72_then_rate",
