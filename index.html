@@ -6763,6 +6763,7 @@ function renderNumberReviewPage(){
  const quote=numberCurrentQuote;if(!quote)return;
  const countryName=numberCountriesCache.find(c=>c.code===quote.country)?.name||quote.country.toUpperCase();
  const total="₦"+quote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=quote.deliveryRate===null||quote.deliveryRate===undefined||quote.deliveryRate===""?null:Number(quote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>=0&&rate<=100?rate.toFixed(2)+"%":"Not verified by 5SIM";}
  const serviceEl=document.getElementById("numberReviewService");if(serviceEl)serviceEl.textContent=quote.serviceName+" · "+countryName;
  const opEl=document.getElementById("numberReviewServer");if(opEl)opEl.textContent=quote.operatorLabel||quote.operator;
  const totalEl=document.getElementById("numberReviewTotal");if(totalEl)totalEl.textContent=total;
@@ -6787,6 +6788,7 @@ function buyNumberNumber(){
   const countryName=numberCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
   document.getElementById("numberReviewService").textContent=numberCurrentQuote.serviceName+" · "+countryName;
   const total="₦"+numberCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+   const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=numberCurrentQuote.deliveryRate===null||numberCurrentQuote.deliveryRate===undefined?null:Number(numberCurrentQuote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>=0&&rate<=100?rate.toFixed(2)+"%":"Not verified by 5SIM";}
   const reviewServer=document.getElementById("numberReviewServer");if(reviewServer)reviewServer.textContent=numberCurrentQuote.operatorLabel||"Automatic · price capped";
   document.getElementById("numberReviewTotal").textContent=total;
   document.getElementById("numberReviewGrandTotal").textContent=total;
