@@ -6426,7 +6426,7 @@ function renderNumberOperators(items,preferred=""){
  const bestRateItem=bestRate!==null&&bestRate>0?(rated.find(x=>x.rate===bestRate)?.item||null):null;
  list.innerHTML=rows.map(item=>{
   const code=String(item.operator||""),stock=Number(item.stock||0),available=isAvailable(item),selected=code===chosen&&available,rate=readRate(item),label=String(item.operator_label||item.operator||"Operator"),mark=label.toLowerCase().includes("automatic")?"↗":label.trim().charAt(0).toUpperCase()||"•";
-  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · "+rate.toFixed(1)+"% delivery":" · Delivery rate unavailable");
+  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · "+rate.toFixed(1)+"% delivery":" · Delivery rate —");
   const hasSupplierRecommendation=rows.some(x=>x.recommended===true);
   const isBest=available&&(hasSupplierRecommendation?item.recommended===true:bestRateItem===item);
   const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best rate · Recommended</span>':"";
