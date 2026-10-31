@@ -204,12 +204,25 @@ async function usdToNgn(): Promise<number> {
 }
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
+function parseDeliveryRate(raw:any):number|null{
+ const candidates=[raw?.rate,raw?.Rate,raw?.delivery_rate,raw?.deliveryRate,raw?.success_rate,raw?.successRate];
+ const parsed:number[]=[];
+ for(let value of candidates){
+  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??value.rate??null;
+  if(value===null||value===undefined||value==="")continue;
+  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
+  const n=Number(normalized);
+  if(Number.isFinite(n)&&n>=0&&n<=100)parsed.push(n);
+ }
+ // Some supplier payloads include an empty/zero alias alongside the populated
+ // delivery-rate field. Prefer the populated percentage, never convert missing to 0%.
+ return parsed.find(n=>n>0)??(parsed.length?parsed[0]:null);
+}
 function parseOfferRows(node:any):ParsedOffer[]{
  if(!node||typeof node!=="object"||Array.isArray(node))return [];
  return Object.entries(node).map(([operator,raw]:[string,any])=>{
   const usd=Number(raw?.cost),count=Number(raw?.count);
-  const rv=raw?.rate==null||raw?.rate===""?null:Number(raw.rate);
-  const rate=rv!==null&&Number.isFinite(rv)&&rv>=0&&rv<=100?rv:null;
+  const rate=parseDeliveryRate(raw);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
   return {operator,usd,count,rate};
  }).filter((x):x is ParsedOffer=>x!==null);
