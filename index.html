@@ -6964,11 +6964,49 @@ function toggleTheme(){
   }
 })();
 
-function toggleNotifications(){
-  const dot=document.getElementById("notificationDot");
-  if(dot) dot.style.display="none";
-  alert("Notifications are being prepared. Your important wallet and transaction updates will appear here.");
+let sparkleNotificationChannel=null;
+let sparkleNotificationUserId=null;
+let sparkleNotificationsBusy=false;
+function sparkleEscapeNotification(value){return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));}
+function sparkleEnsureNotificationPanel(){
+  if(document.getElementById("sparkleNotificationPanel"))return;
+  const style=document.createElement("style");style.id="sparkleNotificationStyles";
+  style.textContent="#sparkleNotificationPanel{position:fixed;z-index:12000;right:22px;top:78px;width:min(420px,calc(100vw - 24px));max-height:min(620px,calc(100vh - 96px));overflow:hidden;background:#fff;border:1px solid #e4eaf3;border-radius:18px;box-shadow:0 22px 65px rgba(7,27,77,.22);display:none;color:#14213d}#sparkleNotificationPanel.open{display:flex;flex-direction:column}#sparkleNotificationPanel .snp-head{padding:17px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #edf1f7}#sparkleNotificationPanel .snp-head strong{font-size:16px}#sparkleNotificationPanel .snp-actions{display:flex;align-items:center;gap:12px}#sparkleNotificationPanel button{border:0;background:transparent;cursor:pointer;font:inherit}#sparkleNotificationPanel .snp-mark{font-size:12px;font-weight:800;color:#0b5cff}#sparkleNotificationPanel .snp-close{width:30px;height:30px;border-radius:9px;background:#f1f5f9;font-size:19px}#sparkleNotificationPanel .snp-list{overflow:auto;padding:5px 14px 14px}#sparkleNotificationPanel .snp-item{display:flex;gap:12px;padding:14px 5px;border-bottom:1px solid #edf1f7;cursor:pointer}#sparkleNotificationPanel .snp-item.unread{background:#f7faff}#sparkleNotificationPanel .snp-icon{flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#edf3ff;display:grid;place-items:center;font-size:16px}#sparkleNotificationPanel .snp-copy{min-width:0;flex:1}#sparkleNotificationPanel .snp-copy strong{display:block;font-size:13px;margin:1px 0 4px}#sparkleNotificationPanel .snp-copy p{font-size:12px;line-height:1.5;color:#64748b;margin:0 0 5px;overflow-wrap:anywhere}#sparkleNotificationPanel .snp-copy time{font-size:10px;color:#94a3b8}#sparkleNotificationPanel .snp-empty{padding:38px 16px;text-align:center;color:#64748b;font-size:13px}#sparkleNotificationPanel .snp-empty b{display:block;color:#14213d;font-size:14px;margin-bottom:5px}@media(max-width:520px){#sparkleNotificationPanel{right:12px;top:68px;width:calc(100vw - 24px)}}";
+  document.head.appendChild(style);
+  const panel=document.createElement("section");panel.id="sparkleNotificationPanel";panel.setAttribute("aria-label","Sparkle notifications");
+  panel.innerHTML='<div class="snp-head"><strong>Notifications</strong><div class="snp-actions"><button type="button" class="snp-mark" id="sparkleNotificationMarkAll">Mark all read</button><button type="button" class="snp-close" id="sparkleNotificationClose" aria-label="Close">×</button></div></div><div class="snp-list" id="sparkleNotificationList"><div class="snp-empty">Loading your updates…</div></div>';
+  document.body.appendChild(panel);
+  document.getElementById("sparkleNotificationClose").addEventListener("click",()=>panel.classList.remove("open"));
+  document.getElementById("sparkleNotificationMarkAll").addEventListener("click",sparkleMarkAllNotificationsRead);
+  document.getElementById("sparkleNotificationList").addEventListener("click",async event=>{
+    const item=event.target.closest("[data-notification-id]");if(!item||!item.dataset.notificationId||!sparkleNotificationUserId)return;
+    const {error}=await supabaseClient.from("sparkle_notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("id",item.dataset.notificationId).eq("user_id",sparkleNotificationUserId);
+    if(error){console.warn("Sparkle notification read update failed:",error.message);return;}await sparkleLoadNotifications();
+  });
 }
+async function sparkleGetNotificationUser(){if(window.currentSparkleUser?.id)return window.currentSparkleUser;const {data,error}=await supabaseClient.auth.getUser();if(error)throw error;return data?.user||null;}
+async function sparkleLoadNotifications(){
+  if(sparkleNotificationsBusy)return;sparkleNotificationsBusy=true;const list=document.getElementById("sparkleNotificationList");
+  try{
+    const user=await sparkleGetNotificationUser();
+    if(!user?.id){if(list)list.innerHTML='<div class="snp-empty"><b>Sign in to view updates</b>Your wallet and transaction notifications will appear here.</div>';return;}
+    sparkleNotificationUserId=user.id;
+    const {data,error}=await supabaseClient.from("sparkle_notifications").select("id,title,body,category,is_read,created_at").eq("user_id",user.id).order("created_at",{ascending:false}).limit(40);
+    if(error)throw error;const rows=Array.isArray(data)?data:[];const unread=rows.filter(row=>!row.is_read).length;
+    const dot=document.getElementById("notificationDot");if(dot){dot.style.display=unread?"block":"none";dot.setAttribute("aria-label",unread+" unread notifications");}
+    if(!list)return;if(!rows.length){list.innerHTML='<div class="snp-empty"><b>You’re all caught up</b>Important wallet funding, purchase and refund updates will appear here.</div>';return;}
+    list.innerHTML=rows.map(row=>{const icon=row.category==="wallet"?"₦":row.category==="transaction"?"✓":"✦";const date=row.created_at?new Date(row.created_at).toLocaleString():"";return '<article class="snp-item '+(!row.is_read?"unread":"")+'" data-notification-id="'+sparkleEscapeNotification(row.id)+'"><span class="snp-icon">'+icon+'</span><div class="snp-copy"><strong>'+sparkleEscapeNotification(row.title)+'</strong><p>'+sparkleEscapeNotification(row.body)+'</p><time>'+sparkleEscapeNotification(date)+'</time></div></article>';}).join("");
+  }catch(error){console.warn("Sparkle notifications could not be loaded:",error?.message||error);if(list)list.innerHTML='<div class="snp-empty"><b>Could not load notifications</b>Please check your connection and try again.</div>';}
+  finally{sparkleNotificationsBusy=false;}
+}
+async function sparkleMarkAllNotificationsRead(){const userId=sparkleNotificationUserId;if(!userId)return;const {error}=await supabaseClient.from("sparkle_notifications").update({is_read:true,read_at:new Date().toISOString()}).eq("user_id",userId).eq("is_read",false);if(error){console.warn("Sparkle mark-all-read failed:",error.message);return;}await sparkleLoadNotifications();}
+function sparkleConnectNotificationRealtime(userId){
+  if(!userId||!supabaseClient?.channel)return;if(sparkleNotificationChannel&&sparkleNotificationUserId===userId)return;
+  if(sparkleNotificationChannel){supabaseClient.removeChannel(sparkleNotificationChannel).catch(()=>{});sparkleNotificationChannel=null;}
+  sparkleNotificationUserId=userId;sparkleNotificationChannel=supabaseClient.channel("sparkle-notifications-"+userId).on("postgres_changes",{event:"*",schema:"public",table:"sparkle_notifications",filter:"user_id=eq."+userId},()=>{void sparkleLoadNotifications();}).subscribe();
+}
+function toggleNotifications(){sparkleEnsureNotificationPanel();const panel=document.getElementById("sparkleNotificationPanel");if(!panel)return;panel.classList.toggle("open");if(panel.classList.contains("open"))void sparkleLoadNotifications();}
+if(supabaseClient?.auth?.onAuthStateChange){supabaseClient.auth.onAuthStateChange((event,session)=>{if(session?.user?.id){sparkleConnectNotificationRealtime(session.user.id);void sparkleLoadNotifications();}else if(event==="SIGNED_OUT"){if(sparkleNotificationChannel){supabaseClient.removeChannel(sparkleNotificationChannel).catch(()=>{});sparkleNotificationChannel=null;}sparkleNotificationUserId=null;const panel=document.getElementById("sparkleNotificationPanel");if(panel)panel.classList.remove("open");const dot=document.getElementById("notificationDot");if(dot)dot.style.display="none";}});}
 
 /* =====================================================
    PAYSTACK DEDICATED VIRTUAL ACCOUNT
