@@ -210,26 +210,35 @@ function countryPageLabel(country:string):string{
  const v=country.toLowerCase();
  if(v==="usa"||v==="us")return "USA";
  if(v==="uk")return "England";
- return v.replace(/[-_]+/g," ").replace(/\\b[a-z]/g,c=>c.toUpperCase());
+ return v.replace(/[-_]+/g," ").replace(/\b[a-z]/g,c=>c.toUpperCase());
 }
 async function enrichOfficialRates(service:string,country:string,offers:ProviderOffer[]):Promise<ProviderOffer[]>{
  const label=countryPageLabel(country);
- const missing=offers.filter(o=>o.rate===null||o.rate===0);
- if(!missing.length)return offers;
+ if(!offers.some(o=>o.rate===null||o.rate===0))return offers;
  const now=Date.now();
  let html="";
  try{
   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{headers:{Accept:"text/html"},signal:AbortSignal.timeout(7000)});
   if(response.ok)html=await response.text();
- }catch{/* Keep the authenticated guest-prices response if the public statistics page is unavailable. */}
+ }catch{/* Retain the authenticated guest-prices data if the public page is unavailable. */}
  if(!html)return offers;
- const text=html.replace(/<script[\\s\\S]*?<\\/script>/gi," ").replace(/<style[\\s\\S]*?<\\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\\d+);/g,(_,n)=>String.fromCharCode(Number(n))).replace(/\\s+/g," ");
+ const pageText=html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ").replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n))).replace(/\s+/g," ");
  return offers.map(offer=>{
   if(offer.rate!==null&&offer.rate>0)return offer;
   const key=service+":"+country+":"+offer.operator.toLowerCase();
   const cached=publicRateCache.get(key);
   if(cached&&cached.expiresAt>now)return {...offer,rate:cached.rate};
-  const op=offer.operator.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function parseOfferRows(node:any):ParsedOffer[]{");
+  // 5SIM's public product page exposes country/operator/stock/rate rows.
+  // Country labels and operator IDs here are restricted to catalogue values.
+  const match=new RegExp("\\b"+label+"\\s+"+offer.operator+"\\s+[\\d,\\s]+?\\s+([0-9]+(?:[.,][0-9]+)?)\\s*%","i").exec(pageText);
+  if(!match)return offer;
+  const rate=Number(match[1].replace(",","."));
+  if(!Number.isFinite(rate)||rate<0||rate>100)return offer;
+  publicRateCache.set(key,{rate,expiresAt:now+120000});
+  return {...offer,rate};
+ });
+}
+function parseOfferRows(node:any):ParsedOffer[]{");
   const countryRx=label.replace(/[.*+?^${}()|[\\]\\\\]/g,"\\\\function parseOfferRows(node:any):ParsedOffer[]{");
   const match=new RegExp("\\\\b"+countryRx+"\\\\s+"+op+"\\\\s+[\\\\d,\\\\s]+?\\\\s+([0-9]+(?:[.,][0-9]+)?)\\\\s*%","i").exec(text);
   if(!match)return offer;
