@@ -256,16 +256,39 @@ Deno.serve(async (req: Request) => {
   if (!/^\d{1,20}$/.test(id)) return reply({ success: false, status: "unknown", request_id: requestId, message: "The order is still being registered. Do not buy again; check again shortly." }, 202);
   try {
     const result = await apiGet("/user/check/" + encodeURIComponent(id));
-    const data = result.data || {};
+    let data = result.data || {};
     if (!result.ok || !data || typeof data !== "object") {
       return reply({ success: false, status: "pending", request_id: requestId, phone_number: order.phone_number, message: "Sparkle could not confirm an update yet. Your order remains under review; check again shortly." }, 202);
     }
-    const status = String(data.status || "").toUpperCase();
-    const sms = Array.isArray(data.sms) ? data.sms : [];
-    const message = sms.find((s: Obj) => asText(s?.code).length > 0) || null;
-    const smsCode = message ? asText(message.code) : "";
-    const smsText = message ? asText(message.text) : "";
-    const phone = String(data.phone || order.phone_number || "");
+    let status = String(data.status || "").toUpperCase();
+    let sms = Array.isArray(data.sms) ? data.sms : [];
+    let message = sms.find((s: Obj) => asText(s?.code).length > 0) || null;
+    let smsCode = message ? asText(message.code) : "";
+    let smsText = message ? asText(message.text) : "";
+    let phone = String(data.phone || order.phone_number || "");
+
+    // A provider activation can report RECEIVED/FINISHED without returning its SMS
+    // payload. Do not leave an expired activation pending forever: ask 5SIM to
+    // cancel it, and refund only after 5SIM explicitly confirms CANCELED.
+    if (!smsCode && ["PENDING", "RECEIVED", "FINISHED"].includes(status)) {
+      const expiry = Date.parse(String(data.expires || storedResponse.expires_at || ""));
+      if (Number.isFinite(expiry) && expiry <= Date.now()) {
+        const cancellation = await apiGet("/user/cancel/" + encodeURIComponent(id));
+        const cancellationData = cancellation.data || {};
+        if (cancellation.ok && cancellationData && typeof cancellationData === "object") {
+          data = cancellationData;
+          status = String(data.status || "").toUpperCase();
+          sms = Array.isArray(data.sms) ? data.sms : [];
+          message = sms.find((s: Obj) => asText(s?.code).length > 0) || null;
+          smsCode = message ? asText(message.code) : "";
+          smsText = message ? asText(message.text) : "";
+          phone = String(data.phone || phone);
+        }
+        if (!smsCode && status !== "CANCELED" && status !== "CANCELLED" && status !== "TIMEOUT") {
+          return reply({ success: false, status: "pending", request_id: requestId, phone_number: phone, message: "This number has expired. Sparkle is confirming cancellation with the provider before releasing your wallet funds." }, 202);
+        }
+      }
+    }
     if (smsCode) {
       // Finishing a received activation is best effort; the verified code is still recorded by Sparkle.
       try { await apiGet("/user/finish/" + encodeURIComponent(id)); } catch {}
