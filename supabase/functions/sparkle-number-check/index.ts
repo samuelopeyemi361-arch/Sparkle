@@ -51,6 +51,19 @@ function money(n: number): number {
 function asText(v: unknown): string {
   return typeof v === "string" ? v.trim() : String(v ?? "").trim();
 }
+function extractSms(payload: any): { code: string; text: string; hasMessage: boolean } {
+  const rows = Array.isArray(payload?.sms) ? payload.sms : [];
+  for (const row of rows) {
+    const text = asText(row?.text);
+    let code = asText(row?.code);
+    if (!code && text) {
+      const labelled = new RegExp("\\b(?:code|otp|verification(?:\\s+code)?|pin)\\b[^A-Z0-9]{0,12}([A-Z0-9]{4,10})", "i").exec(text);
+      if (labelled) code = labelled[1];
+    }
+    if (code || text) return { code, text, hasMessage: true };
+  }
+  return { code: "", text: "", hasMessage: false };
+}
 function providerCountry(country: string): string {
   const value = asText(country).toLowerCase();
   if (value === "us" || value === "usa") return "usa";
@@ -261,31 +274,68 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, status: "pending", request_id: requestId, phone_number: order.phone_number, message: "Sparkle could not confirm an update yet. Your order remains under review; check again shortly." }, 202);
     }
     let status = String(data.status || "").toUpperCase();
-    let sms = Array.isArray(data.sms) ? data.sms : [];
-    let message = sms.find((s: Obj) => asText(s?.code).length > 0) || null;
-    let smsCode = message ? asText(message.code) : "";
-    let smsText = message ? asText(message.text) : "";
+    let smsDetails = extractSms(data);
+    let smsCode = smsDetails.code;
+    let smsText = smsDetails.text;
     let phone = String(data.phone || order.phone_number || "");
 
-    // A provider activation can report RECEIVED/FINISHED without returning its SMS
-    // payload. Do not leave an expired activation pending forever: ask 5SIM to
-    // cancel it, and refund only after 5SIM explicitly confirms CANCELED.
-    if (!smsCode && ["PENDING", "RECEIVED", "FINISHED"].includes(status)) {
-      const expiry = Date.parse(String(data.expires || storedResponse.expires_at || ""));
-      if (Number.isFinite(expiry) && expiry <= Date.now()) {
-        const cancellation = await apiGet("/user/cancel/" + encodeURIComponent(id));
-        const cancellationData = cancellation.data || {};
-        if (cancellation.ok && cancellationData && typeof cancellationData === "object") {
-          data = cancellationData;
-          status = String(data.status || "").toUpperCase();
-          sms = Array.isArray(data.sms) ? data.sms : [];
-          message = sms.find((s: Obj) => asText(s?.code).length > 0) || null;
-          smsCode = message ? asText(message.code) : "";
-          smsText = message ? asText(message.text) : "";
+    // 5SIM documents RECEIVED as an SMS-arrived state. Never try to cancel that
+    // state: the provider rejects cancellation once an SMS exists. Recover the
+    // message from order history if the check payload is incomplete.
+    if (!smsCode && ["RECEIVED", "FINISHED"].includes(status)) {
+      try {
+        const history = await apiGet("/user/orders?category=activation&limit=100&offset=0&order=id&reverse=true");
+        const rows = Array.isArray(history.data?.Data) ? history.data.Data : [];
+        const historical = rows.find((row: Obj) => String(row?.id ?? "") === id);
+        if (history.ok && historical) {
+          data = historical;
+          status = String(data.status || status).toUpperCase();
+          smsDetails = extractSms(data);
+          smsCode = smsDetails.code;
+          smsText = smsDetails.text;
           phone = String(data.phone || phone);
         }
-        if (!smsCode && status !== "CANCELED" && status !== "CANCELLED" && status !== "TIMEOUT") {
-          return reply({ success: false, status: "pending", request_id: requestId, phone_number: phone, message: "This number has expired. Sparkle is confirming cancellation with the provider before releasing your wallet funds." }, 202);
+      } catch {
+        // Keep the existing provider check result; no wallet action on uncertainty.
+      }
+    }
+
+    // Only cancel a still-PENDING activation after its expiry. If cancellation
+    // reports an expired order, re-check so 5SIM can return its final TIMEOUT
+    // state. Refund only after an explicit no-SMS terminal state.
+    if (!smsCode && status === "PENDING") {
+      const expiry = Date.parse(String(data.expires || storedResponse.expires_at || ""));
+      if (Number.isFinite(expiry) && expiry <= Date.now()) {
+        let cancellationConfirmed = false;
+        try {
+          const cancellation = await apiGet("/user/cancel/" + encodeURIComponent(id));
+          const cancellationData = cancellation.data || {};
+          if (cancellation.ok && cancellationData && typeof cancellationData === "object") {
+            data = cancellationData;
+            status = String(data.status || "").toUpperCase();
+            smsDetails = extractSms(data);
+            smsCode = smsDetails.code;
+            smsText = smsDetails.text;
+            phone = String(data.phone || phone);
+            cancellationConfirmed = ["CANCELED", "CANCELLED", "TIMEOUT"].includes(status);
+          }
+        } catch {
+          // The follow-up status check below decides whether 5SIM has timed out.
+        }
+        if (!smsCode && !cancellationConfirmed) {
+          try {
+            const refreshed = await apiGet("/user/check/" + encodeURIComponent(id));
+            if (refreshed.ok && refreshed.data && typeof refreshed.data === "object") {
+              data = refreshed.data;
+              status = String(data.status || "").toUpperCase();
+              smsDetails = extractSms(data);
+              smsCode = smsDetails.code;
+              smsText = smsDetails.text;
+              phone = String(data.phone || phone);
+            }
+          } catch {
+            // Keep funds reserved until supplier state can be confirmed.
+          }
         }
       }
     }
@@ -307,8 +357,17 @@ Deno.serve(async (req: Request) => {
       }
       return reply({ success: false, status: "cancelled", request_id: requestId, phone_number: phone, refund_status: "processed", refund_amount: Number(order.amount), message: "The order did not deliver an SMS code. Sparkle has recorded your wallet refund." });
     }
-    const safeStatus = status === "RECEIVED" || status === "FINISHED" ? "pending" : (status === "PENDING" ? "pending" : "unknown");
-    return reply({ success: true, status: safeStatus, request_id: requestId, phone_number: phone, message: "No SMS code yet. Check again shortly." }, safeStatus === "unknown" ? 202 : 200);
+    const safeStatus = status === "RECEIVED" || status === "FINISHED" ? "received" : (status === "PENDING" ? "pending" : "unknown");
+    if (safeStatus === "received") {
+      const saved = await ctx.admin.from("sparkle_sms_otp_orders").update({
+        phone_number: phone,
+        provider_response: { ...storedResponse, status, sms_code: null, sms_text: smsText || null, expires_at: data.expires || storedResponse.expires_at || null },
+        updated_at: new Date().toISOString(),
+      }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+      if (saved.error) return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The supplier reports an SMS arrived, but Sparkle could not save the latest message state. Refresh or contact support." }, 202);
+      return reply({ success: true, status: "received", request_id: requestId, phone_number: phone, sms_text: smsText || null, message: "5SIM reports that an SMS has arrived, but did not return a readable code. Sparkle saved the received state; refresh to retrieve the message." }, 200);
+    }
+    return reply({ success: true, status: safeStatus, request_id: requestId, phone_number: phone, message: safeStatus === "pending" ? "No SMS code yet. Check again shortly." : "The provider returned an unrecognized order state. Sparkle kept the funds reserved while support checks it." }, safeStatus === "unknown" ? 202 : 200);
   } catch {
     return reply({ success: false, status: "pending", request_id: requestId, message: "The order status could not be reached. Funds remain reserved while Sparkle checks the result; do not buy again." }, 202);
   }
