@@ -244,55 +244,54 @@ function operatorPagePattern(operator:string):string{
 }
 
 async function enrichOfficialRates(service:string,country:string,offers:ProviderOffer[]):Promise<ProviderOffer[]>{
-  // Always consult the public 5SIM service page: the generic API "rate" is not a trustworthy SMS delivery percentage.
   const labels=await countryPageLabels(country);
   const now=Date.now();
   let html="";
+  let fetchStatus=0;
   try{
-   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{
-    headers:{Accept:"text/html"},
-    signal:AbortSignal.timeout(7000)
-   });
+   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{headers:{Accept:"text/html,application/xhtml+xml"},signal:AbortSignal.timeout(12000)});
+   fetchStatus=response.status;
    if(response.ok)html=await response.text();
-  }catch{
+  }catch(error){
+   console.warn("[sparkle-5sim-rate-scrape]",JSON.stringify({service,country,stage:"fetch_failed",error:String(error)}));
    return offers;
   }
-  if(!html)return offers;
-  const pageText=html
-   .replace(/<script[\s\S]*?<\/script>/gi," ")
-   .replace(/<style[\s\S]*?<\/style>/gi," ")
-   .replace(/<[^>]+>/g," ")
-   .replace(/&nbsp;|&#160;/gi," ")
-   .replace(/&amp;/gi,"&")
-   .replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16)))
-   .replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n)))
-   .replace(/\s+/g," ");
-  const markers=offers.map(offer=>{
-   let found:{operator:string;start:number;end:number}|null=null;
-   for(const label of labels){
-    const pattern=new RegExp("(?:^|\\s)"+escapeRateRegex(label)+"\\s+"+operatorPagePattern(offer.operator)+"(?=\\s|$)","i");
-    const match=pattern.exec(pageText);
-    if(match&&(!found||match.index<found.start))found={operator:offer.operator,start:match.index,end:match.index+match[0].length};
+  if(!html){
+   console.warn("[sparkle-5sim-rate-scrape]",JSON.stringify({service,country,stage:"empty_page",fetch_status:fetchStatus}));
+   return offers;
+  }
+  const decode=(value:string)=>value.replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n)));
+  const candidates=[
+   decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," "),
+   decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ")
+  ];
+  const foundRates=new Map<string,number>();
+  for(const offer of offers){
+   const key=offer.operator.toLowerCase();
+   const cacheKey=service+":"+providerCountry(country)+":"+key;
+   const cached=publicRateCache.get(cacheKey);
+   if(cached&&cached.expiresAt>now){foundRates.set(key,cached.rate);continue;}
+   for(const pageText of candidates){
+    let best:{rate:number;position:number}|null=null;
+    for(const label of labels){
+     const countryPattern=escapeRateRegex(label).replace(/[-_]+/g,"[\\s_-]+");
+     const operatorPattern=operatorPagePattern(offer.operator);
+     const pattern=new RegExp("(?:^|[^a-z0-9])"+countryPattern+"[\\s\\S]{0,180}?"+operatorPattern+"[\\s\\S]{0,220}?([0-9]+(?:[.,][0-9]+)?)\\s*%","ig");
+     const match=pattern.exec(pageText);
+     if(match){
+      const rate=Number(match[1].replace(",","."));
+      if(Number.isFinite(rate)&&rate>=0&&rate<=100){best={rate,position:match.index};break;}
+     }
+    }
+    if(best){foundRates.set(key,best.rate);break;}
    }
-   return found;
-  }).filter((x):x is {operator:string;start:number;end:number}=>x!==null);
+   const rate=foundRates.get(key);
+   if(rate!==undefined)publicRateCache.set(cacheKey,{rate,expiresAt:now+120000});
+  }
+  console.info("[sparkle-5sim-rate-scrape]",JSON.stringify({service,country,fetch_status:fetchStatus,page_chars:html.length,country_labels:labels,offers:offers.map(x=>({operator:x.operator,public_page_rate:foundRates.get(x.operator.toLowerCase())??null}))}));
   return offers.map(offer=>{
-   // Prefer the explicit percentage scraped from the matching service/country/operator row.
-   const key=service+":"+providerCountry(country)+":"+offer.operator.toLowerCase();
-   const cached=publicRateCache.get(key);
-   if(cached&&cached.expiresAt>now)return {...offer,rate:cached.rate};
-   const marker=markers.find(x=>x.operator.toLowerCase()===offer.operator.toLowerCase());
-   if(!marker)return offer;
-   const nextStart=markers.filter(x=>x.start>marker.start).reduce((n,x)=>Math.min(n,x.start),pageText.length);
-   const rowText=pageText.slice(marker.end,Math.min(nextStart,marker.end+320));
-   const percentMatch=/([0-9]+(?:[.,][0-9]+)?)\s*%/.exec(rowText);
-   const fieldMatch=/(?:rate|delivery[_-]?rate|success[_-]?rate)\s*["']?\s*[:=]\s*["']?([0-9]+(?:[.,][0-9]+)?)/i.exec(rowText);
-   const rateMatch=percentMatch||fieldMatch;
-   if(!rateMatch)return offer;
-   const rate=Number(rateMatch[1].replace(",","."));
-   if(!Number.isFinite(rate)||rate<0||rate>100)return offer;
-   publicRateCache.set(key,{rate,expiresAt:now+120000});
-   return {...offer,rate};
+   const rate=foundRates.get(offer.operator.toLowerCase());
+   return rate===undefined?offer:{...offer,rate};
   });
 }
 
