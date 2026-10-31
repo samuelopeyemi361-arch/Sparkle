@@ -258,17 +258,20 @@ Deno.serve(async (req: Request) => {
     const data = cancelled.data || {};
     const sms = Array.isArray(data.sms) ? data.sms : [];
     const gotCode = sms.some((s: Obj) => asText(s?.code).length > 0);
-    if (gotCode || ["RECEIVED", "FINISHED"].includes(String(data.status || "").toUpperCase())) {
-      return reply({ success: false, status: "pending", message: "The SMS has already arrived. Check the order status to retrieve it; no refund was recorded." }, 409);
+    const supplierStatus = String(data.status || "").toUpperCase();
+    if (gotCode || ["FINISHED", "SUCCESS", "SUCCESSFUL", "COMPLETED"].includes(supplierStatus)) {
+      return reply({ success: false, status: "pending", message: "The supplier has received or completed the order. Check the order status to retrieve the SMS; no refund was recorded." }, 409);
     }
-    if (!cancelled.ok || String(data.status || "").toUpperCase() !== "CANCELED") {
-      return reply({ success: false, status: "unknown", message: "Sparkle could not confirm cancellation. No refund has been recorded yet; check the order status before trying again." }, 202);
+    const failureStates = ["CANCELED", "CANCELLED", "TIMEOUT", "FAILED", "FAILURE", "REJECTED", "BANNED", "EXPIRED"];
+    if (!cancelled.ok || !failureStates.includes(supplierStatus)) {
+      return reply({ success: false, status: "unknown", message: "Sparkle could not confirm a final cancellation or failure. No refund was recorded yet; check the order status before trying again." }, 202);
     }
-    const f = await finalize(ctx.admin, requestId, "cancelled", { status: "CANCELED", expires_at: data.expires || saved.expires_at || null }, "Number order cancellation was confirmed.");
+    const appStatus = ["CANCELED", "CANCELLED", "TIMEOUT", "EXPIRED"].includes(supplierStatus) ? "cancelled" : "failed";
+    const f = await finalize(ctx.admin, requestId, appStatus, { status: supplierStatus, expires_at: data.expires || saved.expires_at || null }, "The number provider confirmed a terminal unsuccessful order: " + supplierStatus);
     if (f.error || f.data?.success !== true) {
-      return reply({ success: false, status: "unknown", message: "Cancellation was confirmed, but Sparkle could not finalize the refund. Do not buy again; contact support." }, 202);
+      return reply({ success: false, status: "unknown", message: "The provider ended the order, but Sparkle could not finalize the refund. Do not buy again; contact support." }, 202);
     }
-    return reply({ success: true, status: "cancelled", request_id: requestId, refund_status: "processed", refund_amount: Number(order.amount), message: "Cancellation confirmed. Sparkle has recorded your wallet refund." });
+    return reply({ success: true, status: appStatus, request_id: requestId, refund_status: "processed", refund_amount: Number(order.amount), message: "The order was not completed. Sparkle has recorded your full wallet refund." });
   } catch {
     return reply({ success: false, status: "unknown", message: "The cancellation result could not be confirmed. No refund was recorded yet; check order status before buying again." }, 202);
   }
