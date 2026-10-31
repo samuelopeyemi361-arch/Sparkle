@@ -494,9 +494,12 @@ Deno.serve(async (req: Request) => {
         return reply({ success: true, status: "success", request_id: requestId, order_id: providerId, phone_number: phone, sms_code: smsDetails.code, sms_text: smsDetails.text, service: quote.name, country, selling_price_ngn: quote.selling_price_ngn, currency: "NGN", message: "Number purchased and SMS received." });
       }
       if (providerSucceeded(providerStatus)) {
-        const waiting = { ...sanitized, status: providerStatus, sms_code: null, sms_text: smsDetails.text || null };
-        await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: waiting, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
-        return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, message: "The supplier marked this order completed, but its SMS content is not available yet. Sparkle is retrieving it before finalizing your purchase." }, 202);
+        const finalResponse = { ...sanitized, status: providerStatus, sms_code: null, sms_text: smsDetails.text || null };
+        const saved = await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: finalResponse, phone_number: phone, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+        if (saved.error) return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The supplier completed the order, but Sparkle could not save its final result. Do not buy again; contact support." }, 202);
+        const completed = await finalize(ctx.admin, requestId, "success", finalResponse, null);
+        if (completed.error || completed.data?.success !== true) return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The supplier completed the order, but Sparkle could not finalize the wallet record. Do not buy again; contact support." }, 202);
+        return reply({ success: true, status: "success", request_id: requestId, order_id: providerId, phone_number: phone, sms_code: null, sms_text: smsDetails.text || "", message: "The supplier confirmed this number purchase. Sparkle is retrieving the SMS details." });
       }
       return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, service: quote.name, country, network: "Available network", selling_price_ngn: quote.selling_price_ngn, server_id: serverId, server_label: profile.label, currency: "NGN", message: smsDetails.hasMessage ? "The SMS arrived but its code could not be read yet. Refresh the order to retrieve it." : "Number purchased. Check again shortly for the SMS code." });
     }
