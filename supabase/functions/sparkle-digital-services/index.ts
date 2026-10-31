@@ -34,7 +34,7 @@ function socialOrderOf(d: any) {
   return d?.order ?? d?.content?.order ?? d?.data?.order ?? d?.data?.content?.order ?? d?.result?.order ?? null;
 }
 function socialOrderStatus(order: any) {
-  return str(order?.status).toLowerCase().replace(/[\\s-]+/g, "_");
+  return str(order?.status).toLowerCase().replace(/[\s-]+/g, "_");
 }
 function socialOrderProgress(order: any, quantity = 0) {
   if (!order || typeof order !== "object") return null;
@@ -417,7 +417,7 @@ Deno.serve(async (req: Request) => {
         orderStatus = socialOrderStatus(order);
         progress = socialOrderProgress(order, Number(meta.quantity || 0));
 
-        if (order && socialOrderHasNoDelivery(order, Number(meta.quantity || 0))) {
+        if (checked.response.ok && order && socialOrderHasNoDelivery(order, Number(meta.quantity || 0))) {
           const refund = await admin.rpc("sparkle_social_refund_order", {
             p_user_id: user.id,
             p_reference: reference,
@@ -447,8 +447,7 @@ Deno.serve(async (req: Request) => {
         }
 
         if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled", "failed", "failure", "error", "rejected", "refunded"].includes(orderStatus)) {
-          if (["partial", "partially_completed", "partially_complete"].includes(orderStatus)
-              && str(tx.status).toLowerCase() === "pending" && checked.response.ok && providerSuccess) {
+          if (str(tx.status).toLowerCase() === "pending" && checked.response.ok && providerSuccess) {
             const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
             const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), Number(meta.reservedAmount || tx.amount), "social");
             const settled = await admin.rpc("sparkle_digital_wallet_action", {
@@ -506,7 +505,7 @@ Deno.serve(async (req: Request) => {
           ...(isSocial && progress ? { orderProgress: progress, deliveryStatus: progress.status } : {}),
           message: isSocial ? "The order has been accepted. Sparkle has updated its delivery status." : "Supplier confirmed the order. Your final Sparkle charge has been settled." });
       }
-      if (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess)) {
+      if (checked.response.ok && (providerFailure || (Number(provider?.code) >= 400 && pStatus !== "" && !providerSuccess))) {
         if (isSocial) {
           const refund = await admin.rpc("sparkle_social_refund_order", {
             p_user_id: user.id, p_reference: reference,
@@ -549,7 +548,9 @@ Deno.serve(async (req: Request) => {
       providerFields = { serviceID: "socials", plan: plan.value, api: gsubzKey, amount: "", link: requestUrl.toString(), quantity: String(quantity), requestID: providerRequestId };
       supplierEstimate = quote.supplierEstimate; quotedRetail = quote.estimatedRetail; maximumReserve = quote.maximumReserve;
       service = "Social Media Market";
-      metadata = { digitalKind: "social", provider: "GSubz", providerRequestID: providerRequestId, clientRequestID: ref.clientRequestId, plan: plan.value, planName: plan.displayName, quantity, link: requestUrl.toString(), quotedSupplierCost: supplierEstimate, quotedRetail, reservedAmount: maximumReserve, markupPercent: markup("social"), currency: "NGN" };
+      metadata = { digitalKind: "social", provider: "GSubz", providerRequestID: providerRequestId, clientRequestID: ref.clientRequestId, plan: plan.value, planName: plan.displayName, quantity, link: requestUrl.toString(), quotedSupplierCost: supplierEstimate, quotedRetail, reservedAmount: maximumReserve, markupPercent: markup("social"), currency: "NGN",
+        socialAutoTrack: true, socialTrackingTerminal: false, socialTrackingState: "scheduled",
+        socialTrackingAttempts: 0, socialTrackingStartedAt: new Date().toISOString(), socialNextCheckAt: new Date().toISOString() };
     } else {
       let q: ReturnType<typeof bulkSmsQuote>; try { q = bulkSmsQuote(body); } catch (e) { return reply({ success: false, error: e instanceof Error ? e.message : "Invalid bulk SMS request." }, 400); }
       const expected = Number(body.expectedTotal); if (!Number.isFinite(expected) || Math.abs(expected - q.estimatedRetail) > 0.02) return reply({ success: false, error: "The SMS quote changed. Calculate the current price and review the message again." }, 409);
@@ -604,6 +605,87 @@ Deno.serve(async (req: Request) => {
         });
         return reply({ success: false, status: "pending", reference: providerRequestId,
           error: "Sparkle could not verify the original GSubz order. Your funds remain reserved for safety. Do not resend this campaign yet." }, 202);
+      }
+    }
+    // A failed/ambiguous initial Social Market response is not enough to refund.
+    // Verify the exact original requestID first; never pass transactionID together with it.
+    if (action === "buy_social" && (
+      socialPaymentFailure(statusOf(providerResult))
+      || (!httpOk && Number(providerResult?.code) >= 400)
+    )) {
+      let verification: any = null;
+      try {
+        verification = await providerPost("/api/verify/", gsubzKey, { api: gsubzKey, requestID: providerRequestId });
+      } catch {
+        await admin.rpc("sparkle_digital_wallet_action", {
+          p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+          p_amount: maximumReserve, p_service: service,
+          p_metadata: { provider_response: providerResult, socialVerificationUnavailable: true, stage: "provider_pending" }
+        });
+        return reply({ success: false, status: "pending", reference: providerRequestId,
+          error: "Sparkle could not verify the supplier response yet. Your funds remain reserved while the original order is checked. Do not place a duplicate order." }, 202);
+      }
+      const verified = verification.data;
+      const verifiedStatus = statusOf(verified);
+      const verifiedOrder = socialOrderOf(verified);
+      const verifiedQuantity = Number(metadata.quantity || 0);
+      if (!verification.response.ok) {
+        await admin.rpc("sparkle_digital_wallet_action", {
+          p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+          p_amount: maximumReserve, p_service: service,
+          p_metadata: { provider_response: providerResult, socialVerificationResponse: verified, socialVerificationHttpStatus: verification.response.status, stage: "provider_pending" }
+        });
+        return reply({ success: false, status: "pending", reference: providerRequestId,
+          error: "The supplier has not returned a verified final status. Your funds remain reserved while Sparkle checks the original order. Do not retry yet." }, 202);
+      }
+      if (verifiedOrder && socialOrderHasNoDelivery(verifiedOrder, verifiedQuantity)) {
+        const refund = await admin.rpc("sparkle_social_refund_order", {
+          p_user_id: user.id, p_reference: providerRequestId,
+          p_provider_order: verifiedOrder,
+          p_reason: "Initial supplier rejection was verified by the original requestID and full undelivered quantity"
+        });
+        if (refund.error || refund.data?.success !== true) {
+          await admin.rpc("sparkle_digital_wallet_action", {
+            p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+            p_amount: maximumReserve, p_service: service,
+            p_metadata: { provider_response: providerResult, socialVerificationResponse: verified, socialRefundProofNeedsReconciliation: true, stage: "provider_pending" }
+          });
+          return reply({ success: false, status: "pending", reference: providerRequestId,
+            error: refund.data?.error || "The supplier failure is verified, but Sparkle is reconciling the refund. Do not reorder yet." }, 202);
+        }
+        return reply({ success: false, status: "refunded", reference: providerRequestId,
+          message: "The supplier confirmed that the full order was not delivered. Your Sparkle wallet has been refunded." });
+      }
+      if (socialPaymentFailure(verifiedStatus) && !verifiedOrder) {
+        const refund = await admin.rpc("sparkle_social_refund_order", {
+          p_user_id: user.id, p_reference: providerRequestId,
+          p_provider_order: { status: "failed", source: "transaction", verificationStatus: verifiedStatus },
+          p_reason: "Initial supplier rejection was confirmed as a failed transaction using the original requestID"
+        });
+        if (refund.error || refund.data?.success !== true) {
+          await admin.rpc("sparkle_digital_wallet_action", {
+            p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+            p_amount: maximumReserve, p_service: service,
+            p_metadata: { provider_response: providerResult, socialVerificationResponse: verified, socialRefundProofNeedsReconciliation: true, stage: "provider_pending" }
+          });
+          return reply({ success: false, status: "pending", reference: providerRequestId,
+            error: refund.data?.error || "The supplier confirmed a transaction failure, but Sparkle is reconciling the refund. Do not reorder yet." }, 202);
+        }
+        return reply({ success: false, status: "refunded", reference: providerRequestId,
+          message: "The supplier confirmed that the transaction failed. Your Sparkle wallet has been refunded." });
+      }
+      if (socialPaymentSuccess(verifiedStatus)) {
+        providerResult = verified;
+        httpOk = true;
+        metadata = { ...metadata, socialPaymentStatusVerified: true };
+      } else {
+        await admin.rpc("sparkle_digital_wallet_action", {
+          p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+          p_amount: maximumReserve, p_service: service,
+          p_metadata: { provider_response: providerResult, socialVerificationResponse: verified, stage: "provider_pending" }
+        });
+        return reply({ success: false, status: "pending", reference: providerRequestId,
+          error: "The supplier response is still inconclusive. Your funds remain reserved while Sparkle checks the original order. Do not place a duplicate order." }, 202);
       }
     }
     const supplierStatus = statusOf(providerResult), smsSent = action === "send_bulk_sms" ? Number(providerResult?.sent ?? providerResult?.recipients ?? 0) : 1;
