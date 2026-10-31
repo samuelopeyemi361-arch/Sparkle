@@ -218,7 +218,7 @@ async function fetchSocialPlans() {
   const rawText = await response.text();
   let data: any = null;
   try { data = JSON.parse(rawText); } catch {}
-  if (!response.ok || !data) throw new Error(`GSubz social-media catalogue is unavailable (HTTP ${response.status}). Please refresh in a moment. No purchase has been made.`);
+  if (!response.ok || !data) throw new Error(`Sparkle's social-media catalogue is temporarily unavailable (HTTP ${response.status}). Please refresh in a moment. No purchase has been made.`);
   const rawPlans = extractPlans(data);
   const defaultDiscount = catalogueDiscount(data);
   const plans = rawPlans.map((p: any) => normaliseSocialPlan(p, defaultDiscount)).filter((p: any) => p !== null);
@@ -241,13 +241,13 @@ async function fetchSocialPlans() {
   }));
   if (!plans.length) {
     const keys = data && typeof data === "object" ? Object.keys(data).slice(0, 10).join(", ") : typeof data;
-    throw new Error(`GSubz returned its social catalogue in an unrecognised format (HTTP ${response.status}; fields: ${keys || "none"}). Please refresh later. No purchase has been made.`);
+    throw new Error(`Sparkle received an unsupported social catalogue response (HTTP ${response.status}; fields: ${keys || "none"}). Please refresh later. No purchase has been made.`);
   }
   return plans;
 }
 function planQuote(plan: any, quantity: number) {
   if (!plan?.priceAvailable || !Number.isFinite(Number(plan.apiPricePerThousand)) || Number(plan.apiPricePerThousand) <= 0) {
-    throw new Error("GSubz has not supplied a usable live price for this service. Checkout remains disabled.");
+    throw new Error("A verified live price is not available for this plan. Checkout remains disabled.");
   }
   const supplierEstimate = money2(plan.apiPricePerThousand * quantity / 1000);
   const estimate = Math.max(0.01, money2(supplierEstimate * (1 + markup("social") / 100)));
@@ -537,7 +537,7 @@ Deno.serve(async (req: Request) => {
     if (action === "buy_social") {
       const planCodeValue = str(body.plan), quantity = Number(body.quantity), link = str(body.link), plans = await fetchSocialPlans(), plan = plans.find(p => p.value === planCodeValue);
       if (!plan) return reply({ success: false, error: "That social-media plan is no longer available. Refresh the catalogue and review the new price." }, 409);
-      if (!plan.priceAvailable) return reply({ success: false, error: "GSubz has not supplied a usable live price for this service. No money was reserved. Please refresh later." }, 409);
+      if (!plan.priceAvailable) return reply({ success: false, error: "A verified live price is not available for this plan. No money was reserved. Please refresh later." }, 409);
       const linkError = validateSocialTargetLink(link, plan.displayName); if (linkError) return reply({ success: false, error: linkError }, 400);
       const requestUrl = new URL(link);
       if (!Number.isSafeInteger(quantity) || quantity < plan.min || quantity > plan.max) return reply({ success: false, error: `Quantity must be between ${plan.min} and ${plan.max}.` }, 400);
