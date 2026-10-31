@@ -416,8 +416,6 @@ async function getCountriesForService(service:string):Promise<string[]>{
  const response=await apiGet("/guest/prices?product="+encodeURIComponent(service));
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified.",503,"COUNTRIES_UNAVAILABLE");
  const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- const serviceNode:any=root[service]||root[service.toUpperCase()]||root;
- if(!serviceNode||typeof serviceNode!=="object"||Array.isArray(serviceNode))throw problem("No countries currently list this service.",409,"NO_STOCK");
  const catalogueCountries=await getProviderCountries();
  const result:string[]=[];
  for(const item of catalogueCountries){
@@ -425,9 +423,12 @@ async function getCountriesForService(service:string):Promise<string[]>{
   if(!code)continue;
   let providerCode:string;
   try{providerCode=providerCountry(code);}catch{continue;}
-  const countryNode=serviceNode[providerCode]||serviceNode[providerCode.toUpperCase()]||serviceNode[code]||serviceNode[code.toUpperCase()];
+  // 5SIM guest prices is country-first; product is nested inside each country.
+  const countryNode=root[providerCode]||root[providerCode.toUpperCase()]||root[code]||root[code.toUpperCase()];
   if(!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
-  if(parseOfferRows(countryNode).some(offer=>offer.count>0))result.push(code);
+  const productNode=countryNode[service]||countryNode[service.toUpperCase()];
+  if(!productNode||typeof productNode!=="object"||Array.isArray(productNode))continue;
+  if(parseOfferRows(productNode).some(offer=>offer.count>0))result.push(code);
  }
  return result;
 }
