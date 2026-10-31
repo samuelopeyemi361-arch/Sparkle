@@ -6487,33 +6487,37 @@ async function loadCountriesForNumberService(serviceCode){
  const continueButton=document.getElementById("numberContinueCountryButton");
  const help=document.querySelector("#numberCountryPicker .vn-country-help span");
  if(continueButton){continueButton.disabled=true;continueButton.textContent="Checking countries…";}
- if(help)help.textContent="Checking which countries currently have "+service.name+" numbers in stock.";
+ if(help)help.textContent="Preparing the country list for "+service.name+".";
  renderNumberCountries();
+ const enableCountryFallback=()=>{
+  // Keep country selection usable if the supplier's broad country-index endpoint is incomplete.
+  // The operators request remains the authoritative live stock check before any quote or purchase.
+  service.availableCountries=numberCountriesCache.map(c=>String(c.code||"").toLowerCase()).filter(Boolean);
+  service.countryAvailabilityLoaded=true;
+  service.countryAvailabilityFailed=false;
+ };
  try{
   const response=await callNumberCatalog({action:"service-countries",serviceName:serviceCode,serverId:"server1"});
   if(seq!==numberServiceCountriesLoadSequence||serviceCode!==(document.getElementById("numberAppSelect")?.value||""))return;
   const data=response?.data||response;
   const countries=Array.isArray(data.available_countries)?data.available_countries.map(v=>String(v||"").trim().toLowerCase()).filter(Boolean):[];
   service.availableCountries=[...new Set(countries)];
-  service.countryAvailabilityLoaded=true;service.countryAvailabilityFailed=false;
+  if(!service.availableCountries.length)enableCountryFallback();
+  else{service.countryAvailabilityLoaded=true;service.countryAvailabilityFailed=false;}
   const countrySelect=document.getElementById("numberCountrySelect");
-  if(!service.availableCountries.length){
-   if(continueButton){continueButton.disabled=true;continueButton.textContent="No countries available";}
-   if(help)help.textContent="No country currently has this service in stock. Choose another service or try again later.";
-   renderNumberCountries();
-   return;
-  }
   if(countrySelect&&!service.availableCountries.includes(String(countrySelect.value||"us").toLowerCase()))countrySelect.value=service.availableCountries[0];
   const chosen=numberCountriesCache.find(c=>c.code===countrySelect?.value);
   const chosenLabel=document.getElementById("numberCountryPickerSelected");if(chosenLabel)chosenLabel.textContent=numberCountryLabel(chosen);
-  if(continueButton){continueButton.disabled=false;continueButton.textContent="Continue to operators →";}
-  if(help)help.textContent="Showing only countries where "+service.name+" is currently available. Operator prices load after you continue.";
+  if(continueButton){continueButton.disabled=!service.availableCountries.length;continueButton.textContent="Continue to operators →";}
+  if(help)help.textContent=countries.length
+   ?"Showing countries with reported stock. Operators are checked again when you continue."
+   :"The full country list is ready. Live service availability will be checked when you continue.";
   renderNumberCountries();
  }catch(error){
   if(seq!==numberServiceCountriesLoadSequence)return;
-  service.countryAvailabilityLoaded=false;service.countryAvailabilityFailed=true;service.availableCountries=[];
-  if(continueButton){continueButton.disabled=false;continueButton.textContent="Retry country list";}
-  if(help)help.textContent="Sparkle could not verify country availability. Tap Retry country list to try again; no wallet funds were used.";
+  enableCountryFallback();
+  if(continueButton){continueButton.disabled=!service.availableCountries.length;continueButton.textContent="Continue to operators →";}
+  if(help)help.textContent="Country list is ready. Sparkle will verify live operator availability after you select a country.";
   renderNumberCountries();
  }
 }
