@@ -406,6 +406,8 @@ Deno.serve(async (req: Request) => {
       if (isSocial && transactionID != null && String(transactionID).trim()) verifyFields.transactionID = String(transactionID);
       const checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
       const provider = checked.data, pStatus = statusOf(provider);
+      const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
+      const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
 
       let order: any = null, orderStatus = "", progress: any = null;
       if (isSocial) {
@@ -443,13 +445,26 @@ Deno.serve(async (req: Request) => {
         }
 
         if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled"].includes(orderStatus)) {
+          if (["partial", "partially_completed", "partially_complete"].includes(orderStatus)
+              && str(tx.status).toLowerCase() === "pending" && checked.response.ok && providerSuccess) {
+            const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
+            const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), Number(meta.reservedAmount || tx.amount), "social");
+            const settled = await admin.rpc("sparkle_digital_wallet_action", {
+              p_user_id: user.id, p_action: "success", p_reference: reference,
+              p_amount: finalAmount, p_service: tx.service,
+              p_metadata: { status_checked: true, provider_verification: provider, socialOrderProgress: progress,
+                actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : null, final_customer_charge: finalAmount }
+            });
+            if (settled.error || settled.data?.success !== true) return reply({ success: false, status: "pending", reference, orderProgress: progress,
+              error: "The supplier reports partial delivery, but Sparkle could not settle the confirmed supplier charge. The order needs reconciliation." }, 202);
+          }
           return reply({ success: false, status: "partial", reference, amount: Number(tx.amount), orderProgress: progress,
             message: ["cancelled", "canceled"].includes(orderStatus)
               ? "The supplier reports a cancellation but has not confirmed that the full quantity was undelivered. No automatic full refund was issued. This order needs review."
-              : "The supplier reports partial delivery. Sparkle has not issued a full refund because part of the order may have been delivered. This order needs review." }, 202);
+              : "The supplier reports partial delivery. Sparkle has recorded the supplier charge, but a full refund is not safe because part of the order may have been delivered. This order needs review." }, 202);
         }
 
-        const socialTransactionFailure = socialPaymentFailure(pStatus);
+        const socialTransactionFailure = providerFailure;
         if (str(tx.status).toLowerCase() === "successful" && checked.response.ok && socialTransactionFailure && !order) {
           const refund = await admin.rpc("sparkle_social_refund_order", {
             p_user_id: user.id, p_reference: reference,
@@ -472,8 +487,6 @@ Deno.serve(async (req: Request) => {
         }
       }
 
-      const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
-      const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
       if (checked.response.ok && providerSuccess) {
         const which = meta.digitalKind === "social" ? "social" : "sms";
         if (which === "sms" && provider?.amountPaid == null && provider?.amount == null) return reply({ success: false, status: "pending", reference, error: "The supplier confirmed the SMS status but did not return the final amount paid. Sparkle is keeping the reservation safe until the exact charge can be reconciled. Do not resend this campaign." }, 202);
