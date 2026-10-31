@@ -399,9 +399,27 @@ Deno.serve(async (req: Request) => {
         return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "Sparkle received your order but could not finish saving it. Do not buy again; contact support." }, 202);
       }
       if (smsDetails.code) {
+        let finished = providerStatus === "FINISHED";
+        if (!finished) {
+          try {
+            const finish = await apiGet("/user/finish/" + encodeURIComponent(providerId));
+            finished = finish.ok && String(finish.data?.status || "").toUpperCase() === "FINISHED";
+            if (finished) {
+              sanitized.status = "FINISHED";
+              sanitized.sms_code = smsDetails.code;
+              sanitized.sms_text = smsDetails.text || null;
+              await ctx.admin.from("sparkle_sms_otp_orders").update({ provider_response: sanitized, updated_at: new Date().toISOString() }).eq("user_id", ctx.user.id).eq("request_id", requestId);
+            }
+          } catch {
+            // Keep the wallet reservation pending until provider finish is confirmed.
+          }
+        }
+        if (!finished) {
+          return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, message: "The SMS arrived. Sparkle is confirming completion with the number service before finalizing this purchase. Do not buy again." }, 202);
+        }
         const completed = await finalize(ctx.admin, requestId, "success", sanitized, null);
         if (completed.error || completed.data?.success !== true) {
-          return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The number and SMS arrived, but Sparkle could not finalize the transaction yet. Do not buy again; contact support." }, 202);
+          return reply({ success: false, status: "unknown", request_id: requestId, order_id: providerId, phone_number: phone, message: "The number service finished the order, but Sparkle could not finalize the wallet record. Do not buy again; contact support." }, 202);
         }
         return reply({ success: true, status: "success", request_id: requestId, order_id: providerId, phone_number: phone, sms_code: smsDetails.code, sms_text: smsDetails.text, service: quote.name, country, selling_price_ngn: quote.selling_price_ngn, currency: "NGN", message: "Number purchased and SMS received." });
       }
@@ -409,23 +427,6 @@ Deno.serve(async (req: Request) => {
         const completed = await finalize(ctx.admin, requestId, "cancelled", sanitized, "5SIM confirmed that the activation ended without an SMS code.");
         const refunded = !completed.error && completed.data?.success === true;
         return reply({ success: false, status: refunded ? "cancelled" : "unknown", refunded, request_id: requestId, message: refunded ? "The number activation expired or was cancelled. Sparkle has recorded your wallet refund." : "The supplier ended the activation, but the refund needs support review. Do not buy again." }, refunded ? 502 : 202);
-      }
-      if (["RECEIVED", "FINISHED"].includes(providerStatus)) {
-        const savedOrder = await ctx.admin.from("sparkle_sms_otp_orders")
-          .select("wallet_transaction_id")
-          .eq("user_id", ctx.user.id)
-          .eq("request_id", requestId)
-          .maybeSingle();
-        if (savedOrder.error || !savedOrder.data?.wallet_transaction_id) {
-          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
-        }
-        const debit = await ctx.admin.from("wallet_transactions")
-          .update({ status: "successful" })
-          .eq("id", savedOrder.data.wallet_transaction_id)
-          .eq("status", "pending");
-        if (debit.error) {
-          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
-        }
       }
       return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, service: quote.name, country, network: "Available network", selling_price_ngn: quote.selling_price_ngn, server_id: serverId, server_label: profile.label, currency: "NGN", message: smsDetails.hasMessage ? "The SMS arrived but its code could not be read yet. Refresh the order to retrieve it." : "Number purchased. Check again shortly for the SMS code." });
     }
