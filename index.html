@@ -10378,12 +10378,12 @@ function toggleSparkleMoreServices(){
     if(info){
       if(plan){
         const hasVerifiedPrice=plan.priceAvailable===true&&Number.isFinite(Number(plan.apiPricePerThousand))&&Number(plan.apiPricePerThousand)>0&&Number.isFinite(Number(plan.retailRatePerThousand))&&Number(plan.retailRatePerThousand)>0;
-        info.innerHTML=\`<strong>\${esc(plan.displayName)}</strong>\${hasVerifiedPrice?\`<div>Sparkle selling rate: <b>\${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div>\`:'<div><b>Price unavailable</b></div><div>A verified live price is not available for this option. Checkout remains disabled; no money will be reserved.</div>'}<div>Minimum \${Number(plan.min||1).toLocaleString("en-NG")} · Maximum \${Number(plan.max||1000000).toLocaleString("en-NG")}</div>\`;
+        info.innerHTML=`<strong>${esc(plan.displayName)}</strong>${hasVerifiedPrice?`<div>Sparkle selling rate: <b>${fmt(plan.retailRatePerThousand)}</b> per 1,000 units.</div>`:'<div><b>Price unavailable</b></div><div>A verified live price is not available for this option. Checkout remains disabled; no money will be reserved.</div>'}<div>Minimum ${Number(plan.min||1).toLocaleString("en-NG")} · Maximum ${Number(plan.max||1000000).toLocaleString("en-NG")}</div>`;
       }else info.textContent=socialPlans.length?"Choose a live option to view its price and quantity range.":"No live social-media services are available. Refresh the platform list to try again.";
     }
     const qty=document.getElementById("sparkleSocialQuantity");
     if(plan&&qty){qty.min=String(plan.min||1);qty.max=String(plan.max||1000000);if(Number(qty.value)<Number(qty.min))qty.value=qty.min;}
-    if(help)help.textContent=plan?\`Enter a whole number between \${Number(plan.min||1).toLocaleString("en-NG")} and \${Number(plan.max||1000000).toLocaleString("en-NG")}.\`:"Choose an option to see its allowed quantity.";
+    if(help)help.textContent=plan?`Enter a whole number between ${Number(plan.min||1).toLocaleString("en-NG")} and ${Number(plan.max||1000000).toLocaleString("en-NG")}.`:"Choose an option to see its allowed quantity.";
     if(clearQuote)invalidateSparkleSocialQuote();
   }
   function invalidateSparkleSocialQuote(){
