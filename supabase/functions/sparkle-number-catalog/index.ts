@@ -415,18 +415,41 @@ async function getCountriesForService(service:string):Promise<string[]>{
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  const response=await apiGet("/guest/prices?product="+encodeURIComponent(service));
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified. Please try again.",503,"COUNTRIES_UNAVAILABLE");
- const root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- const result:string[]=[];
- for(const [providerCode,countryNode] of Object.entries(root)){
-  if(!/^[a-z0-9][a-z0-9-]{1,39}$/i.test(providerCode)||!countryNode||typeof countryNode!=="object"||Array.isArray(countryNode))continue;
-  const node:any=countryNode;
-  const productNode=node[service]||node[service.toUpperCase()];
-  if(!productNode||typeof productNode!=="object"||Array.isArray(productNode))continue;
-  if(!parseOfferRows(productNode).some(offer=>offer.count>0))continue;
-  const code=providerCode.toLowerCase()==="usa"?"us":providerCode.toLowerCase()==="canada"?"ca":providerCode.toLowerCase();
-  if(!result.includes(code))result.push(code);
+ let root:any=response.data;
+ for(let depth=0;depth<3;depth++){
+  if(root&&typeof root==="object"&&!Array.isArray(root)&&root.data&&typeof root.data==="object")root=root.data;
+  else break;
  }
- return result.sort((a,b)=>a==="us"?-1:b==="us"?1:a==="ca"?-1:b==="ca"?1:a.localeCompare(b));
+ const result=new Set<string>();
+ const addCountry=(rawCode:string,node:any)=>{
+  const key=asText(rawCode).toLowerCase();
+  if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(key)||!node||typeof node!=="object"||Array.isArray(node))return;
+  const serviceNode=node[service]??node[service.toUpperCase()]??node[service.toLowerCase()];
+  if(serviceNode&&typeof serviceNode==="object"&&!Array.isArray(serviceNode)&&parseOfferRows(serviceNode).some(offer=>offer.count>0)){
+   result.add(key==="usa"?"us":key==="canada"?"ca":key);
+  }
+ };
+ // 5SIM commonly returns country -> product -> operator. Some responses are product -> country -> operator.
+ for(const [key,node] of Object.entries(root||{})){
+  if(!node||typeof node!=="object"||Array.isArray(node))continue;
+  addCountry(key,node);
+  const nested=node as any;
+  if(key.toLowerCase()===service||key.toLowerCase()===service.toLowerCase()){
+   for(const [countryCode,offers] of Object.entries(nested)){
+    if(parseOfferRows(offers).some(offer=>offer.count>0)){
+     const c=countryCode.toLowerCase();
+     if(/^[a-z0-9][a-z0-9-]{1,39}$/.test(c))result.add(c==="usa"?"us":c==="canada"?"ca":c);
+    }
+   }
+  }
+ }
+ // Also accept country entries wrapped one level deeper by the upstream API.
+ for(const [key,node] of Object.entries(root||{})){
+  if(!node||typeof node!=="object"||Array.isArray(node))continue;
+  const nested=(node as any).data;
+  if(nested&&typeof nested==="object")addCountry(key,nested);
+ }
+ return [...result].sort((a,b)=>a==="us"?-1:b==="us"?1:a==="ca"?-1:b==="ca"?1:a.localeCompare(b));
 }
 
 function recommendedOffer(offers:ProviderOffer[],service:string,country:string):ProviderOffer|undefined{
