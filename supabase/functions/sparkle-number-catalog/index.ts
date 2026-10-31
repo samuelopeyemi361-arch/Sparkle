@@ -435,7 +435,7 @@ async function getQuote(country:string,service:string,serverId:string,requestedO
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,markup_percent:profile.markup,
+  stock:offer.count,markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
