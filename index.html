@@ -9888,7 +9888,7 @@ function toggleSparkleMoreServices(){
     if(!box)return;
     box.hidden = false;
     box.className = "sparkle-digital-result " + (kind || "");
-    const canTrack = !!reference && (kind === "pending" || id === "sparkleSocialResult");
+    const canTrack = !!reference && (kind === "pending" || (kind === "success" && id === "sparkleSocialResult"));
     const trackLabel = kind === "success" ? "Refresh delivery status" : "Check order status";
     box.innerHTML = `<strong>${esc(title || "Sparkle update")}</strong><div>${esc(message || "")}</div>` + (reference ? `<div style="font-size:11px;margin-top:8px;opacity:.8">Reference: ${esc(reference)}</div>` : "") + (canTrack ? `<button type="button" onclick="checkSparkleDigitalOrder('${esc(reference)}','${id}')">${trackLabel}</button>` : "");
   }
@@ -10175,7 +10175,7 @@ function toggleSparkleMoreServices(){
         }
       }
       else setResult(targetId,"error",data.status==="refunded"?"Refund confirmed":"Order status",data.message||data.error||"The order has been resolved.",reference);
-      if(data.status==="successful"||data.status==="refunded"){if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}}
+      if(data.status==="successful"||data.status==="partial"||data.status==="refunded"){if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}}
     }catch(e){setResult(targetId,"pending","Status check unavailable",e.message||"Try the status check again shortly. Do not place a duplicate order.",reference);}
   }
 
