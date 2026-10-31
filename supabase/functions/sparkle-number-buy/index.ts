@@ -238,9 +238,19 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  });
  return offers;
 }
+function recommendedOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
+ const named=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.usd<=x.providerBalanceUsd);
+ return [...named].sort((a,b)=>{
+  if(a.rate!==null&&b.rate!==null&&a.rate!==b.rate)return b.rate-a.rate;
+  if(a.rate!==null&&b.rate===null)return -1;
+  if(a.rate===null&&b.rate!==null)return 1;
+  if(a.usd!==b.usd)return a.usd-b.usd;
+  return b.count-a.count;
+ })[0];
+}
 async function bestOffer(country:string,service:string,requestedOperator="any"):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service);
- const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd);
+ const affordable=offers.filter(x=>x.usd<=x.providerBalanceUsd&&x.count>0);
  if(!requestedOperator||requestedOperator==="any"){
   const automatic=affordable.find(x=>x.operator.toLowerCase()==="any");
   if(automatic)return automatic;
@@ -248,8 +258,10 @@ async function bestOffer(country:string,service:string,requestedOperator="any"):
   if(cheapest)return cheapest;
   throw problem("The supplier account balance is too low to buy this service right now. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  }
- const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!chosen)throw problem("That operator is no longer available. Choose another operator and check its current price.",409,"OPERATOR_UNAVAILABLE");
+ const chosen=requestedOperator==="smart"
+  ?recommendedOffer(offers)
+  :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
+ if(!chosen)throw problem("No recommended operator is currently affordable and in stock. Choose another option and check its current price.",409,"OPERATOR_UNAVAILABLE");
  if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable because the supplier account cannot cover its USD price. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  return chosen;
 }
