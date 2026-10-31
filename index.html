@@ -10328,13 +10328,43 @@ function toggleSparkleMoreServices(){
       return ap-bp||String(a.displayName).localeCompare(String(b.displayName));
     });
     const selected=document.getElementById("sparkleSocialPlan")?.value||"";
-    if(!items.length){grid.innerHTML='<div class="sparkle-social-empty">No matching options were returned for this selection. Try another type or refresh.</div>';return;}
-    grid.innerHTML=items.map(p=>{
+    grid.replaceChildren();
+    if(!items.length){
+      const empty=document.createElement("div");
+      empty.className="sparkle-social-empty";
+      empty.textContent="No matching options were returned for this selection. Try another type or refresh.";
+      grid.appendChild(empty);
+      return;
+    }
+    items.forEach(p=>{
       const priced=p.priceAvailable===true&&Number.isFinite(Number(p.retailRatePerThousand))&&Number(p.retailRatePerThousand)>0;
-      const price=priced?fmt(p.retailRatePerThousand):"Price unavailable";
-      const meta="Min "+Number(p.min||1).toLocaleString("en-NG")+" · Max "+Number(p.max||1000000).toLocaleString("en-NG");
-      return '<button type="button" class="sparkle-social-plan-option '+(String(p.value)===String(selected)?'is-selected':'')+'" '+(priced?'':'disabled')+' onclick="chooseSparkleSocialPlan(\''+esc(p.value)+'\')"><span class="sparkle-social-plan-main">'+socialBrandIcon(socialSelectedPlatform)+'<span class="sparkle-social-plan-copy"><strong>'+esc(p.displayName)+'</strong><small>'+meta+'</small></span></span><span class="sparkle-social-plan-price"><strong>'+price+'</strong><small>'+(priced?'per 1,000':'not available')+'</small></span></button>';
-    }).join("");
+      const button=document.createElement("button");
+      button.type="button";
+      button.className="sparkle-social-plan-option"+(String(p.value)===String(selected)?" is-selected":"");
+      button.disabled=!priced;
+      const main=document.createElement("span");
+      main.className="sparkle-social-plan-main";
+      const brand=document.createElement("span");
+      brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
+      const copy=document.createElement("span");
+      copy.className="sparkle-social-plan-copy";
+      const title=document.createElement("strong");
+      title.textContent=String(p.displayName||"Social media option");
+      const meta=document.createElement("small");
+      meta.textContent="Min "+Number(p.min||1).toLocaleString("en-NG")+" · Max "+Number(p.max||1000000).toLocaleString("en-NG");
+      copy.append(title,meta);
+      main.append(brand,copy);
+      const priceBox=document.createElement("span");
+      priceBox.className="sparkle-social-plan-price";
+      const price=document.createElement("strong");
+      price.textContent=priced?fmt(p.retailRatePerThousand):"Price unavailable";
+      const unit=document.createElement("small");
+      unit.textContent=priced?"per 1,000":"not available";
+      priceBox.append(price,unit);
+      button.append(main,priceBox);
+      button.addEventListener("click",()=>chooseSparkleSocialPlan(p.value));
+      grid.appendChild(button);
+    });
   }
   function chooseSparkleSocialPlan(code){
     const plan=socialPlans.find(p=>String(p.value)===String(code));
