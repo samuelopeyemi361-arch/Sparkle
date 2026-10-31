@@ -108,6 +108,7 @@ async function saveTrackingState(admin: any, tx: any, meta: Record<string, any>,
     socialAutoTrack: !terminal,
     socialTrackingTerminal: terminal,
     socialTrackingAttempts: attempts,
+    socialTrackingLeaseUntil: null,
     lastSocialStatusCheckAt: now.toISOString(),
     socialNextCheckAt: terminal ? null : new Date(now.getTime() + intervalForAge(ageMs)).toISOString(),
   };
@@ -117,6 +118,27 @@ async function saveTrackingState(admin: any, tx: any, meta: Record<string, any>,
     .eq("service", "Social Media Market");
   if (saved.error) throw new Error(saved.error.message);
   return updated;
+}
+async function claimSocialOrder(admin: any, tx: any) {
+  const meta: Record<string, any> = tx.metadata || {};
+  const dueAt = str(meta.socialNextCheckAt);
+  if (!dueAt || !Number.isFinite(Date.parse(dueAt)) || Date.parse(dueAt) > Date.now()) return false;
+  const leaseUntil = new Date(Date.now() + 110 * 1000).toISOString();
+  const claimedMetadata = {
+    ...meta,
+    socialTrackingLeaseUntil: leaseUntil,
+    socialNextCheckAt: leaseUntil,
+  };
+  const claimed = await admin.from("wallet_transactions")
+    .update({ metadata: claimedMetadata })
+    .eq("reference", tx.reference)
+    .eq("user_id", tx.user_id)
+    .eq("service", "Social Media Market")
+    .eq("metadata->>socialNextCheckAt", dueAt)
+    .select("reference")
+    .maybeSingle();
+  if (claimed.error) throw new Error(claimed.error.message);
+  return !!claimed.data;
 }
 async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
   const meta: Record<string, any> = tx.metadata || {};
@@ -309,6 +331,10 @@ Deno.serve(async (req: Request) => {
 
   const results = await Promise.all((orders || []).map(async (tx: any) => {
     try {
+      // Compare-and-set the due timestamp to claim this order for one worker run.
+      // A concurrent cron invocation will see the new lease and skip this record.
+      const claimed = await claimSocialOrder(admin, tx);
+      if (!claimed) return { state: "skipped" };
       const state = await processSocialOrder(admin, tx, gsubzKey);
       return { state };
     } catch (e) {
