@@ -417,14 +417,14 @@ Deno.serve(async (req: Request) => {
           .eq("request_id", requestId)
           .maybeSingle();
         if (savedOrder.error || !savedOrder.data?.wallet_transaction_id) {
-          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "5SIM confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
+          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
         }
         const debit = await ctx.admin.from("wallet_transactions")
           .update({ status: "successful" })
           .eq("id", savedOrder.data.wallet_transaction_id)
           .eq("status", "pending");
         if (debit.error) {
-          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "5SIM confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
+          return reply({ success: false, status: "unknown", request_id: requestId, phone_number: phone, message: "The number service confirms an SMS arrived, but Sparkle could not finalize the wallet transaction record. Do not buy again; contact support." }, 202);
         }
       }
       return reply({ success: true, status: "pending", request_id: requestId, order_id: providerId, phone_number: phone, service: quote.name, country, network: "Available network", selling_price_ngn: quote.selling_price_ngn, server_id: serverId, server_label: profile.label, currency: "NGN", message: smsDetails.hasMessage ? "The SMS arrived but its code could not be read yet. Refresh the order to retrieve it." : "Number purchased. Check again shortly for the SMS code." });
