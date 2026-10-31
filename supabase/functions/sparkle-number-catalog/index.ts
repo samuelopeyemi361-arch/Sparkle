@@ -196,19 +196,15 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- // Match the aggregate rate shown on 5SIM's public service page first.
- // Short-window rate24 can differ sharply from the public aggregate (for example,
- // 10.6% versus 86% for POF USA / Virtual51), so it must not override that figure.
- // Fall back to 72-hour and then 24-hour data only when aggregate rate is absent.
- const candidates=[raw?.rate,raw?.rate72,raw?.rate24];
- for(let value of candidates){
-  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
-  if(value===null||value===undefined||value==="")continue;
-  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
-  const n=Number(normalized);
-  if(Number.isFinite(n)&&n>0&&n<=100)return n;
- }
- return null;
+ // 5SIM's documented /v1/guest/prices contract exposes ONE delivery
+ // percentage field: "rate". Do not prefer undocumented rate24/rate72
+ // aliases, which can belong to a different window or data shape.
+ let value=raw?.rate;
+ if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
+ if(value===null||value===undefined||value==="")return null;
+ const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
+ const n=Number(normalized);
+ return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
 
 const publicRateCache=new Map<string,{rate:number;expiresAt:number}>();
@@ -309,14 +305,34 @@ function parseOfferRows(node:any):ParsedOffer[]{
   return {operator,usd,count,rate};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
+// Share the latest 5SIM prices payload for five seconds per Edge Function instance.
+// Concurrent requests for the same service/country join one upstream request.
+const pricesResponseCache = new Map<string,{data:any;expiresAt:number}>();
+const pricesResponseInflight = new Map<string,Promise<any>>();
+async function getCachedPricesResponse(country:string,service:string):Promise<any>{
+ const key=country.toLowerCase()+":"+service.toLowerCase();
+ const cached=pricesResponseCache.get(key);
+ if(cached&&cached.expiresAt>Date.now())return cached.data;
+ let pending=pricesResponseInflight.get(key);
+ if(!pending){
+  pending=(async()=>{
+   const response=await apiGet("/guest/prices?country="+encodeURIComponent(country)+"&product="+encodeURIComponent(service));
+   if(!response.ok||!response.data||typeof response.data!=="object")
+    throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
+   pricesResponseCache.set(key,{data:response.data,expiresAt:Date.now()+5000});
+   return response.data;
+  })().finally(()=>{pricesResponseInflight.delete(key);});
+  pricesResponseInflight.set(key,pending);
+ }
+ return await pending;
+}
 async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  let providerBalance=0;
  try{providerBalance=(await providerProfile()).balance;}catch{/* Catalogue and NGN quotes remain visible even if the provider account cannot currently be verified. The purchase endpoint rechecks before reserving any customer funds. */}
- const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service));
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
- const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
+ const pricesData=await getCachedPricesResponse(pc,service);
+ const root:any=pricesData,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
  let productNode:any=countryNode?.[service]||root?.[service]||null;
  if(productNode&&typeof productNode==="object"&&productNode[pc]&&typeof productNode[pc]==="object")productNode=productNode[pc];
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
@@ -325,14 +341,14 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
- // Reconcile the API rate with the exact service/country/operator row on 5SIM's
- // public product page. This is the same rate customers see on 5SIM and prevents
- // a short-window API rate from being displayed as the public delivery percentage.
+ // Reconcile the guest API value with the exact service/country/operator row
+ // on 5SIM's public product page. This matches the percentage customers see
+ // on 5SIM instead of exposing a short-window API figure as the public rate.
  const ratedOffers=await enrichOfficialRates(service,pc,offers);
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rate_source:"5sim_guest_prices",
-  rate_policy:"rate24_then_rate72_then_rate",
-  rate_window:"24h_preferred_72h_fallback_aggregate_fallback",
+  country:pc,service,rate_source:"5sim_public_product_page_with_guest_api_fallback",
+  rate_policy:"exact_service_country_operator_public_rate_override",
+  rate_window:"5sim_published_recent_delivery_percentage",
   fetched_at:new Date().toISOString(),
   offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_reported:x.rate!==null,count:x.count}))
  }));
