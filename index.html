@@ -4049,6 +4049,22 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 
       </div>
     </main>
+
+    <footer class="sparkle-dashboard-footer" aria-label="Sparkle social media">
+      <span class="sparkle-dashboard-footer-label">Follow Sparkle</span>
+      <div class="sparkle-dashboard-socials">
+        <a href="https://www.instagram.com/thesparkle_com_ng/" target="_blank" rel="noopener noreferrer" aria-label="Instagram" title="Instagram">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="18" cy="6" r="1.3" fill="currentColor"/></svg>
+        </a>
+        <a href="https://www.tiktok.com/@thesparkle.com.ng" target="_blank" rel="noopener noreferrer" aria-label="TikTok" title="TikTok">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M19.6 8.2a7.1 7.1 0 0 1-4.4-1.5v8.1a5.8 5.8 0 1 1-5-5.7v3.1a2.8 2.8 0 1 0 1.9 2.6V2.5h3.1c.2 2.1 1.9 3.9 4.4 4.1z"/></svg>
+        </a>
+        <a href="https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp Channel" title="WhatsApp Channel">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 2a9.7 9.7 0 0 0-8.3 14.7L2.5 22l5.5-1.4A10 10 0 1 0 12 2zm0 17.8a8 8 0 0 1-4.1-1.1l-.3-.2-3.2.8.9-3.1-.2-.3A8 8 0 1 1 12 19.8zm4.4-5.9c-.2-.1-1.5-.8-1.8-.9s-.4-.1-.6.1-.7.9-.9 1-.3.1-.5 0a7.2 7.2 0 0 1-2.1-1.3 7.8 7.8 0 0 1-1.4-1.8c-.1-.2 0-.3.1-.5l.4-.5.2-.4c.1-.2 0-.3 0-.5l-.8-1.9c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.5.1-.7.3s-.9.9-.9 2.1 1 2.4 1.1 2.6a10 10 0 0 0 3.9 3.4c.5.2.9.4 1.2.5.5.2 1 .2 1.4.1.4-.1 1.5-.6 1.7-1.2s.2-1.1.2-1.2-.2-.2-.4-.3z"/></svg>
+        </a>
+      </div>
+      <span class="sparkle-dashboard-copyright">© 2026 TheSparkle</span>
+    </footer>
   </div>
 
   <div class="mobile-bottom-nav" aria-label="Main navigation">
@@ -11447,6 +11463,14 @@ textarea,
   font-size: 16px !important;
 }
 
+/* Social links at the bottom of the signed-in dashboard */
+.sparkle-dashboard-footer{display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:12px 18px;padding:22px 24px 30px;margin-top:8px;border-top:1px solid var(--line);color:var(--muted)}
+.sparkle-dashboard-footer-label,.sparkle-dashboard-copyright{font-size:12px;font-weight:700}
+.sparkle-dashboard-socials{display:flex;align-items:center;gap:10px}
+.sparkle-dashboard-socials a{display:grid;place-items:center;width:34px;height:34px;border:1px solid #dce5f2;border-radius:50%;color:#36517e;background:#fff;transition:background .18s ease,color .18s ease,transform .18s ease}
+.sparkle-dashboard-socials a:hover{background:#edf4ff;color:#0b5cff;transform:translateY(-2px)}
+.sparkle-dashboard-socials svg{display:block;width:18px;height:18px}
+@media(max-width:600px){.sparkle-dashboard-footer{padding-bottom:92px;gap:10px 14px}.sparkle-dashboard-footer-label,.sparkle-dashboard-copyright{font-size:11px}}
 /* Compact icon-only links to Sparkle's official social accounts */
 .sparkle-footer-socials{display:flex;align-items:center;gap:12px;margin-top:18px}
 .footer .sparkle-footer-socials a.sparkle-social-icon{display:grid;place-items:center;width:38px;height:38px;border:1px solid rgba(214,228,255,.25);border-radius:50%;color:#d6e4ff;text-decoration:none;transition:background .18s ease,color .18s ease,transform .18s ease}
