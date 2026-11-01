@@ -84,6 +84,13 @@ function providerCountry(country: string): string {
   }
   return value;
 }
+function manualRateCountry(country: string): string {
+  const value = asText(country).toLowerCase().replace(/[_\s]+/g, "-");
+  if (["us","usa","united-states"].includes(value)) return "us";
+  if (["ca","canada"].includes(value)) return "ca";
+  if (["de","germany"].includes(value)) return "de";
+  return value;
+}
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
   const profile = profileByServer[serverId];
   if (!profile || serverId !== "server1") throw problem("Choose a valid Sparkle number option.", 400, "INVALID_SERVER");
@@ -206,12 +213,12 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now };
   return rate;
 }
-type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
+type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
  // Use only 5SIM's documented customer-facing delivery field.
  // A missing rate stays unverified; never substitute an HTML/statistics window.
- let value=raw?.rate;
+ let value=raw?.rate3;
  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
  if(value===null||value===undefined||value==="")return null;
  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
@@ -225,10 +232,31 @@ function parseOfferRows(node:any):ParsedOffer[]{
   const usd=Number(raw?.cost),count=Number(raw?.count);
   const rate=parseDeliveryRate(raw);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
-  return {operator,usd,count,rate};
+  return {operator,usd,count,rate,rateSource:"5sim"};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
-async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
+async function applyManualRateOverrides(offers:ProviderOffer[],service:string,country:string,admin:any):Promise<ProviderOffer[]>{
+ if(!offers.length)return offers;
+ const canonicalCountry=manualRateCountry(country),now=new Date().toISOString();
+ const {data,error}=await admin.from("sparkle_number_delivery_rate_overrides")
+  .select("operator,rate_percent,expires_at")
+  .eq("service",service.toLowerCase()).eq("country",canonicalCountry)
+  .gt("expires_at",now).in("operator",offers.map(x=>x.operator));
+ if(error){
+  console.error("[sparkle-number-buy-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
+  throw problem("Sparkle could not verify its manual delivery-rate settings. Please refresh and try again.",503,"RATE_OVERRIDE_UNAVAILABLE");
+ }
+ const overrides=new Map<string,{rate:number;expiresAt:string}>(
+  (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
+ );
+ return offers.map(offer=>{
+  const override=overrides.get(offer.operator.toLowerCase());
+  if(!override||!Number.isFinite(override.rate)||override.rate<0||override.rate>100)return offer;
+  const rate=Number(override.rate.toFixed(2));
+  return {...offer,rate,rateSource:"manual_override",manualRateExpiresAt:override.expiresAt};
+ });
+}
+async function getProductOffers(country:string,service:string,admin:any):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  const account=await providerProfile();
@@ -245,10 +273,10 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:account.balance}));
  // No HTML scraping or alternate time-window substitution: keep the exact
  // percentage supplied by 5SIM's guest/prices API as the single source of truth.
- const ratedOffers=offers;
+ const ratedOffers=await applyManualRateOverrides(offers,service,country,admin);
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rateSource:"guest/prices.rate",
-  offers:ratedOffers.map(x=>({operator:x.operator,rate:x.rate,count:x.count}))
+  country:pc,service,rateSource:"guest/prices.rate3_with_admin_override",rateWindow:"3-hour",
+  offers:ratedOffers.map(x=>({operator:x.operator,rate:x.rate,rate_source:x.rateSource??"5sim",count:x.count}))
  }));
  ratedOffers.sort((a,b)=>{
   const ar=a.rate??-1,br=b.rate??-1;
@@ -263,8 +291,8 @@ function recommendedOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
  return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.operator.localeCompare(b.operator))[0];
 }
 
-async function bestOffer(country:string,service:string,requestedOperator="smart"):Promise<ProviderOffer>{
- const offers=await getProductOffers(country,service);
+async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
+ const offers=await getProductOffers(country,service,admin);
  if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
   const smart=recommendedOffer(offers);
   if(smart)return smart;
@@ -294,18 +322,18 @@ async function getCatalogServices(country:string):Promise<any[]>{
  }
  return items.sort((a,b)=>a.name.localeCompare(b.name));
 }
-async function getQuote(country:string,service:string,serverId:string,requestedOperator="smart"){
+async function getQuote(country:string,service:string,serverId:string,requestedOperator="smart",admin:any){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
- const offer=await bestOffer(country,service,requestedOperator);
+ const offer=await bestOffer(country,service,requestedOperator,admin);
  const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified.",503,"PRICE_UNAVAILABLE");
  const chosen=offer.operator;
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,markup_percent:profile.markup,
+  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_window:"rate3",rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
@@ -374,7 +402,7 @@ Deno.serve(async (req: Request) => {
     if (!pinResponse || !pinResponse.ok || pinData?.success !== true) {
       return reply({ success: false, message: String(pinData?.message || "Transaction PIN verification failed. No money was deducted.") }, pinResponse && pinResponse.status >= 400 && pinResponse.status < 500 ? pinResponse.status : 503);
     }
-    const quote = await getQuote(country, service, serverId, operator);
+    const quote = await getQuote(country, service, serverId, operator, ctx.admin);
     if (Math.abs(quotedPrice - quote.selling_price_ngn) > 0.02) {
       throw problem("The Sparkle price changed. No money was deducted; check the current price again.", 409, "PRICE_CHANGED");
     }
