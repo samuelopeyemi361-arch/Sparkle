@@ -441,7 +441,7 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
    }
    if(rate!==null){
     foundRates.set(key,rate);
-    publicRateCache.set(cacheKey,{rate,expiresAt:now+120000});
+    publicRateCache.set(cacheKey,{rate,expiresAt:now+30000});
    }
    diagnostics.push({operator:offer.operator,public_page_rate:rate,source,structured_matches:structured.matches,text_matches:textMatches});
   }
@@ -452,10 +452,10 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
   }));
   return offers.map(offer=>{
    const publicRate=foundRates.get(offer.operator.toLowerCase());
-   // Keep the requested API window priority when it produced a positive rate.
-   // Use the exact public product-page rate only to repair missing/zero API data.
-   if(offer.rate!==null&&offer.rate>0)return offer;
-   return publicRate===undefined?offer:{...offer,rate:publicRate,rateWindow:"public_product_page"};
+   // Match the exact public 5SIM service/country/operator percentage whenever
+   // it is available. The guest API window is a fallback only.
+   if(publicRate!==undefined)return {...offer,rate:publicRate,rateWindow:"public_product_page"};
+   return offer;
   });
 }
 
