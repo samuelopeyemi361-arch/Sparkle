@@ -399,7 +399,7 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
   let html="";
   let fetchStatus=0;
   try{
-   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{
+   const response=await fetch("https://5sim.com/products/"+encodeURIComponent(service),{
     headers:{
      Accept:"text/html,application/xhtml+xml",
      "Accept-Language":"en-US,en;q=0.9",
