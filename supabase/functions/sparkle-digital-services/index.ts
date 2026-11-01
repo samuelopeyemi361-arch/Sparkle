@@ -197,10 +197,18 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
   if (!p || typeof p !== "object") return null;
   const value = planCode(p), name = planName(p);
   const explicitApiRate = planRate(p, defaultDiscount);
-  // Current catalogue exposes api_price separately from the normal display price.
-  // Only use the API price (or an explicit supplier discount derived by planRate).
-  // Never treat the public normal price as Sparkle's supplier cost.
-  const rate = Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? explicitApiRate : NaN;
+  const verifiedRate = Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? explicitApiRate : NaN;
+  // GSubz currently omits api_price and discount from the live social catalogue.
+  // Its published price is displayed only as a provisional estimate, never
+  // recorded or settled as the actual API cost.
+  const publishedPrice = numericPrice(p?.price ?? p?.normal_price ?? p?.normalPrice ?? p?.list_price ?? p?.listPrice);
+  const hasPublishedCeiling = Number.isFinite(publishedPrice) && publishedPrice > 0;
+  const rate = Number.isFinite(verifiedRate) && verifiedRate > 0
+    ? verifiedRate
+    : (hasPublishedCeiling ? publishedPrice : NaN);
+  const priceSource = Number.isFinite(verifiedRate) && verifiedRate > 0
+    ? "verified_api_price"
+    : (hasPublishedCeiling ? "normal_price_ceiling" : null);
   if (!value || !name) return null;
   const minRaw = Number(p?.min ?? p?.minimum ?? p?.min_quantity ?? p?.minQuantity ?? p?.min_order ?? p?.minOrder ?? 1);
   const maxRaw = Number(p?.max ?? p?.maximum ?? p?.max_quantity ?? p?.maxQuantity ?? p?.max_order ?? p?.maxOrder ?? 1000000);
@@ -208,7 +216,8 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
     value, displayName: name,
     apiPricePerThousand: Number.isFinite(rate) && rate > 0 ? rate : null,
     priceAvailable: Number.isFinite(rate) && rate > 0,
-    priceSource: Number.isFinite(explicitApiRate) && explicitApiRate > 0 ? "verified_api_price" : null,
+    priceSource,
+    publishedPricePerThousand: hasPublishedCeiling ? publishedPrice : null,
     min: Number.isSafeInteger(minRaw) && minRaw > 0 ? minRaw : 1,
     max: Number.isSafeInteger(maxRaw) && maxRaw >= 1 ? Math.min(maxRaw, 1000000) : 1000000,
     category: str(p?.category ?? p?.platform ?? p?.service ?? p?.network ?? ""),
@@ -329,12 +338,42 @@ async function fetchSocialPlans() {
 }
 function planQuote(plan: any, quantity: number) {
   if (!plan?.priceAvailable || !Number.isFinite(Number(plan.apiPricePerThousand)) || Number(plan.apiPricePerThousand) <= 0) {
-    throw new Error("A verified live price is not available for this plan. Checkout remains disabled.");
+    throw new Error("A current supplier price estimate is not available for this plan. Checkout remains disabled.");
   }
   const supplierEstimate = money2(plan.apiPricePerThousand * quantity / 1000);
-  const estimate = Math.max(0.01, money2(supplierEstimate * (1 + markup("social") / 100)));
-  const reserve = money2(estimate * (1 + reserveBufferPercent() / 100));
-  return { supplierEstimate, estimatedRetail: estimate, maximumReserve: reserve, retailRatePerThousand: money2(plan.apiPricePerThousand * (1 + markup("social") / 100)) };
+  const usingPublishedCeiling = plan.priceSource === "normal_price_ceiling";
+  // When GSubz omits API cost, display its published per-1,000 price as an
+  // estimate and reserve only enough for that ceiling plus Sparkle's 25% markup.
+  const estimate = usingPublishedCeiling
+    ? supplierEstimate
+    : Math.max(0.01, money2(supplierEstimate * (1 + markup("social") / 100)));
+  const reserve = usingPublishedCeiling
+    ? money2(supplierEstimate * (1 + markup("social") / 100))
+    : money2(estimate * (1 + reserveBufferPercent() / 100));
+  return {
+    supplierEstimate, estimatedRetail: estimate, maximumReserve: reserve,
+    retailRatePerThousand: usingPublishedCeiling
+      ? money2(Number(plan.apiPricePerThousand))
+      : money2(plan.apiPricePerThousand * (1 + markup("social") / 100)),
+    priceSource: plan.priceSource || "verified_api_price",
+    pricingNote: usingPublishedCeiling
+      ? "Estimate uses GSubz's published standard price because its live catalogue omitted API cost. Final charge uses GSubz's exact confirmed amount paid plus Sparkle's 25% markup. Sparkle will not settle above the published-price ceiling."
+      : "Price uses the verified API supplier rate plus Sparkle's 25% markup."
+  };
+}
+function exactSocialSupplierCost(provider: any): number {
+  const raw = provider?.amountPaid ?? provider?.amount
+    ?? provider?.data?.amountPaid ?? provider?.data?.amount
+    ?? provider?.content?.amountPaid ?? provider?.content?.amount ?? null;
+  if (raw === null || raw === undefined || String(raw).trim() === "") return NaN;
+  return numericPrice(raw);
+}
+function socialPublishedCeilingNeedsReview(metadata: any, actualCost: number): boolean {
+  if (metadata?.quotedSupplierCostSource !== "normal_price_ceiling") return false;
+  const ceiling = Number(metadata?.quotedSupplierCost);
+  return !Number.isFinite(actualCost) || actualCost <= 0
+    || !Number.isFinite(ceiling) || ceiling <= 0
+    || actualCost > ceiling + 0.02;
 }
 function validateSocialTargetLink(link: string, planName: string): string | null {
   let u: URL; try { u = new URL(link); } catch { return "Enter a valid profile or post URL."; }
@@ -454,7 +493,14 @@ Deno.serve(async (req: Request) => {
   try {
     if (action === "social_plans") {
       const plans = await fetchSocialPlans();
-      return reply({ success: true, plans: plans.map(p => ({ ...p, retailRatePerThousand: p.priceAvailable ? money2(Number(p.apiPricePerThousand) * (1 + markup("social") / 100)) : null })), currency: "NGN" });
+      return reply({ success: true, plans: plans.map(p => ({
+        ...p,
+        retailRatePerThousand: p.priceAvailable
+          ? (p.priceSource === "normal_price_ceiling"
+            ? money2(Number(p.apiPricePerThousand))
+            : money2(Number(p.apiPricePerThousand) * (1 + markup("social") / 100)))
+          : null
+      })), currency: "NGN" });
     }
     if (action === "social_quote") {
       const plans = await fetchSocialPlans(), code = str(body.plan), quantity = Number(body.quantity), plan = plans.find(p => p.value === code);
@@ -490,6 +536,7 @@ Deno.serve(async (req: Request) => {
       const provider = checked.data, pStatus = statusOf(provider);
       const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
       const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
+      const verifiedSocialCost = isSocial ? exactSocialSupplierCost(provider) : NaN;
 
       let order: any = null, orderStatus = "", progress: any = null;
       if (isSocial) {
@@ -526,9 +573,27 @@ Deno.serve(async (req: Request) => {
           if (saved.error) console.error("[sparkle-social-status-save]", saved.error.message);
         }
 
+        if (isSocial && String(tx.status).toLowerCase() === "pending"
+            && checked.response.ok && providerSuccess
+            && socialPublishedCeilingNeedsReview(meta, verifiedSocialCost)) {
+          const saved = await admin.from("wallet_transactions").update({
+            metadata: { ...meta, provider_verification: provider, actualSupplierCostNeedsReview: true,
+              socialTrackingState: "needs_review",
+              socialTrackingIssue: "GSubz did not return an exact API cost within the published-price ceiling; settlement is held to prevent an overcharge.",
+              lastSocialStatusCheckAt: new Date().toISOString() }
+          }).eq("reference", reference).eq("user_id", user.id);
+          if (saved.error) console.error("[sparkle-social-cost-review-save]", saved.error.message);
+          return reply({ success: false, status: "pending", reference, orderProgress: progress,
+            error: "The supplier has not confirmed an exact API charge within the published-price ceiling. Your funds remain reserved; Sparkle will not overcharge you." }, 202);
+        }
+
         if (order && ["partial", "partially_completed", "partially_complete", "cancelled", "canceled", "failed", "failure", "error", "rejected", "refunded"].includes(orderStatus)) {
           if (str(tx.status).toLowerCase() === "pending" && checked.response.ok && providerSuccess) {
-            const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
+            const actualCost = verifiedSocialCost;
+            if (socialPublishedCeilingNeedsReview(meta, actualCost)) {
+              return reply({ success: false, status: "pending", reference, orderProgress: progress,
+                error: "The supplier has not confirmed an exact API charge within the published-price ceiling. Settlement remains on hold to prevent an overcharge." }, 202);
+            }
             const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), Number(meta.reservedAmount || tx.amount), "social");
             const settled = await admin.rpc("sparkle_digital_wallet_action", {
               p_user_id: user.id, p_action: "success", p_reference: reference,
@@ -571,7 +636,11 @@ Deno.serve(async (req: Request) => {
       if (checked.response.ok && providerSuccess) {
         const which = meta.digitalKind === "social" ? "social" : "sms";
         if (which === "sms" && provider?.amountPaid == null && provider?.amount == null) return reply({ success: false, status: "pending", reference, error: "The supplier confirmed the SMS status but did not return the final amount paid. Sparkle is keeping the reservation safe until the exact charge can be reconciled. Do not resend this campaign." }, 202);
-        const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
+        const actualCost = isSocial ? verifiedSocialCost : Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
+        if (isSocial && socialPublishedCeilingNeedsReview(meta, actualCost)) {
+          return reply({ success: false, status: "pending", reference,
+            error: "The supplier has not confirmed an exact API charge within the published-price ceiling. Settlement remains on hold to prevent an overcharge." }, 202);
+        }
         const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), Number(meta.reservedAmount || tx.amount), which);
         const result = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "success", p_reference: reference, p_amount: finalAmount, p_service: tx.service,
           p_metadata: { status_checked: true, provider_verification: provider, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : null,
@@ -631,7 +700,7 @@ Deno.serve(async (req: Request) => {
       providerFields = { serviceID: "socials", plan: plan.value, api: gsubzKey, amount: "", link: requestUrl.toString(), quantity: String(quantity), requestID: providerRequestId };
       supplierEstimate = quote.supplierEstimate; quotedRetail = quote.estimatedRetail; maximumReserve = quote.maximumReserve;
       service = "Social Media Market";
-      metadata = { digitalKind: "social", provider: "GSubz", providerRequestID: providerRequestId, clientRequestID: ref.clientRequestId, plan: plan.value, planName: plan.displayName, quantity, link: requestUrl.toString(), quotedSupplierCost: supplierEstimate, quotedRetail, reservedAmount: maximumReserve, markupPercent: markup("social"), currency: "NGN",
+      metadata = { digitalKind: "social", provider: "GSubz", providerRequestID: providerRequestId, clientRequestID: ref.clientRequestId, plan: plan.value, planName: plan.displayName, quantity, link: requestUrl.toString(), quotedSupplierCost: supplierEstimate, quotedSupplierCostSource: plan.priceSource || "verified_api_price", quotedRetail, reservedAmount: maximumReserve, markupPercent: markup("social"), currency: "NGN",
         socialAutoTrack: true, socialTrackingTerminal: false, socialTrackingState: "scheduled",
         socialTrackingAttempts: 0, socialTrackingStartedAt: new Date().toISOString(), socialNextCheckAt: new Date().toISOString() };
     } else {
@@ -777,7 +846,19 @@ Deno.serve(async (req: Request) => {
     const providerAccepted = action === "buy_social" ? socialPaymentSuccess(supplierStatus) : isSuccess(supplierStatus);
     const isDelivered = httpOk && providerAccepted && smsSent > 0;
     if (isDelivered) {
-      const actualCost = Number(providerResult?.amountPaid ?? providerResult?.amount ?? supplierEstimate);
+      const exactActualCost = action === "buy_social" ? exactSocialSupplierCost(providerResult) : NaN;
+      if (action === "buy_social" && socialPublishedCeilingNeedsReview(metadata, exactActualCost)) {
+        await admin.rpc("sparkle_digital_wallet_action", {
+          p_user_id: user.id, p_action: "pending", p_reference: providerRequestId,
+          p_amount: maximumReserve, p_service: service,
+          p_metadata: { ...metadata, provider_response: providerResult, actualSupplierCostNeedsReview: true, stage: "provider_pending" }
+        });
+        return reply({ success: false, status: "pending", reference: providerRequestId,
+          error: "GSubz accepted the request but did not confirm an exact API cost within the published-price ceiling. Your funds remain reserved; Sparkle has not charged above the estimate. Do not place a duplicate order." }, 202);
+      }
+      const actualCost = action === "buy_social"
+        ? (Number.isFinite(exactActualCost) && exactActualCost > 0 ? exactActualCost : supplierEstimate)
+        : Number(providerResult?.amountPaid ?? providerResult?.amount ?? supplierEstimate);
       const finalAmount = retailFromSupplier(actualCost, quotedRetail, maximumReserve, action === "buy_social" ? "social" : "sms");
       const final = await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "success", p_reference: providerRequestId, p_amount: finalAmount, p_service: service,
         p_metadata: { provider_response: providerResult, actual_supplier_cost: Number.isFinite(actualCost) ? actualCost : supplierEstimate, final_customer_charge: finalAmount, stage: "completed",
