@@ -89,9 +89,43 @@ Deno.serve(async (req) => {
       const response = await fetch("https://api.gsubz.com/api/verify/", { method: "POST", headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" }, body: form, signal: AbortSignal.timeout(20000) });
       const raw = await response.text(); let providerData: any;
       try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
-      const statusValue = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? "").trim().toLowerCase();
-      const succeeded = response.ok && ["successful", "success", "completed"].includes(statusValue);
-      const failed = response.ok && ["failed", "failure", "error", "rejected", "cancelled"].includes(statusValue);
+      const statusValue = String(
+        providerData?.status
+          ?? providerData?.data?.status
+          ?? providerData?.content?.status
+          ?? providerData?.data?.content?.status
+          ?? providerData?.transaction_status
+          ?? ""
+      ).trim().toLowerCase().replace(/[\s-]+/g, "_");
+      const providerCode = String(
+        providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code ?? response.status
+      ).trim();
+      const providerDescription = String(
+        providerData?.description
+          ?? providerData?.data?.description
+          ?? providerData?.content?.description
+          ?? ""
+      ).trim().toUpperCase();
+
+      const succeeded = response.ok && [
+        "successful", "success", "completed", "complete",
+        "transaction_successful", "transaction_success"
+      ].includes(statusValue);
+
+      const explicitFailure = [
+        "failed", "failure", "error", "rejected", "cancelled", "canceled",
+        "transaction_failed", "transaction_failure", "transaction_refunded"
+      ].includes(statusValue);
+
+      // GSUBZ documents the failed requestID verification response as HTTP 404,
+      // code 404, status TRANSACTION_FAILED and CONTENT_NOT_FOUND_API_OR_NOT_FOUND.
+      // Treat only that explicit provider result as failure despite HTTP 404.
+      // All other HTTP errors (401, 429, 5xx, etc.) remain pending.
+      const verifiedMissingTransaction = providerCode === "404"
+        && ["transaction_failed", "failed"].includes(statusValue)
+        && ["CONTENT_NOT_FOUND_API_OR_NOT_FOUND", "CONTENT_NOT_FOUND"].includes(providerDescription);
+
+      const failed = (response.ok && explicitFailure) || verifiedMissingTransaction;
       const result = await admin.rpc("sparkle_airtime_wallet_action", {
         p_user_id: user.id, p_action: succeeded ? "success" : failed ? "failure" : "pending",
         p_reference: reference, p_amount: Number(tx.amount), p_service: "Airtime",
