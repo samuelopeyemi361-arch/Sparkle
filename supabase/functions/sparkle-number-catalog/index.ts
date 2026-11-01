@@ -206,16 +206,17 @@ function parseRateField(value:any):number|null{
  * Prefer 5SIM's longer, steadier delivery windows when present.
  * Zero is retained only when no positive window is available; missing data stays null.
  */
-const RATE_WINDOW_PRIORITY=["rate","rate720","rate168","rate72","rate24","rate3","rate1"] as const;
+// 5SIM's public product comparison page displays the 3-hour delivery window.
+// Example verified against its live page: Canada / Snapchat / Virtual12 = 73.91% (rate3).
+const RATE_WINDOW_PRIORITY=["rate3"] as const;
 function getRateWindows(operatorData:any):Record<string,number|null>{
  const windows:Record<string,number|null>={};
  for(const key of RATE_WINDOW_PRIORITY)windows[key]=parseRateField(operatorData?.[key]);
  return windows;
 }
 function parseDeliveryRate(raw:any):number|null{
- const windows=getRateWindows(raw);
- for(const key of RATE_WINDOW_PRIORITY){const value=windows[key];if(value!==null)return Number(value.toFixed(2));}
- return null;
+ const value=parseRateField(raw?.rate3);
+ return value===null?null:Number(value.toFixed(2));
 }
 
 function parseOfferRows(node:any):ParsedOffer[]{
@@ -224,7 +225,8 @@ function parseOfferRows(node:any):ParsedOffer[]{
   const usd=Number(raw?.cost),count=Number(raw?.count);
   const rateWindows=getRateWindows(raw);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
-  return {operator,usd,count,rate:null,rateWindow:null,rateWindows};
+  const rate=parseDeliveryRate(raw);
+  return {operator,usd,count,rate,rateWindow:rate===null?null:"rate3",rateWindows};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
 // Share the latest 5SIM prices payload for five seconds per Edge Function instance.
@@ -249,92 +251,6 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
  return await pending;
 }
 
-function decodeSiteText(value:string):string{
- return value.replace(/\\u003c/gi,"<").replace(/\\u003e/gi,">").replace(/\\u0026/gi,"&")
-  .replace(/\\u002f/gi,"/").replace(/\\n/g," ").replace(/\\"/g,'"')
-  .replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"')
-  .replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">")
-  .replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n)))
-  .replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));
-}
-function siteCellText(html:string):string{
- // Preserve Next.js script/RSC payloads; removing scripts erased the statistics rows.
- return decodeSiteText(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," "))
-  .replace(/\s+/g," ").trim();
-}
-function countryKey(value:string):string{
- return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"");
-}
-function rateNumber(value:string):number|null{
- const n=Number(value.replace(/%/g,"").replace(/,/g,"."));
- return Number.isFinite(n)&&n>=0&&n<=100?Number(n.toFixed(2)):null;
-}
-/** Read exact service/country/operator delivery rows from 5SIM's public product page. */
-async function getWebsiteDeliveryRates(country:string,service:string):Promise<Map<string,number>>{
- const result=new Map<string,number>();
- const normalizeOperator=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]/g,"");
- const countryAliases=country==="usa"?["usa","united states"]:country==="canada"?["canada"]:[country.toLowerCase()];
- const parsePage=(html:string)=>{
-  const decoded=decodeSiteText(html).replace(/\\u00a0|&#160;|&nbsp;/gi," ");
-  const add=(operator:string,rawRate:string)=>{
-   const rate=rateNumber(rawRate);
-   if(rate!==null)result.set(normalizeOperator(operator),rate);
-  };
-  for(const row of decoded.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
-   const cells=[...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m=>siteCellText(m[1])).filter(Boolean);
-   if(!cells.some(cell=>countryAliases.includes(countryKey(cell))))continue;
-   const op=cells.find(cell=>/^virtual[-_ ]?\d+$/i.test(cell));
-   const pct=cells.map(cell=>cell.match(/(\d+(?:[.,]\d+)?)\s*%/)).find(Boolean);
-   if(op&&pct)add(op,pct[1]);
-  }
-  if(!result.size){
-   const text=siteCellText(decoded).replace(/[\u00a0\u202f]/g," ");
-   const countryPattern=countryAliases.join("|");
-   const tuple=new RegExp("\\b("+countryPattern+")\\b[\\s\\S]{0,100}?\\b(Virtual[-_ ]?\\d+)\\b[\\s\\S]{0,100}?([\\d, ]+\\s*pcs)[\\s\\S]{0,80}?(\\d+(?:[.,]\\d+)?)\\s*%","gi");
-   for(const m of text.matchAll(tuple))add(m[2],m[4]);
-  }
-  if(!result.size){
-   const patterns=[
-    /["'](?:country|country_name)["']\s*:\s*["']([^"']+)["'][\s\S]{0,700}?["'](?:operator|operator_name)["']\s*:\s*["'](virtual[-_ ]?\d+)["'][\s\S]{0,700}?["'](?:rate|delivery_rate)["']\s*:\s*["']?(\d+(?:[.,]\d+)?)\s*%?["']?/gi,
-    /["'](USA|United States|Canada)["']\s*,\s*["'](virtual[-_ ]?\d+)["']\s*,\s*["'][^"']*pcs[^"']*["']\s*,\s*["'](\d+(?:[.,]\d+)?)\s*%["']/gi
-   ];
-   for(const pattern of patterns)for(const m of decoded.matchAll(pattern)){
-    if(!countryAliases.includes(countryKey(m[1])))continue;
-    add(m[2],m[3]);
-   }
-  }
- };
- const hosts=["https://5sim.com/products/","https://5sim.net/products/"];
- for(const host of hosts){
-  try{
-   const url=host+encodeURIComponent(service);
-   const response=await fetch(url,{
-    headers:{
-     "Accept":"text/html,application/xhtml+xml",
-     "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
-     "Accept-Language":"en-US,en;q=0.9"
-    },
-    signal:AbortSignal.timeout(18000)
-   });
-   if(!response.ok){
-    console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,host,status:response.status}));
-    continue;
-   }
-   const html=await response.text();
-   parsePage(html);
-   console.info("[sparkle-5sim-website-rate-audit]",JSON.stringify({
-    country,service,host,source:"5sim_public_product_comparison_page",
-    http_status:response.status,html_bytes:html.length,
-    matched_operators:result.size,operators:[...result.entries()]
-   }));
-   if(result.size)break;
-  }catch(error){
-   console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,host,error:String(error)}));
-  }
- }
- return result;
-}
-
 async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
@@ -350,18 +266,14 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
- // Read delivery rates from the public 5SIM website itself.
- // Guest API remains responsible only for live price and stock.
- const websiteRates=await getWebsiteDeliveryRates(pc,service);
- const ratedOffers:ProviderOffer[]=offers.map(offer=>{
-  const key=offer.operator.toLowerCase().replace(/[-_ ]/g,"");
-  const value=websiteRates.get(key)??null;
-  return {...offer,rate:value,rateWindow:value===null?null:"5sim_website"};
- });
+ // Use the exact public feed called by 5SIM's own website frontend.
+ // Its displayed comparison rate is rate3 (the 3-hour window), not the generic
+ // rate field, which caused Sparkle's previous 10.x% versus website 73.91% mismatch.
+ const ratedOffers:ProviderOffer[]=offers;
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rate_source:"5sim_public_product_page",
-  rate_policy:"exact_country_operator_match_from_website",
-  rate_window:"5sim_website",
+  country:pc,service,rate_source:"5sim_public_website_frontend_feed",
+  rate_policy:"exact_service_country_operator_rate3_3h",
+  rate_window:"3h",
   fetched_at:new Date().toISOString(),
   offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_window:x.rateWindow??null,rate_reported:x.rate!==null,count:x.count}))
  }));
@@ -494,7 +406,7 @@ function recommendedOffer(offers:ProviderOffer[],service:string,country:string):
  // Smart Buy only runs when 5SIM's website supplied a percentage for every
  // in-stock operator. A missing row is unknown, never a fabricated 0%.
  const inStock=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
- if(!inStock.length||!inStock.every(x=>x.rate!==null&&x.rateWindow==="5sim_website"))return undefined;
+ if(!inStock.length||!inStock.every(x=>x.rate!==null&&x.rateWindow==="rate3"))return undefined;
  const rated=inStock.filter(x=>x.rate!>0);
  if(!rated.length)return undefined;
  return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.usd-b.usd)[0];
