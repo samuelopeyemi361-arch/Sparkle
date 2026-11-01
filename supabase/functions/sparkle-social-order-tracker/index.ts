@@ -221,7 +221,22 @@ async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
   // An accepted transaction must settle its reservation even where delivery
   // is partial or needs review. It does not trigger a refund.
   if (checked.response.ok && providerSuccess && String(tx.status).toLowerCase() === "pending") {
-    const actualCost = Number(provider?.amountPaid ?? provider?.amount ?? meta.quotedSupplierCost);
+    const rawActualCost = provider?.amountPaid ?? provider?.amount
+      ?? provider?.data?.amountPaid ?? provider?.data?.amount
+      ?? provider?.content?.amountPaid ?? provider?.content?.amount ?? null;
+    const actualCost = rawActualCost === null || rawActualCost === undefined || String(rawActualCost).trim() === ""
+      ? NaN : Number(String(rawActualCost).replace(/[,₦\\s]/g, ""));
+    if (meta.quotedSupplierCostSource === "normal_price_ceiling") {
+      const ceiling = Number(meta.quotedSupplierCost);
+      if (!Number.isFinite(actualCost) || actualCost <= 0 || !Number.isFinite(ceiling) || ceiling <= 0 || actualCost > ceiling + 0.02) {
+        await saveTrackingState(admin, tx, meta, {
+          ...progressPatch,
+          socialTrackingState: "needs_review",
+          socialTrackingIssue: "GSubz did not return an exact API cost within the published-price ceiling; settlement is held to prevent an overcharge.",
+        });
+        return "needs_review";
+      }
+    }
     const reserved = Number(meta.reservedAmount || tx.amount);
     const finalAmount = retailFromSupplier(actualCost, Number(meta.quotedRetail || tx.amount), reserved);
     const settled = await admin.rpc("sparkle_digital_wallet_action", {
