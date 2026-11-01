@@ -6181,7 +6181,7 @@ async function continueWithSelectedNumberCountry(){
  if(!service.availableCountries.includes(countryCode)){alert("Choose a country that currently supports this service.");return;}
  const button=document.getElementById("numberContinueCountryButton");
  if(button){button.disabled=true;button.textContent="Loading operators…";}
- showSparkleVirtualNumberLoader("Loading operators","Finding live operators and their individual naira prices");
+ showSparkleVirtualNumberLoader("Checking 5SIM delivery rates","Comparing live operator delivery rates, stock and current prices");
  try{
   resetNumberPriceForStep("");updateNumberSelectionStep("operator");await loadNumberOperators("");
  }finally{
