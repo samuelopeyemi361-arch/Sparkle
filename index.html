@@ -3157,7 +3157,16 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 <footer class="footer">
   <div class="wrap">
     <div class="footgrid">
-      <div><div class="brand"><span class="logo">✦</span> TheSparkle</div><p>Everyday digital services, brought together in one convenient platform.</p></div>
+      <div>
+        <div class="brand"><span class="logo">✦</span> TheSparkle</div>
+        <p>Everyday digital services, brought together in one convenient platform.</p>
+        <div class="sparkle-footer-socials" aria-label="Follow Sparkle">
+          <h4>Follow Sparkle</h4>
+          <a href="https://www.instagram.com/thesparkle_com_ng/" target="_blank" rel="noopener noreferrer">Instagram <span aria-hidden="true">↗</span></a>
+          <a href="https://www.tiktok.com/@thesparkle.com.ng" target="_blank" rel="noopener noreferrer">TikTok <span aria-hidden="true">↗</span></a>
+          <a href="https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V" target="_blank" rel="noopener noreferrer">WhatsApp Channel <span aria-hidden="true">↗</span></a>
+        </div>
+      </div>
       <div><h4>Quick Links</h4><a href="/login">Log In</a><a href="/register">Create Account</a><a href="#services">Services</a><a href="#faq">FAQ</a></div>
       <div><h4>Services</h4><a href="/data">Buy Data</a><a href="/airtime">Buy Airtime</a><a href="/us-number">Virtual Numbers</a><a href="/crypto">Crypto Trade</a><a href="/electricity">Electricity</a></div>
       <div><h4>Support</h4><a href="/support">Customer Support</a><a href="/terms">Terms & Conditions</a><a href="/privacy-policy">Privacy Policy</a></div>
@@ -11432,6 +11441,12 @@ textarea,
 [role="textbox"] {
   font-size: 16px !important;
 }
+
+/* Official Sparkle social links in the public footer */
+.sparkle-footer-socials{display:flex;flex-wrap:wrap;gap:8px 14px;margin-top:18px;align-items:center}
+.sparkle-footer-socials h4{flex-basis:100%;margin:0 0 2px;color:#fff}
+.footer .sparkle-footer-socials a{display:inline-flex;align-items:center;gap:5px;color:#d6e4ff;font-size:13px;font-weight:700;text-decoration:none}
+.footer .sparkle-footer-socials a:hover{color:#fff;text-decoration:underline}
 </style>
 <script id="sparkle-virtual-number-refresh-recovery">
 // A hard browser refresh can bypass the dashboard tile click handler. Re-enter the
