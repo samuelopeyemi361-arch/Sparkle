@@ -535,6 +535,9 @@ Deno.serve(async (req: Request) => {
       const verifyFields: Record<string, string> = { api: gsubzKey, requestID: providerRequestId };
       const checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
       const provider = checked.data, pStatus = statusOf(provider);
+      if (isSocial && (String(provider?.code ?? provider?.statusCode ?? "") === "404" || String(provider?.description ?? provider?.message ?? "").toUpperCase().includes("CONTENT_NOT_FOUND_API_OR_NOT_FOUND"))) {
+        return reply({ success: false, status: "pending", reference, error: "GSubz could not find this requestID in its verification lookup. This is not proof of failure, so Sparkle has kept the order reserved and blocked an automatic refund." }, 202);
+      }
       const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
       const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
       const verifiedSocialCost = isSocial ? exactSocialSupplierCost(provider) : NaN;
@@ -780,6 +783,10 @@ Deno.serve(async (req: Request) => {
       }
       const verified = verification.data;
       const verifiedStatus = statusOf(verified);
+      if (String(verified?.code ?? verified?.statusCode ?? "") === "404" || String(verified?.description ?? verified?.message ?? "").toUpperCase().includes("CONTENT_NOT_FOUND_API_OR_NOT_FOUND")) {
+        await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "pending", p_reference: providerRequestId, p_amount: maximumReserve, p_service: service, p_metadata: { provider_response: providerResult, socialVerificationResponse: verified, socialVerificationNotFound: true, stage: "provider_pending" } });
+        return reply({ success: false, status: "pending", reference: providerRequestId, error: "GSubz returned a not-found verification response. Sparkle cannot treat that as a failed payment or refund it automatically; your funds remain reserved while the order is reconciled." }, 202);
+      }
       const verifiedOrder = socialOrderOf(verified);
       const verifiedQuantity = Number(metadata.quantity || 0);
       if (!verification.response.ok) {
