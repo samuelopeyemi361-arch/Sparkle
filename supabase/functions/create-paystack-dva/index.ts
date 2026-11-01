@@ -69,20 +69,46 @@ serve(async (req) => {
       body = {};
     }
 
+    // Read the user's saved Sparkle profile on the server. Do not trust
+    // browser-supplied names as the only source for Paystack customer data.
+    const { data: profile, error: profileError } = await adminClient
+      .from("profiles")
+      .select("first_name,last_name,full_name,phone,email")
+      .eq("id", user.id)
+      .maybeSingle();
+
+    if (profileError) {
+      console.error("[create-paystack-dva] profile lookup failed", {
+        code: profileError.code || null,
+        message: String(profileError.message || "Profile lookup failed").slice(0, 180),
+      });
+    }
+
     const email = String(
-      body.email || user.email || "",
+      body.email || profile?.email || user.email || "",
     ).trim();
 
-    const name = String(
+    const bodyFirstName = String(body.first_name || "").trim();
+    const bodyLastName = String(body.last_name || "").trim();
+    const metaFirstName = String(user.user_metadata?.first_name || "").trim();
+    const metaLastName = String(user.user_metadata?.last_name || "").trim();
+    const savedFirstName = String(profile?.first_name || "").trim();
+    const savedLastName = String(profile?.last_name || "").trim();
+    const fullName = String(
+      profile?.full_name ||
       body.name ||
       user.user_metadata?.full_name ||
       user.user_metadata?.name ||
-      user.email?.split("@")[0] ||
-      "Sparkle User",
+      "",
     ).trim();
+    const nameParts = fullName.split(/\\s+/).filter(Boolean);
+    const firstName = bodyFirstName || savedFirstName || metaFirstName || nameParts[0] || "";
+    const lastName = bodyLastName || savedLastName || metaLastName || nameParts.slice(1).join(" ") || "";
+    const name = fullName || [firstName, lastName].filter(Boolean).join(" ") || "Sparkle User";
 
     const phone = String(
       body.phone ||
+      profile?.phone ||
       user.phone ||
       user.user_metadata?.phone ||
       "",
@@ -158,7 +184,19 @@ serve(async (req) => {
       );
     }
 
-    // Paystack requires a phone number, full name and email for a DVA.
+    // Paystack requires an email, first name, last name and phone number.
+    // Never fabricate missing identity fields; return a clear, actionable response.
+    if (!firstName || !lastName) {
+      return new Response(JSON.stringify({
+        success: false,
+        stage: "customer_details",
+        error: "Add your first and last name in Profile before creating your dedicated funding account.",
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Keep an existing saved DVA available even if an older profile lacks phone.
     if (!phone) {
       return new Response(JSON.stringify({
@@ -266,6 +304,8 @@ serve(async (req) => {
         body: JSON.stringify({
           customer: customerCode,
           preferred_bank: "wema-bank",
+          first_name: firstName,
+          last_name: lastName,
           phone,
         }),
         signal: AbortSignal.timeout(20000),
@@ -285,19 +325,26 @@ serve(async (req) => {
           : null;
         if (!accountData) {
           const providerMessage = String(account?.message || "Paystack could not assign a Wema funding account.").slice(0, 280);
+          const identityRequired = /validat|identif|bvn|identity|bank account/i.test(providerMessage);
+          const activationRequired = /access denied|not enabled|not activated|not available for your business/i.test(providerMessage);
           console.error("[create-paystack-dva] Paystack DVA assignment failed", {
-            stage: "dedicated_account_creation",
+            stage: identityRequired ? "identity_validation_required" : activationRequired ? "paystack_dva_not_activated" : "dedicated_account_creation",
             status: accountRes.status,
             message: providerMessage,
           });
           return new Response(JSON.stringify({
             success: false,
-            stage: "dedicated_account_creation",
+            stage: identityRequired ? "identity_validation_required" : activationRequired ? "paystack_dva_not_activated" : "dedicated_account_creation",
+            error: identityRequired
+              ? "Paystack requires customer identity validation before it can issue this funding account. Sparkle cannot bypass this requirement."
+              : activationRequired
+                ? "Paystack has not activated Dedicated Virtual Accounts for this Sparkle merchant account. Please contact Sparkle support."
+                : "Paystack could not assign the funding account. Please retry from Fund Wallet.",
             paystack_status: accountRes.status,
             paystack_error: providerMessage,
             customer_code: customerCode,
           }), {
-            status: 400,
+            status: identityRequired || activationRequired ? 422 : 400,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });
         }
