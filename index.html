@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://dcuvhtpqwyljsudzirxg.supabase.co" crossorigin>
 <meta name="google-site-verification" content="JF7d-a2smrfWAXbSNOWFxEYtvEpRj6_K7QuVT5HV1Wc" />
@@ -11416,6 +11416,12 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
 #smsotpPage .sparkle-number-service-row.is-selected{background:#f7f9fc!important;border-color:#aab6c7!important;box-shadow:inset 0 0 0 1px #d5dce6!important}
 @media(max-width:380px){#smsotpPage .sparkle-number-service-logo{flex-basis:27px!important;width:27px!important;height:27px!important}}
 
+/* Keep the layout at the device's CSS-pixel width without browser text inflation.
+   User-initiated pinch zoom remains available. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
 /* Cross-device form focus guard.
    Apply at every viewport width (including phones using desktop-site mode),
    so small form-control text cannot trigger browser focus magnification. */
