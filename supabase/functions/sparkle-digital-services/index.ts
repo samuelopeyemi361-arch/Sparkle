@@ -215,6 +215,38 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
     description: str(p?.description ?? p?.details ?? p?.type ?? "")
   };
 }
+function socialCatalogueDiagnostics(result: { response: Response; data: any }) {
+  const rawPlans = result.data ? extractPlans(result.data) : [];
+  const normalised = rawPlans.map((p: any) => normaliseSocialPlan(p, catalogueDiscount(result.data))).filter((p: any) => p !== null);
+  const sampleFieldNames = rawPlans.slice(0, 3).map((p: any) =>
+    p && typeof p === "object" ? Object.keys(p).slice(0, 40) : []
+  );
+  const allPlanFields = new Set<string>();
+  for (const plan of rawPlans.slice(0, 50)) {
+    if (plan && typeof plan === "object") {
+      for (const key of Object.keys(plan)) allPlanFields.add(key);
+    }
+  }
+  const apiPriceFieldNames = [...allPlanFields].filter((key) =>
+    /api.*(price|cost|rate|amount)|(price|cost|rate|amount).*api/i.test(key)
+  );
+  const discountFieldNames = [...allPlanFields].filter((key) => /discount/i.test(key));
+  const normalPriceFieldNames = [...allPlanFields].filter((key) => /^(price|normal_price|list_price)$/i.test(key));
+  return {
+    httpStatus: result.response.status,
+    ok: result.response.ok,
+    contentType: result.response.headers.get("content-type"),
+    rootKeys: result.data && typeof result.data === "object" ? Object.keys(result.data).slice(0, 20) : [],
+    rawPlanCount: rawPlans.length,
+    parsedPlanCount: normalised.length,
+    pricedPlanCount: normalised.filter((p: any) => p.priceAvailable).length,
+    apiPriceFieldNames,
+    discountFieldNames,
+    normalPriceFieldNames,
+    sampleFieldNames,
+  };
+}
+
 async function fetchSocialPlans() {
   const supplierKey = Deno.env.get("GSUBZ_API_KEY");
   const requestPlans = async (useAccountAuth: boolean) => {
@@ -231,10 +263,12 @@ async function fetchSocialPlans() {
   };
 
   let pricingMode = "public_catalogue";
-  let { response, data } = await requestPlans(false);
+  const publicResult = await requestPlans(false);
+  let { response, data } = publicResult;
   let rawPlans = data ? extractPlans(data) : [];
   let defaultDiscount = data ? catalogueDiscount(data) : null;
   let plans = rawPlans.map((p: any) => normaliseSocialPlan(p, defaultDiscount)).filter((p: any) => p !== null);
+  let authenticatedDiagnostics: ReturnType<typeof socialCatalogueDiagnostics> | null = null;
 
   // GSUBZ documents the plans endpoint as public. Some account/catalogue
   // responses omit api_price unless the account context is supplied.
@@ -243,6 +277,7 @@ async function fetchSocialPlans() {
   if ((!response.ok || !data || !plans.some((p: any) => p.priceAvailable)) && supplierKey) {
     try {
       const authenticated = await requestPlans(true);
+      authenticatedDiagnostics = socialCatalogueDiagnostics(authenticated);
       if (authenticated.response.ok && authenticated.data) {
         const authenticatedRawPlans = extractPlans(authenticated.data);
         const authenticatedDiscount = catalogueDiscount(authenticated.data);
@@ -264,6 +299,14 @@ async function fetchSocialPlans() {
       });
     }
   }
+
+  const publicDiagnostics = socialCatalogueDiagnostics(publicResult);
+  console.log("[sparkle-social-catalogue-diagnostics]", JSON.stringify({
+    pricingMode,
+    accountKeyConfigured: Boolean(supplierKey),
+    public: publicDiagnostics,
+    authenticated: authenticatedDiagnostics,
+  }));
 
   if (!response.ok || !data) {
     throw new Error(`Sparkle's Social Media Market catalogue is temporarily unavailable (HTTP ${response.status}). Please refresh in a moment. No purchase has been made.`);
