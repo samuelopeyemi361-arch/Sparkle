@@ -259,8 +259,10 @@ async function applyManualRateOverrides(offers:ProviderOffer[],service:string,co
 async function getProductOffers(country:string,service:string,admin:any):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- const account=await providerProfile();
- const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service));
+ const [account,response]=await Promise.all([
+  providerProfile(),
+  apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service))
+ ]);
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
  const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
  let productNode:any=countryNode?.[service]||root?.[service]||null;
@@ -392,6 +394,11 @@ Deno.serve(async (req: Request) => {
     const existing = await ctx.admin.from("sparkle_sms_otp_orders").select("request_id,status").eq("user_id", ctx.user.id).eq("request_id", requestId).maybeSingle();
     if (existing.error) throw problem("Could not check this order reference. No money was deducted.", 503, "ORDER_LOOKUP_FAILED");
     if (existing.data) return reply({ success: false, status: existing.data.status, request_id: requestId, message: "This order reference already exists. Check its status instead of buying again." }, 409);
+    // Price and availability reads are safe to perform while the PIN is being
+    // checked. No wallet reservation or 5SIM purchase starts until PIN succeeds.
+    const quotePromise = getQuote(country, service, serverId, operator, ctx.admin)
+      .then((quote:any)=>({quote,error:null as any}))
+      .catch((error:any)=>({quote:null,error}));
     const pinResponse = await fetch(ctx.url + "/functions/v1/sparkle-transaction-pin", {
       method: "POST",
       headers: { Authorization: ctx.auth, apikey: ctx.anon, "Content-Type": "application/json" },
@@ -402,7 +409,9 @@ Deno.serve(async (req: Request) => {
     if (!pinResponse || !pinResponse.ok || pinData?.success !== true) {
       return reply({ success: false, message: String(pinData?.message || "Transaction PIN verification failed. No money was deducted.") }, pinResponse && pinResponse.status >= 400 && pinResponse.status < 500 ? pinResponse.status : 503);
     }
-    const quote = await getQuote(country, service, serverId, operator, ctx.admin);
+    const quoteResult = await quotePromise;
+    if (quoteResult.error) throw quoteResult.error;
+    const quote = quoteResult.quote;
     if (Math.abs(quotedPrice - quote.selling_price_ngn) > 0.02) {
       throw problem("The Sparkle price changed. No money was deducted; check the current price again.", 409, "PRICE_CHANGED");
     }
