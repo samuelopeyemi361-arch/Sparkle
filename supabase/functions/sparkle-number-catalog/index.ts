@@ -622,7 +622,7 @@ Deno.serve(async (req:Request)=>{
   }
   if(action==="operators"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
-   const offers=await getProductOffers(country,service,admin);
+   const offers=await getProductOffers(country,service,ctx.admin);
    const recommended=recommendedOffer(offers,service,country);
    const recommendationWindow=selectRecommendationWindow(offers);
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
