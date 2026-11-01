@@ -250,53 +250,74 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
 }
 
 function decodeSiteText(value:string):string{
- return value.replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">").replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n))).replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));
+ return value.replace(/\\u003c/gi,"<").replace(/\\u003e/gi,">").replace(/\\u0026/gi,"&")
+  .replace(/\\u002f/gi,"/").replace(/\\n/g," ").replace(/\\"/g,'"')
+  .replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"')
+  .replace(/&#39;|&apos;/gi,"'").replace(/&lt;/gi,"<").replace(/&gt;/gi,">")
+  .replace(/&#(\d+);/g,(_,n)=>String.fromCodePoint(Number(n)))
+  .replace(/&#x([0-9a-f]+);/gi,(_,n)=>String.fromCodePoint(parseInt(n,16)));
 }
 function siteCellText(html:string):string{
- return decodeSiteText(html.replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ").trim();
+ // Preserve Next.js script/RSC payloads; removing scripts erased the statistics rows.
+ return decodeSiteText(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," "))
+  .replace(/\s+/g," ").trim();
 }
 function countryKey(value:string):string{
  return value.toLowerCase().normalize("NFKD").replace(/[^a-z0-9]+/g,"");
 }
-/** Read percentages from 5SIM's public product page, not guest-prices JSON. */
+function rateNumber(value:string):number|null{
+ const n=Number(value.replace(/%/g,"").replace(/,/g,"."));
+ return Number.isFinite(n)&&n>=0&&n<=100?Number(n.toFixed(2)):null;
+}
+/** Read exact service/country/operator delivery rows from 5SIM's public product page. */
 async function getWebsiteDeliveryRates(country:string,service:string):Promise<Map<string,number>>{
  const result=new Map<string,number>();
  try{
   const countries=await getProviderCountries();
   const info=countries.find(x=>x.code===country);
-  const countryNames=new Set([country,info?.name??""].filter(Boolean).map(countryKey));
+  const countryLabels=new Set([country,info?.name??"",country==="usa"?"USA":"",country==="canada"?"Canada":""].filter(Boolean).map(countryKey));
   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{
-   headers:{"Accept":"text/html,application/xhtml+xml","User-Agent":"Mozilla/5.0 (compatible; SparkleRateReader/1.0)"},
-   signal:AbortSignal.timeout(16000)
+   headers:{"Accept":"text/html,application/xhtml+xml","User-Agent":"Mozilla/5.0 (compatible; SparkleRateReader/2.0)"},
+   signal:AbortSignal.timeout(20000)
   });
-  if(!response.ok)throw new Error("5SIM product page HTTP "+response.status);
+  if(!response.ok)throw new Error("5SIM public page HTTP "+response.status);
   const html=await response.text();
-  const rows=[...html.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(m=>m[1]);
+  const normalized=decodeSiteText(html);
+  const rows=[...normalized.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(m=>m[1]);
   for(const row of rows){
    const cells=[...row.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m=>siteCellText(m[1])).filter(Boolean);
-   if(cells.length<3)continue;
-   if(!cells.some(x=>countryNames.has(countryKey(x))))continue;
+   if(!cells.some(x=>countryLabels.has(countryKey(x))))continue;
    const op=cells.find(x=>/^virtual[-_ ]?\d+$/i.test(x));
-   const rateCell=cells.find(x=>/%/.test(x));
-   const match=rateCell?.match(/(\d+(?:[.,]\d+)?)\s*%/);
-   if(!op||!match)continue;
-   const rate=Number(match[1].replace(",","."));
-   if(Number.isFinite(rate)&&rate>=0&&rate<=100)result.set(op.toLowerCase().replace(/[-_ ]/g,""),Number(rate.toFixed(2)));
+   const pct=cells.map(x=>x.match(/(\d+(?:[.,]\d+)?)\s*%/)).find(Boolean);
+   if(op&&pct){const rate=rateNumber(pct[1]);if(rate!==null)result.set(op.toLowerCase().replace(/[-_ ]/g,""),rate);}
   }
   if(!result.size){
-   const blocks=[...html.matchAll(/<(?:div|li|article)\b[^>]*>([\s\S]{0,1800}?)<\/(?:div|li|article)>/gi)];
-   for(const block of blocks){
-    const t=siteCellText(block[1]);
-    if(![...countryNames].some(n=>n&&countryKey(t).includes(n)))continue;
-    const op=t.match(/\b(virtual[-_ ]?\d+)\b/i), rate=t.match(/\b(\d+(?:[.,]\d+)?)\s*%/);
-    if(!op||!rate)continue;
-    const n=Number(rate[1].replace(",","."));
-    if(Number.isFinite(n)&&n>=0&&n<=100)result.set(op[1].toLowerCase().replace(/[-_ ]/g,""),Number(n.toFixed(2)));
+   const text=siteCellText(normalized);
+   const countryAlt=country==="usa"?"(?:USA|United States)":country==="canada"?"Canada":(info?.name||country).replace(/[.*+?^{}()|[\]\\]/g,"\\$&");
+   const tuple=new RegExp("\\b("+countryAlt+")\\b[\\s,|\"'\\[\\]]{1,40}(Virtual[-_ ]?\\d+)[\\s,|\"'\\[\\]]{1,80}([\\d, ]+\\s*pcs)[\\s,|\"'\\[\\]]{1,80}(\\d+(?:[.,]\\d+)?\\s*%)","gi");
+   for(const m of text.matchAll(tuple)){
+    const rate=rateNumber(m[4]);if(rate!==null)result.set(m[2].toLowerCase().replace(/[-_ ]/g,""),rate);
    }
   }
-  console.info("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,source:"5sim_public_product_page",matched_operators:result.size,operators:[...result.entries()]}));
+  if(!result.size){
+   const patterns=[
+    /["'](?:country|country_name)["']\s*:\s*["']([^"']+)["'][\s\S]{0,500}?["'](?:operator|operator_name)["']\s*:\s*["'](virtual[-_ ]?\d+)["'][\s\S]{0,500}?["'](?:rate|delivery_rate)["']\s*:\s*["']?(\d+(?:[.,]\d+)?)\s*%?["']?/gi,
+    /["'](USA|United States|Canada)["']\s*,\s*["'](virtual[-_ ]?\d+)["']\s*,\s*["'][^"']*pcs["']\s*,\s*["'](\d+(?:[.,]\d+)?)\s*%["']/gi
+   ];
+   for(const pattern of patterns)for(const m of normalized.matchAll(pattern)){
+    if(!countryLabels.has(countryKey(m[1])))continue;
+    const rate=rateNumber(m[3]);if(rate!==null)result.set(m[2].toLowerCase().replace(/[-_ ]/g,""),rate);
+   }
+  }
+  console.info("[sparkle-5sim-website-rate-audit]",JSON.stringify({
+   country,service,source:"5sim_public_product_page_rsc_and_table",
+   page_url:"https://5sim.net/products/"+service,matched_operators:result.size,
+   operators:[...result.entries()]
+  }));
  }catch(error){
-  console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,source:"5sim_public_product_page",error:String(error)}));
+  console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({
+   country,service,source:"5sim_public_product_page_rsc_and_table",error:String(error)
+  }));
  }
  return result;
 }
