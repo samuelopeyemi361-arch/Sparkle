@@ -3428,7 +3428,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 <section class="page" id="numberReviewPage">
 <div class="data-topbar vn-top"><button class="data-back" type="button" onclick="backFromNumberReview()" aria-label="Back to Virtual Number">‹</button><div><h1>Review your order</h1><p>Secure Virtual Number checkout</p></div><span class="vn-live"><i></i> PRIVATE</span></div>
 <div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:block"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><button type="button" class="vn-back" style="width:auto;margin:0;padding:8px 10px;border:1px solid #dce5f6;border-radius:10px" onclick="copyNumberReviewLink()">Share link ↗</button></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
-<div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>5SIM SMS delivery rate</span><strong id="numberReviewDeliveryRate">Checking live rate…</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
+<div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>5SIM SMS delivery rate · 3 hours</span><strong id="numberReviewDeliveryRate">Checking live rate…</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
 <div id="numberReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><div class="vn-review-note">ⓘ <span>If an order is pending, check its status instead of purchasing again.</span></div>
 <button id="numberReviewConfirm" class="btn primary full vn-primary" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button><button class="btn full vn-secondary" type="button" onclick="backFromNumberReview()">Go back and edit</button><div id="numberReviewMessage" class="vn-review-message" role="status" aria-live="polite"></div></div>
 </section>
@@ -3730,7 +3730,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 
           <div id="sparkleAdminNumberRatesPane" class="sparkle-admin-pane" style="display:none">
             <div class="sparkle-admin-panel">
-              <div class="sparkle-admin-panel-heading"><div><h2>Manual Number Delivery Rates</h2><p>Enter the exact delivery percentage shown by 5SIM. Overrides apply only to the matching service, country and operator, then expire automatically.</p></div><button type="button" onclick="sparkleAdminLoadNumberRates()">↻ Refresh</button></div>
+              <div class="sparkle-admin-panel-heading"><div><h2>Manual Number Delivery Rates</h2><p>Enter the 3-hour delivery percentage shown by 5SIM Statistics. Overrides apply only to the matching service, country and operator, then expire automatically.</p></div><button type="button" onclick="sparkleAdminLoadNumberRates()">↻ Refresh</button></div>
               <div class="sparkle-admin-control-grid">
                 <label>Service code<input id="sparkleRateService" placeholder="snapchat" maxlength="80"></label>
                 <label>Country code<input id="sparkleRateCountry" placeholder="ca, us, de" maxlength="40"></label>
@@ -5396,6 +5396,12 @@ document
 .getElementById("dashboard")
 .classList.add("active");
 window.currentSparkleUser=user;
+const sparkleWelcomeUserId=String(user?.id||"");
+if(sparkleWelcomeUserId&&window.__sparkleLoginWelcomeShownUserId!==sparkleWelcomeUserId&&typeof window.sparkleShowLoginWelcome==="function"){
+  window.__sparkleLoginWelcomeShownUserId=sparkleWelcomeUserId;
+  const welcomeName=String(user?.user_metadata?.first_name||user?.user_metadata?.full_name||user?.email?.split("@")?.[0]||"").trim();
+  window.sparkleShowLoginWelcome(user,welcomeName);
+}
 showDashPage("home",document.querySelector('.sidebar-nav .nav-item'));
 
 
@@ -6457,7 +6463,7 @@ function renderNumberOperators(items,preferred=""){
    // Compatibility fallback uses only 5SIM's public delivery-rate value.
    const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
     .map(item=>({item,rate:(item.rate===null||item.rate===undefined||String(item.rate).trim()===""?null:Number(item.rate))}))
-    .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>=0&&x.rate<=100)
+    .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>0&&x.rate<=100)
     .sort((a,b)=>b.rate-a.rate||String(a.item.operator).localeCompare(String(b.item.operator)));
    return ranked.length?String(ranked[0].item.operator):"";
   })());select.value=chosen;
@@ -6470,10 +6476,10 @@ function renderNumberOperators(items,preferred=""){
  const bestRateItem=bestRate!==null?(rated.find(x=>x.rate===bestRate)?.item||null):null;
  list.innerHTML=rows.map(item=>{
   const code=String(item.operator||""),stock=Number(item.stock||0),available=isAvailable(item),selected=code===chosen&&available,rate=readRate(item),label=String(item.operator_label||item.operator||"Operator"),mark=label.toLowerCase().includes("automatic")?"↗":label.trim().charAt(0).toUpperCase()||"•";
-  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · Delivery rate "+rate.toFixed(2)+"%":" · Delivery rate unavailable");
+  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · 3-hour delivery rate "+rate.toFixed(2)+"%":" · 3-hour delivery rate unavailable")+(item.rate_source==="manual_override"?" · Admin override":"");
   const hasSupplierRecommendation=rows.some(x=>x.recommended===true);
   const isBest=available&&(hasSupplierRecommendation?item.recommended===true:bestRateItem===item);
-  const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best 5SIM delivery rate · Recommended</span>':"";
+  const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best 3-hour delivery rate · Recommended</span>':"";
   const disabled=!available;
   return '<button type="button" class="sparkle-number-operator-card '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" '+(disabled?'disabled aria-disabled="true"':"")+' onclick="chooseNumberOperator(\''+escapeHtml(code)+'\')"><span class="sparkle-number-operator-left"><span class="sparkle-number-operator-mark" aria-hidden="true">'+escapeHtml(mark)+'</span><span class="sparkle-number-operator-copy"><strong>'+escapeHtml(label)+'</strong><span class="sparkle-number-operator-meta">'+escapeHtml(meta)+'</span></span></span><span class="sparkle-number-operator-right"><span class="sparkle-number-operator-tags">'+tags+'</span><strong class="sparkle-number-operator-price">'+escapeHtml(money(item.selling_price_ngn))+'</strong><span class="sparkle-number-operator-status">'+(disabled?"Currently unavailable":"Select to review")+'</span></span></button>';
  }).join("");
@@ -6877,6 +6883,7 @@ async function executeNumberPurchase(pin){
   if(button){button.disabled=true;button.textContent="Processing purchase…";}
   if(message)message.textContent="Submitting your order once. Please do not close this page or tap again.";
   showSparkleVirtualNumberLoader("Verifying your Transaction PIN","Sparkle is securely processing your order and requesting your number. Please keep this page open.");
+  closePinModal();
   let numberPurchaseLoaderActive=true;
   const finishNumberPurchaseLoader=()=>{if(!numberPurchaseLoaderActive)return;numberPurchaseLoaderActive=false;hideSparkleVirtualNumberLoader();};
   const quote={...numberCurrentQuote};
@@ -6884,13 +6891,12 @@ async function executeNumberPurchase(pin){
   try{
     const response=await callNumberOrderFunction("sparkle-number-buy",{service:quote.serviceCode,country:quote.country,operator:quote.operator,server_id:"server1",request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
     const d=response?.data||response;
-    // The order request has returned. Reveal its order screen without waiting for wallet refreshes.
-    finishNumberPurchaseLoader();
-    closePinModal();
+    // Keep the branded Sparkle overlay visible until the order card and number are rendered.
     if(d.status==="failed"){
       const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
       if(message)message.textContent=text;
       showNumberOrder({requestId:String(d.request_id||requestId),serviceName:quote.serviceName,phoneNumber:d.phone_number||"",status:"failed",message:text},{navigate:true});
+      finishNumberPurchaseLoader();
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
       alert(text);
@@ -6903,6 +6909,7 @@ async function executeNumberPurchase(pin){
     const returnedRequestId=String(d.request_id||d.requestId||d.id||requestId);
     const pendingStatus=String(d.status||"pending").toLowerCase();
     showNumberOrder({requestId:returnedRequestId,serviceName:quote.serviceName,phoneNumber:d.phone_number||d.phoneNumber||d.phone||"",status:pendingStatus,smsCode:d.sms_code||d.smsCode||"",message:d.message||(pendingStatus==="unknown"?"The order outcome is still being checked. Do not purchase again yet.":"Number order started. Check again shortly for the SMS code.")},{navigate:true});
+    finishNumberPurchaseLoader();
     document.getElementById("numberReviewPanel").style.display="none";
     document.getElementById("numberCatalogPanel").style.display="block";
     const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
@@ -8560,7 +8567,7 @@ async function openPinForPurchase(options={}){
     let amount=hasExplicitAmount?Number(options.amount):Number(pendingPurchase?.total||0);
     if(!(amount>0)&&!hasExplicitAmount&&window.sparkleRechargePinPending){const p=window.sparkleRechargePinPending;amount=Number(p.total||p.amount||p.expectedTotal||0);}
     if(!(amount>0)){const m=document.getElementById("pinMessage");if(m)m.textContent="Purchase amount could not be verified. Return to review and try again.";return false;}
-    try{const a=await supabaseClient.auth.getUser(),uid=a?.data?.user?.id;if(a?.error||!uid)throw new Error("Please sign in again to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance could not be verified. No purchase was made.");const b=Number(r.data.balance);if(b+0.000001<amount)throw new Error("Insufficient funds. Balance: ₦"+b.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Amount required: ₦"+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet first.");}
+    try{const sessionResult=await supabaseClient.auth.getSession(),uid=sessionResult?.data?.session?.user?.id||window.currentSparkleUser?.id;if(!uid)throw new Error("Please sign in again to check your wallet balance.");const r=await supabaseClient.from("wallets").select("balance").eq("user_id",uid).maybeSingle();if(r.error||!r.data||r.data.balance===null||!Number.isFinite(Number(r.data.balance)))throw new Error("Wallet balance could not be verified. No purchase was made.");const b=Number(r.data.balance);if(b+0.000001<amount)throw new Error("Insufficient funds. Balance: ₦"+b.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Amount required: ₦"+amount.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+". Please fund your wallet first.");}
     catch(e){sparkleShowWalletGuardMessage(e?.message||"Could not verify wallet balance. No purchase was made.");return false;}
   }
   const modal=document.getElementById("pinModal");if(!modal)return false;modal.classList.add("show");document.querySelectorAll(".pin-box").forEach(x=>x.value="");document.getElementById("pinMessage").textContent="";setTimeout(()=>document.querySelector(".pin-box")?.focus(),100);return true;
@@ -8621,8 +8628,12 @@ async function confirmTransactionPIN(){
   const button=document.querySelector('#pinModal button[onclick="confirmTransactionPIN()"]');
   if(button){button.disabled=true;button.textContent="Verifying PIN…";}
   try{
-    // Recheck the latest wallet balance after PIN entry and immediately before any wallet-funded order.
-    if(!["cryptotrade","crypto"].includes(String(currentService||"").toLowerCase())){
+    // Virtual Number's server purchase endpoint verifies this PIN, rechecks the live wallet
+    // balance and reserves funds before contacting 5SIM. Avoid a duplicate client-side
+    // wallet network round trip after the customer taps Make Payment.
+    const isVirtualNumberPurchase=currentService==="smsotp"&&numberAwaitingPin;
+    // Other wallet-funded services retain their immediate pre-purchase balance check.
+    if(!isVirtualNumberPurchase&&!["cryptotrade","crypto"].includes(String(currentService||"").toLowerCase())){
       // This shared handler must not reference activeDigitalRequest, which is private
       // to the digital-services module. Digital-service PINs use their dedicated handler.
       let required=Number(pendingPurchase?.total||0);
@@ -9293,6 +9304,7 @@ showHomepage();
 function showHomepage(){
 // A signed-out user must never leave a stale dashboard identity behind.
 window.currentSparkleUser = null;
+window.__sparkleLoginWelcomeShownUserId = null;
 if(typeof sparkleAdminSetVisible === "function") sparkleAdminSetVisible(false);
 document.getElementById("dashboard").classList.remove("active");
 document.getElementById("homepage").classList.remove("hidden");
@@ -11427,7 +11439,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     overlay.setAttribute("aria-hidden","true");
   }
   window.sparkleShowLoginWelcome=function(user){
-    const profileName=(document.getElementById("userName")?.textContent||"").trim();
+    const profileName=String(arguments[1]||"").trim()||(document.getElementById("userName")?.textContent||"").trim();
     const fallbackName=user?.user_metadata?.first_name||user?.user_metadata?.full_name||user?.email?.split("@")?.[0]||"there";
     const name=profileName&&profileName!=="User"?profileName:fallbackName;
     document.getElementById("sparkle-login-welcome-name").textContent=name;
