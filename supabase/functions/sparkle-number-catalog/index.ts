@@ -642,7 +642,17 @@ async function getCountriesForService(service:string):Promise<string[]>{
 }
 
 function recommendedOffer(offers:ProviderOffer[],service:string,country:string):ProviderOffer|undefined{
- const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.rate!==null&&x.rate>0);
+ // Smart Buy must compare the complete in-stock operator set using the same
+ // public 5SIM delivery-rate source. Never promote an API-window fallback
+ // (rate72/rate24/etc.) as the highest public delivery rate when other
+ // operators have not been measured from the public product page.
+ const inStock=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
+ if(!inStock.length)return undefined;
+ const hasCompletePublicRates=inStock.every(x=>
+  x.rate!==null&&x.rateWindow==="public_product_page"
+ );
+ if(!hasCompletePublicRates)return undefined;
+ const rated=inStock.filter(x=>x.rate!==null);
  return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.usd-b.usd)[0];
 }
 
