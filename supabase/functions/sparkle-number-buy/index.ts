@@ -216,8 +216,8 @@ async function usdToNgn(): Promise<number> {
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseDeliveryRate(raw:any):number|null{
- // Use only 5SIM's documented customer-facing delivery field.
- // A missing rate stays unverified; never substitute an HTML/statistics window.
+ // Match the 3-hour metric used in 5SIM Statistics and the catalogue.
+ // Keep a missing rate unverified unless an active manual override exists.
  let value=raw?.rate3;
  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
  if(value===null||value===undefined||value==="")return null;
