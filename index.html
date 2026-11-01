@@ -10658,7 +10658,7 @@ function toggleSparkleMoreServices(){
     activeDigitalRequest={kind:"social",payload:socialReviewPending.payload};currentService="socialMarket";
     // Open and validate the PIN dialog BEFORE dismissing the dedicated review.
     // If wallet/auth checks fail, keep the review visible so the user is not sent back to checkout.
-    const opened=await openPinForPurchase({amount:activeDigitalRequest.payload.expectedTotal});
+    const opened=await openPinForPurchase({amount:socialReviewPending.maximumReserve});
     if(!opened){
       activeDigitalRequest=null;
       const content=document.getElementById("sparkle-summary-screen-content");
@@ -10709,7 +10709,7 @@ function toggleSparkleMoreServices(){
     activeDigitalRequest={kind:"sms",payload:{action:"send_bulk_sms",sender,recipients,message,expectedTotal:smsQuote.estimatedRetail,requestID:crypto.randomUUID()}};
     currentService="bulkSms";
     void (async()=>{
-      const opened=await openPinForPurchase({amount:activeDigitalRequest.payload.expectedTotal});
+      const opened=await openPinForPurchase({amount:smsQuote.maximumReserve});
       if(!opened){activeDigitalRequest=null;return;}
       const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Confirm this Bulk SMS send with your 4-digit Transaction PIN.";
     })();
