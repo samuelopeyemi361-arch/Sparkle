@@ -505,7 +505,7 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
  const chosen=offer.operator;
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
-  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),recommendation_label:requestedOperator==="smart"&&offer.rate!==null&&offer.rate>0?"Recommended · Highest delivery rate":null,
+  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),recommendation_label:requestedOperator==="smart"&&offer.rate!==null&&offer.rate>0?(offer.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
   stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
@@ -631,7 +631,7 @@ Deno.serve(async (req:Request)=>{
      // Display all operators using the same live comparison window.
       const displayRate=recommendationWindow?x.rateWindows[recommendationWindow]:null;
       const displayWindow=recommendationWindow;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?"Recommended · Highest 5SIM 3-hour rate":null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?(x.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
    return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
   }
