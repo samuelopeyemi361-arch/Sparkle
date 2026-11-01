@@ -2723,7 +2723,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 .vn-selected{display:flex;align-items:center;gap:9px;margin:0 0 12px!important;padding:11px!important;border:1px solid #e2eafa!important;border-radius:13px!important;background:linear-gradient(110deg,#f5f8ff,#fff)!important}.vn-selected-icon{display:grid;place-items:center;flex:0 0 29px;width:29px;height:29px;border-radius:9px;background:#e8f0ff;color:#2c61cc;font-size:13px;font-weight:950}.vn-selected>div{display:grid;gap:4px;flex:1;min-width:0}.vn-selected small{color:#8290a7;font-size:7px;letter-spacing:1px;font-weight:950}.vn-selected strong{color:var(--vn-ink);font-size:11px;font-weight:950;overflow-wrap:anywhere}.vn-selected button,.vn-review-head>button{padding:8px 9px;border:1px solid #d9e3f4;border-radius:9px;background:#fff;color:#315dc2;font-size:9px;font-weight:950;cursor:pointer;white-space:nowrap}
 #numberCountryPicker label{display:block;margin:12px 0 7px;color:var(--vn-ink);font-size:10px;font-weight:950}#numberCountryPicker select{box-sizing:border-box;width:100%;min-height:47px;padding:12px;border:1px solid #dfe6f1;border-radius:12px;background:var(--input-bg,#fff);color:var(--text,#162640);font:inherit;font-size:12px}.vn-country-help{display:flex;gap:8px;margin-top:12px;color:var(--vn-muted);font-size:9px;line-height:1.55}
 
-.vn-brand-loader{position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 35%,rgba(66,100,245,.16),transparent 43%),rgba(6,13,36,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.vn-brand-loader{position:fixed;inset:0;z-index:100010;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 50% 35%,rgba(66,100,245,.16),transparent 43%),rgba(6,13,36,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
 .vn-brand-loader-card{width:min(100%,330px);padding:29px 23px 25px;border:1px solid rgba(255,255,255,.19);border-radius:25px;background:linear-gradient(150deg,rgba(255,255,255,.17),rgba(255,255,255,.07));box-shadow:0 28px 90px rgba(0,0,0,.32),inset 0 1px rgba(255,255,255,.24);text-align:center;color:#fff}
 .vn-brand-orb{width:92px;height:92px;margin:0 auto 17px;border-radius:28px;display:grid;place-items:center;background:linear-gradient(145deg,#e5f1ff 0%,#7fa9ff 26%,#4c5fe8 58%,#27245f 100%);box-shadow:inset 4px 4px 10px rgba(255,255,255,.8),inset -7px -8px 13px rgba(14,18,79,.52),0 13px 28px rgba(36,79,224,.48);transform-style:preserve-3d;animation:vnSparkleFloat 2.2s ease-in-out infinite}
 .vn-brand-orb-core{width:64px;height:64px;display:grid;place-items:center;border-radius:21px;background:linear-gradient(145deg,rgba(255,255,255,.4),rgba(255,255,255,.06));box-shadow:inset 1px 1px 2px rgba(255,255,255,.8),0 4px 8px rgba(11,18,71,.3);transform:translateZ(10px)}
@@ -5397,10 +5397,16 @@ document
 .classList.add("active");
 window.currentSparkleUser=user;
 const sparkleWelcomeUserId=String(user?.id||"");
-if(sparkleWelcomeUserId&&window.__sparkleLoginWelcomeShownUserId!==sparkleWelcomeUserId&&typeof window.sparkleShowLoginWelcome==="function"){
+if(sparkleWelcomeUserId&&window.__sparkleLoginWelcomeShownUserId!==sparkleWelcomeUserId){
   window.__sparkleLoginWelcomeShownUserId=sparkleWelcomeUserId;
   const welcomeName=String(user?.user_metadata?.first_name||user?.user_metadata?.full_name||user?.email?.split("@")?.[0]||"").trim();
-  window.sparkleShowLoginWelcome(user,welcomeName);
+  if(typeof window.sparkleShowLoginWelcome==="function"){
+    window.sparkleShowLoginWelcome(user,welcomeName);
+  }else{
+    // INITIAL_SESSION can be restored before the final inline welcome script loads.
+    // Queue the welcome instead of silently losing it on a page refresh.
+    window.__sparklePendingLoginWelcome={user,name:welcomeName,userId:sparkleWelcomeUserId};
+  }
 }
 showDashPage("home",document.querySelector('.sidebar-nav .nav-item'));
 
@@ -11451,6 +11457,11 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   overlay.addEventListener("click",event=>{if(event.target===overlay)closeWelcome();});
   document.addEventListener("keydown",event=>{if(event.key==="Escape"&&overlay.classList.contains("is-open"))closeWelcome();});
   document.getElementById("sparkle-login-welcome-channel")?.addEventListener("click",()=>window.open(CHANNEL_URL,"_blank","noopener,noreferrer"));
+  const pendingWelcome=window.__sparklePendingLoginWelcome;
+  if(pendingWelcome&&String(window.currentSparkleUser?.id||"")===pendingWelcome.userId){
+    delete window.__sparklePendingLoginWelcome;
+    window.sparkleShowLoginWelcome(pendingWelcome.user,pendingWelcome.name);
+  }
 })();
 </script>
 
