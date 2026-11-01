@@ -187,6 +187,12 @@ async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
     socialTrackingLastHttpStatus: Number(checked.response.status),
   };
 
+  // GSubz may return HTTP 200 with code 404 / TRANSACTION_FAILED when its requestID lookup cannot find a record. This is inconclusive, not proof of failure. Never refund from this response.
+  if (String(provider?.code ?? provider?.statusCode ?? "") === "404" || String(provider?.description ?? provider?.message ?? "").toUpperCase().includes("CONTENT_NOT_FOUND_API_OR_NOT_FOUND")) {
+    await saveTrackingState(admin, tx, meta, { ...progressPatch, socialTrackingState: "verification_not_found", socialTrackingIssue: "GSubz requestID verification returned not-found; this is inconclusive, not a failed payment. Automatic refund blocked." });
+    return "retrying";
+  }
+
   // Order-level refund requires a successful supplier verification and proof
   // that the complete requested quantity remains undelivered.
   if (checked.response.ok && order && socialOrderHasNoDelivery(order, quantity)) {
