@@ -7117,8 +7117,15 @@ async function createDedicatedAccount(){
     const phone=(profile?.phone||user.phone||user.user_metadata?.phone||"").trim();
     if(!email||!name){setStatus("Account details missing");return false;}
     setStatus("Loading saved account…");
-    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{body:{email,name,phone}});
-    if(error){console.error("Virtual account error:",error);setStatus("Unable to load — tap Fund Wallet to retry");return false;}
+    const {data,error}=await supabaseClient.functions.invoke("create-paystack-dva",{body:{email,name,first_name:firstName,last_name:lastName,phone}});
+    if(error){
+      const detail=typeof sparkleFunctionErrorMessage==="function"
+        ? await sparkleFunctionErrorMessage(error,"Paystack could not create your dedicated funding account.")
+        : (error.message||"Paystack could not create your dedicated funding account.");
+      console.error("Virtual account error:",error);
+      setStatus(detail||"Unable to load — tap Fund Wallet to retry");
+      return false;
+    }
     if(data?.success&&data.account_number){
       showAccount({account_name:data.account_name||name,account_number:data.account_number,bank_name:data.bank_name||"—"});
       return true;
