@@ -203,25 +203,23 @@ function parseRateField(value:any):number|null{
  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
 /**
- * Prefer 5SIM's longer, steadier delivery windows when present.
- * Zero is retained only when no positive window is available; missing data stays null.
+ * 5SIM's documented guest/prices response exposes one customer-facing
+ * delivery metric: "rate". It is the same percentage shown in the 5SIM
+ * operator list. Do not substitute rate24/rate168/statistics-window fields:
+ * those windows can differ from the rate shown by 5SIM and caused mismatches.
+ * If "rate" is absent, leave the delivery rate unverified.
  */
-// Canonical metric order: 5SIM's documented "rate" field first, then the
-// explicitly named statistics windows as fallback. The same chosen window is
-// applied to every operator in a service/country comparison.
-const RATE_WINDOW_PRIORITY=["rate24","rate168","rate720","rate72","rate3","rate1","rate"] as const;
+const RATE_WINDOW_PRIORITY=["rate"] as const;
 function getRateWindows(operatorData:any):Record<string,number|null>{
  const windows:Record<string,number|null>={};
  for(const key of RATE_WINDOW_PRIORITY)windows[key]=parseRateField(operatorData?.[key]);
  return windows;
 }
 function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
- const windows=getRateWindows(raw);
- // Prefer 5SIM's documented top-level rate when present; retain rate3
- // as a compatibility fallback for feeds exposing only the 3-hour window.
- const window=RATE_WINDOW_PRIORITY.find(key=>windows[key]!==null)??null;
- const value=window?windows[window]:null;
- return value===null?{rate:null,window:null}:{rate:Number(value.toFixed(2)),window};
+ const value=parseRateField(raw?.rate);
+ return value===null
+  ?{rate:null,window:null}
+  :{rate:Number(value.toFixed(2)),window:"rate"};
 }
 
 function parseOfferRows(node:any):ParsedOffer[]{

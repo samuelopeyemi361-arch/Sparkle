@@ -216,36 +216,70 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
   };
 }
 async function fetchSocialPlans() {
-  // GSUBZ documents Get Plans as a public endpoint with no authentication.
-  // Request it exactly as documented; purchase requests remain authenticated.
-  const headers: Record<string, string> = { Accept: "application/json" };
-  const response = await fetch(`${BASE}/api/plans/?service=socials`, { headers, signal: AbortSignal.timeout(20000) });
-  const rawText = await response.text();
-  let data: any = null;
-  try { data = JSON.parse(rawText); } catch {}
-  if (!response.ok || !data) throw new Error(`Sparkle's social-media catalogue is temporarily unavailable (HTTP ${response.status}). Please refresh in a moment. No purchase has been made.`);
-  const rawPlans = extractPlans(data);
-  const defaultDiscount = catalogueDiscount(data);
-  const plans = rawPlans.map((p: any) => normaliseSocialPlan(p, defaultDiscount)).filter((p: any) => p !== null);
-  // Temporary structured diagnostic: records public supplier catalogue fields only, never API keys or wallet data.
-  console.log("[sparkle-social-price-diagnostic]", JSON.stringify({
-    rootKeys: data && typeof data === "object" ? Object.keys(data).slice(0, 24) : [],
+  const supplierKey = Deno.env.get("GSUBZ_API_KEY");
+  const requestPlans = async (useAccountAuth: boolean) => {
+    const headers: Record<string, string> = { Accept: "application/json" };
+    if (useAccountAuth && supplierKey) headers.Authorization = `Bearer ${supplierKey}`;
+    const response = await fetch(`${BASE}/api/plans/?service=socials`, {
+      headers,
+      signal: AbortSignal.timeout(20000),
+    });
+    const rawText = await response.text();
+    let data: any = null;
+    try { data = JSON.parse(rawText); } catch {}
+    return { response, data };
+  };
+
+  let pricingMode = "public_catalogue";
+  let { response, data } = await requestPlans(false);
+  let rawPlans = data ? extractPlans(data) : [];
+  let defaultDiscount = data ? catalogueDiscount(data) : null;
+  let plans = rawPlans.map((p: any) => normaliseSocialPlan(p, defaultDiscount)).filter((p: any) => p !== null);
+
+  // GSUBZ documents the plans endpoint as public. Some account/catalogue
+  // responses omit api_price unless the account context is supplied.
+  // Retry with the server-side Bearer key only when the public response
+  // contains no usable API costs. Never expose the key to the browser.
+  if ((!response.ok || !data || !plans.some((p: any) => p.priceAvailable)) && supplierKey) {
+    try {
+      const authenticated = await requestPlans(true);
+      if (authenticated.response.ok && authenticated.data) {
+        const authenticatedRawPlans = extractPlans(authenticated.data);
+        const authenticatedDiscount = catalogueDiscount(authenticated.data);
+        const authenticatedPlans = authenticatedRawPlans
+          .map((p: any) => normaliseSocialPlan(p, authenticatedDiscount))
+          .filter((p: any) => p !== null);
+        if (authenticatedPlans.some((p: any) => p.priceAvailable)) {
+          response = authenticated.response;
+          data = authenticated.data;
+          rawPlans = authenticatedRawPlans;
+          defaultDiscount = authenticatedDiscount;
+          plans = authenticatedPlans;
+          pricingMode = "account_authenticated_fallback";
+        }
+      }
+    } catch (error) {
+      console.error("[sparkle-social-catalogue] account pricing fallback failed", {
+        message: error instanceof Error ? error.message.slice(0, 180) : "Supplier request failed",
+      });
+    }
+  }
+
+  if (!response.ok || !data) {
+    throw new Error(`Sparkle's Social Media Market catalogue is temporarily unavailable (HTTP ${response.status}). Please refresh in a moment. No purchase has been made.`);
+  }
+
+  console.log("[sparkle-social-catalogue]", JSON.stringify({
+    pricingMode,
+    rootKeys: Object.keys(data).slice(0, 16),
     rawPlanCount: rawPlans.length,
     parsedPlanCount: plans.length,
     pricedPlanCount: plans.filter((p: any) => p.priceAvailable).length,
-    catalogueDiscount: defaultDiscount ?? null,
-    sample: rawPlans.slice(0, 5).map((p: any) => ({
-      fields: p && typeof p === "object" ? Object.keys(p).slice(0, 30) : [],
-      value: p?.value ?? p?.plan ?? p?.id ?? p?.code ?? p?._planKey ?? null,
-      name: p?.displayName ?? p?.display_name ?? p?.name ?? p?.label ?? p?.title ?? null,
-      price: p?.price ?? p?.normal_price ?? p?.list_price ?? null,
-      api_price: p?.api_price ?? p?.apiPrice ?? p?.api_price_per_thousand ?? p?.apiPricePerThousand ?? null,
-      discount: p?.discount ?? p?.api_discount ?? p?.apiDiscount ?? null,
-      pricingKeys: p?.pricing && typeof p.pricing === "object" ? Object.keys(p.pricing).slice(0, 12) : []
-    }))
+    accountKeyConfigured: Boolean(supplierKey),
   }));
+
   if (!plans.length) {
-    const keys = data && typeof data === "object" ? Object.keys(data).slice(0, 10).join(", ") : typeof data;
+    const keys = Object.keys(data).slice(0, 10).join(", ");
     throw new Error(`Sparkle received an unsupported social catalogue response (HTTP ${response.status}; fields: ${keys || "none"}). Please refresh later. No purchase has been made.`);
   }
   return plans;

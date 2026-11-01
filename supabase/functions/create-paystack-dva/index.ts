@@ -158,101 +158,153 @@ serve(async (req) => {
       );
     }
 
-    /*
-     * CREATE PAYSTACK CUSTOMER
-     */
-    const names = name.split(/\s+/);
+    // Paystack requires a phone number, full name and email for a DVA.
+    // Keep an existing saved DVA available even if an older profile lacks phone.
+    if (!phone) {
+      return new Response(JSON.stringify({
+        success: false,
+        stage: "customer_details",
+        error: "Add your phone number in Profile before creating your dedicated funding account.",
+      }), {
+        status: 422,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    const firstName =
-      names.shift() || "Sparkle";
+    // Reuse a Paystack customer created by an earlier attempt. This matters
+    // when customer creation succeeded but Wema account assignment returned 400.
+    const authorization = `Bearer ${PAYSTACK_SECRET_KEY}`;
+    const lookupPaystackCustomer = async () => {
+      try {
+        const lookupRes = await fetch(
+          `https://api.paystack.co/customer/${encodeURIComponent(email)}`,
+          { method: "GET", headers: { Authorization: authorization }, signal: AbortSignal.timeout(15000) },
+        );
+        const lookup = await lookupRes.json().catch(() => null);
+        if (lookupRes.ok && lookup?.status === true && lookup?.data?.customer_code) {
+          return lookup.data;
+        }
+      } catch (lookupError) {
+        console.error("[create-paystack-dva] customer lookup failed", {
+          message: lookupError instanceof Error ? lookupError.message.slice(0, 160) : "Lookup failed",
+        });
+      }
+      return null;
+    };
 
-    const lastName =
-      names.join(" ") || "User";
-
-    const customerRes = await fetch(
-      "https://api.paystack.co/customer",
-      {
+    let customerData = await lookupPaystackCustomer();
+    if (!customerData) {
+      const customerRes = await fetch("https://api.paystack.co/customer", {
         method: "POST",
         headers: {
-          Authorization:
-            `Bearer ${PAYSTACK_SECRET_KEY}`,
+          Authorization: authorization,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email,
           first_name: firstName,
           last_name: lastName,
-          ...(phone ? { phone } : {}),
+          phone,
         }),
-      },
-    );
+        signal: AbortSignal.timeout(20000),
+      });
+      const customer = await customerRes.json().catch(() => null);
 
-    const customer = await customerRes.json();
-
-    if (!customerRes.ok || !customer.status) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          stage: "customer_creation",
-          paystack_status: customerRes.status,
-          paystack_error:
-            customer.message || customer,
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      if (customerRes.ok && customer?.status === true && customer?.data?.customer_code) {
+        customerData = customer.data;
+      } else {
+        // A concurrent/previous request may have created the customer just
+        // before Paystack returned a duplicate-customer response.
+        customerData = await lookupPaystackCustomer();
+        if (!customerData) {
+          const providerMessage = String(customer?.message || "Paystack could not create this customer.").slice(0, 280);
+          console.error("[create-paystack-dva] Paystack customer creation failed", {
+            stage: "customer_creation",
+            status: customerRes.status,
+            message: providerMessage,
+          });
+          return new Response(JSON.stringify({
+            success: false,
+            stage: "customer_creation",
+            paystack_status: customerRes.status,
+            paystack_error: providerMessage,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     }
 
-    const customerCode =
-      customer.data.customer_code;
+    const customerCode = customerData.customer_code;
+    if (!customerCode) {
+      return new Response(JSON.stringify({
+        success: false,
+        stage: "customer_lookup",
+        error: "Paystack did not return a customer reference. Please retry from Fund Wallet.",
+      }), {
+        status: 502,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    /*
-     * CREATE WEMA DEDICATED ACCOUNT
-     */
-    const accountRes = await fetch(
-      "https://api.paystack.co/dedicated_account",
-      {
+    // A previous DVA request may have succeeded even when Sparkle did not
+    // save its response. Recover the dedicated account from the customer.
+    let accountData = customerData.dedicated_account?.account_number
+      && customerData.dedicated_account?.active !== false
+      && customerData.dedicated_account?.assigned !== false
+      ? customerData.dedicated_account
+      : null;
+
+    if (!accountData) {
+      const accountRes = await fetch("https://api.paystack.co/dedicated_account", {
         method: "POST",
         headers: {
-          Authorization:
-            `Bearer ${PAYSTACK_SECRET_KEY}`,
+          Authorization: authorization,
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           customer: customerCode,
           preferred_bank: "wema-bank",
+          phone,
         }),
-      },
-    );
+        signal: AbortSignal.timeout(20000),
+      });
+      const account = await accountRes.json().catch(() => null);
 
-    const account = await accountRes.json();
-
-    if (!accountRes.ok || !account.status) {
-      return new Response(
-        JSON.stringify({
-          success: false,
-          stage: "dedicated_account_creation",
-          paystack_status: accountRes.status,
-          paystack_error:
-            account.message || account,
-          customer_code: customerCode,
-        }),
-        {
-          status: 400,
-          headers: {
-            ...corsHeaders,
-            "Content-Type": "application/json",
-          },
-        },
-      );
+      if (accountRes.ok && account?.status === true && account?.data?.account_number) {
+        accountData = account.data;
+      } else {
+        // Fetch once after a failed assignment: Paystack may have assigned the
+        // DVA but returned an error/duplicate response to this retry.
+        const refreshedCustomer = await lookupPaystackCustomer();
+        accountData = refreshedCustomer?.dedicated_account?.account_number
+          && refreshedCustomer?.dedicated_account?.active !== false
+          && refreshedCustomer?.dedicated_account?.assigned !== false
+          ? refreshedCustomer.dedicated_account
+          : null;
+        if (!accountData) {
+          const providerMessage = String(account?.message || "Paystack could not assign a Wema funding account.").slice(0, 280);
+          console.error("[create-paystack-dva] Paystack DVA assignment failed", {
+            stage: "dedicated_account_creation",
+            status: accountRes.status,
+            message: providerMessage,
+          });
+          return new Response(JSON.stringify({
+            success: false,
+            stage: "dedicated_account_creation",
+            paystack_status: accountRes.status,
+            paystack_error: providerMessage,
+            customer_code: customerCode,
+          }), {
+            status: 400,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
     }
 
-    const data = account.data;
+    const data = accountData;
 
     /*
      * SAVE ACCOUNT TO SPARKLE
@@ -260,14 +312,13 @@ serve(async (req) => {
     const { error: saveError } =
       await adminClient
         .from("paystack_dedicated_accounts")
-        .insert({
+        .upsert({
           user_id: user.id,
           account_number: data.account_number,
           account_name: data.account_name,
-          bank_name:
-            data.bank?.name || "Wema Bank",
+          bank_name: data.bank?.name || "Wema Bank",
           customer_code: customerCode,
-        });
+        }, { onConflict: "user_id" });
 
     if (saveError) {
       throw saveError;
