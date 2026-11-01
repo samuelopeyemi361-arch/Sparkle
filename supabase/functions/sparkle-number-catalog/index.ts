@@ -272,52 +272,65 @@ function rateNumber(value:string):number|null{
 /** Read exact service/country/operator delivery rows from 5SIM's public product page. */
 async function getWebsiteDeliveryRates(country:string,service:string):Promise<Map<string,number>>{
  const result=new Map<string,number>();
- try{
-  const countries=await getProviderCountries();
-  const info=countries.find(x=>x.code===country);
-  const countryLabels=new Set([country,info?.name??"",country==="usa"?"USA":"",country==="canada"?"Canada":""].filter(Boolean).map(countryKey));
-  const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{
-   headers:{"Accept":"text/html,application/xhtml+xml","User-Agent":"Mozilla/5.0 (compatible; SparkleRateReader/2.0)"},
-   signal:AbortSignal.timeout(20000)
-  });
-  if(!response.ok)throw new Error("5SIM public page HTTP "+response.status);
-  const html=await response.text();
-  const normalized=decodeSiteText(html);
-  const rows=[...normalized.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)].map(m=>m[1]);
-  for(const row of rows){
-   const cells=[...row.matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m=>siteCellText(m[1])).filter(Boolean);
-   if(!cells.some(x=>countryLabels.has(countryKey(x))))continue;
-   const op=cells.find(x=>/^virtual[-_ ]?\d+$/i.test(x));
-   const pct=cells.map(x=>x.match(/(\d+(?:[.,]\d+)?)\s*%/)).find(Boolean);
-   if(op&&pct){const rate=rateNumber(pct[1]);if(rate!==null)result.set(op.toLowerCase().replace(/[-_ ]/g,""),rate);}
+ const normalizeOperator=(value:string)=>value.toLowerCase().replace(/[^a-z0-9]/g,"");
+ const countryAliases=country==="usa"?["usa","united states"]:country==="canada"?["canada"]:[country.toLowerCase()];
+ const parsePage=(html:string)=>{
+  const decoded=decodeSiteText(html).replace(/\\u00a0|&#160;|&nbsp;/gi," ");
+  const add=(operator:string,rawRate:string)=>{
+   const rate=rateNumber(rawRate);
+   if(rate!==null)result.set(normalizeOperator(operator),rate);
+  };
+  for(const row of decoded.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)){
+   const cells=[...row[1].matchAll(/<t[dh]\b[^>]*>([\s\S]*?)<\/t[dh]>/gi)].map(m=>siteCellText(m[1])).filter(Boolean);
+   if(!cells.some(cell=>countryAliases.includes(countryKey(cell))))continue;
+   const op=cells.find(cell=>/^virtual[-_ ]?\d+$/i.test(cell));
+   const pct=cells.map(cell=>cell.match(/(\d+(?:[.,]\d+)?)\s*%/)).find(Boolean);
+   if(op&&pct)add(op,pct[1]);
   }
   if(!result.size){
-   const text=siteCellText(normalized);
-   const countryAlt=country==="usa"?"(?:USA|United States)":country==="canada"?"Canada":(info?.name||country).replace(/[.*+?^{}()|[\]\\]/g,"\\$&");
-   const tuple=new RegExp("\\b("+countryAlt+")\\b[\\s,|\"'\\[\\]]{1,40}(Virtual[-_ ]?\\d+)[\\s,|\"'\\[\\]]{1,80}([\\d, ]+\\s*pcs)[\\s,|\"'\\[\\]]{1,80}(\\d+(?:[.,]\\d+)?\\s*%)","gi");
-   for(const m of text.matchAll(tuple)){
-    const rate=rateNumber(m[4]);if(rate!==null)result.set(m[2].toLowerCase().replace(/[-_ ]/g,""),rate);
-   }
+   const text=siteCellText(decoded).replace(/[\u00a0\u202f]/g," ");
+   const countryPattern=countryAliases.join("|");
+   const tuple=new RegExp("\\b("+countryPattern+")\\b[\\s\\S]{0,100}?\\b(Virtual[-_ ]?\\d+)\\b[\\s\\S]{0,100}?([\\d, ]+\\s*pcs)[\\s\\S]{0,80}?(\\d+(?:[.,]\\d+)?)\\s*%","gi");
+   for(const m of text.matchAll(tuple))add(m[2],m[4]);
   }
   if(!result.size){
    const patterns=[
-    /["'](?:country|country_name)["']\s*:\s*["']([^"']+)["'][\s\S]{0,500}?["'](?:operator|operator_name)["']\s*:\s*["'](virtual[-_ ]?\d+)["'][\s\S]{0,500}?["'](?:rate|delivery_rate)["']\s*:\s*["']?(\d+(?:[.,]\d+)?)\s*%?["']?/gi,
-    /["'](USA|United States|Canada)["']\s*,\s*["'](virtual[-_ ]?\d+)["']\s*,\s*["'][^"']*pcs["']\s*,\s*["'](\d+(?:[.,]\d+)?)\s*%["']/gi
+    /["'](?:country|country_name)["']\s*:\s*["']([^"']+)["'][\s\S]{0,700}?["'](?:operator|operator_name)["']\s*:\s*["'](virtual[-_ ]?\d+)["'][\s\S]{0,700}?["'](?:rate|delivery_rate)["']\s*:\s*["']?(\d+(?:[.,]\d+)?)\s*%?["']?/gi,
+    /["'](USA|United States|Canada)["']\s*,\s*["'](virtual[-_ ]?\d+)["']\s*,\s*["'][^"']*pcs[^"']*["']\s*,\s*["'](\d+(?:[.,]\d+)?)\s*%["']/gi
    ];
-   for(const pattern of patterns)for(const m of normalized.matchAll(pattern)){
-    if(!countryLabels.has(countryKey(m[1])))continue;
-    const rate=rateNumber(m[3]);if(rate!==null)result.set(m[2].toLowerCase().replace(/[-_ ]/g,""),rate);
+   for(const pattern of patterns)for(const m of decoded.matchAll(pattern)){
+    if(!countryAliases.includes(countryKey(m[1])))continue;
+    add(m[2],m[3]);
    }
   }
-  console.info("[sparkle-5sim-website-rate-audit]",JSON.stringify({
-   country,service,source:"5sim_public_product_page_rsc_and_table",
-   page_url:"https://5sim.net/products/"+service,matched_operators:result.size,
-   operators:[...result.entries()]
-  }));
- }catch(error){
-  console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({
-   country,service,source:"5sim_public_product_page_rsc_and_table",error:String(error)
-  }));
+ };
+ const hosts=["https://5sim.com/products/","https://5sim.net/products/"];
+ for(const host of hosts){
+  try{
+   const url=host+encodeURIComponent(service);
+   const response=await fetch(url,{
+    headers:{
+     "Accept":"text/html,application/xhtml+xml",
+     "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/131.0 Safari/537.36",
+     "Accept-Language":"en-US,en;q=0.9"
+    },
+    signal:AbortSignal.timeout(18000)
+   });
+   if(!response.ok){
+    console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,host,status:response.status}));
+    continue;
+   }
+   const html=await response.text();
+   parsePage(html);
+   console.info("[sparkle-5sim-website-rate-audit]",JSON.stringify({
+    country,service,host,source:"5sim_public_product_comparison_page",
+    http_status:response.status,html_bytes:html.length,
+    matched_operators:result.size,operators:[...result.entries()]
+   }));
+   if(result.size)break;
+  }catch(error){
+   console.warn("[sparkle-5sim-website-rate-audit]",JSON.stringify({country,service,host,error:String(error)}));
+  }
  }
  return result;
 }
