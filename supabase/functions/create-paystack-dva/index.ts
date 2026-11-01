@@ -101,7 +101,7 @@ serve(async (req) => {
       user.user_metadata?.name ||
       "",
     ).trim();
-    const nameParts = fullName.split(/\\s+/).filter(Boolean);
+    const nameParts = fullName.split(/\s+/).filter(Boolean);
     const firstName = bodyFirstName || savedFirstName || metaFirstName || nameParts[0] || "";
     const lastName = bodyLastName || savedLastName || metaLastName || nameParts.slice(1).join(" ") || "";
     const name = fullName || [firstName, lastName].filter(Boolean).join(" ") || "Sparkle User";
