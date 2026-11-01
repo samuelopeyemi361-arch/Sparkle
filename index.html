@@ -3428,7 +3428,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 <section class="page" id="numberReviewPage">
 <div class="data-topbar vn-top"><button class="data-back" type="button" onclick="backFromNumberReview()" aria-label="Back to Virtual Number">‹</button><div><h1>Review your order</h1><p>Secure Virtual Number checkout</p></div><span class="vn-live"><i></i> PRIVATE</span></div>
 <div id="numberReviewPanel" class="service-page sparkle-usn-form vn-review" style="display:block"><div class="vn-review-head"><button type="button" onclick="backFromNumberReview()">← Back</button><div><span class="vn-label">SECURE CHECKOUT</span><h2>Review your order</h2></div><button type="button" class="vn-back" style="width:auto;margin:0;padding:8px 10px;border:1px solid #dce5f6;border-radius:10px" onclick="copyNumberReviewLink()">Share link ↗</button></div><p class="vn-review-intro">Confirm your service, country, operator, and exact wallet charge before approving with your Transaction PIN.</p>
-<div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>5SIM SMS delivery rate · 3 hours</span><strong id="numberReviewDeliveryRate">Checking live rate…</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
+<div class="vn-review-rows"><div class="summary-line"><span>Operator</span><strong id="numberReviewServer">—</strong></div><div class="summary-line"><span>Delivery rate · 3 hours</span><strong id="numberReviewDeliveryRate">Checking live rate…</strong></div><div class="summary-line"><span>Service and country</span><strong id="numberReviewService">—</strong></div><div class="summary-line"><span>Wallet charge</span><strong id="numberReviewTotal">—</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="numberReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total to pay</span><strong id="numberReviewGrandTotal">—</strong></div></div>
 <div id="numberReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><div class="vn-review-note">ⓘ <span>If an order is pending, check its status instead of purchasing again.</span></div>
 <button id="numberReviewConfirm" class="btn primary full vn-primary" type="button" disabled onclick="confirmNumberReviewPurchase()">Checking wallet balance…</button><button class="btn full vn-secondary" type="button" onclick="backFromNumberReview()">Go back and edit</button><div id="numberReviewMessage" class="vn-review-message" role="status" aria-live="polite"></div></div>
 </section>
@@ -6658,14 +6658,14 @@ async function checkNumberPrice(){
   const selected=numberServicesCache.find(x=>x.code===serviceCode),selectedOperator=numberOperatorsCache.find(x=>String(x.operator)===operator),cleanPrice=Math.round((sellingPrice+Number.EPSILON)*100)/100;
   const operatorLabel=String(quote.operator_label||selectedOperator?.operator_label||operator);
   numberCurrentQuote={serviceCode,country,serverId:"server1",serverLabel:"Live number catalogue",operator:String(quote.operator||operator),operatorLabel,
-   serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:cleanPrice,deliveryRate:quote.delivery_rate??quote.rate??selectedOperator?.delivery_rate??selectedOperator?.rate??null,network:String(quote.network||selected?.network||"")};
+   serviceName:String(quote.name||selected?.name||serviceCode),sellingPrice:cleanPrice,deliveryRate:quote.delivery_rate??quote.rate??selectedOperator?.delivery_rate??selectedOperator?.rate??null,rateSource:quote.rate_source??selectedOperator?.rate_source??"5sim",rateWindow:quote.rate_window??selectedOperator?.rate_window??"rate3",network:String(quote.network||selected?.network||"")};
   if(result)result.innerHTML='<div style="border:1px solid #dbeafe;background:#eff6ff;border-radius:12px;padding:14px"><div style="font-size:12px;color:#475569">Your Sparkle price · '+escapeHtml(operatorLabel)+'</div><div style="font-size:25px;font-weight:900;color:#0b5cff;margin-top:4px">₦'+cleanPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2})+'</div><div style="font-size:12px;color:#64748b;margin-top:8px">This is the current total charged by Sparkle for the selected option. The price is checked again before checkout.</div></div>';
   if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
  }catch(error){
   const selected=numberOperatorsCache.find(x=>String(x.operator)===operator),cachedPrice=Number(selected?.selling_price_ngn);
   if(Number.isFinite(cachedPrice)&&cachedPrice>0){
     const selectedService=numberServicesCache.find(x=>x.code===serviceCode);
-    numberCurrentQuote={serviceCode,country,serverId:"server1",serverLabel:"Live number catalogue",operator,operatorLabel:String(selected?.operator_label||operator),serviceName:String(selectedService?.name||serviceCode),sellingPrice:Math.round(cachedPrice*100)/100,deliveryRate:selected?.delivery_rate??selected?.rate??null,network:String(selectedService?.network||"")};
+    numberCurrentQuote={serviceCode,country,serverId:"server1",serverLabel:"Live number catalogue",operator,operatorLabel:String(selected?.operator_label||operator),serviceName:String(selectedService?.name||serviceCode),sellingPrice:Math.round(cachedPrice*100)/100,deliveryRate:selected?.delivery_rate??selected?.rate??null,rateSource:selected?.rate_source??"5sim",rateWindow:selected?.rate_window??"rate3",network:String(selectedService?.network||"")};
     if(result)result.textContent="Service availability will be confirmed securely before payment.";
     if(buy){buy.disabled=false;buy.textContent="Review purchase";buy.style.opacity="1";}
   }else{
@@ -6813,7 +6813,7 @@ function renderNumberReviewPage(){
  const quote=numberCurrentQuote;if(!quote)return;
  const countryName=numberCountriesCache.find(c=>c.code===quote.country)?.name||quote.country.toUpperCase();
  const total="₦"+quote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
-  const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=quote.deliveryRate===null||quote.deliveryRate===undefined||quote.deliveryRate===""?null:Number(quote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>=0&&rate<=100?rate.toFixed(2)+"%":"Not verified by 5SIM";}
+  const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=quote.deliveryRate===null||quote.deliveryRate===undefined||quote.deliveryRate===""?null:Number(quote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>0&&rate<=100?rate.toFixed(2)+"%"+(quote.rateSource==="manual_override"?" · Admin override":""):"Not verified for 3 hours";}
  const serviceEl=document.getElementById("numberReviewService");if(serviceEl)serviceEl.textContent=quote.serviceName+" · "+countryName;
  const opEl=document.getElementById("numberReviewServer");if(opEl)opEl.textContent=quote.operatorLabel||quote.operator;
  const totalEl=document.getElementById("numberReviewTotal");if(totalEl)totalEl.textContent=total;
@@ -6838,7 +6838,7 @@ function buyNumberNumber(){
   const countryName=numberCountriesCache.find(c=>c.code===country)?.name||country.toUpperCase();
   document.getElementById("numberReviewService").textContent=numberCurrentQuote.serviceName+" · "+countryName;
   const total="₦"+numberCurrentQuote.sellingPrice.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
-   const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=numberCurrentQuote.deliveryRate===null||numberCurrentQuote.deliveryRate===undefined?null:Number(numberCurrentQuote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>=0&&rate<=100?rate.toFixed(2)+"%":"Not verified by 5SIM";}
+   const rateEl=document.getElementById("numberReviewDeliveryRate");if(rateEl){const rate=numberCurrentQuote.deliveryRate===null||numberCurrentQuote.deliveryRate===undefined?null:Number(numberCurrentQuote.deliveryRate);rateEl.textContent=rate!==null&&Number.isFinite(rate)&&rate>0&&rate<=100?rate.toFixed(2)+"%"+(numberCurrentQuote.rateSource==="manual_override"?" · Admin override":""):"Not verified for 3 hours";}
   const reviewServer=document.getElementById("numberReviewServer");if(reviewServer)reviewServer.textContent=numberCurrentQuote.operatorLabel||"Automatic · price capped";
   document.getElementById("numberReviewTotal").textContent=total;
   document.getElementById("numberReviewGrandTotal").textContent=total;
@@ -11438,8 +11438,8 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     overlay.classList.remove("is-open");
     overlay.setAttribute("aria-hidden","true");
   }
-  window.sparkleShowLoginWelcome=function(user){
-    const profileName=String(arguments[1]||"").trim()||(document.getElementById("userName")?.textContent||"").trim();
+  window.sparkleShowLoginWelcome=function(user,preferredName){
+    const profileName=String(preferredName||"").trim()||(document.getElementById("userName")?.textContent||"").trim();
     const fallbackName=user?.user_metadata?.first_name||user?.user_metadata?.full_name||user?.email?.split("@")?.[0]||"there";
     const name=profileName&&profileName!=="User"?profileName:fallbackName;
     document.getElementById("sparkle-login-welcome-name").textContent=name;
