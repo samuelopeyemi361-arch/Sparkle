@@ -462,18 +462,19 @@ Deno.serve(async (req: Request) => {
       let payload: any = null; try { payload = JSON.parse(rawText); } catch {}
       const rawPlans = payload ? extractPlans(payload) : [];
       const fields = (x: any) => x && typeof x === "object" ? Object.keys(x).slice(0, 24) : [];
-      const sample = rawPlans.slice(0, 5).map((p: any) => ({
-        fields: fields(p), value: p?.value ?? p?.plan ?? p?.id ?? p?.code ?? p?.serviceID ?? p?._planKey ?? null,
-        name: p?.displayName ?? p?.display_name ?? p?.name ?? p?.label ?? p?.title ?? null,
-        hasApiPrice: p?.api_price != null || p?.apiPrice != null || p?.api_price_per_thousand != null || p?.apiPricePerThousand != null || p?.api_cost != null || p?.apiCost != null,
-        hasDisplayPrice: p?.price != null
-      }));
       const defaultDiscount = catalogueDiscount(payload);
       const normalised = rawPlans.map((p: any) => normaliseSocialPlan(p, defaultDiscount)).filter((p: any) => p !== null);
+      const sample = normalised.slice(0, 5).map((p: any) => ({
+        value: p.value, name: p.displayName, category: p.category,
+        priceAvailable: p.priceAvailable, priceSource: p.priceSource
+      }));
       return reply({ success: true, upstreamStatus: upstream.status, contentType: upstream.headers.get("content-type"),
         rootType: Array.isArray(payload) ? "array" : typeof payload, rootFields: fields(payload), rawTextIsJson: payload !== null,
         rawPlanCount: rawPlans.length, parsedPlanCount: normalised.length,
-        pricedPlanCount: normalised.filter((p: any) => p.priceAvailable).length, sample });
+        pricedPlanCount: normalised.filter((p: any) => p.priceAvailable).length,
+        verifiedApiPriceCount: normalised.filter((p: any) => p.priceSource === "verified_api_price").length,
+        publishedPriceEstimateCount: normalised.filter((p: any) => p.priceSource === "normal_price_ceiling").length,
+        sample });
     } catch {
       return reply({ success: false, error: "Could not reach the public GSubz plan catalogue right now." }, 502);
     }
