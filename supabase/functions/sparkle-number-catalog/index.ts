@@ -210,11 +210,10 @@ function parseRateField(value:any):number|null{
  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
 /**
- * 5SIM's documented guest/prices response exposes one customer-facing
- * delivery metric: "rate". It is the same percentage shown in the 5SIM
- * operator list. Do not substitute rate24/rate168/statistics-window fields:
- * those windows can differ from the rate shown by 5SIM and caused mismatches.
- * If "rate" is absent, leave the delivery rate unverified.
+ * Compare every in-stock operator using 5SIM Statistics' 3-hour rate.
+ * The 1-hour "rate" and longer statistics periods can be materially different;
+ * do not mix windows in a single recommendation. A missing rate3 remains
+ * unverified unless an active administrator override exists for that exact pair.
  */
 const RATE_WINDOW_PRIORITY=["rate3"] as const;
 function getRateWindows(operatorData:any):Record<string,number|null>{
