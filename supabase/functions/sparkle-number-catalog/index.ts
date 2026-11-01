@@ -209,7 +209,7 @@ function parseRateField(value:any):number|null{
 // Canonical metric order: 5SIM's documented "rate" field first, then the
 // explicitly named statistics windows as fallback. The same chosen window is
 // applied to every operator in a service/country comparison.
-const RATE_WINDOW_PRIORITY=["rate","rate3","rate1","rate24","rate72","rate168","rate720"] as const;
+const RATE_WINDOW_PRIORITY=["rate24","rate168","rate720","rate72","rate3","rate1","rate"] as const;
 function getRateWindows(operatorData:any):Record<string,number|null>{
  const windows:Record<string,number|null>={};
  for(const key of RATE_WINDOW_PRIORITY)windows[key]=parseRateField(operatorData?.[key]);
@@ -219,8 +219,8 @@ function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
  const windows=getRateWindows(raw);
  // Prefer 5SIM's documented top-level rate when present; retain rate3
  // as a compatibility fallback for feeds exposing only the 3-hour window.
- const value=windows.rate??windows.rate3;
- const window=windows.rate!==null?"rate":windows.rate3!==null?"rate3":null;
+ const window=RATE_WINDOW_PRIORITY.find(key=>windows[key]!==null)??null;
+ const value=window?windows[window]:null;
  return value===null?{rate:null,window:null}:{rate:Number(value.toFixed(2)),window};
 }
 
