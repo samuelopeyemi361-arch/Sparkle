@@ -173,6 +173,82 @@ Deno.serve(async (req: Request) => {
       return reply({ success: true, adjustment: data });
     }
 
+    if (action === "number_rate_overrides") {
+      let query = admin.from("sparkle_number_delivery_rate_overrides")
+        .select("id,service,country,operator,rate_percent,expires_at,note,created_by,created_at,updated_at")
+        .order("updated_at", { ascending: false });
+      const serviceFilter = str(body.service).toLowerCase();
+      const countryFilter = str(body.country).toLowerCase();
+      if (serviceFilter) query = query.eq("service", serviceFilter);
+      if (countryFilter) {
+        const canonical = countryFilter === "canada" ? "ca"
+          : ["usa", "united-states"].includes(countryFilter) ? "us"
+          : countryFilter === "germany" ? "de" : countryFilter;
+        query = query.eq("country", canonical);
+      }
+      const { data, error } = await query;
+      if (error) throw new Error("Could not load manual delivery-rate overrides.");
+      return reply({ success: true, overrides: data || [] });
+    }
+
+    if (action === "number_rate_override_save") {
+      const serviceCode = str(body.service).toLowerCase();
+      const rawCountry = str(body.country).toLowerCase().replace(/[_\\s]+/g, "-");
+      const countryCode = ["canada", "ca"].includes(rawCountry) ? "ca"
+        : ["usa", "us", "united-states"].includes(rawCountry) ? "us"
+        : ["germany", "de"].includes(rawCountry) ? "de" : rawCountry;
+      const operatorCode = str(body.operator).toLowerCase();
+      const rawRate = str(body.rate_percent);
+      const rate = rawRate ? Number(rawRate) : NaN;
+      const expiry = str(body.expires_at);
+      const note = str(body.note).slice(0, 240);
+      if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(serviceCode)
+          || !/^[a-z0-9][a-z0-9-]{1,39}$/.test(countryCode)
+          || !/^[a-z0-9._-]{1,80}$/.test(operatorCode)
+          || !Number.isFinite(rate) || rate < 0 || rate > 100
+          || !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) {
+        return reply({ success: false, error: "Enter a valid service, country, operator, delivery rate from 0–100%, and future expiry." }, 400);
+      }
+      const row = {
+        service: serviceCode,
+        country: countryCode,
+        operator: operatorCode,
+        rate_percent: Number(rate.toFixed(2)),
+        expires_at: new Date(expiry).toISOString(),
+        note: note || null,
+        created_by: actor.id,
+        updated_at: new Date().toISOString(),
+      };
+      const { data, error } = await admin.from("sparkle_number_delivery_rate_overrides")
+        .upsert(row, { onConflict: "service,country,operator" })
+        .select("id,service,country,operator,rate_percent,expires_at,note,created_by,created_at,updated_at")
+        .single();
+      if (error) throw new Error("Could not save this manual delivery-rate override.");
+      await admin.from("sparkle_admin_audit_logs").insert({
+        actor_user_id: actor.id,
+        action: "number_delivery_rate_override_saved",
+        details: { service: serviceCode, country: countryCode, operator: operatorCode,
+          rate_percent: row.rate_percent, expires_at: row.expires_at }
+      });
+      return reply({ success: true, override: data });
+    }
+
+    if (action === "number_rate_override_delete") {
+      const id = str(body.id);
+      if (!/^[0-9a-f-]{36}$/i.test(id)) return reply({ success: false, error: "Choose a valid manual rate override." }, 400);
+      const { data, error } = await admin.from("sparkle_number_delivery_rate_overrides")
+        .delete().eq("id", id)
+        .select("id,service,country,operator,rate_percent").maybeSingle();
+      if (error) throw new Error("Could not delete this manual delivery-rate override.");
+      if (!data) return reply({ success: false, error: "Manual delivery-rate override not found." }, 404);
+      await admin.from("sparkle_admin_audit_logs").insert({
+        actor_user_id: actor.id,
+        action: "number_delivery_rate_override_deleted",
+        details: data
+      });
+      return reply({ success: true });
+    }
+
     if (action === "audit_logs") {
       const limit = int(body.limit, 50, 1, 100);
       const { data, error } = await admin.from("sparkle_admin_audit_logs")
