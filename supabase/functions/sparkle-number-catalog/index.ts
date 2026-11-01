@@ -193,18 +193,33 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now, sourceUpdatedAt: last * 1000 };
   return rate;
 }
-type ParsedOffer={operator:string;usd:number;count:number;rate:number|null};
+type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;rateWindow?:string|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
-function parseDeliveryRate(raw:any):number|null{
- // 5SIM's documented /v1/guest/prices contract exposes ONE delivery
- // percentage field: "rate". Do not prefer undocumented rate24/rate72
- // aliases, which can belong to a different window or data shape.
- let value=raw?.rate;
+function parseRateField(value:any):number|null{
  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
  if(value===null||value===undefined||value==="")return null;
  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
  const n=Number(normalized);
  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
+}
+/**
+ * Prefer 5SIM's longer, steadier delivery windows when present.
+ * Zero is retained only when no positive window is available; missing data stays null.
+ */
+function getBestRate(operatorData:any):{rate:number|null;window:string|null}{
+ if(!operatorData||typeof operatorData!=="object")return {rate:null,window:null};
+ const priority=["rate72","rate","rate24","rate168","rate720","rate3","rate1"];
+ let zero:{rate:number;window:string}|null=null;
+ for(const key of priority){
+  const value=parseRateField(operatorData[key]);
+  if(value===null)continue;
+  if(value>0)return {rate:Number(value.toFixed(2)),window:key};
+  if(zero===null)zero={rate:0,window:key};
+ }
+ return zero?{...zero}:{rate:null,window:null};
+}
+function parseDeliveryRate(raw:any):number|null{
+ return getBestRate(raw).rate;
 }
 
 const publicRateCache=new Map<string,{rate:number;expiresAt:number}>();
@@ -436,8 +451,11 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
    offers:diagnostics
   }));
   return offers.map(offer=>{
-   const rate=foundRates.get(offer.operator.toLowerCase());
-   return rate===undefined?offer:{...offer,rate};
+   const publicRate=foundRates.get(offer.operator.toLowerCase());
+   // Keep the requested API window priority when it produced a positive rate.
+   // Use the exact public product-page rate only to repair missing/zero API data.
+   if(offer.rate!==null&&offer.rate>0)return offer;
+   return publicRate===undefined?offer:{...offer,rate:publicRate,rateWindow:"public_product_page"};
   });
 }
 
@@ -445,9 +463,10 @@ function parseOfferRows(node:any):ParsedOffer[]{
  if(!node||typeof node!=="object"||Array.isArray(node))return [];
  return Object.entries(node).map(([operator,raw]:[string,any])=>{
   const usd=Number(raw?.cost),count=Number(raw?.count);
-  const rate=parseDeliveryRate(raw);
+  const selectedRate=getBestRate(raw);
+  const rate=selectedRate.rate;
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
-  return {operator,usd,count,rate};
+  return {operator,usd,count,rate,rateWindow:selectedRate.window};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
 // Share the latest 5SIM prices payload for five seconds per Edge Function instance.
@@ -495,7 +514,7 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
   rate_policy:"exact_service_country_operator_public_rate_override",
   rate_window:"5sim_published_recent_delivery_percentage",
   fetched_at:new Date().toISOString(),
-  offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_reported:x.rate!==null,count:x.count}))
+  offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,rate_window:x.rateWindow??null,rate_reported:x.rate!==null,count:x.count}))
  }));
  ratedOffers.sort((a,b)=>{
   const ar=a.rate??-1,br=b.rate??-1;
