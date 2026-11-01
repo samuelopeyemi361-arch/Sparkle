@@ -11416,16 +11416,15 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
 #smsotpPage .sparkle-number-service-row.is-selected{background:#f7f9fc!important;border-color:#aab6c7!important;box-shadow:inset 0 0 0 1px #d5dce6!important}
 @media(max-width:380px){#smsotpPage .sparkle-number-service-logo{flex-basis:27px!important;width:27px!important;height:27px!important}}
 
-/* iPhone Chrome/Safari focus-zoom guard: iOS zooms form controls below 16px.
-   Keep controls readable and prevent automatic page magnification on focus. */
-@media screen and (max-width: 768px) {
-  input,
-  select,
-  textarea,
-  [contenteditable="true"],
-  [role="textbox"] {
-    font-size: 16px !important;
-  }
+/* Cross-device form focus guard.
+   Apply at every viewport width (including phones using desktop-site mode),
+   so small form-control text cannot trigger browser focus magnification. */
+input,
+select,
+textarea,
+[contenteditable="true"],
+[role="textbox"] {
+  font-size: 16px !important;
 }
 </style>
 <script id="sparkle-virtual-number-refresh-recovery">
