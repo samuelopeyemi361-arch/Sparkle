@@ -60,6 +60,13 @@ function providerCountry(country: string): string {
   }
   return value;
 }
+function manualRateCountry(country: string): string {
+  const value = asText(country).toLowerCase().replace(/[_\s]+/g, "-");
+  if (["us","usa","united-states"].includes(value)) return "us";
+  if (["ca","canada"].includes(value)) return "ca";
+  if (["de","germany"].includes(value)) return "de";
+  return value;
+}
 function validateRoute(serverId: string, country: string, service: string): { markup: number; label: string } {
   const profile = profileByServer[serverId];
   if (!profile || serverId !== "server1") throw problem("The live number catalogue is currently unavailable.", 400, "INVALID_SERVER");
@@ -193,7 +200,7 @@ async function usdToNgn(): Promise<number> {
   fxCache = { rate, updatedAt: now, sourceUpdatedAt: last * 1000 };
   return rate;
 }
-type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;displayRate:number|null;rateWindow?:string|null;rateWindows:Record<string,number|null>};
+type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;displayRate:number|null;rateWindow?:string|null;rateWindows:Record<string,number|null>;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
 function parseRateField(value:any):number|null{
  if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
@@ -209,17 +216,17 @@ function parseRateField(value:any):number|null{
  * those windows can differ from the rate shown by 5SIM and caused mismatches.
  * If "rate" is absent, leave the delivery rate unverified.
  */
-const RATE_WINDOW_PRIORITY=["rate"] as const;
+const RATE_WINDOW_PRIORITY=["rate3"] as const;
 function getRateWindows(operatorData:any):Record<string,number|null>{
  const windows:Record<string,number|null>={};
  for(const key of RATE_WINDOW_PRIORITY)windows[key]=parseRateField(operatorData?.[key]);
  return windows;
 }
 function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
- const value=parseRateField(raw?.rate);
+ const value=parseRateField(raw?.rate3);
  return value===null
   ?{rate:null,window:null}
-  :{rate:Number(value.toFixed(2)),window:"rate"};
+  :{rate:Number(value.toFixed(2)),window:"rate3"};
 }
 
 function parseOfferRows(node:any):ParsedOffer[]{
@@ -231,7 +238,7 @@ function parseOfferRows(node:any):ParsedOffer[]{
   const selectedRate=parseDeliveryRate(raw);
   const rate=selectedRate.rate;
   const displayRate=rate;
-  return {operator,usd,count,rate,displayRate,rateWindow:selectedRate.window,rateWindows};
+  return {operator,usd,count,rate,displayRate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
 // Share the latest 5SIM prices payload for five seconds per Edge Function instance.
@@ -256,12 +263,35 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
  return await pending;
 }
 
-async function getProductOffers(country:string,service:string):Promise<ProviderOffer[]>{
+async function applyManualRateOverrides(offers:ProviderOffer[],service:string,country:string,admin:any):Promise<ProviderOffer[]>{
+ if(!offers.length)return offers;
+ const canonicalCountry=manualRateCountry(country),now=new Date().toISOString();
+ const {data,error}=await admin.from("sparkle_number_delivery_rate_overrides")
+  .select("operator,rate_percent,expires_at")
+  .eq("service",service.toLowerCase()).eq("country",canonicalCountry)
+  .gt("expires_at",now).in("operator",offers.map(x=>x.operator));
+ if(error){
+  console.error("[sparkle-5sim-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
+  throw problem("Sparkle could not verify its manual delivery-rate settings. Please refresh and try again.",503,"RATE_OVERRIDE_UNAVAILABLE");
+ }
+ const overrides=new Map<string,{rate:number;expiresAt:string}>(
+  (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
+ );
+ return offers.map(offer=>{
+  const override=overrides.get(offer.operator.toLowerCase());
+  if(!override||!Number.isFinite(override.rate)||override.rate<0||override.rate>100)return offer;
+  const rate=Number(override.rate.toFixed(2));
+  return {...offer,rate,displayRate:rate,rateWindow:"rate3",rateWindows:{...offer.rateWindows,rate3:rate},
+   rateSource:"manual_override",manualRateExpiresAt:override.expiresAt};
+ });
+}
+async function getProductOffers(country:string,service:string,admin:any):Promise<ProviderOffer[]>{
  const pc=providerCountry(country);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- let providerBalance=0;
- try{providerBalance=(await providerProfile()).balance;}catch{/* Catalogue and NGN quotes remain visible even if the provider account cannot currently be verified. The purchase endpoint rechecks before reserving any customer funds. */}
- const pricesData=await getCachedPricesResponse(pc,service);
+ const [balanceResult,pricesData]=await Promise.all([
+  providerProfile().catch(()=>null),getCachedPricesResponse(pc,service)
+ ]);
+ const providerBalance=balanceResult?.balance??0;
  // 5SIM may wrap prices in data and return country-first or product-first maps.
  let root:any=pricesData;
  for(let depth=0;depth<3;depth++){
@@ -296,9 +326,9 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
- const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
- // Select one comparison window for the entire country/service cohort.
- // This prevents misleading comparisons between short- and long-term rates.
+ const rawOffers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
+ const offers=await applyManualRateOverrides(rawOffers,service,country,admin);
+ // Every offer in this cohort is ranked against the same 3-hour period.
  const recommendationWindow=selectRecommendationWindow(offers);
  const ratedOffers:ProviderOffer[]=offers.map(x=>{
   const value=recommendationWindow?x.rateWindows[recommendationWindow]:null;
@@ -306,12 +336,12 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
   return {...x,rate,displayRate:rate,rateWindow:recommendationWindow};
  });
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rate_source:"5sim_public_website_frontend_feed",
-  rate_policy:"documented_rate_first_then_single_shared_fallback_window",
+  country:pc,service,rate_source:"5sim_guest_prices_rate3_with_admin_override",
+  rate_policy:"fixed_3_hour_comparison_window",
   recommendation_window:recommendationWindow,
-  recommendation_metric:recommendationWindow==="rate"?"5SIM documented delivery rate":recommendationWindow??"unavailable",
+  recommendation_metric:"5SIM Statistics · 3 hours",
   fetched_at:new Date().toISOString(),
-  offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,display_rate:x.displayRate,rate_window:x.rateWindow??null,reported_windows:x.rateWindows,count:x.count}))
+  offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,display_rate:x.displayRate,rate_window:x.rateWindow??null,rate_source:x.rateSource??"5sim",reported_windows:x.rateWindows,count:x.count}))
  }));
  ratedOffers.sort((a,b)=>{
   const ar=a.rate??-1,br=b.rate??-1;
@@ -320,8 +350,8 @@ async function getProductOffers(country:string,service:string):Promise<ProviderO
  });
  return ratedOffers;
 }
-async function bestOffer(country:string,service:string,requestedOperator="smart"):Promise<ProviderOffer>{
- const offers=await getProductOffers(country,service);
+async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
+ const offers=await getProductOffers(country,service,admin);
  if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
   const recommended=recommendedOffer(offers,service,country);
   if(recommended)return recommended;
@@ -461,11 +491,11 @@ function recommendedOffer(offers:ProviderOffer[],_service:string,_country:string
  return winner;
  }
 
-async function getDisplayQuote(country:string,service:string,serverId:string,requestedOperator="any"){
+async function getDisplayQuote(country:string,service:string,serverId:string,requestedOperator="any",admin:any){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
- const offers=await getProductOffers(country,service);
+ const offers=await getProductOffers(country,service,admin);
  const smartRequest=requestedOperator==="smart"||requestedOperator==="any";
  const offer=smartRequest
    ?recommendedOffer(offers,service,country)
@@ -479,22 +509,22 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),recommendation_label:requestedOperator==="smart"&&offer.rate!==null&&offer.rate>0?"Recommended · Highest delivery rate":null,
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,markup_percent:profile.markup,
+  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
-async function getQuote(country:string,service:string,serverId:string,requestedOperator="any"){
+async function getQuote(country:string,service:string,serverId:string,requestedOperator="any",admin:any){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
- const offer=await bestOffer(country,service,requestedOperator);
+ const offer=await bestOffer(country,service,requestedOperator,admin);
  const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified.",503,"PRICE_UNAVAILABLE");
  const chosen=requestedOperator==="any"?"any":offer.operator;
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,markup_percent:profile.markup,
+  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
@@ -502,6 +532,7 @@ function safeServiceQuote(q:any){
  return {code:q.code,name:q.name,country:q.country,network:q.network||"Available network",
   operator:q.operator,operator_label:q.operator_label,selling_price_ngn:q.selling_price_ngn,
   rate:q.rate??null,delivery_rate:q.rate??null,rate_available:q.rate!==null,
+  rate_window:q.rate_window??null,rate_window_label:q.rate_window_label??"3-hour",rate_source:q.rate_source??"5sim",
   server_id:"server1",stock:q.stock};
 }
 
@@ -593,7 +624,7 @@ Deno.serve(async (req:Request)=>{
   }
   if(action==="operators"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
-   const offers=await getProductOffers(country,service);
+   const offers=await getProductOffers(country,service,admin);
    const recommended=recommendedOffer(offers,service,country);
    const recommendationWindow=selectRecommendationWindow(offers);
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
@@ -602,13 +633,13 @@ Deno.serve(async (req:Request)=>{
      // Display all operators using the same live comparison window.
       const displayRate=recommendationWindow?x.rateWindows[recommendationWindow]:null;
       const displayWindow=recommendationWindow;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_source:"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?"Recommended · Highest 5SIM "+(recommendationWindow==="rate"?"documented delivery":recommendationWindow==="rate1"?"1-hour":recommendationWindow==="rate3"?"3-hour":recommendationWindow==="rate24"?"24-hour":recommendationWindow==="rate72"?"3-day":recommendationWindow==="rate168"?"1-week":"1-month")+" rate":null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?"Recommended · Highest 5SIM 3-hour rate":null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
    });
    return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
-   const quote=await getDisplayQuote(country,service,serverId,operator);
+   const quote=await getDisplayQuote(country,service,serverId,operator,ctx.admin);
    return reply({success:true,data:safeServiceQuote(quote)});
   }
   throw problem("Unsupported catalogue action.",400,"INVALID_ACTION");
