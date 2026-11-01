@@ -467,9 +467,8 @@ async function getCountriesForService(service:string):Promise<string[]>{
 }
 
 function selectRecommendationWindow(offers:ProviderOffer[]):string|null{
- // Use 5SIM's documented "rate" delivery percentage first. The website/API
- // also exposes named time windows (rate1, rate3, rate24, etc.); never compare
- // values from different windows in one recommendation.
+ // RATE_WINDOW_PRIORITY is fixed to rate3 (3 hours) so each operator and
+ // every admin override is compared using the same 5SIM Statistics period.
  const positive=(window:string)=>offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
    x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&x.rateWindows[window]!>0&&x.rateWindows[window]!<=100).length;
  return RATE_WINDOW_PRIORITY.find(w=>positive(w)>0)??null;
