@@ -216,7 +216,14 @@ function normaliseSocialPlan(p: any, defaultDiscount?: unknown) {
   };
 }
 async function fetchSocialPlans() {
-  const response = await fetch(`${BASE}/api/plans/?service=socials`, { headers: { Accept: "application/json" }, signal: AbortSignal.timeout(20000) });
+  // GSUBZ documents api_price as the actual API cost and price as the public
+  // list price. Include the server-side account key so account-specific API
+  // pricing is returned when the supplier requires account context.
+  // The key is never exposed to clients or written to logs.
+  const supplierKey = Deno.env.get("GSUBZ_API_KEY");
+  const headers: Record<string, string> = { Accept: "application/json" };
+  if (supplierKey) headers.Authorization = `Bearer ${supplierKey}`;
+  const response = await fetch(`${BASE}/api/plans/?service=socials`, { headers, signal: AbortSignal.timeout(20000) });
   const rawText = await response.text();
   let data: any = null;
   try { data = JSON.parse(rawText); } catch {}
