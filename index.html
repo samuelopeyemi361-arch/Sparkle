@@ -6424,7 +6424,7 @@ function renderNumberOperators(items,preferred=""){
  const supplierRecommended=rows.find(x=>x.recommended===true&&isAvailable(x));
  const chosen=numberOperatorManuallySelected&&preferred&&rows.some(x=>String(x.operator)===preferred&&isAvailable(x))?preferred:
   (supplierRecommended?String(supplierRecommended.operator):(()=>{
-   // Compatibility fallback for older catalogue responses without a supplier recommendation.
+   // Compatibility fallback is safe because the API's primary rate is now rate3 only.
    const ranked=rows.filter(x=>isAvailable(x)&&String(x.operator||"").toLowerCase()!=="any")
     .map(item=>({item,rate:(item.rate===null||item.rate===undefined||String(item.rate).trim()===""?null:Number(item.rate))}))
     .filter(x=>x.rate!==null&&Number.isFinite(x.rate)&&x.rate>0&&x.rate<=100)
@@ -6435,19 +6435,21 @@ function renderNumberOperators(items,preferred=""){
  const money=v=>{const n=Number(v);return Number.isFinite(n)&&n>0?"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2}):"Price unavailable";};
  const selectable=rows.filter(isAvailable);
  const readRate=item=>{if(item.rate===null||item.rate===undefined||String(item.rate).trim()==="")return null;const n=Number(String(item.rate).trim().replace(/%/g,"").replace(",", "."));return Number.isFinite(n)&&n>=0&&n<=100?n:null;};
- // 5SIM's published rate is the sole recommendation signal. Automatic routing is not
- // a named operator, so it is not compared against individual operator delivery rates.
- const rated=selectable.filter(x=>String(x.operator||"").toLowerCase()!=="any").map(item=>({item,rate:readRate(item)})).filter(x=>x.rate!==null);
+ const rated=selectable.filter(x=>String(x.operator||"").toLowerCase()!=="any").map(item=>({item,rate:readRate(item)})).filter(x=>x.rate!==null&&x.rate>0);
  const bestRate=rated.length?Math.max(...rated.map(x=>x.rate)):null;
- const bestRateItem=bestRate!==null&&bestRate>0?(rated.find(x=>x.rate===bestRate)?.item||null):null;
+ const bestRateItem=bestRate!==null?(rated.find(x=>x.rate===bestRate)?.item||null):null;
+ const rateWindows=[["1h","rate1"],["3h","rate3"],["1d","rate24"],["3d","rate72"],["7d","rate168"],["30d","rate720"]];
+ const formatWindow=(windows,key)=>{const value=windows&&windows[key]!==null&&windows[key]!==undefined&&windows[key]!==""?Number(windows[key]):null;return value!==null&&Number.isFinite(value)&&value>=0&&value<=100?value.toFixed(2)+"%":"—";};
  list.innerHTML=rows.map(item=>{
   const code=String(item.operator||""),stock=Number(item.stock||0),available=isAvailable(item),selected=code===chosen&&available,rate=readRate(item),label=String(item.operator_label||item.operator||"Operator"),mark=label.toLowerCase().includes("automatic")?"↗":label.trim().charAt(0).toUpperCase()||"•";
-  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · "+rate.toFixed(1)+"% delivery":" · Delivery rate —");
+  const meta=(stock>0?stock.toLocaleString("en-NG")+" in stock":"Out of stock")+(rate!==null?" · 3h "+rate.toFixed(2)+"%":" · 3h rate —");
   const hasSupplierRecommendation=rows.some(x=>x.recommended===true);
   const isBest=available&&(hasSupplierRecommendation?item.recommended===true:bestRateItem===item);
-  const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best rate · Recommended</span>':"";
+  const tags=isBest?'<span class="sparkle-operator-award best"><span aria-hidden="true">✓</span> Best 3h rate · Recommended</span>':"";
+  const windows=item.rate_windows||{};
+  const breakdown='<span class="sparkle-number-rate-breakdown" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;font-size:9px;color:#64748b">'+rateWindows.map(([label,key])=>'<span style="padding:2px 4px;border-radius:5px;background:#f1f5f9;white-space:nowrap">'+label+' '+formatWindow(windows,key)+'</span>').join("")+'</span>';
   const disabled=!available;
-  return '<button type="button" class="sparkle-number-operator-card '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" '+(disabled?'disabled aria-disabled="true"':"")+' onclick="chooseNumberOperator(\''+escapeHtml(code)+'\')"><span class="sparkle-number-operator-left"><span class="sparkle-number-operator-mark" aria-hidden="true">'+escapeHtml(mark)+'</span><span class="sparkle-number-operator-copy"><strong>'+escapeHtml(label)+'</strong><span class="sparkle-number-operator-meta">'+escapeHtml(meta)+'</span></span></span><span class="sparkle-number-operator-right"><span class="sparkle-number-operator-tags">'+tags+'</span><strong class="sparkle-number-operator-price">'+escapeHtml(money(item.selling_price_ngn))+'</strong><span class="sparkle-number-operator-status">'+(disabled?"Currently unavailable":"Select to review")+'</span></span></button>';
+  return '<button type="button" class="sparkle-number-operator-card '+(selected?"is-selected":"")+'" aria-pressed="'+(selected?"true":"false")+'" '+(disabled?'disabled aria-disabled="true"':"")+' onclick="chooseNumberOperator(\''+escapeHtml(code)+'\')"><span class="sparkle-number-operator-left"><span class="sparkle-number-operator-mark" aria-hidden="true">'+escapeHtml(mark)+'</span><span class="sparkle-number-operator-copy"><strong>'+escapeHtml(label)+'</strong><span class="sparkle-number-operator-meta">'+escapeHtml(meta)+'</span>'+breakdown+'</span></span><span class="sparkle-number-operator-right"><span class="sparkle-number-operator-tags">'+tags+'</span><strong class="sparkle-number-operator-price">'+escapeHtml(money(item.selling_price_ngn))+'</strong><span class="sparkle-number-operator-status">'+(disabled?"Currently unavailable":"Select to review")+'</span></span></button>';
  }).join("");
 }
 async function chooseNumberOperator(operator){if(numberPurchaseInProgress)return;numberOperatorManuallySelected=true;const row=numberOperatorsCache.find(x=>String(x.operator)===String(operator));if(!row)return;const select=document.getElementById("numberOperatorSelect");if(select)select.value=String(operator);renderNumberOperators(numberOperatorsCache,String(operator));await checkNumberPrice();}
