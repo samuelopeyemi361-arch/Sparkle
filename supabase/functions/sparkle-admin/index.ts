@@ -200,24 +200,24 @@ Deno.serve(async (req: Request) => {
       const operatorCode = str(body.operator).toLowerCase();
       const rawRate = str(body.rate_percent);
       const rate = rawRate ? Number(rawRate) : NaN;
-      const expiry = str(body.expires_at);
       const note = str(body.note).slice(0, 240);
       if (!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(serviceCode)
           || !/^[a-z0-9][a-z0-9-]{1,39}$/.test(countryCode)
           || !/^[a-z0-9._-]{1,80}$/.test(operatorCode)
-          || !Number.isFinite(rate) || rate < 0 || rate > 100
-          || !Number.isFinite(Date.parse(expiry)) || Date.parse(expiry) <= Date.now()) {
-        return reply({ success: false, error: "Enter a valid service, country, operator, delivery rate from 0–100%, and future expiry." }, 400);
+          || !Number.isFinite(rate) || rate < 0 || rate > 100) {
+        return reply({ success: false, error: "Enter a valid service, country, operator, and delivery rate from 0–100%." }, 400);
       }
+      const savedAt = new Date();
+      const expiry = new Date(savedAt.getTime() + 30 * 24 * 60 * 60 * 1000);
       const row = {
         service: serviceCode,
         country: countryCode,
         operator: operatorCode,
         rate_percent: Number(rate.toFixed(2)),
-        expires_at: new Date(expiry).toISOString(),
+        expires_at: expiry.toISOString(),
         note: note || null,
         created_by: actor.id,
-        updated_at: new Date().toISOString(),
+        updated_at: savedAt.toISOString(),
       };
       const { data, error } = await admin.from("sparkle_number_delivery_rate_overrides")
         .upsert(row, { onConflict: "service,country,operator" })
@@ -228,7 +228,7 @@ Deno.serve(async (req: Request) => {
         actor_user_id: actor.id,
         action: "number_delivery_rate_override_saved",
         details: { service: serviceCode, country: countryCode, operator: operatorCode,
-          rate_percent: row.rate_percent, expires_at: row.expires_at }
+          rate_percent: row.rate_percent, expires_at: row.expires_at, validity_days: 30 }
       });
       return reply({ success: true, override: data });
     }
