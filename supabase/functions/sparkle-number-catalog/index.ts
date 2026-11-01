@@ -211,7 +211,7 @@ const publicRateCache=new Map<string,{rate:number;expiresAt:number}>();
 function countryPageLabel(country:string):string{
   const v=country.toLowerCase().trim();
   const aliases:Record<string,string>={
-   us:"USA",usa:"USA",united_states:"USA","united-states":"USA",
+   us:"USA",usa:"USA",united_states:"United States","united-states":"United States",
    ca:"Canada",canada:"Canada",
    uk:"England",gb:"England",england:"England",
    kr:"South Korea",korea:"South Korea",south_korea:"South Korea",
@@ -222,34 +222,177 @@ function countryPageLabel(country:string):string{
 function escapeRateRegex(value:string):string{
   return value.replace(/[.*+?^$()|[\]\\]/g,"\\$&");
 }
+function operatorPagePattern(operator:string):string{
+  const value=operator.toLowerCase().trim();
+  const virtual=value.match(/^virtual[-_ #]?(\d+)$/);
+  if(virtual)return "virtual[\\s#_-]*"+virtual[1];
+  return escapeRateRegex(value).replace(/[-_]+/g,"[\\s_-]*");
+}
+function normalizedRateToken(value:unknown):string{
+  return asText(value).toLowerCase().replace(/[^a-z0-9]/g,"");
+}
+function countryRateAliases(country:string):string[]{
+  const pc=providerCountry(country);
+  const aliases=[countryPageLabel(country),countryPageLabel(pc),pc,country];
+  if(pc==="usa")aliases.push("US","USA","United States","United States of America","United States (US)");
+  if(pc==="canada")aliases.push("CA","Canada");
+  if(pc==="england")aliases.push("UK","GB","United Kingdom","England");
+  if(pc==="south-korea")aliases.push("Korea","South Korea");
+  return [...new Set(aliases.map(x=>x.trim()).filter(Boolean))];
+}
 async function countryPageLabels(country:string):Promise<string[]>{
-  const providerCode=providerCountry(country);
-  const labels=[countryPageLabel(country),countryPageLabel(providerCode)];
+  const labels=countryRateAliases(country);
   try{
+    const pc=providerCountry(country);
     const countries=await getProviderCountries();
     const match=countries.find((item:any)=>{
-      try{return providerCountry(asText(item.code))===providerCode;}catch{return false;}
+      try{return providerCountry(asText(item.code))===pc;}catch{return false;}
     });
     if(match?.name)labels.unshift(asText(match.name));
   }catch{
-    // Fall back to normalized country slugs if the provider country list is temporarily unavailable.
+    // Keep the explicit aliases when the guest country catalogue is unavailable.
   }
   return [...new Set(labels.filter(Boolean))];
 }
-function operatorPagePattern(operator:string):string{
-  const value=operator.toLowerCase().trim();
-  const virtual=value.match(/^virtual[-_ ]?(\d+)$/);
-  if(virtual)return "virtual\\s*"+virtual[1];
-  return escapeRateRegex(value).replace(/[-_]+/g,"\\s*");
+function parseRateNumber(value:unknown):number|null{
+  if(value===null||value===undefined||value==="")return null;
+  const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
+  const n=Number(normalized);
+  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
-
+function jsonValuesForRate(html:string):any[]{
+  const found:any[]=[];
+  const scriptRe=/<script\b([^>]*)>([\s\S]*?)<\/script>/gi;
+  let match:RegExpExecArray|null;
+  while((match=scriptRe.exec(html))!==null){
+    const attrs=match[1]||"";
+    const body=(match[2]||"").trim();
+    if(!body)continue;
+    const isJson=/application\/(?:ld\+)?json/i.test(attrs)||/__NEXT_DATA__/i.test(attrs);
+    if(isJson){
+      try{found.push(JSON.parse(body));continue;}catch{/* Try a balanced embedded JSON object below. */}
+    }
+    // Next.js and other SSR apps sometimes assign a JSON object to a JS global.
+    const firstObject=body.search(/[\[{]/);
+    if(firstObject<0)continue;
+    const open=body[firstObject];
+    let depth=0,inString=false,escaped=false;
+    for(let i=firstObject;i<body.length;i++){
+      const ch=body[i];
+      if(inString){
+        if(escaped)escaped=false;
+        else if(ch==="\\")escaped=true;
+        else if(ch==='"')inString=false;
+        continue;
+      }
+      if(ch==='"'){inString=true;continue;}
+      if(ch===open)depth++;
+      else if((open==="{"&&ch==="}")||(open==="["&&ch==="]")){
+        depth--;
+        if(depth===0){
+          try{found.push(JSON.parse(body.slice(firstObject,i+1)));}catch{/* Non-JSON JavaScript object; ignore safely. */}
+          break;
+        }
+      }
+    }
+  }
+  return found;
+}
+function extractStructuredPageRate(values:any[],country:string,operator:string):{rate:number|null;matches:number}{
+  const targetCountry=normalizedRateToken(providerCountry(country));
+  const targetOperator=normalizedRateToken(operator);
+  const countryKeys=new Set(["country","countryname","countrycode","countryslug","countrytitle","location"]);
+  const operatorKeys=new Set(["operator","operatorname","operatorcode","operatorid","network","networkname","provideroperator"]);
+  const rateKeys=new Set(["rate","deliveryrate","deliverypercentage","successrate","smsrate","smsdeliveryrate","percentage"]);
+  const matchingRates:number[]=[];
+  const countryMatch=(value:unknown):boolean=>{
+    const raw=normalizedRateToken(value);
+    if(!raw)return false;
+    if(raw===targetCountry)return true;
+    if(targetCountry==="usa")return ["us","usa","unitedstates","unitedstatesofamerica"].includes(raw);
+    if(targetCountry==="canada")return ["ca","canada"].includes(raw);
+    if(targetCountry==="england")return ["uk","gb","england","unitedkingdom"].includes(raw);
+    return false;
+  };
+  const operatorMatch=(value:unknown):boolean=>normalizedRateToken(value)===targetOperator;
+  const scalarCandidates=(value:any):unknown[]=>{
+    if(typeof value==="string"||typeof value==="number")return [value];
+    if(value&&typeof value==="object"&&!Array.isArray(value)){
+      return [value.slug,value.code,value.iso,value.name,value.text,value.title].filter(x=>typeof x==="string"||typeof x==="number");
+    }
+    return [];
+  };
+  const walk=(node:any,ctx:{country:boolean;operator:boolean},depth:number)=>{
+    if(depth>18||node===null||node===undefined)return;
+    if(Array.isArray(node)){for(const item of node)walk(item,ctx,depth+1);return;}
+    if(typeof node!=="object")return;
+    let hasCountry=ctx.country,hasOperator=ctx.operator;
+    for(const [key,value] of Object.entries(node)){
+      const k=normalizedRateToken(key);
+      if(countryKeys.has(k)&&scalarCandidates(value).some(countryMatch))hasCountry=true;
+      if(operatorKeys.has(k)&&scalarCandidates(value).some(operatorMatch))hasOperator=true;
+    }
+    if(hasCountry&&hasOperator){
+      for(const [key,value] of Object.entries(node)){
+        if(rateKeys.has(normalizedRateToken(key))){
+          const rate=parseRateNumber(value);
+          if(rate!==null)matchingRates.push(rate);
+        }
+      }
+    }
+    for(const [key,value] of Object.entries(node)){
+      const child={country:hasCountry||countryMatch(key),operator:hasOperator||operatorMatch(key)};
+      walk(value,child,depth+1);
+    }
+  };
+  for(const value of values)walk(value,{country:false,operator:false},0);
+  if(!matchingRates.length)return {rate:null,matches:0};
+  const counts=new Map<number,number>();
+  for(const rate of matchingRates)counts.set(rate,(counts.get(rate)||0)+1);
+  const ranked=[...counts.entries()].sort((a,b)=>b[1]-a[1]);
+  if(ranked.length>1&&ranked[0][1]===ranked[1][1])return {rate:null,matches:matchingRates.length};
+  return {rate:ranked[0][0],matches:matchingRates.length};
+}
+function extractTextPageRate(text:string,labels:string[],operator:string):{rate:number|null;matches:number}{
+  const op=operatorPagePattern(operator);
+  const rates:number[]=[];
+  for(const label of labels){
+    const country=escapeRateRegex(label).replace(/[-_ ]+/g,"[\\s_-]+");
+    const patterns=[
+      new RegExp("(?:^|[^a-z0-9])"+country+"[\\s\\S]{0,700}?"+op+"[\\s\\S]{0,350}?([0-9]+(?:[.,][0-9]+)?)\\s*%","ig"),
+      new RegExp("(?:^|[^a-z0-9])"+op+"[\\s\\S]{0,350}?"+country+"[\\s\\S]{0,350}?([0-9]+(?:[.,][0-9]+)?)\\s*%","ig")
+    ];
+    for(const pattern of patterns){
+      let match:RegExpExecArray|null;
+      while((match=pattern.exec(text))!==null){
+        const rate=parseRateNumber(match[1]);
+        if(rate!==null)rates.push(rate);
+        if(rates.length>50)break;
+      }
+    }
+  }
+  if(!rates.length)return {rate:null,matches:0};
+  const counts=new Map<number,number>();
+  for(const rate of rates)counts.set(rate,(counts.get(rate)||0)+1);
+  const ranked=[...counts.entries()].sort((a,b)=>b[1]-a[1]);
+  if(ranked.length>1&&ranked[0][1]===ranked[1][1])return {rate:null,matches:rates.length};
+  return {rate:ranked[0][0],matches:rates.length};
+}
 async function enrichOfficialRates(service:string,country:string,offers:ProviderOffer[]):Promise<ProviderOffer[]>{
   const labels=await countryPageLabels(country);
   const now=Date.now();
   let html="";
   let fetchStatus=0;
   try{
-   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{headers:{Accept:"text/html,application/xhtml+xml"},signal:AbortSignal.timeout(12000)});
+   const response=await fetch("https://5sim.net/products/"+encodeURIComponent(service),{
+    headers:{
+     Accept:"text/html,application/xhtml+xml",
+     "Accept-Language":"en-US,en;q=0.9",
+     "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+     Referer:"https://5sim.net/"
+    },
+    signal:AbortSignal.timeout(15000)
+   });
    fetchStatus=response.status;
    if(response.ok)html=await response.text();
   }catch(error){
@@ -261,34 +404,37 @@ async function enrichOfficialRates(service:string,country:string,offers:Provider
    return offers;
   }
   const decode=(value:string)=>value.replace(/&nbsp;|&#160;/gi," ").replace(/&amp;/gi,"&").replace(/&quot;/gi,'"').replace(/&#39;|&apos;/gi,"'").replace(/&#x([0-9a-f]+);/gi,(_,h)=>String.fromCharCode(parseInt(h,16))).replace(/&#(\d+);/g,(_,n)=>String.fromCharCode(Number(n)));
-  const candidates=[
-   decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," "),
-   decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ")
-  ];
+  const visibleText=decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<script[\s\S]*?<\/script>/gi," ").replace(/<\/(?:tr|li|article|section|p)>/gi,"\n").replace(/<[^>]+>/g," ")).replace(/[ \t]+/g," ");
+  const scriptText=decode(html.replace(/<style[\s\S]*?<\/style>/gi," ").replace(/<[^>]+>/g," ")).replace(/\s+/g," ");
+  const jsonValues=jsonValuesForRate(html);
   const foundRates=new Map<string,number>();
+  const diagnostics:any[]=[];
   for(const offer of offers){
    const key=offer.operator.toLowerCase();
    const cacheKey=service+":"+providerCountry(country)+":"+key;
    const cached=publicRateCache.get(cacheKey);
-   if(cached&&cached.expiresAt>now){foundRates.set(key,cached.rate);continue;}
-   for(const pageText of candidates){
-    let best:{rate:number;position:number}|null=null;
-    for(const label of labels){
-     const countryPattern=escapeRateRegex(label).replace(/[-_]+/g,"[\\s_-]+");
-     const operatorPattern=operatorPagePattern(offer.operator);
-     const pattern=new RegExp("(?:^|[^a-z0-9])"+countryPattern+"[\\s\\S]{0,180}?"+operatorPattern+"[\\s\\S]{0,220}?([0-9]+(?:[.,][0-9]+)?)\\s*%","ig");
-     const match=pattern.exec(pageText);
-     if(match){
-      const rate=Number(match[1].replace(",","."));
-      if(Number.isFinite(rate)&&rate>=0&&rate<=100){best={rate,position:match.index};break;}
-     }
-    }
-    if(best){foundRates.set(key,best.rate);break;}
+   if(cached&&cached.expiresAt>now){foundRates.set(key,cached.rate);diagnostics.push({operator:offer.operator,source:"cache",rate:cached.rate});continue;}
+   const structured=extractStructuredPageRate(jsonValues,country,offer.operator);
+   let rate=structured.rate,source=rate===null?"none":"structured_json";
+   let textMatches=0;
+   if(rate===null){
+    const textResult=extractTextPageRate(visibleText,labels,offer.operator);
+    const scriptResult=extractTextPageRate(scriptText,labels,offer.operator);
+    textMatches=textResult.matches+scriptResult.matches;
+    if(textResult.rate!==null){rate=textResult.rate;source="visible_text";}
+    else if(scriptResult.rate!==null){rate=scriptResult.rate;source="embedded_text";}
    }
-   const rate=foundRates.get(key);
-   if(rate!==undefined)publicRateCache.set(cacheKey,{rate,expiresAt:now+120000});
+   if(rate!==null){
+    foundRates.set(key,rate);
+    publicRateCache.set(cacheKey,{rate,expiresAt:now+120000});
+   }
+   diagnostics.push({operator:offer.operator,public_page_rate:rate,source,structured_matches:structured.matches,text_matches:textMatches});
   }
-  console.info("[sparkle-5sim-rate-scrape]",JSON.stringify({service,country,fetch_status:fetchStatus,page_chars:html.length,country_labels:labels,offers:offers.map(x=>({operator:x.operator,public_page_rate:foundRates.get(x.operator.toLowerCase())??null}))}));
+  console.info("[sparkle-5sim-rate-scrape]",JSON.stringify({
+   service,country,fetch_status:fetchStatus,page_chars:html.length,country_labels:labels,
+   json_payloads:jsonValues.length,html_has_country:labels.some(x=>new RegExp(escapeRateRegex(x),"i").test(html)),
+   offers:diagnostics
+  }));
   return offers.map(offer=>{
    const rate=foundRates.get(offer.operator.toLowerCase());
    return rate===undefined?offer:{...offer,rate};
