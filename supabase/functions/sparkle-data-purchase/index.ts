@@ -273,16 +273,36 @@ Deno.serve(async (req) => {
       const raw = await response.text();
       let providerData: any;
       try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
-      const providerStatus = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? providerData?.transaction_status ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
-      const description = String(providerData?.description ?? providerData?.data?.description ?? "").trim().toUpperCase();
-      const notFound = Number(providerData?.code) === 404 || description.includes("NOT_FOUND") || description.includes("CONTENT_NOT_FOUND");
-      const succeeded = response.ok && ["successful", "success", "completed", "complete"].includes(providerStatus);
-      const failed = !notFound && response.ok && ["failed", "failure", "error", "rejected", "cancelled", "canceled", "transaction_failed"].includes(providerStatus);
+      let verificationResponse = response;
+      let providerStatus = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? providerData?.transaction_status ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+      let description = String(providerData?.description ?? providerData?.data?.description ?? providerData?.content?.description ?? providerData?.data?.content?.description ?? "").trim().toUpperCase();
+      let notFound = Number(providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code ?? providerData?.data?.content?.code) === 404 || description.includes("NOT_FOUND") || description.includes("CONTENT_NOT_FOUND");
+      const savedTransactionID = String(tx.metadata?.provider_response?.transactionID ?? tx.metadata?.provider_response?.data?.transactionID ?? tx.metadata?.provider_transaction_id ?? "").trim();
+      // GSubz verification accepts either requestID or transactionID. If the
+      // Sparkle requestID lookup misses, retry using the supplier's saved ID.
+      if (notFound && savedTransactionID) {
+        const transactionForm = new FormData();
+        transactionForm.append("api", gsubzKey);
+        transactionForm.append("transactionID", savedTransactionID);
+        verificationResponse = await fetch("https://api.gsubz.com/api/verify/", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" },
+          body: transactionForm,
+          signal: AbortSignal.timeout(20000),
+        });
+        const transactionRaw = await verificationResponse.text();
+        try { providerData = JSON.parse(transactionRaw); } catch { providerData = { raw: transactionRaw.slice(0, 500) }; }
+        providerStatus = String(providerData?.status ?? providerData?.data?.status ?? providerData?.data?.transaction_status ?? providerData?.transaction_status ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+        description = String(providerData?.description ?? providerData?.data?.description ?? providerData?.content?.description ?? providerData?.data?.content?.description ?? "").trim().toUpperCase();
+        notFound = Number(providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code ?? providerData?.data?.content?.code) === 404 || description.includes("NOT_FOUND") || description.includes("CONTENT_NOT_FOUND");
+      }
+      const succeeded = verificationResponse.ok && ["successful", "success", "completed", "complete"].includes(providerStatus);
+      const failed = !notFound && verificationResponse.ok && ["failed", "failure", "error", "rejected", "cancelled", "canceled", "transaction_failed"].includes(providerStatus);
       const result = await admin.rpc("sparkle_airtime_wallet_action", {
         p_user_id: user.id, p_action: succeeded ? "success" : failed ? "failure" : "pending",
         p_reference: reference, p_amount: Number(tx.amount), p_service: "Data",
         p_phone: String(tx.metadata?.phone || ""),
-        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true },
+        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true, verification_lookup_inconclusive: notFound },
       });
       if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Sparkle could not reconcile this data order yet. Do not retry." }, 202);
       if (succeeded) return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
