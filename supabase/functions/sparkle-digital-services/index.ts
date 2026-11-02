@@ -30,6 +30,11 @@ function statusOf(d: any) {
 }
 function isSuccess(s: string) { return ["successful", "success", "completed", "complete"].includes(s); }
 function isFailure(s: string) { return ["failed", "failure", "error", "rejected", "cancelled", "canceled"].includes(s); }
+function gsubzLookupNotFound(data: any, httpStatus?: number) {
+  const code = str(data?.code ?? data?.data?.code ?? data?.content?.code ?? data?.data?.content?.code);
+  const description = str(data?.description ?? data?.data?.description ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
+  return code === "404" || httpStatus === 404 || description.includes("CONTENT_NOT_FOUND");
+}
 function socialOrderOf(d: any) {
   return d?.order ?? d?.content?.order ?? d?.data?.order ?? d?.data?.content?.order ?? d?.result?.order ?? null;
 }
@@ -533,10 +538,19 @@ Deno.serve(async (req: Request) => {
       // GSubz verification accepts one lookup key at a time. Sparkle always saves
       // the unique requestID with the purchase, so use that canonical reference.
       const verifyFields: Record<string, string> = { api: gsubzKey, requestID: providerRequestId };
-      const checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
-      const provider = checked.data, pStatus = statusOf(provider);
-      if (isSocial && (String(provider?.code ?? provider?.statusCode ?? "") === "404" || String(provider?.description ?? provider?.message ?? "").toUpperCase().includes("CONTENT_NOT_FOUND_API_OR_NOT_FOUND"))) {
-        return reply({ success: false, status: "pending", reference, error: "GSubz could not find this requestID in its verification lookup. This is not proof of failure, so Sparkle has kept the order reserved and blocked an automatic refund." }, 202);
+      let checked = await providerPost("/api/verify/", gsubzKey, verifyFields);
+      let provider = checked.data, pStatus = statusOf(provider);
+      // GSubz also supports transactionID lookups. If a saved supplier ID exists,
+      // retry the lookup with that canonical ID before leaving the order pending.
+      const savedTransactionId = str(meta.provider_transaction_id ?? meta.providerTransactionID
+        ?? meta.provider_response?.transactionID ?? meta.provider_response?.data?.transactionID);
+      if (gsubzLookupNotFound(provider, checked.response.status) && savedTransactionId) {
+        checked = await providerPost("/api/verify/", gsubzKey, { api: gsubzKey, transactionID: savedTransactionId });
+        provider = checked.data;
+        pStatus = statusOf(provider);
+      }
+      if (gsubzLookupNotFound(provider, checked.response.status)) {
+        return reply({ success: false, status: "pending", reference, error: "GSubz could not find this order in its verification lookup. This is not proof of failure, so Sparkle has kept the wallet reservation safe and blocked an automatic refund. The supplier reference will be checked again." }, 202);
       }
       const providerSuccess = isSocial ? socialPaymentSuccess(pStatus) : isSuccess(pStatus);
       const providerFailure = isSocial ? socialPaymentFailure(pStatus) : isFailure(pStatus);
