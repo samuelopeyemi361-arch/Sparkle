@@ -199,7 +199,7 @@ Deno.serve(async (req) => {
     if (!/^SPK-[a-f0-9-]{20,}$/i.test(requestId)) return reply({ success: false, status: "not_started", error: "Invalid Recharge PIN order reference." }, 400);
     const admin = createClient(url, service, { auth: { persistSession: false } });
     const { data: order, error: orderError } = await admin.from("sparkle_recharge_pin_orders")
-      .select("user_id,request_id,quantity,status,provider_response,error_message,amount,network,denomination")
+      .select("user_id,request_id,quantity,status,provider_response,error_message,amount,network,denomination,created_at")
       .eq("user_id", user.id).eq("request_id", requestId).maybeSingle();
     if (orderError) return reply({ success: false, status: "unknown", request_id: requestId, error: "Sparkle could not read this order yet. Do not submit another order." }, 202);
     if (!order) return reply({ success: false, status: "not_found", error: "Recharge PIN order not found." }, 404);
