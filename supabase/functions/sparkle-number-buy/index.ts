@@ -167,15 +167,15 @@ function supplierBalanceInsufficient(data: any): boolean {
   const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
     ?? data?.content?.code ?? data?.data?.content?.code ?? "").trim().toUpperCase();
   const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
-    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\\s-]+/g, "_");
+    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
   const details = [
     data?.description, data?.message, data?.api_response, data?.error, data?.detail,
     data?.data?.description, data?.data?.message, data?.data?.api_response,
     data?.content?.description, data?.content?.message, data?.data?.content?.description
   ].map(x => String(x ?? "")).join(" ").toUpperCase();
   return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
-    || /INSUFFICIENT[_\\s-]*(?:SUPPLIER[_\\s-]*)?(?:WALLET[_\\s-]*)?BALANCE|BALANCE[_\\s-]*(?:IS[_\\s-]*)?(?:INSUFFICIENT|TOO[_\\s-]*LOW)|NOT[_\\s-]*ENOUGH[_\\s-]*BALANCE|LOW[_\\s-]*BALANCE/.test(details)
-    || ((code === "402") && /BALANCE/.test(details));
+    || /INSUFFICIENT[_\s-]*(?:SUPPLIER[_\s-]*)?(?:WALLET[_\s-]*)?BALANCE|BALANCE[_\s-]*(?:IS[_\s-]*)?(?:INSUFFICIENT|TOO[_\s-]*LOW)|NOT[_\s-]*ENOUGH[_\s-]*BALANCE|LOW[_\s-]*BALANCE/.test(details)
+    || (code === "402" && /BALANCE/.test(details));
 }
 async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
   const url = Deno.env.get("SUPABASE_URL") || "";
@@ -193,234 +193,19 @@ async function notifySupplierBalanceLow(supplier: string, service: string, refer
     });
     const result = await response.json().catch(() => null);
     if (!response.ok || result?.emailSent !== true) {
-      console.error("[sparkle-supplier-alert] dispatch not confirmed", {
-        supplier, service, reference, httpStatus: response.status,
-        reason: String(result?.reason || result?.error || "email_not_confirmed").slice(0, 180),
-      });
+      console.error("[sparkle-supplier-alert] dispatch not confirmed", { supplier, service, reference, status: response.status, reason: String(result?.reason || result?.error || "email_not_confirmed").slice(0, 180) });
       return false;
     }
     return true;
   } catch (error) {
-    console.error("[sparkle-supplier-alert] dispatch failed", {
-      supplier, service, reference, error: error instanceof Error ? error.message.slice(0, 180) : "unknown",
-    });
+    console.error("[sparkle-supplier-alert] dispatch failed", { supplier, service, reference, error: error instanceof Error ? error.message.slice(0, 180) : "unknown" });
     return false;
   }
 }
 function supplierBalanceReason(data: any): string {
   return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
     ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
-    .replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, 450);
-}
-
-let providerProfileCache: { balance: number; expiresAt: number } | null = null;
-let providerProfilePromise: Promise<{ balance: number }> | null = null;
-
-// Check an authenticated 5SIM endpoint before showing any live prices.
-// A wrong/deprecated API1 key must never appear to work until after a customer pays.
-async function providerProfile(forceRefresh = false): Promise<{ balance: number }> {
-  if (forceRefresh) providerProfileCache = null;
-  if (providerProfileCache && providerProfileCache.expiresAt > Date.now()) {
-    return { balance: providerProfileCache.balance };
-  }
-  if (!providerProfilePromise) {
-    providerProfilePromise = (async () => {
-      const result = await apiGet("/user/profile");
-      const id = Number(result.data?.id);
-      const balance = Number(result.data?.balance);
-      if (!result.ok || !result.data || !Number.isFinite(id) || id <= 0 ||
-          !Number.isFinite(balance) || balance < 0) {
-        if (result.status === 401 || result.status === 403) {
-          throw problem("The number service connection is not verified. Please check the configured 5SIM key.", 503, "PROVIDER_AUTH_FAILED");
-        }
-        throw problem("Sparkle could not verify the number service account. No wallet funds were used.", 503, "PROVIDER_AUTH_FAILED");
-      }
-      providerProfileCache = { balance, expiresAt: Date.now() + 30_000 };
-      return { balance };
-    })().finally(() => { providerProfilePromise = null; });
-  }
-  return await providerProfilePromise;
-}
-
-async function usdToNgn(): Promise<number> {
-  const now = Date.now();
-  if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000) return fxCache.rate;
-  let response: Response;
-  try {
-    response = await fetch("https://open.er-api.com/v6/latest/USD", {
-      headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(12000),
-    });
-  } catch {
-    throw problem("Live pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
-  }
-  const data: any = await response.json().catch(() => null);
-  const last = Number(data?.time_last_update_unix);
-  const rate = Number(data?.rates?.NGN);
-  const age = Math.floor(Date.now() / 1000) - last;
-  if (!response.ok || data?.result !== "success" || !Number.isFinite(rate) || rate < 100 || rate > 10000 ||
-      !Number.isFinite(last) || age < 0 || age > 36 * 60 * 60) {
-    throw problem("Live pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
-  }
-  fxCache = { rate, updatedAt: now };
-  return rate;
-}
-type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
-type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
-function parseDeliveryRate(raw:any):number|null{
- // Match the 3-hour metric used in 5SIM Statistics and the catalogue.
- // Keep a missing rate unverified unless an active manual override exists.
- let value=raw?.rate3;
- if(value&&typeof value==="object")value=value.value??value.percentage??value.percent??null;
- if(value===null||value===undefined||value==="")return null;
- const normalized=typeof value==="string"?value.trim().replace(/%/g,"").replace(",","."):value;
- const n=Number(normalized);
- return Number.isFinite(n)&&n>=0&&n<=100?Number(n.toFixed(2)):null;
-}
-
-function parseOfferRows(node:any):ParsedOffer[]{
- if(!node||typeof node!=="object"||Array.isArray(node))return [];
- return Object.entries(node).map(([operator,raw]:[string,any])=>{
-  const usd=Number(raw?.cost),count=Number(raw?.count);
-  const rate=parseDeliveryRate(raw);
-  if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
-  return {operator,usd,count,rate,rateSource:"5sim"};
- }).filter((x):x is ParsedOffer=>x!==null);
-}
-async function applyManualRateOverrides(offers:ProviderOffer[],service:string,country:string,admin:any):Promise<ProviderOffer[]>{
- if(!offers.length)return offers;
- const canonicalCountry=manualRateCountry(country),now=new Date().toISOString();
- const {data,error}=await admin.from("sparkle_number_delivery_rate_overrides")
-  .select("operator,rate_percent,expires_at")
-  .eq("service",service.toLowerCase()).eq("country",canonicalCountry)
-  .gt("expires_at",now).in("operator",offers.map(x=>x.operator));
- if(error){
-  console.error("[sparkle-number-buy-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
-  throw problem("Sparkle could not verify its manual delivery-rate settings. Please refresh and try again.",503,"RATE_OVERRIDE_UNAVAILABLE");
- }
- const overrides=new Map<string,{rate:number;expiresAt:string}>(
-  (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
- );
- return offers.map(offer=>{
-  const override=overrides.get(offer.operator.toLowerCase());
-  if(!override||!Number.isFinite(override.rate)||override.rate<0||override.rate>100)return offer;
-  const rate=Number(override.rate.toFixed(2));
-  return {...offer,rate,rateSource:"manual_override",manualRateExpiresAt:override.expiresAt};
- });
-}
-async function getProductOffers(country:string,service:string,admin:any):Promise<ProviderOffer[]>{
- const pc=providerCountry(country);
- if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- const [account,response]=await Promise.all([
-  providerProfile(),
-  apiGet("/guest/prices?country="+encodeURIComponent(pc)+"&product="+encodeURIComponent(service))
- ]);
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
- const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root;
- let productNode:any=countryNode?.[service]||root?.[service]||null;
- if(productNode&&typeof productNode==="object"&&productNode[pc]&&typeof productNode[pc]==="object")productNode=productNode[pc];
- if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
- const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
- if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
- const fx=await usdToNgn();
- // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
- const offers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:account.balance}));
- // No HTML scraping or alternate time-window substitution: keep the exact
- // percentage supplied by 5SIM's guest/prices API as the single source of truth.
- const ratedOffers=await applyManualRateOverrides(offers,service,country,admin);
- console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rateSource:"guest/prices.rate3_with_admin_override",rateWindow:"3-hour",
-  offers:ratedOffers.map(x=>({operator:x.operator,rate:x.rate,rate_source:x.rateSource??"5sim",count:x.count}))
- }));
- ratedOffers.sort((a,b)=>{
-  const ar=a.rate??-1,br=b.rate??-1;
-  if(ar!==br)return br-ar;
-  if(a.count!==b.count)return b.count-a.count;
-  return a.operator.localeCompare(b.operator);
- });
- return ratedOffers;
-}
-function recommendedOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
- const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.rate!==null&&x.rate>0);
- return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.operator.localeCompare(b.operator))[0];
-}
-
-async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
- const offers=await getProductOffers(country,service,admin);
- if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
-  const smart=recommendedOffer(offers);
-  if(smart)return smart;
-  throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
- }
- const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!chosen)throw problem("That operator is no longer available. Choose another operator.",409,"OPERATOR_UNAVAILABLE");
- if(chosen.count<=0)throw problem("That operator is out of stock.",409,"NO_STOCK");
- return chosen;
-}
-
-async function getCatalogServices(country:string):Promise<any[]>{
- const pc=providerCountry(country);
- const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc));
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
- const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root,fx=await usdToNgn();
- const items:any[]=[];
- for(const [code,rawNode] of Object.entries(countryNode||{})){
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code))continue;
-  let node:any=rawNode;
-  if(node&&typeof node==="object"&&node[pc]&&typeof node[pc]==="object")node=node[pc];
-  const offers=parseOfferRows(node).filter(x=>x.count>0);
-  if(!offers.length)continue;
-  const prices=offers.map(x=>money(money(x.usd*fx*1.02)*1.75));
-  items.push({code,name:serviceDisplayName(code),country,network:"Multiple operators",stock:offers.reduce((n,x)=>n+x.count,0),selling_price_ngn:Math.min(...prices)});
- }
- return items.sort((a,b)=>a.name.localeCompare(b.name));
-}
-async function getQuote(country:string,service:string,serverId:string,requestedOperator="smart",admin:any){
- const profile=validateRoute(serverId,country,service);
- if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(requestedOperator))throw problem("Choose a valid operator.",400,"INVALID_OPERATOR");
- const offer=await bestOffer(country,service,requestedOperator,admin);
- const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
- if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified.",503,"PRICE_UNAVAILABLE");
- const chosen=offer.operator;
- return {code:service,name:serviceDisplayName(service),country,network:"Available network",
-  operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
-  selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_window:"rate3",rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
-  provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
-  provider_operator:offer.operator,fx_rate:offer.fx};
-}
-function safeServiceQuote(q:any){
- return {code:q.code,name:q.name,country:q.country,network:q.network||"Available network",
-  operator:q.operator,operator_label:q.operator_label,selling_price_ngn:q.selling_price_ngn,
-  server_id:"server1",stock:q.stock,rate:q.rate};
-}
-
-function publicError(error: any, fallback = "The number service is temporarily unavailable. Please try again shortly.") {
-  const code = String(error?.code || "");
-  const status = Number(error?.status);
-  if (code === "RATE_UNAVAILABLE") return reply({ success: false, code, message: error.message }, 503);
-  if (code === "NO_STOCK") return reply({ success: false, code, message: "Service unavailable. Please try again later." }, 409);
-  if (code === "PRICE_CHANGED") return reply({ success: false, code, message: "The Sparkle price changed. No money was deducted; check the current price again." }, 409);
-  if (code === "INSUFFICIENT_FUNDS") return reply({ success: false, code, message: "Insufficient Sparkle wallet balance. Please fund your wallet and try again." }, 402);
-  if (code === "AUTH_REQUIRED") return reply({ success: false, code, message: "Please sign in again to continue." }, 401);
-  if (code === "INVALID_SERVER" || code === "INVALID_COUNTRY" || code === "INVALID_SERVICE" || code === "INVALID_ROUTE") {
-    return reply({ success: false, code, message: error.message || "Choose a valid server, country and service." }, status || 400);
-  }
-  if (code === "SERVER_UNAVAILABLE") return reply({ success: false, code, message: error.message }, 503);
-  if (code === "CONFIG_MISSING") return reply({ success: false, code, message: "The number service is temporarily unavailable. Please try again shortly." }, 503);
-  if (code === "PROVIDER_AUTH_FAILED") return reply({ success: false, code, message: "The number service is not ready yet. Please try again later." }, 503);
-  if (code === "PROVIDER_BALANCE_LOW" || code === "OPERATOR_UNAVAILABLE") return reply({ success: false, code, message: "Service unavailable. Please try again later." }, 503);
-  if (code === "FX_UNAVAILABLE" || code === "PRICE_UNAVAILABLE") return reply({ success: false, code, message: fallback }, 503);
-  return reply({ success: false, code: code || "NUMBER_UNAVAILABLE", message: fallback }, status >= 400 && status < 600 ? status : 503);
-}
-async function finalize(admin: any, requestId: string, status: "success" | "failed" | "cancelled" | "unknown", providerResponse: Obj | null, errorText: string | null) {
-  return await admin.rpc("sparkle_finish_sms_otp", {
-    p_request_id: requestId,
-    p_status: status,
-    p_provider_response: providerResponse,
-    p_error: errorText,
-  });
+    .replace(/[\r\n\t]+/g, " ").trim().slice(0, 450);
 }
 
 Deno.serve(async (req: Request) => {
