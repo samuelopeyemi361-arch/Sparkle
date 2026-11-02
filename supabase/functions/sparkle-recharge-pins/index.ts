@@ -57,10 +57,13 @@ Deno.serve(async (req) => {
   }
 
   let body: {
+    action?: string;
     network?: string;
     denomination?: number;
     quantity?: number;
     request_id?: string;
+    requestId?: string;
+    reference?: string;
     pin?: string;
   };
 
@@ -69,6 +72,85 @@ Deno.serve(async (req) => {
   } catch {
     return reply({ error: "Invalid JSON" }, 400);
   }
+
+  const action = String(body.action ?? "purchase").trim().toLowerCase();
+  if (action === "check" || action === "check_order") {
+    const requestId = String(body.request_id ?? body.requestId ?? body.reference ?? "").trim();
+    if (!/^SPK-[a-f0-9-]{20,}$/i.test(requestId)) return reply({ success: false, status: "not_started", error: "Invalid Recharge PIN order reference." }, 400);
+    const admin = createClient(url, service, { auth: { persistSession: false } });
+    const { data: order, error: orderError } = await admin.from("sparkle_recharge_pin_orders")
+      .select("user_id,request_id,quantity,status,provider_response,error_message,amount,network,denomination")
+      .eq("user_id", user.id).eq("request_id", requestId).maybeSingle();
+    if (orderError) return reply({ success: false, status: "unknown", request_id: requestId, error: "Sparkle could not read this order yet. Do not submit another order." }, 202);
+    if (!order) return reply({ success: false, status: "not_found", error: "Recharge PIN order not found." }, 404);
+    const saved = order.provider_response && typeof order.provider_response === "object" ? order.provider_response as Record<string, any> : {};
+    const savedPins = Array.isArray(saved.pins) ? saved.pins : Array.isArray(saved.content?.pins) ? saved.content.pins : [];
+    if (order.status === "success") return reply({ success: true, status: "success", request_id: requestId, pins: savedPins });
+    if (order.status === "failed") return reply({ success: false, status: "failed", request_id: requestId, error: order.error_message || "The provider confirmed failure and Sparkle processed the refund." });
+
+    const transactionID = String(saved.transactionID ?? saved.content?.transactionID ?? saved.data?.transactionID ?? "").trim();
+    if (!transactionID) return reply({
+      success: false, status: "unknown", request_id: requestId,
+      error: order.error_message || "The supplier did not return a transaction ID that Sparkle can verify. Your funds remain reserved. Contact Sparkle support with this reference; do not buy again.",
+    }, 202);
+
+    try {
+      const form = new FormData();
+      form.append("api", gsubzKey);
+      form.append("transactionID", transactionID);
+      const response = await fetch("https://api.gsubz.com/api/verify/", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" },
+        body: form,
+        signal: AbortSignal.timeout(30000),
+      });
+      const provider = await response.json().catch(() => null);
+      const providerStatus = String(provider?.status ?? provider?.data?.status ?? provider?.content?.status ?? provider?.data?.content?.status ?? "").trim().toLowerCase().replace(/[\\s-]+/g, "_");
+      const providerCode = String(provider?.code ?? provider?.data?.code ?? provider?.content?.code ?? provider?.data?.content?.code ?? response.status);
+      const description = String(provider?.description ?? provider?.data?.description ?? provider?.content?.description ?? provider?.data?.content?.description ?? "").toUpperCase();
+      const notFound = providerCode === "404" || description.includes("CONTENT_NOT_FOUND");
+      const failed = response.ok && !notFound && ["failed", "failure", "error", "rejected", "cancelled", "canceled", "transaction_failed"].includes(providerStatus);
+      const pins = Array.isArray(provider?.pins) ? provider.pins : Array.isArray(provider?.content?.pins) ? provider.content.pins : Array.isArray(provider?.data?.pins) ? provider.data.pins : [];
+      const delivered = Number(provider?.delivered ?? provider?.content?.delivered ?? provider?.data?.delivered ?? 0);
+      const allPinsValid = pins.length === Number(order.quantity) && pins.every((pin: any) => typeof pin?.pin === "string" && typeof pin?.sn === "string");
+      const succeeded = response.ok && ["success", "successful", "transaction_successful"].includes(providerStatus)
+        && delivered === Number(order.quantity) && allPinsValid;
+      if (succeeded) {
+        // The finalizer requires the canonical generation response shape and
+        // all PINs. Never settle a partial or unverified delivery as successful.
+        const canonical = { status: "success", delivered, pins, verification: provider, transactionID };
+        const finished = await admin.rpc("sparkle_finish_recharge_pin", {
+          p_user_id: user.id, p_request_id: requestId, p_status: "success",
+          p_provider_response: canonical, p_error: null,
+        });
+        if (finished.error) return reply({ success: false, status: "unknown", request_id: requestId, error: "Supplier success was detected, but Sparkle needs support reconciliation before displaying the PINs." }, 202);
+        return reply({ success: true, status: "success", request_id: requestId, pins });
+      }
+      if (failed) {
+        const finished = await admin.rpc("sparkle_finish_recharge_pin", {
+          p_user_id: user.id, p_request_id: requestId, p_status: "failed",
+          p_provider_response: provider, p_error: "GSubz confirmed the order failed during status verification.",
+        });
+        if (finished.error) return reply({ success: false, status: "unknown", request_id: requestId, error: "GSubz reports failure, but the refund needs support reconciliation. Do not retry." }, 202);
+        return reply({ success: false, status: "failed", request_id: requestId, error: "GSubz confirmed failure. Sparkle has processed the wallet refund." });
+      }
+      await admin.rpc("sparkle_finish_recharge_pin", {
+        p_user_id: user.id, p_request_id: requestId, p_status: "unknown",
+        p_provider_response: provider, p_error: notFound
+          ? "GSubz could not find the transactionID during verification; order remains reserved."
+          : "Provider status is not yet final; order remains reserved.",
+      });
+      return reply({
+        success: false, status: "unknown", request_id: requestId,
+        error: notFound
+          ? "GSubz could not find this transaction ID. This is not proof of failure. Your funds remain reserved; do not buy again."
+          : "GSubz has not confirmed a complete delivery of all requested PINs. Your funds remain reserved; do not buy again.",
+      }, 202);
+    } catch {
+      return reply({ success: false, status: "unknown", request_id: requestId, error: "Could not verify this Recharge PIN order. Your funds remain reserved; do not buy again." }, 202);
+    }
+  }
+  if (action !== "purchase") return reply({ success: false, status: "not_started", error: "Unsupported action." }, 400);
 
   // Verify the transaction PIN using the existing function.
   // Do not modify sparkle-transaction-pin.
