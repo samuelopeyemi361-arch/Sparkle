@@ -20,6 +20,11 @@ function statusOf(d: any) {
 }
 function isSuccess(s: string) { return ["successful", "success", "completed", "complete"].includes(s); }
 function isFailure(s: string) { return ["failed", "failure", "error", "rejected", "cancelled", "canceled"].includes(s); }
+function gsubzLookupNotFound(data: any, httpStatus?: number) {
+  const code = str(data?.code ?? data?.data?.code ?? data?.content?.code ?? data?.data?.content?.code);
+  const description = str(data?.description ?? data?.data?.description ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
+  return code === "404" || httpStatus === 404 || description.includes("CONTENT_NOT_FOUND");
+}
 function socialOrderOf(d: any) {
   return d?.order ?? d?.content?.order ?? d?.data?.order ?? d?.data?.content?.order ?? d?.result?.order ?? null;
 }
@@ -64,18 +69,27 @@ function retailFromSupplier(actualCost: number, quotedRetail: number, reservedAm
   const calculated = money2((safeActual > 0 ? safeActual : quotedRetail / factor) * factor);
   return Math.min(reservedAmount, Math.max(0, calculated));
 }
-async function providerPost(key: string, requestId: string) {
-  const form = new FormData();
-  form.append("api", key);
-  form.append("requestID", requestId);
-  const response = await fetch(`${BASE}/api/verify/`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
-    body: form,
-    signal: AbortSignal.timeout(55000),
-  });
-  const data = await response.json().catch(() => null);
-  return { response, data };
+async function providerPost(key: string, requestId: string, transactionId = "") {
+  const lookup = async (field: "requestID" | "transactionID", value: string) => {
+    const form = new FormData();
+    form.append("api", key);
+    form.append(field, value);
+    const response = await fetch(`${BASE}/api/verify/`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, Accept: "application/json" },
+      body: form,
+      signal: AbortSignal.timeout(55000),
+    });
+    const data = await response.json().catch(() => null);
+    return { response, data };
+  };
+  let checked = await lookup("requestID", requestId);
+  // The GSubz status endpoint accepts either our requestID or its returned
+  // transactionID. Use the latter if the requestID lookup is not found.
+  if (gsubzLookupNotFound(checked.data, checked.response.status) && transactionId) {
+    checked = await lookup("transactionID", transactionId);
+  }
+  return checked;
 }
 async function validTrackerToken(req: Request) {
   const supplied = req.headers.get("x-sparkle-social-tracker") || "";
@@ -165,7 +179,9 @@ async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
 
   let checked: any;
   try {
-    checked = await providerPost(gsubzKey, requestId);
+    const savedTransactionId = str(meta.provider_transaction_id ?? meta.providerTransactionID
+      ?? meta.provider_response?.transactionID ?? meta.provider_response?.data?.transactionID);
+    checked = await providerPost(gsubzKey, requestId, savedTransactionId);
   } catch (error) {
     await saveTrackingState(admin, tx, meta, {
       socialTrackingState: "retrying",
@@ -188,7 +204,7 @@ async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
   };
 
   // GSubz may return HTTP 200 with code 404 / TRANSACTION_FAILED when its requestID lookup cannot find a record. This is inconclusive, not proof of failure. Never refund from this response.
-  if (String(provider?.code ?? provider?.statusCode ?? "") === "404" || String(provider?.description ?? provider?.message ?? "").toUpperCase().includes("CONTENT_NOT_FOUND_API_OR_NOT_FOUND")) {
+  if (gsubzLookupNotFound(provider, checked.response.status)) {
     await saveTrackingState(admin, tx, meta, { ...progressPatch, socialTrackingState: "verification_not_found", socialTrackingIssue: "GSubz requestID verification returned not-found; this is inconclusive, not a failed payment. Automatic refund blocked." });
     return "retrying";
   }
