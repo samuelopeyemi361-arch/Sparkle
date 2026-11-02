@@ -32,14 +32,14 @@ function supplierBalanceInsufficient(data: any): boolean {
   const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
     ?? data?.content?.code ?? data?.data?.content?.code ?? "").trim().toUpperCase();
   const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
-    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\\s-]+/g, "_");
+    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
   const details = [
     data?.description, data?.message, data?.api_response, data?.error, data?.detail,
     data?.data?.description, data?.data?.message, data?.data?.api_response,
     data?.content?.description, data?.content?.message, data?.data?.content?.description
   ].map(x => String(x ?? "")).join(" ").toUpperCase();
   return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
-    || /INSUFFICIENT[_\\s-]*(?:SUPPLIER[_\\s-]*)?(?:WALLET[_\\s-]*)?BALANCE|BALANCE[_\\s-]*(?:IS[_\\s-]*)?(?:INSUFFICIENT|TOO[_\\s-]*LOW)|NOT[_\\s-]*ENOUGH[_\\s-]*BALANCE|LOW[_\\s-]*BALANCE/.test(details)
+    || /INSUFFICIENT[_\s-]*(?:SUPPLIER[_\s-]*)?(?:WALLET[_\s-]*)?BALANCE|BALANCE[_\s-]*(?:IS[_\s-]*)?(?:INSUFFICIENT|TOO[_\s-]*LOW)|NOT[_\s-]*ENOUGH[_\s-]*BALANCE|LOW[_\s-]*BALANCE/.test(details)
     || (code === "402" && /BALANCE/.test(details));
 }
 async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
@@ -70,7 +70,7 @@ async function notifySupplierBalanceLow(supplier: string, service: string, refer
 function supplierBalanceReason(data: any): string {
   return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
     ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
-    .replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, 450);
+    .replace(/[\r\n\t]+/g, " ").trim().slice(0, 450);
 }
 
 Deno.serve(async (req) => {
