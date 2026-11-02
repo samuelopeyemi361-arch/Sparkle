@@ -142,8 +142,10 @@ Deno.serve(async (req) => {
       if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateFilter)) {
         return reply({ success: false, error: "Choose a valid purchase date." }, 400);
       }
+      const [year, month, day] = dateFilter.split("-").map(Number);
+      const calendarDate = new Date(Date.UTC(year, month - 1, day));
       const start = new Date(dateFilter + "T00:00:00+01:00");
-      if (Number.isNaN(start.getTime()) || start.toISOString().slice(0, 10) !== dateFilter) {
+      if (Number.isNaN(start.getTime()) || calendarDate.toISOString().slice(0, 10) !== dateFilter) {
         return reply({ success: false, error: "Choose a valid purchase date." }, 400);
       }
       const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
