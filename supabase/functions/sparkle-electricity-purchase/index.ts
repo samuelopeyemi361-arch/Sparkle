@@ -15,7 +15,8 @@ const reply = (body: unknown, status = 200) =>
 const str = (v: unknown) => String(v ?? "").trim();
 
 const statusOf = (d: any) =>
-  str(d?.status ?? d?.data?.status ?? d?.content?.status).toLowerCase();
+  str(d?.status ?? d?.data?.status ?? d?.content?.status ?? d?.data?.content?.status ?? d?.transaction_status)
+    .toLowerCase().replace(/[\\s-]+/g, "_");
 
 const successStatus = (s: string) =>
   ["successful", "success", "completed"].includes(s);
@@ -297,6 +298,32 @@ Deno.serve(async (req) => {
       });
 
       const s = statusOf(data);
+      const providerCode = str(data?.code ?? data?.data?.code ?? data?.content?.code
+        ?? data?.data?.content?.code ?? response.status);
+      const providerDescription = str(data?.description ?? data?.data?.description
+        ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
+      const verificationLookupNotFound = providerCode === "404"
+        || providerDescription.includes("CONTENT_NOT_FOUND");
+
+      // A missing verification reference is inconclusive. Never release the
+      // customer's reservation based only on a failed requestID lookup.
+      if (verificationLookupNotFound) {
+        const pending = await walletAction(
+          "pending",
+          reference,
+          Number(tx.amount),
+          str(tx.metadata?.phone),
+          { provider_check: data, verification_lookup_inconclusive: true, stage: "provider_pending" },
+        );
+        if (pending.error || !pending.data?.success) return reply({
+          success: false, status: "pending", reference,
+          error: "GSubz could not find this requestID. Sparkle could not update reconciliation yet; your funds remain reserved. Do not retry.",
+        }, 202);
+        return reply({
+          success: false, status: "pending", reference,
+          error: "GSubz could not find this requestID in its verification lookup. This is not proof of failure. Your funds remain reserved; do not retry.",
+        }, 202);
+      }
 
       if (response.ok && successStatus(s)) {
         const fin = await walletAction(
