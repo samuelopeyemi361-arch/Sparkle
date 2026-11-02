@@ -98,14 +98,21 @@ Deno.serve(async (req) => {
           ?? ""
       ).trim().toLowerCase().replace(/[\s-]+/g, "_");
       const providerCode = String(
-        providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code ?? response.status
+        providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code
+          ?? providerData?.data?.content?.code ?? response.status
       ).trim();
       const providerDescription = String(
         providerData?.description
           ?? providerData?.data?.description
           ?? providerData?.content?.description
+          ?? providerData?.data?.content?.description
           ?? ""
       ).trim().toUpperCase();
+      // A failed requestID lookup is not proof that the original purchase failed.
+      // GSubz may return HTTP 200 with code 404 / TRANSACTION_FAILED when it
+      // cannot find the reference. Keep the debit reserved for reconciliation.
+      const verificationLookupNotFound = providerCode === "404"
+        || providerDescription.includes("CONTENT_NOT_FOUND");
 
       const succeeded = response.ok && [
         "successful", "success", "completed", "complete",
@@ -117,23 +124,18 @@ Deno.serve(async (req) => {
         "transaction_failed", "transaction_failure", "transaction_refunded"
       ].includes(statusValue);
 
-      // GSUBZ documents the failed requestID verification response as HTTP 404,
-      // code 404, status TRANSACTION_FAILED and CONTENT_NOT_FOUND_API_OR_NOT_FOUND.
-      // Treat only that explicit provider result as failure despite HTTP 404.
-      // All other HTTP errors (401, 429, 5xx, etc.) remain pending.
-      const verifiedMissingTransaction = providerCode === "404"
-        && ["transaction_failed", "failed"].includes(statusValue)
-        && ["CONTENT_NOT_FOUND_API_OR_NOT_FOUND", "CONTENT_NOT_FOUND"].includes(providerDescription);
-
-      const failed = (response.ok && explicitFailure) || verifiedMissingTransaction;
+      // A not-found verification result is inconclusive, never a refund signal.
+      const failed = !verificationLookupNotFound && response.ok && explicitFailure;
       const result = await admin.rpc("sparkle_airtime_wallet_action", {
         p_user_id: user.id, p_action: succeeded ? "success" : failed ? "failure" : "pending",
         p_reference: reference, p_amount: Number(tx.amount), p_service: "Airtime",
         p_phone: String(tx.metadata?.phone || ""),
-        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true },
+        p_metadata: { ...(tx.metadata || {}), provider_check: providerData, reconciliation: true,
+          ...(verificationLookupNotFound ? { verification_lookup_inconclusive: true } : {}) },
       });
       if (result.error || result.data?.success !== true) return reply({ success: false, status: "pending", reference, error: "Sparkle could not reconcile this transaction yet. Do not retry; contact support." }, 202);
       if (succeeded) return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+      if (verificationLookupNotFound) return reply({ success: false, status: "pending", reference, error: "GSubz could not find this requestID in its verification lookup. This is not proof of failure. Your funds remain reserved; do not retry." }, 202);
       if (failed) return reply({ success: false, status: "refunded", reference, error: "The provider confirmed failure. Your Sparkle wallet has been refunded." });
       return reply({ success: false, status: "pending", reference, error: "The provider has not confirmed success or failure. Funds remain reserved; do not retry." }, 202);
     } catch {
