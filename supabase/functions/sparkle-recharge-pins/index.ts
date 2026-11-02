@@ -78,10 +78,6 @@ Deno.serve(async (req) => {
     return reply({ error: "Server not configured" }, 503);
   }
 
-  if (!gsubzKey) {
-    return reply({ error: "Provider not configured" }, 503);
-  }
-
   const auth = req.headers.get("Authorization");
 
   if (!auth?.startsWith("Bearer ")) {
@@ -111,6 +107,9 @@ Deno.serve(async (req) => {
     requestId?: string;
     reference?: string;
     pin?: string;
+    limit?: number;
+    offset?: number;
+    date?: string;
   };
 
   try {
@@ -120,6 +119,81 @@ Deno.serve(async (req) => {
   }
 
   const action = String(body.action ?? "purchase").trim().toLowerCase();
+
+  // Return only this authenticated customer's completed Recharge PIN orders.
+  // The table intentionally denies direct client reads; use the service client
+  // here only after deriving the user ID from the verified bearer token above.
+  if (action === "history") {
+    const requestedLimit = Number(body.limit ?? 20);
+    const requestedOffset = Number(body.offset ?? 0);
+    const limit = Number.isInteger(requestedLimit) ? Math.min(50, Math.max(1, requestedLimit)) : 20;
+    const offset = Number.isInteger(requestedOffset) ? Math.max(0, requestedOffset) : 0;
+    const dateFilter = String(body.date ?? "").trim();
+    const admin = createClient(url, service, { auth: { persistSession: false } });
+
+    let historyQuery = admin.from("sparkle_recharge_pin_orders")
+      .select("request_id,network,denomination,quantity,amount,status,provider_response,created_at", { count: "exact" })
+      .eq("user_id", user.id)
+      .eq("status", "success")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + limit - 1);
+
+    if (dateFilter) {
+      if (!/^\\d{4}-\\d{2}-\\d{2}$/.test(dateFilter)) {
+        return reply({ success: false, error: "Choose a valid purchase date." }, 400);
+      }
+      const start = new Date(dateFilter + "T00:00:00+01:00");
+      if (Number.isNaN(start.getTime()) || start.toISOString().slice(0, 10) !== dateFilter) {
+        return reply({ success: false, error: "Choose a valid purchase date." }, 400);
+      }
+      const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+      historyQuery = historyQuery
+        .gte("created_at", start.toISOString())
+        .lt("created_at", end.toISOString());
+    }
+
+    const { data: history, error: historyError, count } = await historyQuery;
+    if (historyError) {
+      console.error("[sparkle-recharge-pins] history query failed", { userId: user.id, message: historyError.message });
+      return reply({ success: false, error: "Could not load your saved Recharge PIN orders. Please try again." }, 500);
+    }
+
+    const orders = (history || []).map((order: any) => {
+      const saved = order.provider_response && typeof order.provider_response === "object"
+        ? order.provider_response as Record<string, any> : {};
+      const rawPins = Array.isArray(saved.pins) ? saved.pins
+        : Array.isArray(saved.content?.pins) ? saved.content.pins
+        : Array.isArray(saved.data?.pins) ? saved.data.pins : [];
+      const pins = rawPins
+        .filter((item: any) => item && typeof item.pin === "string" && typeof item.sn === "string")
+        .map((item: any) => ({ pin: item.pin, sn: item.sn }));
+      return {
+        request_id: String(order.request_id),
+        network: String(order.network),
+        denomination: Number(order.denomination),
+        quantity: Number(order.quantity),
+        amount: Number(order.amount),
+        status: String(order.status),
+        created_at: order.created_at,
+        pins,
+      };
+    }).filter((order: any) => order.pins.length > 0);
+
+    return reply({
+      success: true,
+      status: "success",
+      orders,
+      count: count ?? orders.length,
+      limit,
+      offset,
+      has_more: offset + (history?.length ?? 0) < (count ?? 0),
+    });
+  }
+
+  if (!gsubzKey) {
+    return reply({ error: "Provider not configured" }, 503);
+  }
+
   if (action === "check" || action === "check_order") {
     const requestId = String(body.request_id ?? body.requestId ?? body.reference ?? "").trim();
     if (!/^SPK-[a-f0-9-]{20,}$/i.test(requestId)) return reply({ success: false, status: "not_started", error: "Invalid Recharge PIN order reference." }, 400);
