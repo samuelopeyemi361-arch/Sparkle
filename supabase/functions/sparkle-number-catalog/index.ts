@@ -479,10 +479,13 @@ function recommendedOffer(offers:ProviderOffer[],_service:string,_country:string
  const window=selectRecommendationWindow(offers);
  if(!window)return undefined;
  const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
+  x.usd<=x.providerBalanceUsd&&
   x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&
   x.rateWindows[window]!>0&&x.rateWindows[window]!<=100);
  if(!rated.length)return undefined;
- const winner=[...rated].sort((a,b)=>b.rateWindows[window]!-a.rateWindows[window]!||a.operator.localeCompare(b.operator))[0];
+ // Highest verified 5SIM 3-hour rate wins; equal rates prefer lower supplier cost.
+ const winner=[...rated].sort((a,b)=>b.rateWindows[window]!-a.rateWindows[window]!||
+  a.usd-b.usd||a.operator.localeCompare(b.operator))[0];
  winner.rate=Number(winner.rateWindows[window]!.toFixed(2));
  winner.displayRate=winner.rate;
  winner.rateWindow=window;
@@ -498,9 +501,14 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  const offer=smartRequest
    ?recommendedOffer(offers,service,country)
    :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!offer&&smartRequest)throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
+ if(!offer&&smartRequest){
+  const ratedButUnfunded=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
+   x.rateWindows.rate3!==null&&x.rateWindows.rate3!==undefined&&x.usd>x.providerBalanceUsd);
+  if(ratedButUnfunded)throw problem("5SIM has delivery-rate data, but its supplier balance cannot cover the available options right now. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
+  throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
+ }
  if(!offer||offer.count<=0)throw problem("That operator is no longer available. Choose another operator and check the price again.",409,"OPERATOR_UNAVAILABLE");
- // Catalogue quotes are independent of transient supplier-profile checks. The purchase function rechecks supplier balance before any wallet reservation or supplier order.
+ if(offer.usd>offer.providerBalanceUsd)throw problem("This 5SIM option is temporarily unavailable because the supplier balance cannot cover it. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  const sellingPrice=money(offer.providerCostNgn*(1+profile.markup/100));
  if(!Number.isFinite(sellingPrice)||sellingPrice<=0)throw problem("Current number prices could not be verified. Please try again later.",503,"PRICE_UNAVAILABLE");
  const chosen=offer.operator;
@@ -626,12 +634,12 @@ Deno.serve(async (req:Request)=>{
    const recommended=recommendedOffer(offers,service,country);
    const recommendationWindow=selectRecommendationWindow(offers);
    const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
-     const available=x.count>0;
+     const available=x.count>0&&x.usd<=x.providerBalanceUsd;
      const isRecommended=!!recommended&&x.operator===recommended.operator;
      // Display all operators using the same live comparison window.
       const displayRate=recommendationWindow?x.rateWindows[recommendationWindow]:null;
       const displayWindow=recommendationWindow;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?(x.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,unavailable_reason:available?null:(x.count<=0?"No stock":"Supplier USD balance is too low to fulfil this option")};
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?(x.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,unavailable_reason:available?null:(x.count<=0?"No stock":"5SIM supplier USD balance is too low to fulfil this option")};
    });
    return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
   }
