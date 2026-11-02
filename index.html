@@ -6897,6 +6897,14 @@ async function executeNumberPurchase(pin){
     const response=await callNumberOrderFunction("sparkle-number-buy",{service:quote.serviceCode,country:quote.country,operator:quote.operator,server_id:"server1",request_id:requestId,pin:String(pin),quoted_selling_price_ngn:quote.sellingPrice});
     const d=response?.data||response;
     // Keep the branded Sparkle overlay visible until the order card and number are rendered.
+    if(d.status==="service_unavailable"){
+      finishNumberPurchaseLoader();
+      if(message)message.textContent="Service unavailable. Please try again later.";
+      const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert("Service unavailable. Please try again later.");
+      return;
+    }
     if(d.status==="failed"){
       const text=String(d.message||(d.refunded?"The supplier rejected the order and Sparkle recorded the refund.":"The supplier rejected the order; the refund needs support review."));
       if(message)message.textContent=text;
@@ -8273,6 +8281,13 @@ async function confirmRechargePinPurchase(pin){
       if(/insufficient/i.test(serverMessage))throw new Error("Insufficient Sparkle wallet balance. Your wallet has not been charged. Required amount: "+money(Number(errorData?.required_amount||total))+". Please fund your wallet and try again.");
       throw new Error(serverMessage||await sparkleFunctionErrorMessage(error,"Recharge PIN purchase failed. Please check the details and try again."));
     }
+    if(data?.status==="service_unavailable"){
+      const userResult=await supabaseClient.auth.getUser(),userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      button.disabled=true;button.textContent="Service unavailable";
+      resultBox.innerHTML='<div class="gsubz-error"><strong>Service unavailable.</strong><p>Please try again later. Your Sparkle wallet has not been charged.</p></div>';
+      return;
+    }
     if(data?.status==="unknown"||data?.status==="pending"){
       button.textContent="Order status needs checking";
       window.sparkleRechargePinPendingRequestId=requestId;
@@ -8796,6 +8811,11 @@ async function processPendingPurchase(transactionPin){
         showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,provider:p.networkLabel||p.serviceID,meter:p.customerID,type:(p.type||p.plan||"").toUpperCase(),phone:p.phone,amount:Number(data.amount||p.amount),electricityValue:Number(data.electricityValue||p.electricityValue),sparkleProfit:Number(data.sparkleProfit||p.sparkleProfit),token:tokenMatch?tokenMatch[1].trim():String(data.providerResponse?.content?.token||data.providerResponse?.token||"")});
         return;
       }
+      if(data?.status==="service_unavailable"){
+        pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        alert("Service unavailable. Please try again later.");
+        return;
+      }
       if(data?.status==="refunded"){
         pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
         alert((data.error||"Electricity order failed and wallet was refunded.")+" Reference: "+(data.reference||"not provided"));return;
@@ -8831,6 +8851,12 @@ async function processPendingPurchase(transactionPin){
         if(overlay)overlay.classList.remove("show");
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
         showReceipt({service:isCable?"Cable TV":"Education Pin",reference:data.reference||"—",customer:isCable?(data.customerName||p.phone):p.phone,provider:isCable?p.network:p.network,plan:p.plan,phone:p.phone,amount:Number(data.amount||p.amount),status:"successful"});
+        return;
+      }
+      if(data?.status==="service_unavailable"){
+        pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){}
+        if(userId){await loadWallet(userId);await loadTransactions(userId);}
+        alert("Service unavailable. Please try again later.");
         return;
       }
       if(data?.status==="refunded"||data?.status==="not_started"){
@@ -8885,6 +8911,15 @@ async function processPendingPurchase(transactionPin){
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
+    }
+    if(data?.status==="service_unavailable"){
+      pendingPurchase=null;
+      if(overlay) overlay.classList.remove("show");
+      const userResult=await supabaseClient.auth.getUser();
+      const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      alert("Service unavailable. Please try again later.");
       return;
     }
     if(data?.status==="refunded"){
@@ -10772,6 +10807,15 @@ function toggleSparkleMoreServices(){
     const msg=document.getElementById("pinMessage");if(msg)msg.textContent="Checking PIN and securing your order…";
     try{
       const data=await call(payload);
+      if(data.status==="service_unavailable"){
+        closePinModal();
+        activeDigitalRequest=null;
+        const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
+        setResult(target,"error","Service unavailable","Service unavailable. Please try again later. Your Sparkle wallet has not been charged.");
+        if(typeof loadWalletBalance==="function")try{await loadWalletBalance();}catch(_){}
+        if(typeof loadTransactions==="function")try{await loadTransactions();}catch(_){}
+        return;
+      }
       if(data.status==="pending"){
         closePinModal();
         const target=pending.kind==="sms"?"sparkleSmsResult":"sparkleSocialResult";
