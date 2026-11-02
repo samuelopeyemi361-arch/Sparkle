@@ -46,13 +46,15 @@ function supplierBalanceInsufficient(data: any): boolean {
   const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
     ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\s-]+/g, "_");
   const details = [
-    data?.description, data?.message, data?.api_response, data?.error, data?.detail,
-    data?.data?.description, data?.data?.message, data?.data?.api_response,
+    data?.description, data?.message, data?.api_response, data?.error, data?.detail, data?.raw,
+    data?.data?.description, data?.data?.message, data?.data?.api_response, data?.data?.raw,
     data?.content?.description, data?.content?.message, data?.data?.content?.description
   ].map(x => String(x ?? "")).join(" ").toUpperCase();
-  return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
-    || /INSUFFICIENT[_\s-]*(?:SUPPLIER[_\s-]*)?(?:WALLET[_\s-]*)?BALANCE|BALANCE[_\s-]*(?:IS[_\s-]*)?(?:INSUFFICIENT|TOO[_\s-]*LOW)|NOT[_\s-]*ENOUGH[_\s-]*BALANCE|LOW[_\s-]*BALANCE/.test(details)
-    || (code === "402" && /BALANCE/.test(details));
+  const codes = ["INSUFFICIENT_BALANCE", "INSUFFICIENT_FUNDS", "INSUFFICIENT_WALLET_BALANCE",
+    "SUPPLIER_BALANCE_LOW", "LOW_BALANCE", "LOW_FUNDS"];
+  return codes.includes(code) || codes.includes(status)
+    || /INSUFFICIENT(?:[_\s-]*(?:SUPPLIER|WALLET))?[_\s-]*(?:BALANCE|FUNDS)|(?:BALANCE|FUNDS)[_\s-]*(?:IS[_\s-]*)?(?:INSUFFICIENT|TOO[_\s-]*LOW)|NOT[_\s-]*ENOUGH[_\s-]*(?:BALANCE|FUNDS)|LOW[_\s-]*(?:BALANCE|FUNDS)/.test(details)
+    || (code === "402" && /(BALANCE|FUNDS)/.test(details));
 }
 async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
   const url = Deno.env.get("SUPABASE_URL") || "";
@@ -80,8 +82,8 @@ async function notifySupplierBalanceLow(supplier: string, service: string, refer
   }
 }
 function supplierBalanceReason(data: any): string {
-  return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
-    ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
+  return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error ?? data?.raw
+    ?? data?.data?.description ?? data?.data?.message ?? data?.data?.raw ?? "Supplier account has insufficient balance.")
     .replace(/[\r\n\t]+/g, " ").trim().slice(0, 450);
 }
 
