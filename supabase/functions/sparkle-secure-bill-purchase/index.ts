@@ -18,7 +18,12 @@ function statusOf(d: any) {
   return str(d?.status ?? d?.data?.status ?? d?.content?.status ?? d?.data?.content?.status ?? d?.data?.transaction_status ?? d?.transaction_status).toLowerCase().replace(/[\s-]+/g, "_");
 }
 function successStatus(s: string) { return ["successful", "success", "completed"].includes(s); }
-function failureStatus(s: string) { return ["failed", "failure", "error", "rejected", "cancelled"].includes(s); }
+function failureStatus(s: string) { return ["failed", "failure", "error", "rejected", "cancelled", "canceled", "refunded"].includes(s); }
+function lookupNotFound(data: any, httpStatus?: number) {
+  const code = str(data?.code ?? data?.data?.code ?? data?.content?.code ?? data?.data?.content?.code);
+  const description = str(data?.description ?? data?.data?.description ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
+  return code === "404" || httpStatus === 404 || description.includes("CONTENT_NOT_FOUND");
+}
 function planCode(p: any) { return str(p?.value ?? p?.variation_code ?? p?.variationCode ?? p?.code ?? p?.id ?? p?.plan); }
 function planPrice(p: any) { return Number(p?.api_price ?? p?.price ?? p?.amount ?? p?.selling_price ?? p?.sellingPrice); }
 function planName(p: any) { return str(p?.displayName ?? p?.display_name ?? p?.name ?? p?.label ?? p?.title ?? p?.package_name ?? p?.packageName ?? p?.plan_name); }
@@ -77,6 +82,96 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
+  const action = str(body.action ?? "purchase").toLowerCase();
+
+  // Pending Cable TV / Education orders can be reconciled without asking for
+  // the PIN again or initiating a second supplier purchase.
+  if (action === "check" || action === "check_order") {
+    const suppliedReference = str(body.reference ?? body.requestID ?? body.requestId).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 100);
+    const reference = suppliedReference.startsWith("SPK-BILL-") ? suppliedReference : `SPK-BILL-${suppliedReference}`;
+    if (!/^SPK-BILL-[A-Za-z0-9_-]{8,100}$/.test(reference)) {
+      return reply({ success: false, status: "not_started", error: "Invalid bill transaction reference." }, 400);
+    }
+    const { data: tx, error: txError } = await admin.from("wallet_transactions")
+      .select("reference,user_id,amount,status,service,metadata")
+      .eq("user_id", user.id).eq("reference", reference).maybeSingle();
+    if (txError) return reply({ success: false, status: "pending", reference, error: "Sparkle could not read this transaction yet. No new charge was made." }, 503);
+    if (!tx) return reply({ success: false, status: "not_started", reference, error: "Bill transaction not found." }, 404);
+    if (tx.status === "successful") return reply({ success: true, status: "successful", reference, amount: Number(tx.amount) });
+    if (tx.status === "refunded" || tx.status === "failed") return reply({ success: false, status: "refunded", reference, amount: Number(tx.amount), error: "This bill transaction is already closed. Check your wallet history for its final status." });
+
+    const savedTransactionId = str(tx.metadata?.provider_response?.transactionID
+      ?? tx.metadata?.provider_response?.data?.transactionID
+      ?? tx.metadata?.provider_transaction_id);
+    let checked: { response: Response; data: any } | null = null;
+    try {
+      const lookup = async (field: "requestID" | "transactionID", value: string) => {
+        const form = new FormData();
+        form.append("api", gsubzKey);
+        form.append(field, value);
+        const response = await fetch(`${BASE}/api/verify/`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" },
+          body: form,
+          signal: AbortSignal.timeout(45000),
+        });
+        const data = await response.json().catch(() => null);
+        return { response, data };
+      };
+      checked = await lookup("requestID", reference);
+      if (lookupNotFound(checked.data, checked.response.status) && savedTransactionId) {
+        checked = await lookup("transactionID", savedTransactionId);
+      }
+    } catch {
+      await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: "pending", p_reference: reference,
+        p_amount: Number(tx.amount), p_service: tx.service,
+        p_metadata: { bill_verification_unavailable: true, stage: "provider_pending" },
+      });
+      return reply({ success: false, status: "pending", reference, error: "GSubz could not be reached. Your funds remain reserved; do not submit the bill again." }, 202);
+    }
+
+    const provider = checked?.data ?? {};
+    const providerStatus = statusOf(provider);
+    if (lookupNotFound(provider, checked?.response.status)) {
+      await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: "pending", p_reference: reference,
+        p_amount: Number(tx.amount), p_service: tx.service,
+        p_metadata: { provider_check: provider, verification_lookup_inconclusive: true, stage: "provider_pending" },
+      });
+      return reply({ success: false, status: "pending", reference, error: "GSubz could not find this requestID in its verification lookup. This is not proof of failure. Your funds remain reserved; do not retry." }, 202);
+    }
+    if (checked?.response.ok && successStatus(providerStatus)) {
+      const settled = await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: "success", p_reference: reference,
+        p_amount: Number(tx.amount), p_service: tx.service,
+        p_metadata: { bill_status_checked: true, provider_check: provider },
+      });
+      if (settled.error || settled.data?.success !== true) {
+        return reply({ success: false, status: "pending", reference, error: "GSubz confirmed success, but Sparkle is still reconciling the wallet record. Do not retry." }, 202);
+      }
+      return reply({ success: true, status: "successful", reference, amount: Number(tx.amount), provider });
+    }
+    if (checked?.response.ok && failureStatus(providerStatus)) {
+      const refunded = await admin.rpc("sparkle_airtime_wallet_action", {
+        p_user_id: user.id, p_action: "failure", p_reference: reference,
+        p_amount: Number(tx.amount), p_service: tx.service,
+        p_metadata: { bill_status_checked: true, provider_check: provider, stage: "refunded" },
+      });
+      if (refunded.error || refunded.data?.success !== true) {
+        return reply({ success: false, status: "pending", reference, error: "GSubz reports failure, but Sparkle is still reconciling the refund. Do not retry." }, 202);
+      }
+      return reply({ success: false, status: "refunded", reference, amount: Number(tx.amount), error: "GSubz confirmed the bill purchase failed. Your Sparkle wallet has been refunded." });
+    }
+    await admin.rpc("sparkle_airtime_wallet_action", {
+      p_user_id: user.id, p_action: "pending", p_reference: reference,
+      p_amount: Number(tx.amount), p_service: tx.service,
+      p_metadata: { bill_status_checked: true, provider_check: provider, stage: "provider_pending" },
+    });
+    return reply({ success: false, status: "pending", reference, error: "GSubz has not confirmed success or failure. Your funds remain reserved; do not submit another bill payment." }, 202);
+  }
+
+  if (action !== "purchase") return reply({ success: false, status: "not_started", error: "Unsupported bill action." }, 400);
   const reference = `SPK-BILL-${requestId}`;
 
   // Server-side catalogue check: never trust a price sent by the browser.
