@@ -8237,7 +8237,7 @@ async function showRechargePinSummary(){
   const networkKey=network.toLowerCase()==="airtel"?"airtel":network.toLowerCase()==="mtn"?"mtn":network.toLowerCase()==="glo"?"glo":"nine";
   const mark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m"}[networkKey];
   content.innerHTML=`<div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${mark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(network)}</div><div class="sparkle-summary-network-label">Recharge card printing</div></div></div><div class="summary-line"><span>Service</span><strong>Recharge Pin Printing</strong></div><div class="summary-line"><span>Network</span><strong>${escapeHtml(network)}</strong></div><div class="summary-line"><span>Denomination</span><strong>${money(denomination)}</strong></div><div class="summary-line"><span>Selling price per card</span><strong>${money(unitPrice)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity} card(s)</strong></div><div class="summary-line"><span>Wallet charge</span><strong>${money(total)}</strong></div><div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total</span><strong>${money(total)}</strong></div><div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><p class="electricity-note">After authorization, your order is processed and your Sparkle wallet is charged only after the order is confirmed successful. Do not submit twice.</p><button id="sparkle-recharge-pin-confirm" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button><div id="sparkle-recharge-pin-result" style="margin-top:14px"></div>`;
-  sparkleCheckWalletReview(total);screen.scrollTop=0;
+  sparkleCheckWalletReview(total,{buttonId:"sparkle-recharge-pin-confirm",buttonText:"Continue to Transaction PIN"});screen.scrollTop=0;
   window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
   try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
   const roll=document.getElementById("sparkle-continue-roll");
@@ -9895,17 +9895,35 @@ document.addEventListener("DOMContentLoaded",()=>{
    },320);
  };
  window.sparkleConfirmPurchase=async function(){
-  const amount=Number(pendingPurchase?.total||0),label=document.getElementById("sparkleReviewWalletBalance"),msg=document.getElementById("sparkleReviewFundsMessage"),btn=document.getElementById("sparkleReviewContinueButton");
-  if(btn){btn.disabled=true;btn.textContent="Verifying wallet…";}if(msg){msg.style.display="none";}
+  const isRechargePin=String(currentService||"").toLowerCase()==="rechargepin";
+  const amount=Number(pendingPurchase?.total||0);
+  const label=document.getElementById("sparkleReviewWalletBalance");
+  const msg=document.getElementById("sparkleReviewFundsMessage");
+  const btn=document.getElementById(isRechargePin?"sparkle-recharge-pin-confirm":"sparkleReviewContinueButton");
+  const continueText=isRechargePin?"Continue to Transaction PIN":"Check balance and continue";
+  if(btn){btn.disabled=true;btn.textContent="Verifying wallet…";}
+  if(msg){msg.style.display="none";}
   try{
-    const auth=await supabaseClient.auth.getUser(),userId=auth?.data?.user?.id;if(auth?.error||!userId)throw new Error("Please sign in again to check your wallet balance.");
+    const auth=await supabaseClient.auth.getUser(),userId=auth?.data?.user?.id;
+    if(auth?.error||!userId)throw new Error("Please sign in again to check your wallet balance.");
     const {data,error}=await supabaseClient.from("wallets").select("balance").eq("user_id",userId).maybeSingle();
     if(error||!data||data.balance===null||!Number.isFinite(Number(data.balance)))throw new Error("Your wallet balance could not be verified. Please try again. No purchase has been made.");
-    const balance=Number(data.balance),fmt=n=>"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});if(label)label.textContent=fmt(balance);
+    const balance=Number(data.balance),fmt=n=>"₦"+n.toLocaleString("en-NG",{minimumFractionDigits:2,maximumFractionDigits:2});
+    if(label)label.textContent=fmt(balance);
     if(!(amount>0))throw new Error("Purchase amount could not be verified. Please review the order again.");
-    if(balance+0.000001<amount){if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent="Insufficient funds. Your balance is "+fmt(balance)+", but this purchase costs "+fmt(amount)+". Please fund your wallet. No transaction PIN was requested and no purchase was made.";}if(btn){btn.disabled=true;btn.textContent="Insufficient funds";}return;}
-    closeReview(false);await openPinForPurchase({skipBalanceCheck:true});
-  }catch(e){if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent=e?.message||"Could not verify wallet balance.";}if(btn){btn.disabled=false;btn.textContent="Check balance and continue";}if(label)label.textContent="Unavailable";}
+    if(balance+0.000001<amount){
+      if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent="Insufficient funds. Your balance is "+fmt(balance)+", but this purchase costs "+fmt(amount)+". Please fund your wallet. No transaction PIN was requested and no purchase was made.";}
+      if(btn){btn.disabled=true;btn.textContent="Insufficient funds";}
+      return;
+    }
+    const pinOpened=await openPinForPurchase({skipBalanceCheck:true,amount});
+    if(!pinOpened)throw new Error("The Transaction PIN window could not be opened. Please try again.");
+    closeReview(false);
+  }catch(e){
+    if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent=e?.message||"Could not verify wallet balance.";}
+    if(btn){btn.disabled=false;btn.textContent=continueText;}
+    if(label)label.textContent="Unavailable";
+  }
 };
  document.getElementById('sparkle-summary-back')?.addEventListener('click',()=>closeReview(true));
  window.addEventListener('popstate',()=>{if(screen?.classList.contains('is-open'))closeReview(true);});
