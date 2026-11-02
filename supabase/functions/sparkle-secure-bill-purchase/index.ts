@@ -48,39 +48,6 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return reply({ success: false, status: "not_started", error: "Invalid request." }, 400); }
 
-  const serviceID = str(body.serviceID ?? body.service).toLowerCase();
-  const isCable = CABLE.has(serviceID);
-  const isEducation = EDUCATION.has(serviceID);
-  const phone = str(body.phone ?? body.phoneNumber);
-  const biller = str(body.customerID ?? body.billersCode ?? body.smartcard ?? body.iuc ?? (CABLE.has(serviceID) ? phone : ""));
-  const selectedPlan = str(body.plan ?? body.variation_code ?? body.planValue);
-  const requestId = str(body.requestID ?? body.requestId ?? body.reference).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
-  const pin = str(body.pin);
-
-  if (!isCable && !isEducation) return reply({ success: false, status: "not_started", error: "Unsupported cable or education service." }, 400);
-  if (!requestId || requestId.length < 8) return reply({ success: false, status: "not_started", error: "A valid purchase reference is required." }, 400);
-  if (isEducation && !/^0\d{10}$/.test(phone)) return reply({ success: false, status: "not_started", error: "Enter a valid 11-digit phone number." }, 400);
-  if (!selectedPlan || selectedPlan.length > 200) return reply({ success: false, status: "not_started", error: "Select a valid plan." }, 400);
-  if (isCable && (!biller || biller.length < 5 || biller.length > 40)) return reply({ success: false, status: "not_started", error: "Enter a valid smartcard/IUC number." }, 400);
-  if (!/^\d{4}$/.test(pin)) return reply({ success: false, status: "not_started", error: "Enter your 4-digit transaction PIN." }, 400);
-
-  // Verify the PIN server-side before any wallet or supplier action.
-  let pinResponse: Response;
-  try {
-    pinResponse = await fetch(`${url}/functions/v1/sparkle-transaction-pin`, {
-      method: "POST",
-      headers: { Authorization: auth, apikey: anon, "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "verify", pin }),
-      signal: AbortSignal.timeout(15000),
-    });
-  } catch {
-    return reply({ success: false, status: "not_started", error: "PIN verification is unavailable. No order was sent." }, 502);
-  }
-  const pinResult: any = await pinResponse.json().catch(() => null);
-  if (!pinResponse.ok || pinResult?.success !== true) {
-    return reply({ success: false, status: "not_started", error: pinResult?.error || pinResult?.message || "PIN verification failed. No order was sent." }, 400);
-  }
-
   const admin = createClient(url, serviceKey, { auth: { persistSession: false } });
   const action = str(body.action ?? "purchase").toLowerCase();
 
@@ -172,6 +139,40 @@ Deno.serve(async (req) => {
   }
 
   if (action !== "purchase") return reply({ success: false, status: "not_started", error: "Unsupported bill action." }, 400);
+
+  const serviceID = str(body.serviceID ?? body.service).toLowerCase();
+  const isCable = CABLE.has(serviceID);
+  const isEducation = EDUCATION.has(serviceID);
+  const phone = str(body.phone ?? body.phoneNumber);
+  const biller = str(body.customerID ?? body.billersCode ?? body.smartcard ?? body.iuc ?? (CABLE.has(serviceID) ? phone : ""));
+  const selectedPlan = str(body.plan ?? body.variation_code ?? body.planValue);
+  const requestId = str(body.requestID ?? body.requestId ?? body.reference).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 80);
+  const pin = str(body.pin);
+
+  if (!isCable && !isEducation) return reply({ success: false, status: "not_started", error: "Unsupported cable or education service." }, 400);
+  if (!requestId || requestId.length < 8) return reply({ success: false, status: "not_started", error: "A valid purchase reference is required." }, 400);
+  if (isEducation && !/^0\d{10}$/.test(phone)) return reply({ success: false, status: "not_started", error: "Enter a valid 11-digit phone number." }, 400);
+  if (!selectedPlan || selectedPlan.length > 200) return reply({ success: false, status: "not_started", error: "Select a valid plan." }, 400);
+  if (isCable && (!biller || biller.length < 5 || biller.length > 40)) return reply({ success: false, status: "not_started", error: "Enter a valid smartcard/IUC number." }, 400);
+  if (!/^\d{4}$/.test(pin)) return reply({ success: false, status: "not_started", error: "Enter your 4-digit transaction PIN." }, 400);
+
+  // Verify the PIN server-side before any wallet or supplier action.
+  let pinResponse: Response;
+  try {
+    pinResponse = await fetch(`${url}/functions/v1/sparkle-transaction-pin`, {
+      method: "POST",
+      headers: { Authorization: auth, apikey: anon, "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "verify", pin }),
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch {
+    return reply({ success: false, status: "not_started", error: "PIN verification is unavailable. No order was sent." }, 502);
+  }
+  const pinResult: any = await pinResponse.json().catch(() => null);
+  if (!pinResponse.ok || pinResult?.success !== true) {
+    return reply({ success: false, status: "not_started", error: pinResult?.error || pinResult?.message || "PIN verification failed. No order was sent." }, 400);
+  }
+
   const reference = `SPK-BILL-${requestId}`;
 
   // Server-side catalogue check: never trust a price sent by the browser.
