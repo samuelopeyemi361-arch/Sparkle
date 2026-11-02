@@ -28,6 +28,52 @@ function planCode(p: any) { return str(p?.value ?? p?.variation_code ?? p?.varia
 function planPrice(p: any) { return Number(p?.api_price ?? p?.price ?? p?.amount ?? p?.selling_price ?? p?.sellingPrice); }
 function planName(p: any) { return str(p?.displayName ?? p?.display_name ?? p?.name ?? p?.label ?? p?.title ?? p?.package_name ?? p?.packageName ?? p?.plan_name); }
 
+
+function supplierBalanceInsufficient(data: any): boolean {
+  const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
+    ?? data?.content?.code ?? data?.data?.content?.code ?? "").trim().toUpperCase();
+  const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
+    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\\s-]+/g, "_");
+  const details = [
+    data?.description, data?.message, data?.api_response, data?.error, data?.detail,
+    data?.data?.description, data?.data?.message, data?.data?.api_response,
+    data?.content?.description, data?.content?.message, data?.data?.content?.description
+  ].map(x => String(x ?? "")).join(" ").toUpperCase();
+  return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
+    || /INSUFFICIENT[_\\s-]*(?:SUPPLIER[_\\s-]*)?(?:WALLET[_\\s-]*)?BALANCE|BALANCE[_\\s-]*(?:IS[_\\s-]*)?(?:INSUFFICIENT|TOO[_\\s-]*LOW)|NOT[_\\s-]*ENOUGH[_\\s-]*BALANCE|LOW[_\\s-]*BALANCE/.test(details)
+    || (code === "402" && /BALANCE/.test(details));
+}
+async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !serviceKey) {
+    console.error("[sparkle-supplier-alert] missing internal credentials", { supplier, service, reference });
+    return false;
+  }
+  try {
+    const response = await fetch(url + "/functions/v1/sparkle-supplier-alert", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + serviceKey, apikey: serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ supplier, service, reference, reason }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.emailSent !== true) {
+      console.error("[sparkle-supplier-alert] dispatch not confirmed", { supplier, service, reference, status: response.status, reason: String(result?.reason || result?.error || "email_not_confirmed").slice(0, 180) });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("[sparkle-supplier-alert] dispatch failed", { supplier, service, reference, error: error instanceof Error ? error.message.slice(0, 180) : "unknown" });
+    return false;
+  }
+}
+function supplierBalanceReason(data: any): string {
+  return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
+    ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
+    .replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, 450);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply({ success: false, status: "not_started", error: "POST required" }, 405);
@@ -274,6 +320,20 @@ Deno.serve(async (req) => {
   }
 
   const providerStatus = statusOf(provider);
+  if (supplierBalanceInsufficient(provider)) {
+    await notifySupplierBalanceLow("GSubz", isCable ? "Cable TV" : "Education PIN", reference, supplierBalanceReason(provider));
+    const released = await admin.rpc("sparkle_airtime_wallet_action", {
+      p_user_id: user.id, p_action: "failure", p_reference: reference,
+      p_amount: amount, p_service: isCable ? "Cable TV" : "Education Pin", p_phone: phone,
+      p_metadata: { provider: "GSubz", provider_service: serviceID, plan_code: selectedPlan,
+        provider_response: provider, supplier_balance_low: true, stage: "supplier_unavailable_refunded" },
+    });
+    if (released.error || released.data?.success !== true) {
+      return reply({ success: false, status: "pending", reference, error: "Service unavailable. Sparkle is confirming your wallet reversal. Do not retry yet." }, 202);
+    }
+    return reply({ success: false, status: "service_unavailable", reference,
+      error: "Service unavailable. Please try again later. Your Sparkle wallet has not been charged." }, 200);
+  }
   if (httpOK && successStatus(providerStatus)) {
     const final = await admin.rpc("sparkle_airtime_wallet_action", {
       p_user_id: user.id, p_action: "success", p_reference: reference, p_amount: amount,
