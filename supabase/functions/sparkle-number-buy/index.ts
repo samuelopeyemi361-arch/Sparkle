@@ -162,12 +162,64 @@ async function apiGet(path: string): Promise<{ ok: boolean; status: number; data
   return { ok: response.ok, status: response.status, data };
 }
 
+
+function supplierBalanceInsufficient(data: any): boolean {
+  const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
+    ?? data?.content?.code ?? data?.data?.content?.code ?? "").trim().toUpperCase();
+  const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
+    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\\s-]+/g, "_");
+  const details = [
+    data?.description, data?.message, data?.api_response, data?.error, data?.detail,
+    data?.data?.description, data?.data?.message, data?.data?.api_response,
+    data?.content?.description, data?.content?.message, data?.data?.content?.description
+  ].map(x => String(x ?? "")).join(" ").toUpperCase();
+  return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
+    || /INSUFFICIENT[_\\s-]*(?:SUPPLIER[_\\s-]*)?(?:WALLET[_\\s-]*)?BALANCE|BALANCE[_\\s-]*(?:IS[_\\s-]*)?(?:INSUFFICIENT|TOO[_\\s-]*LOW)|NOT[_\\s-]*ENOUGH[_\\s-]*BALANCE|LOW[_\\s-]*BALANCE/.test(details)
+    || ((code === "402") && /BALANCE/.test(details));
+}
+async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !serviceKey) {
+    console.error("[sparkle-supplier-alert] missing internal credentials", { supplier, service, reference });
+    return false;
+  }
+  try {
+    const response = await fetch(url + "/functions/v1/sparkle-supplier-alert", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + serviceKey, apikey: serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ supplier, service, reference, reason }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.emailSent !== true) {
+      console.error("[sparkle-supplier-alert] dispatch not confirmed", {
+        supplier, service, reference, httpStatus: response.status,
+        reason: String(result?.reason || result?.error || "email_not_confirmed").slice(0, 180),
+      });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("[sparkle-supplier-alert] dispatch failed", {
+      supplier, service, reference, error: error instanceof Error ? error.message.slice(0, 180) : "unknown",
+    });
+    return false;
+  }
+}
+function supplierBalanceReason(data: any): string {
+  return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
+    ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
+    .replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, 450);
+}
+
 let providerProfileCache: { balance: number; expiresAt: number } | null = null;
 let providerProfilePromise: Promise<{ balance: number }> | null = null;
 
 // Check an authenticated 5SIM endpoint before showing any live prices.
 // A wrong/deprecated API1 key must never appear to work until after a customer pays.
-async function providerProfile(): Promise<{ balance: number }> {
+async function providerProfile(forceRefresh = false): Promise<{ balance: number }> {
+  if (forceRefresh) providerProfileCache = null;
   if (providerProfileCache && providerProfileCache.expiresAt > Date.now()) {
     return { balance: providerProfileCache.balance };
   }
@@ -289,7 +341,7 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
  return ratedOffers;
 }
 function recommendedOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
- const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.usd<=x.providerBalanceUsd&&x.rate!==null&&x.rate>0);
+ const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&x.rate!==null&&x.rate>0);
  return [...rated].sort((a,b)=>b.rate!-a.rate!||b.count-a.count||a.operator.localeCompare(b.operator))[0];
 }
 
@@ -317,7 +369,7 @@ async function getCatalogServices(country:string):Promise<any[]>{
   if(!/^[a-z0-9][a-z0-9._-]{0,79}$/i.test(code))continue;
   let node:any=rawNode;
   if(node&&typeof node==="object"&&node[pc]&&typeof node[pc]==="object")node=node[pc];
-  const offers=parseOfferRows(node).filter(x=>x.count>0&&x.usd<=account.balance);
+  const offers=parseOfferRows(node).filter(x=>x.count>0);
   if(!offers.length)continue;
   const prices=offers.map(x=>money(money(x.usd*fx*1.02)*1.75));
   items.push({code,name:serviceDisplayName(code),country,network:"Multiple operators",stock:offers.reduce((n,x)=>n+x.count,0),selling_price_ngn:Math.min(...prices)});
@@ -420,6 +472,18 @@ Deno.serve(async (req: Request) => {
     const balance = Number(wallet.data?.balance);
     if (!Number.isFinite(balance) || balance + 0.0001 < quote.selling_price_ngn) {
       throw problem("Insufficient Sparkle wallet balance. Please fund your wallet and try again.", 402, "INSUFFICIENT_FUNDS");
+    }
+    // Supplier funding is checked only after the customer has reviewed the
+    // price, passed the PIN check, and had their wallet balance confirmed.
+    // This keeps 5SIM balance shortages from hiding catalogue options.
+    let supplierProfile: { balance: number };
+    try { supplierProfile = await providerProfile(true); }
+    catch { throw problem("Service unavailable. Please try again later.", 503, "SUPPLIER_UNAVAILABLE"); }
+    if (supplierProfile.balance + 0.000001 < quote.provider_cost_usd) {
+      await notifySupplierBalanceLow("5SIM", serviceDisplayName(service), requestId,
+        "5SIM USD balance " + supplierProfile.balance.toFixed(4) + " is below required purchase cost " + quote.provider_cost_usd.toFixed(4) + " USD.");
+      return reply({ success: false, status: "service_unavailable", code: "PROVIDER_BALANCE_LOW", request_id: requestId,
+        message: "Service unavailable. Please try again later. Your Sparkle wallet has not been charged." }, 200);
     }
     const reservation = await ctx.admin.rpc("sparkle_reserve_sms_otp_server", {
       p_user_id: ctx.user.id,
