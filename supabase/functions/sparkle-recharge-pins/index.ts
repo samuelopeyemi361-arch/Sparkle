@@ -205,7 +205,11 @@ Deno.serve(async (req) => {
     if (!order) return reply({ success: false, status: "not_found", error: "Recharge PIN order not found." }, 404);
     const saved = order.provider_response && typeof order.provider_response === "object" ? order.provider_response as Record<string, any> : {};
     const savedPins = Array.isArray(saved.pins) ? saved.pins : Array.isArray(saved.content?.pins) ? saved.content.pins : [];
-    if (order.status === "success") return reply({ success: true, status: "success", request_id: requestId, pins: savedPins });
+    if (order.status === "success") return reply({
+      success: true, status: "success", request_id: requestId, pins: savedPins,
+      network: order.network, denomination: Number(order.denomination),
+      quantity: Number(order.quantity), amount: Number(order.amount), created_at: order.created_at,
+    });
     if (order.status === "failed") return reply({ success: false, status: "failed", request_id: requestId, error: order.error_message || "The provider confirmed failure and Sparkle processed the refund." });
 
     const transactionID = String(saved.transactionID ?? saved.content?.transactionID ?? saved.data?.transactionID ?? "").trim();
@@ -244,7 +248,11 @@ Deno.serve(async (req) => {
           p_provider_response: canonical, p_error: null,
         });
         if (finished.error) return reply({ success: false, status: "unknown", request_id: requestId, error: "Supplier success was detected, but Sparkle needs support reconciliation before displaying the PINs." }, 202);
-        return reply({ success: true, status: "success", request_id: requestId, pins });
+        return reply({
+          success: true, status: "success", request_id: requestId, pins,
+          network: order.network, denomination: Number(order.denomination),
+          quantity: Number(order.quantity), amount: Number(order.amount), created_at: order.created_at,
+        });
       }
       if (failed) {
         const finished = await admin.rpc("sparkle_finish_recharge_pin", {
