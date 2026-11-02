@@ -19,7 +19,8 @@ Deno.serve(async (req:Request) => {
   if(error||!data.user) return json({success:false,error:"Admin session is invalid."},401);
   const {data:profile,error:profileError}=await admin.from("profiles").select("email,role").eq("id",data.user.id).maybeSingle();
   if(profileError||profile?.role!=="admin"||!profile.email) return json({success:false,error:"Only an administrator can test alerts."},403);
-  return await sendEmail([clean(profile.email,254)],"Sparkle supplier alert — Test email","<h2>Sparkle email test successful</h2><p>Supplier alert email delivery is connected. No wallet or supplier balance was changed.</p>");
+  const result = await sendEmail([clean(profile.email,254)],"Sparkle supplier alert — Test email","<h2>Sparkle email test successful</h2><p>Supplier alert email delivery is connected. No wallet or supplier balance was changed.</p>");
+  return json(result, result.status);
  }
 
  if(req.headers.get("Authorization")!==`Bearer ${serviceKey}`) return json({success:false},401);
