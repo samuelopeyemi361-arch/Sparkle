@@ -8266,15 +8266,17 @@ async function confirmRechargePinPurchase(pin){
       const httpStatus=Number(errorData?.statusCode||error.status||error.context?.status||0);
       if(errorData?.status==="unknown"||errorData?.status==="pending"||httpStatus===502||(!error.context&&!serverMessage)){
         button.textContent="Order status needs checking";
-        resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Contact Sparkle Support and provide reference '+escapeHtml(errorData?.reference||requestId)+'.</p>'+(serverMessage?'<p>'+escapeHtml(serverMessage)+'</p>':'')+'</div>';
+        window.sparkleRechargePinPendingRequestId=requestId;
+        resultBox.innerHTML='<div class="gsubz-error"><strong>We could not confirm the order status.</strong><p>Do not submit again. Use the button below to check the existing supplier order.</p>'+(serverMessage?'<p>'+escapeHtml(serverMessage)+'</p>':'')+'<button class="btn primary full" type="button" onclick="checkRechargePinOrder()">Check Order Status</button></div>';
         return;
       }
       if(/insufficient/i.test(serverMessage))throw new Error("Insufficient Sparkle wallet balance. Your wallet has not been charged. Required amount: "+money(Number(errorData?.required_amount||total))+". Please fund your wallet and try again.");
       throw new Error(serverMessage||await sparkleFunctionErrorMessage(error,"Recharge PIN purchase failed. Please check the details and try again."));
     }
-    if(data?.status==="unknown"){
+    if(data?.status==="unknown"||data?.status==="pending"){
       button.textContent="Order status needs checking";
-      resultBox.innerHTML='<div class="gsubz-error"><strong>Order status could not be confirmed.</strong><p>Do not submit again. Contact Sparkle Support with reference '+escapeHtml(data.reference||requestId)+'.</p></div>';
+      window.sparkleRechargePinPendingRequestId=requestId;
+      resultBox.innerHTML='<div class="gsubz-error"><strong>Order status could not be confirmed.</strong><p>Do not submit again. Check the existing order below.</p><p>Reference: '+escapeHtml(data.request_id||data.reference||requestId)+'</p><p>'+escapeHtml(data.message||data.error||"Your funds remain reserved while the supplier response is checked.")+'</p><button class="btn primary full" type="button" onclick="checkRechargePinOrder()">Check Order Status</button></div>';
       return;
     }
     if(!data?.success||data?.status!=="success")throw new Error(data?.error||data?.message||"The order was not confirmed successful. Check with support before retrying.");
@@ -8287,6 +8289,35 @@ async function confirmRechargePinPurchase(pin){
     console.error("Secure Recharge PIN purchase:",e);
     if(resultBox&&!resultBox.innerHTML.includes("Do not submit again")&&!resultBox.innerHTML.includes("Order status could not be confirmed"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
     if(button&&button.textContent!=="Order status needs checking"&&button.style.display!=="none"){button.disabled=false;button.textContent="Try again";}
+  }
+}
+
+async function checkRechargePinOrder(){
+  const requestId=String(window.sparkleRechargePinPendingRequestId||"").trim();
+  const resultBox=document.getElementById("sparkle-recharge-pin-result");
+  if(!requestId||!resultBox)return;
+  resultBox.innerHTML='<p>Checking the existing Recharge PIN order. Do not submit another purchase.</p>';
+  try{
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-recharge-pins",{body:{action:"check",request_id:requestId}});
+    if(error&&!data)throw new Error(error.message||"Could not check this Recharge PIN order.");
+    const status=String(data?.status||"").toLowerCase();
+    if(status==="success"&&Array.isArray(data.pins)&&data.pins.length){
+      const userResult=await supabaseClient.auth.getUser(),userId=userResult?.data?.user?.id;
+      clearCompletedPurchaseInputs("rechargepin");
+      resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order confirmed successful</strong><p>Reference: '+escapeHtml(data.request_id||requestId)+'</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.pins,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadAllTransactions()">Done</button></div>';
+      const confirm=document.getElementById("sparkle-recharge-pin-confirm");if(confirm)confirm.style.display="none";
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
+    }
+    if(status==="failed"){
+      const userResult=await supabaseClient.auth.getUser(),userId=userResult?.data?.user?.id;
+      resultBox.innerHTML='<div class="gsubz-error"><strong>Recharge PIN order failed.</strong><p>'+escapeHtml(data.error||"The supplier confirmed failure and Sparkle processed the refund.")+'</p><p>Reference: '+escapeHtml(requestId)+'</p></div>';
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
+    }
+    resultBox.innerHTML='<div class="gsubz-error"><strong>Order is still being reconciled.</strong><p>'+escapeHtml(data?.error||"The supplier has not confirmed the complete order yet. Your wallet funds remain reserved.")+'</p><p>Reference: '+escapeHtml(requestId)+'</p><button class="btn primary full" type="button" onclick="checkRechargePinOrder()">Check Again</button><p>Do not submit another order.</p></div>';
+  }catch(error){
+    resultBox.innerHTML='<div class="gsubz-error"><strong>Could not check the order.</strong><p>'+escapeHtml(error?.message||"Please try again later.")+'</p><button class="btn primary full" type="button" onclick="checkRechargePinOrder()">Try Again</button></div>';
   }
 }
 
