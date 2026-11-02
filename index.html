@@ -4158,7 +4158,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
       </div>
     </div>
     <div class="receipt-actions" style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
-      <button class="btn" id="receiptCheckAirtimeButton" type="button" style="display:none" onclick="checkPendingAirtimeStatus()">Check Status</button>
+      <button class="btn" id="receiptCheckOrderButton" type="button" style="display:none" onclick="checkPendingPurchaseStatus()">Check Status</button>
       <button class="btn primary" onclick="downloadReceiptPDF()">PDF ↓</button>
       <button class="btn" onclick="downloadReceiptImage()">Image ↓</button>
     </div>
@@ -8771,7 +8771,8 @@ async function processPendingPurchase(transactionPin){
       }
       if(data?.status==="pending"){
         pendingPurchase=null;if(userId){await loadWallet(userId);await loadTransactions(userId);}
-        alert((data.error||"The provider has not confirmed the electricity order.")+" Reference: "+(data.reference||"not provided")+". Do not retry; check the transaction status first.");return;
+        showReceipt({service:"Electricity",reference:data.reference||"—",customer:data.customerName||p.customerName||p.customerID,provider:p.networkLabel||p.serviceID,meter:p.customerID,type:(p.type||p.plan||"").toUpperCase(),phone:p.phone,amount:Number(data.amount||p.amount),status:"pending"});
+        return;
       }
       throw new Error(await sparkleFunctionErrorMessage({message:data?.error||data?.message},"Electricity purchase was not completed. Your wallet has not been charged."));
     }catch(error){console.error("Secure Sparkle electricity purchase:",error);alert((error.message||"Electricity was not confirmed.")+"\n\nCheck transaction history before trying again. Do not retry if the status is pending.");}
@@ -8808,7 +8809,7 @@ async function processPendingPurchase(transactionPin){
       if(data?.status==="pending"){
         pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(e){}
         if(userId){await loadWallet(userId);await loadTransactions(userId);}
-        alert((data.error||"Provider has not confirmed this order yet.")+" Reference: "+(data.reference||requestID)+". Do not submit again until status is checked.");
+        showReceipt({service:isCable?"Cable TV":"Education Pin",reference:data.reference||requestID,customer:isCable?(data.customerName||p.phone):p.phone,provider:p.network,plan:p.plan,phone:p.phone,amount:Number(data.amount||p.amount),status:"pending"});
         return;
       }
       throw new Error(String(data?.error||data?.message||"The provider did not confirm the purchase. Check transaction history before retrying."));
@@ -8870,7 +8871,7 @@ async function processPendingPurchase(transactionPin){
       const userResult=await supabaseClient.auth.getUser();
       const userId=userResult?.data?.user?.id;
       if(userId){await loadWallet(userId);await loadTransactions(userId);}
-      alert((data.error||(isData?"The provider has not confirmed the data order yet.":"The provider has not confirmed the airtime order yet."))+" Reference: "+(data.reference||"not provided")+". Do not buy it again until this is checked.");
+      showReceipt({service:isData?"Data":"Airtime",reference:data.reference||"—",customer:p.phone,provider:"TheSparkle.com.ng",network:p.network||"",serviceLabel:isData?(p.serviceLabel||p.serviceID||""):"",plan:isData?(p.plan||""):"",type_detail:isData?(p.plan||""):"",validity:isData?(p.validity||""):"",phone:p.phone,amount:Number(data.amount||p.amount),status:"pending"});
       return;
     }
     throw new Error(data?.error||(isData?"Data purchase was not completed.":"Airtime purchase was not completed."));
@@ -8945,39 +8946,56 @@ function showReceipt(result){
   const badge=card.querySelector(".receipt-status");
   if(badge){badge.textContent=statusLabel;badge.style.color=statusColor;}
   card.dataset.reference=String(d.reference||d.id||"sparkle-receipt").replace(/[^a-zA-Z0-9_-]/g,"-");
-  const checkAirtimeButton=document.getElementById("receiptCheckAirtimeButton");
-  if(checkAirtimeButton){
+  const checkOrderButton=document.getElementById("receiptCheckOrderButton");
+  if(checkOrderButton){
     const ref=String(d.reference||"");
-    checkAirtimeButton.dataset.reference=ref;
-    checkAirtimeButton.style.display=(service.toLowerCase()==="airtime" && status==="pending" && /^SPK-AT-[a-f0-9-]{20,}$/i.test(ref))?"inline-flex":"none";
-    checkAirtimeButton.disabled=false;
-    checkAirtimeButton.textContent="Check Status";
+    const serviceKey=service.trim().toLowerCase();
+    const referenceMatches=
+      (serviceKey==="airtime" && /^SPK-AT-[a-f0-9-]{20,}$/i.test(ref)) ||
+      (serviceKey==="data" && /^SPK-DT-[a-z0-9_-]{8,100}$/i.test(ref)) ||
+      (serviceKey==="electricity" && /^SPK-EL-[a-f0-9-]{20,}$/i.test(ref)) ||
+      (["cable tv","education pin"].includes(serviceKey) && /^SPK-BILL-[a-z0-9_-]{8,100}$/i.test(ref));
+    checkOrderButton.dataset.reference=ref;
+    checkOrderButton.dataset.service=serviceKey;
+    checkOrderButton.style.display=(pending&&referenceMatches)?"inline-flex":"none";
+    checkOrderButton.disabled=false;
+    checkOrderButton.textContent="Check Status";
   }
   document.getElementById("receiptModal").classList.add("show");
 }
-async function checkPendingAirtimeStatus(){
-  const button=document.getElementById("receiptCheckAirtimeButton");
+async function checkPendingPurchaseStatus(){
+  const button=document.getElementById("receiptCheckOrderButton");
   const reference=String(button?.dataset.reference||"").trim();
-  if(!button||!/^SPK-AT-[a-f0-9-]{20,}$/i.test(reference))return;
+  const service=String(button?.dataset.service||"").trim().toLowerCase();
+  if(!button||!reference)return;
+  const endpointByService={
+    "airtime":"sparkle-airtime-purchase",
+    "data":"sparkle-data-purchase",
+    "electricity":"sparkle-electricity-purchase",
+    "cable tv":"sparkle-secure-bill-purchase",
+    "education pin":"sparkle-secure-bill-purchase"
+  };
+  const endpoint=endpointByService[service];
+  if(!endpoint)return;
   button.disabled=true;button.textContent="Checking…";
   try{
-    const {data,error}=await supabaseClient.functions.invoke("sparkle-airtime-purchase",{body:{action:"check",reference}});
-    if(error)throw new Error(error.message||"Could not check this airtime order.");
+    const {data,error}=await supabaseClient.functions.invoke(endpoint,{body:{action:"check",reference}});
+    if(error&&!data)throw new Error(error.message||"Could not check this purchase.");
     const status=String(data?.status||"").toLowerCase();
-    if(status==="successful"){
-      alert("GSubz confirmed the airtime order was successful.");
-    }else if(status==="refunded"){
-      alert("GSubz confirmed the order failed. Sparkle has processed the wallet refund.");
+    if(status==="successful"||status==="success"){
+      alert("The supplier confirmed this purchase was successful.");
+    }else if(status==="refunded"||status==="failed"){
+      alert("The supplier confirmed this purchase failed. Check your Sparkle wallet history for the refund.");
     }else if(status==="pending"){
-      alert("The provider has not confirmed success or failure yet. Your funds remain reserved. Do not buy again; try checking later.");
+      alert(data?.error||"The supplier has not confirmed success or failure yet. Your funds remain reserved. Do not buy again; check again later.");
     }else{
       alert(data?.error||"Sparkle could not verify this transaction. Please contact support before retrying.");
     }
-    await loadAllTransactions();
+    if(typeof loadAllTransactions==="function")await loadAllTransactions();
     if(typeof retryRecentTransactions==="function")await retryRecentTransactions();
-    if(status==="successful"||status==="refunded")closeReceipt();
+    if(status==="successful"||status==="success"||status==="refunded"||status==="failed")closeReceipt();
   }catch(error){
-    alert(String(error?.message||"Could not check this airtime order. Please try again later."));
+    alert(String(error?.message||"Could not check this purchase. Please try again later."));
   }finally{
     button.disabled=false;button.textContent="Check Status";
   }
