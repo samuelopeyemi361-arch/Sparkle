@@ -355,12 +355,11 @@ async function bestOffer(country:string,service:string,requestedOperator="smart"
  const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!chosen)throw problem("That operator is no longer available. Choose another operator.",409,"OPERATOR_UNAVAILABLE");
  if(chosen.count<=0)throw problem("That operator is out of stock.",409,"NO_STOCK");
- if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable because the supplier account cannot cover its USD price. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
  return chosen;
 }
 
 async function getCatalogServices(country:string):Promise<any[]>{
- const pc=providerCountry(country),account=await providerProfile();
+ const pc=providerCountry(country);
  const response=await apiGet("/guest/prices?country="+encodeURIComponent(pc));
  if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
  const root:any=response.data,countryNode:any=root[pc]||root[pc.toUpperCase()]||root,fx=await usdToNgn();
