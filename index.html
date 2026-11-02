@@ -3713,6 +3713,10 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
         <section class="page" id="adminPage">
           <div class="sparkle-admin-top"><button type="button" class="sparkle-admin-back" onclick="showDashPage('profilePage',null)">‹ Profile</button><div><span class="sparkle-admin-eyebrow">SPARKLE CONTROL CENTRE</span><h1>Admin Panel</h1><p>Private tools for customer accounts, wallet ledger and activity.</p></div><button type="button" class="sparkle-admin-refresh" onclick="sparkleAdminRefresh()">↻ Refresh</button></div>
           <div id="sparkleAdminNotice" class="sparkle-admin-notice" role="status" aria-live="polite">Loading secure admin access…</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:8px 0 14px">
+            <small style="color:#64748b">Private email alerts for supplier balance shortages.</small>
+            <button type="button" class="sparkle-admin-refresh" onclick="sparkleAdminTestSupplierAlertEmail(this)">Test alert email</button>
+          </div>
           <div class="sparkle-admin-stats">
             <div><small>Total customers</small><strong id="sparkleAdminCustomerCount">—</strong></div>
             <div><small>Wallet accounts</small><strong id="sparkleAdminWalletCount">—</strong></div>
@@ -11242,6 +11246,24 @@ const sparkleAdminMoney = value => '₦' + Number(value || 0).toLocaleString('en
 function sparkleAdminSetVisible(isAdmin){window.sparkleAdminRouteAllowed=!!isAdmin;if(!isAdmin&&document.getElementById('adminPage')?.classList.contains('active'))showDashPage('profilePage',null);}
 function sparkleAdminNotice(message,type=''){const el=document.getElementById('sparkleAdminNotice');if(el){el.textContent=message;el.className='sparkle-admin-notice'+(type?' '+type:'');}}
 async function sparkleAdminCall(action,payload={}){const {data,error}=await supabaseClient.functions.invoke('sparkle-admin',{body:{action,...payload}});if(error){let message=error.message||'Admin request failed.';try{if(error.context?.json){const j=await error.context.json();message=j.error||message;}}catch(_){}throw new Error(message);}if(!data?.success)throw new Error(data?.error||'Admin request failed.');return data;}
+async function sparkleAdminTestSupplierAlertEmail(button){
+  if(button){button.disabled=true;button.textContent='Sending test…';}
+  sparkleAdminNotice('Sending a test supplier-alert email to your administrator inbox…');
+  try{
+    const {data,error}=await supabaseClient.functions.invoke('sparkle-supplier-alert',{body:{action:'test'}});
+    if(error){
+      let message=error.message||'Test email could not be sent.';
+      try{const response=error.context?.clone?await error.context.clone().json():null;message=response?.error||response?.reason||message;}catch(_){}
+      throw new Error(message);
+    }
+    if(data?.success!==true||data?.emailSent!==true)throw new Error(data?.error||data?.reason||'The email sender did not confirm delivery.');
+    sparkleAdminNotice('Test alert email accepted by the email provider. Check your admin inbox and spam folder.','success');
+  }catch(error){
+    sparkleAdminNotice(error?.message||'Test supplier-alert email failed. Check the email sender configuration.','error');
+  }finally{
+    if(button){button.disabled=false;button.textContent='Test alert email';}
+  }
+}
 function sparkleAdminOpen(){showDashPage('adminPage',null);sparkleAdminNotice('Verifying administrator access…');sparkleAdminRefresh();}
 async function sparkleAdminRefresh(){try{const data=await sparkleAdminCall('dashboard');document.getElementById('sparkleAdminCustomerCount').textContent=Number(data.stats?.customers||0).toLocaleString('en-NG');document.getElementById('sparkleAdminWalletCount').textContent=Number(data.stats?.wallets||0).toLocaleString('en-NG');document.getElementById('sparkleAdminWalletTotal').textContent=sparkleAdminMoney(data.stats?.totalWalletBalance);document.getElementById('sparkleAdminTxCount').textContent=Number(data.stats?.transactionCount||0).toLocaleString('en-NG');sparkleAdminNotice('Secure admin access confirmed for '+String(data.admin?.email||'your account')+'.','success');if(sparkleAdminCurrentTab==='users')await sparkleAdminLoadUsers(sparkleAdminUserPage);else if(sparkleAdminCurrentTab==='transactions')await sparkleAdminLoadTransactions(sparkleAdminTxPage);else if(sparkleAdminCurrentTab==='audit')await sparkleAdminLoadAudit();else sparkleOwnerEditorPreview();}catch(e){sparkleAdminNotice(e.message||'Unable to load the admin panel.','error');}}
 function sparkleAdminTab(tab,button){sparkleAdminCurrentTab=tab;document.querySelectorAll('#adminPage .sparkle-admin-tabs button').forEach(b=>b.classList.toggle('active',b===button));document.getElementById('sparkleAdminUsersPane').style.display=tab==='users'?'':'none';document.getElementById('sparkleAdminTransactionsPane').style.display=tab==='transactions'?'':'none';document.getElementById('sparkleAdminAuditPane').style.display=tab==='audit'?'':'none';document.getElementById('sparkleAdminEditorPane').style.display=tab==='editor'?'':'none';document.getElementById('sparkleAdminNumberRatesPane').style.display=tab==='numberRates'?'':'none';if(tab==='numberRates')sparkleAdminLoadNumberRates();if(tab==='users')sparkleAdminLoadUsers(1);if(tab==='transactions')sparkleAdminLoadTransactions(1);if(tab==='audit')sparkleAdminLoadAudit();if(tab==='editor')sparkleOwnerEditorPreview();}
