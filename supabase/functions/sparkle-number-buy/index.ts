@@ -514,6 +514,16 @@ Deno.serve(async (req: Request) => {
       return reply({ success: false, status: "unknown", request_id: requestId, message: "Sparkle is still confirming your number order. Do not buy again; check the order status shortly." }, 202);
     }
     let data = placed.data || {};
+    if (supplierBalanceInsufficient(data)) {
+      await notifySupplierBalanceLow("5SIM", serviceDisplayName(service), requestId, supplierBalanceReason(data));
+      const released = await finalize(ctx.admin, requestId, "failed", data, "5SIM supplier account has insufficient balance.");
+      if (released.error || released.data?.success !== true) {
+        return reply({ success: false, status: "unknown", request_id: requestId,
+          message: "Service unavailable. Sparkle is confirming your wallet reversal. Do not retry yet." }, 202);
+      }
+      return reply({ success: false, status: "service_unavailable", request_id: requestId,
+        message: "Service unavailable. Please try again later. Your Sparkle wallet has not been charged." }, 200);
+    }
     const providerId = String(data.id ?? "");
     let phone = String(data.phone ?? "");
     const accepted = placed.ok && /^\d{1,20}$/.test(providerId) && phone.length >= 5;
