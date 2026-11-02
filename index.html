@@ -4000,6 +4000,23 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
       <div class="summary-line" style="margin-top:12px"><span>Wallet total</span><strong id="rechargePinTotal">Loading price…</strong></div>
     </div>
     <p class="electricity-note">For ₦100, ₦200, and ₦400 cards, the minimum order is 10 cards. Your Sparkle wallet is checked before an order is sent.</p>
+    <div style="margin:14px 0 18px;padding:16px;border:1px solid #dce6ff;border-radius:18px;background:linear-gradient(145deg,#ffffff,#f3f6ff);box-shadow:0 8px 24px rgba(24,56,130,.07)">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="width:42px;height:42px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,#123a9c,#6655e8);color:#fff;font-size:21px">✦</div>
+        <div style="flex:1;min-width:0"><strong style="display:block;color:#152a59;font-size:14px">Saved PIN templates</strong><span style="display:block;color:#657595;font-size:12px;margin-top:3px">Open, print or download any successful order again.</span></div>
+        <button type="button" onclick="toggleRechargePinHistory()" style="border:0;border-radius:12px;background:#183f9e;color:#fff;padding:10px 12px;font-size:12px;font-weight:700;white-space:nowrap">My PINs</button>
+      </div>
+      <div id="rechargePinHistoryPanel" style="display:none;margin-top:16px;padding-top:14px;border-top:1px solid #e2eaff">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input id="rechargePinHistoryDate" type="date" aria-label="Filter successful PIN orders by purchase date" style="flex:1;min-width:145px;padding:11px;border:1px solid #d7e1f3;border-radius:11px;background:#fff;color:#20345f">
+          <button type="button" onclick="loadRechargePinHistory(true)" style="border:0;border-radius:11px;background:#183f9e;color:#fff;padding:11px 13px;font-size:12px;font-weight:700">Search date</button>
+          <button type="button" onclick="clearRechargePinHistoryDate()" style="border:1px solid #d7e1f3;border-radius:11px;background:#fff;color:#30446f;padding:11px 12px;font-size:12px;font-weight:700">All dates</button>
+        </div>
+        <p id="rechargePinHistoryStatus" role="status" style="margin:10px 0 8px;color:#64748b;font-size:12px">Your successful Recharge PIN orders will appear here.</p>
+        <div id="rechargePinHistoryList"></div>
+        <button id="rechargePinHistoryMore" type="button" onclick="loadRechargePinHistory(false)" style="display:none;width:100%;margin-top:10px;border:1px solid #d7e1f3;border-radius:12px;background:#fff;color:#1b3e8a;padding:12px;font-size:13px;font-weight:700">Load older orders</button>
+      </div>
+    </div>
     <div class="data-bottom-action"><button class="btn primary full" onclick="showRechargePinSummary()">Continue</button></div>
   </div>
 </section>
@@ -8300,10 +8317,17 @@ async function confirmRechargePinPurchase(pin){
     }
     if(!data?.success||data?.status!=="success")throw new Error(data?.error||data?.message||"The order was not confirmed successful. Check with support before retrying.");
     const pins=data.pins||data.data?.pins||data.data;
+    if(!Array.isArray(pins)||pins.length!==quantity||!pins.every(item=>item&&typeof item.pin==="string"&&typeof item.sn==="string")){
+      throw new Error("GSubz did not return the complete PIN and serial list. The order needs status checking; do not submit again.");
+    }
+    const savedOrder={request_id:String(data.request_id||data.reference||requestId),network,denomination,quantity,amount:total,status:"success",created_at:new Date().toISOString(),pins};
     clearCompletedPurchaseInputs("rechargepin");
-    resultBox.innerHTML=`<div class="gsubz-success"><strong>✓ Recharge PIN order successful</strong><p>Wallet charge: ${money(total)}</p><p>Order reference: ${escapeHtml(data.reference||requestId)}</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">${escapeHtml(JSON.stringify(pins,null,2))}</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadWallet(&quot;${userId}&quot;);loadTransactions(&quot;${userId}&quot;)">Done</button></div>`;
+    pendingPurchase=null;
+    window.sparkleRechargePinPending=false;
     button.style.display="none";
-    await loadWallet(userId);await loadTransactions(userId);
+    openRechargePinOrderSheet(savedOrder,0,false);
+    loadWallet(userId).catch(e=>console.warn("Recharge PIN wallet refresh:",e));
+    loadTransactions(userId).catch(e=>console.warn("Recharge PIN transaction refresh:",e));
   }catch(e){
     console.error("Secure Recharge PIN purchase:",e);
     if(resultBox&&!resultBox.innerHTML.includes("Do not submit again")&&!resultBox.innerHTML.includes("Order status could not be confirmed"))resultBox.innerHTML='<div class="gsubz-error">'+escapeHtml(e.message||"Unable to complete the order.")+'</div>';
@@ -8322,10 +8346,16 @@ async function checkRechargePinOrder(){
     const status=String(data?.status||"").toLowerCase();
     if(status==="success"&&Array.isArray(data.pins)&&data.pins.length){
       const userResult=await supabaseClient.auth.getUser(),userId=userResult?.data?.user?.id;
+      if(!data.pins.every(item=>item&&typeof item.pin==="string"&&typeof item.sn==="string")){
+        throw new Error("The order response did not include valid PIN and serial details. Please contact Sparkle support with reference "+requestId+".");
+      }
+      const savedOrder={request_id:String(data.request_id||requestId),network:String(data.network||document.getElementById("rechargePinNetwork")?.value||""),denomination:Number(data.denomination||document.getElementById("rechargePinDenomination")?.value||0),quantity:Number(data.quantity||data.pins.length),amount:Number(data.amount||0),status:"success",created_at:data.created_at||new Date().toISOString(),pins:data.pins};
       clearCompletedPurchaseInputs("rechargepin");
-      resultBox.innerHTML='<div class="gsubz-success"><strong>✓ Recharge PIN order confirmed successful</strong><p>Reference: '+escapeHtml(data.request_id||requestId)+'</p><p>Save or screenshot your PIN and serial details.</p><pre style="white-space:pre-wrap;overflow-wrap:anywhere;max-height:45vh;overflow:auto">'+escapeHtml(JSON.stringify(data.pins,null,2))+'</pre><button class="btn primary full" onclick="closeReview(true);showDashPage(&quot;home&quot;,document.querySelector(&quot;.nav-item&quot;));loadAllTransactions()">Done</button></div>';
+      pendingPurchase=null;
+      window.sparkleRechargePinPending=false;
+      openRechargePinOrderSheet(savedOrder,0,false);
       const confirm=document.getElementById("sparkle-recharge-pin-confirm");if(confirm)confirm.style.display="none";
-      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      if(userId){loadWallet(userId).catch(e=>console.warn("Recharge PIN wallet refresh:",e));loadTransactions(userId).catch(e=>console.warn("Recharge PIN transaction refresh:",e));}
       return;
     }
     if(status==="failed"){
@@ -8339,6 +8369,320 @@ async function checkRechargePinOrder(){
     resultBox.innerHTML='<div class="gsubz-error"><strong>Could not check the order.</strong><p>'+escapeHtml(error?.message||"Please try again later.")+'</p><button class="btn primary full" type="button" onclick="checkRechargePinOrder()">Try Again</button></div>';
   }
 }
+
+
+let sparkleRechargePinHistoryOffset=0;
+let sparkleRechargePinHistoryHasMore=false;
+window.sparkleRechargePinHistoryOrders=[];
+window.sparkleRechargePinActiveOrder=null;
+window.sparkleRechargePinImagePage=0;
+
+function rechargePinDateLabel(value){
+  const date=value?new Date(value):new Date();
+  if(Number.isNaN(date.getTime()))return "Date unavailable";
+  return date.toLocaleString("en-NG",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit",hour12:true,timeZone:"Africa/Lagos"});
+}
+function toggleRechargePinHistory(){
+  const panel=document.getElementById("rechargePinHistoryPanel");
+  if(!panel)return;
+  const opening=panel.style.display==="none";
+  panel.style.display=opening?"block":"none";
+  if(opening)loadRechargePinHistory(true);
+}
+function clearRechargePinHistoryDate(){
+  const field=document.getElementById("rechargePinHistoryDate");
+  if(field)field.value="";
+  loadRechargePinHistory(true);
+}
+async function loadRechargePinHistory(reset=true){
+  const status=document.getElementById("rechargePinHistoryStatus");
+  const list=document.getElementById("rechargePinHistoryList");
+  const more=document.getElementById("rechargePinHistoryMore");
+  const date=String(document.getElementById("rechargePinHistoryDate")?.value||"").trim();
+  if(!status||!list)return;
+  if(reset){
+    sparkleRechargePinHistoryOffset=0;
+    window.sparkleRechargePinHistoryOrders=[];
+    list.innerHTML="";
+  }
+  status.textContent="Loading your saved PIN orders…";
+  if(more)more.style.display="none";
+  try{
+    const body={action:"history",limit:20,offset:sparkleRechargePinHistoryOffset};
+    if(date)body.date=date;
+    const {data,error}=await supabaseClient.functions.invoke("sparkle-recharge-pins",{body});
+    if(error)throw new Error(await sparkleFunctionErrorMessage(error,"Could not load your saved PIN orders."));
+    if(!data?.success||!Array.isArray(data.orders))throw new Error(data?.error||"Could not load your saved PIN orders.");
+    window.sparkleRechargePinHistoryOrders=window.sparkleRechargePinHistoryOrders.concat(data.orders);
+    sparkleRechargePinHistoryOffset+=data.orders.length;
+    sparkleRechargePinHistoryHasMore=Boolean(data.has_more);
+    renderRechargePinHistoryList();
+    const total=Number(data.count||window.sparkleRechargePinHistoryOrders.length);
+    status.textContent=window.sparkleRechargePinHistoryOrders.length
+      ?(date?"Successful orders on "+date+": ":"Saved successful orders: ")+window.sparkleRechargePinHistoryOrders.length+(sparkleRechargePinHistoryHasMore?" loaded":" of "+total)
+      :"No successful Recharge PIN orders were found"+(date?" on "+date:"")+".";
+    if(more)more.style.display=sparkleRechargePinHistoryHasMore?"block":"none";
+  }catch(error){
+    status.textContent=error?.message||"Could not load your saved PIN orders. Please try again.";
+    status.style.color="#b42318";
+  }
+}
+function renderRechargePinHistoryList(){
+  const list=document.getElementById("rechargePinHistoryList");
+  if(!list)return;
+  const orders=window.sparkleRechargePinHistoryOrders||[];
+  list.innerHTML=orders.map((order,index)=>{
+    const date=rechargePinDateLabel(order.created_at);
+    const title=String(order.network||"Recharge").toUpperCase()+" · ₦"+Number(order.denomination||0).toLocaleString("en-NG");
+    const meta=Number(order.quantity||0)+" cards · "+money(Number(order.amount||0))+" · "+date;
+    return '<div style="display:flex;align-items:center;gap:12px;padding:13px 2px;border-bottom:1px solid #e8eef9">'
+      +'<div style="width:38px;height:38px;flex:0 0 38px;display:grid;place-items:center;border-radius:12px;background:#eaf0ff;color:#244aa5;font-size:18px">▤</div>'
+      +'<div style="flex:1;min-width:0"><strong style="display:block;color:#1e315c;font-size:13px">'+escapeHtml(title)+'</strong><span style="display:block;color:#71809d;font-size:11px;line-height:1.45;margin-top:3px">'+escapeHtml(meta)+'</span><span style="display:block;color:#8492ab;font-size:10px;margin-top:3px">Ref: '+escapeHtml(order.request_id||"—")+'</span></div>'
+      +'<button type="button" onclick="openRechargePinHistoryOrder('+index+')" style="border:0;border-radius:10px;background:#1c449f;color:#fff;padding:10px 11px;font-size:11px;font-weight:700;white-space:nowrap">Open</button>'
+      +'</div>';
+  }).join("");
+}
+function openRechargePinHistoryOrder(index){
+  const order=window.sparkleRechargePinHistoryOrders?.[Number(index)];
+  if(!order)return;
+  openRechargePinOrderSheet(order,0,true);
+}
+function openRechargePinOrderSheet(order,pageIndex=0,isHistory=false){
+  if(!order||!Array.isArray(order.pins)||!order.pins.length){
+    alert("This saved order does not contain printable PIN details.");
+    return;
+  }
+  window.sparkleRechargePinActiveOrder=order;
+  window.sparkleRechargePinImagePage=Math.max(0,Math.min(Number(pageIndex)||0,Math.ceil(order.pins.length/8)-1));
+  window.sparkleRechargePinIsHistory=Boolean(isHistory);
+  const screen=document.getElementById("sparkle-purchase-summary-screen");
+  const content=document.getElementById("sparkle-summary-screen-content");
+  const title=document.querySelector(".sparkle-summary-top h2");
+  if(!screen||!content){
+    alert("The Recharge PIN template screen is unavailable. Please reopen your saved PIN order.");
+    return;
+  }
+  if(!screen.classList.contains("is-open")){
+    window.sparkleSummaryReturnScroll=window.scrollY||0;
+    window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+    try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
+  }
+  if(title)title.textContent="Your Sparkle PIN templates";
+  content.innerHTML=renderRechargePinVoucherMarkup(order,window.sparkleRechargePinImagePage);
+  screen.classList.add("is-open");
+  screen.setAttribute("aria-hidden","false");
+  screen.scrollTop=0;
+}
+function renderRechargePinVoucherMarkup(order,pageIndex){
+  const pins=order.pins||[];
+  const pageSize=8;
+  const pageCount=Math.max(1,Math.ceil(pins.length/pageSize));
+  const page=Math.max(0,Math.min(Number(pageIndex)||0,pageCount-1));
+  const begin=page*pageSize;
+  const visible=pins.slice(begin,begin+pageSize);
+  const network=String(order.network||"Recharge").toUpperCase();
+  const denomination=Number(order.denomination||0);
+  const created=rechargePinDateLabel(order.created_at);
+  const amount=Number(order.amount||0);
+  let html='<style>'
+    +'.sparkle-pin-voucher{overflow:hidden;border:1px solid #dce6fb;border-radius:20px;background:#fff;box-shadow:0 12px 34px rgba(21,53,122,.10);color:#172b55}'
+    +'.sparkle-pin-voucher-hero{padding:22px 20px 18px;background:linear-gradient(125deg,#0c1d4c 0%,#1e50bd 58%,#7054df 100%);color:#fff}'
+    +'.sparkle-pin-voucher-brand{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:900;letter-spacing:1.4px}'
+    +'.sparkle-pin-voucher-star{width:27px;height:27px;display:grid;place-items:center;border-radius:9px;background:rgba(255,255,255,.16);font-size:17px}'
+    +'.sparkle-pin-voucher-kicker{margin-top:22px;font-size:10px;font-weight:800;letter-spacing:1.8px;opacity:.78}'
+    +'.sparkle-pin-voucher-hero h2{margin:6px 0 5px;font-size:23px;line-height:1.15;color:#fff;font-weight:900;letter-spacing:.2px}'
+    +'.sparkle-pin-voucher-hero p{margin:0;color:rgba(255,255,255,.84);font-size:12px}'
+    +'.sparkle-pin-voucher-meta{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:15px 0 0}'
+    +'.sparkle-pin-voucher-meta>div{padding:10px;border:1px solid rgba(255,255,255,.16);border-radius:11px;background:rgba(255,255,255,.10);min-width:0}'
+    +'.sparkle-pin-voucher-meta span{display:block;font-size:9px;letter-spacing:.9px;text-transform:uppercase;color:rgba(255,255,255,.7)}'
+    +'.sparkle-pin-voucher-meta strong{display:block;margin-top:4px;color:#fff;font-size:12px;overflow-wrap:anywhere}'
+    +'.sparkle-pin-voucher-body{padding:15px;background:#f5f8ff}'
+    +'.sparkle-pin-voucher-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}'
+    +'.sparkle-pin-voucher-card{position:relative;overflow:hidden;padding:13px 12px 12px;border:1px solid #dce6f6;border-radius:15px;background:linear-gradient(145deg,#fff,#f9fbff);box-shadow:0 4px 13px rgba(21,53,122,.05);min-width:0}'
+    +'.sparkle-pin-voucher-card:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(180deg,#2763df,#7957e8)}'
+    +'.sparkle-pin-voucher-card-top{display:flex;align-items:center;justify-content:space-between;gap:5px}'
+    +'.sparkle-pin-voucher-card-top span:first-child{font-size:9px;color:#71809d;font-weight:800;letter-spacing:.8px}'
+    +'.sparkle-pin-voucher-value{padding:5px 7px;border-radius:8px;background:#e9efff;color:#2149a4;font-size:10px;font-weight:900;white-space:nowrap}'
+    +'.sparkle-pin-voucher-label{margin-top:14px;color:#7887a3;font-size:9px;font-weight:900;letter-spacing:1.1px}'
+    +'.sparkle-pin-voucher-number{margin-top:4px;color:#142c63;font-size:clamp(14px,4vw,19px);font-weight:900;line-height:1.35;overflow-wrap:anywhere;letter-spacing:.35px}'
+    +'.sparkle-pin-voucher-serial{margin-top:11px;padding-top:9px;border-top:1px dashed #d5dfef;color:#657493;font-size:10px;line-height:1.45;overflow-wrap:anywhere}'
+    +'.sparkle-pin-voucher-serial b{display:block;margin-bottom:3px;font-size:8px;letter-spacing:1px;color:#8592aa}'
+    +'.sparkle-pin-voucher-card-actions{display:flex;justify-content:flex-end;margin-top:8px}'
+    +'.sparkle-pin-voucher-card-actions button{border:0;background:transparent;color:#2854b5;font-size:10px;font-weight:800;padding:3px 0}'
+    +'.sparkle-pin-voucher-footer{padding:12px 15px;background:#fff;color:#8491a8;font-size:10px;line-height:1.5;text-align:center;border-top:1px solid #edf1f8}'
+    +'.sparkle-pin-voucher-page{display:flex;align-items:center;justify-content:center;gap:12px;margin:13px 0}'
+    +'.sparkle-pin-voucher-page button{border:1px solid #d8e2f5;border-radius:10px;background:#fff;color:#214797;padding:8px 11px;font-size:11px;font-weight:800}'
+    +'.sparkle-pin-voucher-actions{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:12px}'
+    +'.sparkle-pin-voucher-actions button{border:0;border-radius:12px;padding:13px 9px;font-size:12px;font-weight:900;color:#fff;background:linear-gradient(135deg,#1747ab,#5c53d8);box-shadow:0 7px 16px rgba(35,73,169,.16)}'
+    +'.sparkle-pin-voucher-actions .sparkle-pin-done{grid-column:1/-1;background:#eef2f9;color:#263b67;box-shadow:none;border:1px solid #dce4f1}'
+    +'@media(max-width:390px){.sparkle-pin-voucher-grid{grid-template-columns:1fr}.sparkle-pin-voucher-hero h2{font-size:21px}}'
+    +'</style>';
+  html+='<div class="sparkle-pin-voucher">';
+  html+='<div class="sparkle-pin-voucher-hero"><div class="sparkle-pin-voucher-brand"><span class="sparkle-pin-voucher-star">✦</span> SPARKLE <span style="margin-left:auto;font-size:9px;letter-spacing:.8px;opacity:.72">THE SPARKLE</span></div>';
+  html+='<div class="sparkle-pin-voucher-kicker">PREMIUM RECHARGE CARD PRINT SHEET</div><h2>'+escapeHtml(network)+' RECHARGE CARDS</h2><p>Print-ready PIN and serial templates from your Sparkle order.</p>';
+  html+='<div class="sparkle-pin-voucher-meta"><div><span>Network</span><strong>'+escapeHtml(network)+'</strong></div><div><span>Value per card</span><strong>'+money(denomination)+'</strong></div><div><span>Quantity</span><strong>'+pins.length+' cards</strong></div><div><span>Order date</span><strong>'+escapeHtml(created)+'</strong></div></div></div>';
+  html+='<div class="sparkle-pin-voucher-body"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 12px"><strong style="font-size:12px;color:#263c6a">Your PIN cards</strong><span style="font-size:10px;color:#7b89a4">Showing '+(begin+1)+'–'+(begin+visible.length)+' of '+pins.length+'</span></div><div class="sparkle-pin-voucher-grid">';
+  visible.forEach((item,index)=>{
+    const fullIndex=begin+index;
+    html+='<article class="sparkle-pin-voucher-card"><div class="sparkle-pin-voucher-card-top"><span>CARD '+String(fullIndex+1).padStart(3,"0")+'</span><span class="sparkle-pin-voucher-value">'+money(denomination)+'</span></div>';
+    html+='<div class="sparkle-pin-voucher-label">RECHARGE PIN</div><div class="sparkle-pin-voucher-number">'+escapeHtml(item.pin)+'</div>';
+    html+='<div class="sparkle-pin-voucher-serial"><b>SERIAL NUMBER</b>'+escapeHtml(item.sn)+'</div>';
+    html+='<div class="sparkle-pin-voucher-card-actions"><button type="button" onclick="copyRechargePinField('+fullIndex+',\'pin\')">Copy PIN</button></div></article>';
+  });
+  html+='</div><div class="sparkle-pin-voucher-page">';
+  if(pageCount>1)html+='<button type="button" onclick="changeRechargePinImagePage(-1)" '+(page===0?'disabled':'')+'>Previous</button><span style="font-size:11px;color:#677894;font-weight:800">Page '+(page+1)+' of '+pageCount+'</span><button type="button" onclick="changeRechargePinImagePage(1)" '+(page===pageCount-1?'disabled':'')+'>Next</button>';
+  html+='</div><div style="margin-top:8px;padding:11px;border-radius:11px;background:#eaf0ff;color:#536789;font-size:10px;line-height:1.5">Order reference: <strong style="color:#263e76">'+escapeHtml(order.request_id||"—")+'</strong><br>Wallet charge: <strong style="color:#263e76">'+money(amount)+'</strong> · All '+pins.length+' PINs are included in the PDF download.</div>';
+  html+='<div class="sparkle-pin-voucher-actions"><button type="button" onclick="downloadRechargePinPdf()">↓ Download PDF</button><button type="button" onclick="downloadRechargePinImage()">↓ Download image</button><button type="button" class="sparkle-pin-done" onclick="sparkleFinishRechargePinFlow()">Done</button></div></div>';
+  html+='<div class="sparkle-pin-voucher-footer">Generated from your Sparkle account · Keep PINs and serial numbers secure<br>TheSparkle.com.ng</div></div>';
+  return html;
+}
+function changeRechargePinImagePage(direction){
+  const order=window.sparkleRechargePinActiveOrder;
+  if(!order)return;
+  const max=Math.max(0,Math.ceil(order.pins.length/8)-1);
+  const next=Math.max(0,Math.min(max,(Number(window.sparkleRechargePinImagePage)||0)+Number(direction||0)));
+  openRechargePinOrderSheet(order,next,window.sparkleRechargePinIsHistory);
+}
+function copyRechargePinField(index,field){
+  const item=window.sparkleRechargePinActiveOrder?.pins?.[Number(index)];
+  const value=String(item?.[field]||"");
+  if(!value)return;
+  if(navigator.clipboard?.writeText){
+    navigator.clipboard.writeText(value).then(()=>{const old=event?.target?.textContent;if(event?.target)event.target.textContent="Copied";setTimeout(()=>{if(event?.target)event.target.textContent=old||"Copy PIN";},1100);}).catch(()=>alert("Copy failed. Please select and copy the PIN manually."));
+  }else{
+    const input=document.createElement("textarea");input.value=value;document.body.appendChild(input);input.select();
+    try{document.execCommand("copy");}catch(e){}
+    input.remove();
+  }
+}
+function roundRechargePinRect(ctx,x,y,width,height,radius,fill,stroke){
+  ctx.beginPath();ctx.moveTo(x+radius,y);ctx.lineTo(x+width-radius,y);ctx.quadraticCurveTo(x+width,y,x+width,y+radius);
+  ctx.lineTo(x+width,y+height-radius);ctx.quadraticCurveTo(x+width,y+height,x+width-radius,y+height);
+  ctx.lineTo(x+radius,y+height);ctx.quadraticCurveTo(x,y+height,x,y+height-radius);ctx.lineTo(x,y+radius);ctx.quadraticCurveTo(x,y,x+radius,y);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=2;ctx.stroke();}
+}
+function drawRechargePinPageCanvas(order,pageIndex){
+  const canvas=document.createElement("canvas");
+  canvas.width=1260;canvas.height=1782;
+  const ctx=canvas.getContext("2d");
+  if(!ctx)throw new Error("Your browser could not prepare the PIN template image.");
+  const W=canvas.width,H=canvas.height;
+  ctx.fillStyle="#f1f5ff";ctx.fillRect(0,0,W,H);
+  const hero=ctx.createLinearGradient(0,0,W,390);hero.addColorStop(0,"#0b1b48");hero.addColorStop(.58,"#1d4fb7");hero.addColorStop(1,"#7153df");
+  ctx.fillStyle=hero;ctx.fillRect(0,0,W,365);
+  ctx.fillStyle="rgba(255,255,255,.14)";roundRechargePinRect(ctx,66,44,42,42,13,"rgba(255,255,255,.14)");
+  ctx.fillStyle="#fff";ctx.textAlign="left";ctx.font="900 25px Arial";ctx.fillText("✦  SPARKLE",124,75);
+  ctx.textAlign="right";ctx.font="700 14px Arial";ctx.fillStyle="rgba(255,255,255,.78)";ctx.fillText("PREMIUM RECHARGE CARD TEMPLATES",W-66,72);
+  ctx.textAlign="left";ctx.fillStyle="#fff";ctx.font="900 48px Arial";ctx.fillText(String(order.network||"RECHARGE").toUpperCase()+" RECHARGE CARDS",66,160,1120);
+  ctx.font="400 22px Arial";ctx.fillStyle="rgba(255,255,255,.82)";ctx.fillText("Print-ready PIN and serial templates from your Sparkle order.",68,204);
+  const meta=[["NETWORK",String(order.network||"").toUpperCase()],["VALUE PER CARD","NGN "+Number(order.denomination||0).toLocaleString("en-NG")],["QUANTITY",String(order.pins.length)+" CARDS"],["PURCHASED",rechargePinDateLabel(order.created_at)]];
+  const metaX=66,metaY=245,metaW=270,metaGap=15,metaH=86;
+  meta.forEach((item,index)=>{
+    const x=metaX+index*(metaW+metaGap);roundRechargePinRect(ctx,x,metaY,metaW,metaH,14,"rgba(255,255,255,.13)","rgba(255,255,255,.24)");
+    ctx.textAlign="left";ctx.fillStyle="rgba(255,255,255,.68)";ctx.font="700 13px Arial";ctx.fillText(item[0],x+16,metaY+29);
+    ctx.fillStyle="#fff";ctx.font="800 18px Arial";ctx.fillText(item[1],x+16,metaY+61,metaW-30);
+  });
+  const start=pageIndex*8;
+  const visible=order.pins.slice(start,start+8);
+  const left=66,gapX=24,cardW=552,cardH=268,gapY=23,startY=390;
+  visible.forEach((item,index)=>{
+    const col=index%2,row=Math.floor(index/2),x=left+col*(cardW+gapX),y=startY+row*(cardH+gapY);
+    roundRechargePinRect(ctx,x,y,cardW,cardH,20,"#fff","#dbe4f4");
+    const stripe=ctx.createLinearGradient(x,y,x,y+cardH);stripe.addColorStop(0,"#2361d7");stripe.addColorStop(1,"#7952de");
+    roundRechargePinRect(ctx,x,y,9,cardH,5,stripe);
+    ctx.textAlign="left";ctx.fillStyle="#7887a5";ctx.font="800 14px Arial";ctx.fillText("CARD "+String(start+index+1).padStart(3,"0"),x+30,y+43);
+    roundRechargePinRect(ctx,x+cardW-132,y+19,106,36,12,"#eaf0ff");
+    ctx.textAlign="center";ctx.fillStyle="#234ba3";ctx.font="900 16px Arial";ctx.fillText("NGN "+Number(order.denomination||0).toLocaleString("en-NG"),x+cardW-79,y+43);
+    ctx.textAlign="left";ctx.fillStyle="#8794ac";ctx.font="800 13px Arial";ctx.fillText("RECHARGE PIN",x+30,y+100);
+    const pin=String(item.pin||"");ctx.fillStyle="#142d65";ctx.font="900 "+Math.max(23,Math.min(44,620/Math.max(1,pin.length)))+"px Arial";ctx.fillText(pin,x+30,y+151,cardW-60);
+    ctx.strokeStyle="#dce5f3";ctx.setLineDash([6,5]);ctx.beginPath();ctx.moveTo(x+30,y+174);ctx.lineTo(x+cardW-30,y+174);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle="#8794ac";ctx.font="800 12px Arial";ctx.fillText("SERIAL NUMBER",x+30,y+207);
+    const serial=String(item.sn||"");ctx.fillStyle="#425779";ctx.font="700 "+Math.max(13,Math.min(19,430/Math.max(1,serial.length)))+"px Arial";ctx.fillText(serial,x+30,y+240,cardW-60);
+  });
+  ctx.fillStyle="#7e8da8";ctx.textAlign="left";ctx.font="600 13px Arial";
+  const reference=String(order.request_id||"—");
+  ctx.fillText("ORDER REF: "+reference,68,1700,760);
+  ctx.textAlign="right";ctx.fillText("PAGE "+(pageIndex+1)+" OF "+Math.max(1,Math.ceil(order.pins.length/8)),W-68,1700);
+  ctx.textAlign="center";ctx.fillStyle="#9aa6bc";ctx.font="12px Arial";ctx.fillText("TheSparkle.com.ng  ·  Keep your recharge PINs and serial numbers secure",W/2,1735);
+  return canvas;
+}
+function rechargePinDownloadName(order){
+  const network=String(order?.network||"recharge").toLowerCase().replace(/[^a-z0-9]+/g,"-");
+  const date=String(order?.created_at||"").slice(0,10)||new Date().toISOString().slice(0,10);
+  return "Sparkle-"+network+"-recharge-pins-"+date;
+}
+function saveRechargePinBlob(blob,fileName){
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement("a");link.href=url;link.download=fileName;link.style.display="none";
+  document.body.appendChild(link);link.click();link.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),30000);
+}
+async function downloadRechargePinImage(){
+  const order=window.sparkleRechargePinActiveOrder;if(!order)return;
+  try{
+    const page=Number(window.sparkleRechargePinImagePage)||0;
+    const canvas=drawRechargePinPageCanvas(order,page);
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/png"));
+    if(!blob)throw new Error("Could not create the PNG image. Please try again.");
+    saveRechargePinBlob(blob,rechargePinDownloadName(order)+"-page-"+(page+1)+".png");
+  }catch(error){alert(error?.message||"Could not download this PIN image.");}
+}
+async function rechargePinCanvasJpeg(canvas){
+  const blob=await new Promise(resolve=>canvas.toBlob(resolve,"image/jpeg",.92));
+  if(!blob)throw new Error("Could not prepare a PDF page. Please try downloading the image instead.");
+  return new Uint8Array(await blob.arrayBuffer());
+}
+async function downloadRechargePinPdf(){
+  const order=window.sparkleRechargePinActiveOrder;if(!order)return;
+  const pageCount=Math.max(1,Math.ceil(order.pins.length/8));
+  if(pageCount>300){alert("This order is too large for one PDF download. Please contact Sparkle support to split the template into smaller files.");return;}
+  const button=event?.target;
+  const oldText=button?.textContent;
+  if(button){button.disabled=true;button.textContent="Preparing PDF…";}
+  try{
+    const enc=new TextEncoder(),parts=[];
+    let byteLength=0;
+    const offsets=[];
+    const pushBytes=bytes=>{parts.push(bytes);byteLength+=bytes.length;};
+    const pushText=value=>pushBytes(enc.encode(value));
+    const object=(id,body)=>{offsets[id]=byteLength;pushText(id+" 0 obj\n"+body+"endobj\n");};
+    const objectCount=2+pageCount*3;
+    const kids=[];
+    for(let i=0;i<pageCount;i++)kids.push((3+i*3)+" 0 R");
+    object(1,"<< /Type /Catalog /Pages 2 0 R >>\n");
+    object(2,"<< /Type /Pages /Kids ["+kids.join(" ")+"] /Count "+pageCount+" >>\n");
+    for(let page=0;page<pageCount;page++){
+      const pageId=3+page*3,imageId=pageId+1,contentId=pageId+2;
+      const canvas=drawRechargePinPageCanvas(order,page);
+      const jpeg=await rechargePinCanvasJpeg(canvas);
+      object(pageId,"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /XObject << /Im0 "+imageId+" 0 R >> >> /Contents "+contentId+" 0 R >>\n");
+      offsets[imageId]=byteLength;
+      pushText(imageId+" 0 obj\n<< /Type /XObject /Subtype /Image /Width "+canvas.width+" /Height "+canvas.height+" /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length "+jpeg.length+" >>\nstream\n");
+      pushBytes(jpeg);
+      pushText("\nendstream\nendobj\n");
+      const content="q\n595 0 0 842 0 0 cm\n/Im0 Do\nQ\n";
+      object(contentId,"<< /Length "+enc.encode(content).length+" >>\nstream\n"+content+"endstream\n");
+    }
+    const xrefOffset=byteLength;
+    let xref="xref\n0 "+(objectCount+1)+"\n0000000000 65535 f \n";
+    for(let id=1;id<=objectCount;id++)xref+=String(offsets[id]).padStart(10,"0")+" 00000 n \n";
+    xref+="trailer\n<< /Size "+(objectCount+1)+" /Root 1 0 R >>\nstartxref\n"+xrefOffset+"\n%%EOF";
+    pushText(xref);
+    saveRechargePinBlob(new Blob(parts,{type:"application/pdf"}),rechargePinDownloadName(order)+".pdf");
+  }catch(error){alert(error?.message||"Could not create the PDF. Please try downloading the image instead.");}
+  finally{if(button){button.disabled=false;button.textContent=oldText||"↓ Download PDF";}}
+}
+window.sparkleFinishRechargePinFlow=async function(){
+  try{if(typeof window.sparkleCloseDedicatedReview==="function")window.sparkleCloseDedicatedReview(true);}
+  catch(error){console.warn("Recharge PIN review close:",error);}
+  window.sparkleRechargePinActiveOrder=null;
+  const auth=await supabaseClient.auth.getUser().catch(()=>({data:{user:null}}));
+  const userId=auth?.data?.user?.id;
+  if(userId){
+    loadWallet(userId).catch(e=>console.warn("Recharge PIN wallet refresh:",e));
+    loadTransactions(userId).catch(e=>console.warn("Recharge PIN transaction refresh:",e));
+  }
+};
 
 function getSinglePurchase(service){
   if(service==="airtime"){
