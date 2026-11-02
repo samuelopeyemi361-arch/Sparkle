@@ -8532,7 +8532,7 @@ function renderRechargePinVoucherMarkup(order,pageIndex){
   html+='</div><div class="sparkle-pin-voucher-page">';
   if(pageCount>1)html+='<button type="button" onclick="changeRechargePinImagePage(-1)" '+(page===0?'disabled':'')+'>Previous</button><span style="font-size:11px;color:#677894;font-weight:800">Page '+(page+1)+' of '+pageCount+'</span><button type="button" onclick="changeRechargePinImagePage(1)" '+(page===pageCount-1?'disabled':'')+'>Next</button>';
   html+='</div><div style="margin-top:8px;padding:11px;border-radius:11px;background:#eaf0ff;color:#536789;font-size:10px;line-height:1.5">Order reference: <strong style="color:#263e76">'+escapeHtml(order.request_id||"—")+'</strong><br>Wallet charge: <strong style="color:#263e76">'+money(amount)+'</strong> · All '+pins.length+' PINs are included in the PDF download.</div>';
-  html+='<div class="sparkle-pin-voucher-actions"><button type="button" onclick="downloadRechargePinPdf()">↓ Download PDF</button><button type="button" onclick="downloadRechargePinImage()">↓ Download image</button><button type="button" class="sparkle-pin-done" onclick="sparkleFinishRechargePinFlow()">Done</button></div></div>';
+  html+='<div class="sparkle-pin-voucher-actions"><button id="sparkleRechargePinPdfButton" type="button" onclick="downloadRechargePinPdf()">↓ Download PDF</button><button type="button" onclick="downloadRechargePinImage()">↓ Download image</button><button type="button" class="sparkle-pin-done" onclick="sparkleFinishRechargePinFlow()">Done</button></div></div>';
   html+='<div class="sparkle-pin-voucher-footer">Generated from your Sparkle account · Keep PINs and serial numbers secure<br>TheSparkle.com.ng</div></div>';
   return html;
 }
@@ -8548,7 +8548,7 @@ function copyRechargePinField(index,field){
   const value=String(item?.[field]||"");
   if(!value)return;
   if(navigator.clipboard?.writeText){
-    navigator.clipboard.writeText(value).then(()=>{const old=event?.target?.textContent;if(event?.target)event.target.textContent="Copied";setTimeout(()=>{if(event?.target)event.target.textContent=old||"Copy PIN";},1100);}).catch(()=>alert("Copy failed. Please select and copy the PIN manually."));
+    navigator.clipboard.writeText(value).then(()=>{}).catch(()=>alert("Copy failed. Please select and copy the PIN manually."));
   }else{
     const input=document.createElement("textarea");input.value=value;document.body.appendChild(input);input.select();
     try{document.execCommand("copy");}catch(e){}
@@ -8636,7 +8636,7 @@ async function downloadRechargePinPdf(){
   const order=window.sparkleRechargePinActiveOrder;if(!order)return;
   const pageCount=Math.max(1,Math.ceil(order.pins.length/8));
   if(pageCount>300){alert("This order is too large for one PDF download. Please contact Sparkle support to split the template into smaller files.");return;}
-  const button=event?.target;
+  const button=document.getElementById("sparkleRechargePinPdfButton");
   const oldText=button?.textContent;
   if(button){button.disabled=true;button.textContent="Preparing PDF…";}
   try{
