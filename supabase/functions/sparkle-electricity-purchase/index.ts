@@ -293,17 +293,34 @@ Deno.serve(async (req) => {
     }
 
     try {
-      const { response, data } = await callGsubz("/api/verify/", {
+      let { response, data } = await callGsubz("/api/verify/", {
         requestID: reference,
       });
 
-      const s = statusOf(data);
-      const providerCode = str(data?.code ?? data?.data?.code ?? data?.content?.code
+      let s = statusOf(data);
+      let providerCode = str(data?.code ?? data?.data?.code ?? data?.content?.code
         ?? data?.data?.content?.code ?? response.status);
-      const providerDescription = str(data?.description ?? data?.data?.description
+      let providerDescription = str(data?.description ?? data?.data?.description
         ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
-      const verificationLookupNotFound = providerCode === "404"
+      let verificationLookupNotFound = providerCode === "404"
         || providerDescription.includes("CONTENT_NOT_FOUND");
+      const savedTransactionID = str(tx.metadata?.provider_response?.transactionID
+        ?? tx.metadata?.provider_response?.data?.transactionID
+        ?? tx.metadata?.provider_transaction_id);
+      // GSubz accepts either requestID or transactionID. Try its supplier ID
+      // before leaving an order pending due to a requestID lookup miss.
+      if (verificationLookupNotFound && savedTransactionID) {
+        const retry = await callGsubz("/api/verify/", { transactionID: savedTransactionID });
+        response = retry.response;
+        data = retry.data;
+        s = statusOf(data);
+        providerCode = str(data?.code ?? data?.data?.code ?? data?.content?.code
+          ?? data?.data?.content?.code ?? response.status);
+        providerDescription = str(data?.description ?? data?.data?.description
+          ?? data?.content?.description ?? data?.data?.content?.description).toUpperCase();
+        verificationLookupNotFound = providerCode === "404"
+          || providerDescription.includes("CONTENT_NOT_FOUND");
+      }
 
       // A missing verification reference is inconclusive. Never release the
       // customer's reservation based only on a failed requestID lookup.
