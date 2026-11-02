@@ -455,6 +455,52 @@ function makeRef(userId: string, raw: unknown) {
   const token = str(raw).replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 70) || crypto.randomUUID().replace(/-/g, "");
   return { clientRequestId: token, reference: `SPKDIG-${userId.slice(0, 8)}-${token}`.slice(0, 100) };
 }
+
+function supplierBalanceInsufficient(data: any): boolean {
+  const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
+    ?? data?.content?.code ?? data?.data?.content?.code ?? "").trim().toUpperCase();
+  const status = String(data?.status ?? data?.data?.status ?? data?.content?.status
+    ?? data?.data?.content?.status ?? "").trim().toUpperCase().replace(/[\\s-]+/g, "_");
+  const details = [
+    data?.description, data?.message, data?.api_response, data?.error, data?.detail,
+    data?.data?.description, data?.data?.message, data?.data?.api_response,
+    data?.content?.description, data?.content?.message, data?.data?.content?.description
+  ].map(x => String(x ?? "")).join(" ").toUpperCase();
+  return code === "INSUFFICIENT_BALANCE" || status === "INSUFFICIENT_BALANCE"
+    || /INSUFFICIENT[_\\s-]*(?:SUPPLIER[_\\s-]*)?(?:WALLET[_\\s-]*)?BALANCE|BALANCE[_\\s-]*(?:IS[_\\s-]*)?(?:INSUFFICIENT|TOO[_\\s-]*LOW)|NOT[_\\s-]*ENOUGH[_\\s-]*BALANCE|LOW[_\\s-]*BALANCE/.test(details)
+    || (code === "402" && /BALANCE/.test(details));
+}
+async function notifySupplierBalanceLow(supplier: string, service: string, reference: string, reason: string) {
+  const url = Deno.env.get("SUPABASE_URL") || "";
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+  if (!url || !serviceKey) {
+    console.error("[sparkle-supplier-alert] missing internal credentials", { supplier, service, reference });
+    return false;
+  }
+  try {
+    const response = await fetch(url + "/functions/v1/sparkle-supplier-alert", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + serviceKey, apikey: serviceKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ supplier, service, reference, reason }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const result = await response.json().catch(() => null);
+    if (!response.ok || result?.emailSent !== true) {
+      console.error("[sparkle-supplier-alert] dispatch not confirmed", { supplier, service, reference, status: response.status, reason: String(result?.reason || result?.error || "email_not_confirmed").slice(0, 180) });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error("[sparkle-supplier-alert] dispatch failed", { supplier, service, reference, error: error instanceof Error ? error.message.slice(0, 180) : "unknown" });
+    return false;
+  }
+}
+function supplierBalanceReason(data: any): string {
+  return String(data?.description ?? data?.message ?? data?.api_response ?? data?.error
+    ?? data?.data?.description ?? data?.data?.message ?? "Supplier account has insufficient balance.")
+    .replace(/[\\r\\n\\t]+/g, " ").trim().slice(0, 450);
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   // Read-only diagnostic for the public GSubz catalogue; POST purchases remain session-authenticated below.
@@ -738,6 +784,21 @@ Deno.serve(async (req: Request) => {
     try { const result = await providerPost(providerPath, gsubzKey, providerFields); providerResult = result.data; httpOk = result.response.ok; }
     catch { await admin.rpc("sparkle_digital_wallet_action", { p_user_id: user.id, p_action: "pending", p_reference: providerRequestId, p_amount: maximumReserve, p_service: service, p_metadata: { provider_timeout: true } });
       return reply({ success: false, status: "pending", reference: providerRequestId, error: "The supplier did not confirm in time. Your funds remain reserved while Sparkle checks the order. Do not buy it again yet." }, 202); }
+    if (supplierBalanceInsufficient(providerResult)) {
+      await notifySupplierBalanceLow("GSubz", service, providerRequestId, supplierBalanceReason(providerResult));
+      const released = await admin.rpc("sparkle_digital_wallet_action", {
+        p_user_id: user.id, p_action: "failure", p_reference: providerRequestId,
+        p_amount: maximumReserve, p_service: service,
+        p_metadata: { ...metadata, provider_response: providerResult, supplier_balance_low: true, stage: "supplier_unavailable_refunded" },
+      });
+      if (released.error || released.data?.success !== true) {
+        return reply({ success: false, status: "pending", reference: providerRequestId,
+          error: "Service unavailable. Sparkle is confirming your wallet reversal. Do not retry yet." }, 202);
+      }
+      return reply({ success: false, status: "service_unavailable", reference: providerRequestId,
+        error: "Service unavailable. Please try again later. Your Sparkle wallet has not been charged." }, 200);
+    }
+
     // Verify the same SMS request before resolving a GSubz gateway error.
     // A 502 alone is inconclusive: never refund or retry until status is known.
     if (action === "send_bulk_sms" && Number(providerResult?.code) === 502
