@@ -9918,7 +9918,13 @@ document.addEventListener("DOMContentLoaded",()=>{
     }
     const pinOpened=await openPinForPurchase({skipBalanceCheck:true,amount});
     if(!pinOpened)throw new Error("The Transaction PIN window could not be opened. Please try again.");
-    closeReview(false);
+    // Recharge PIN processing writes its result into the review screen. Keep that
+    // DOM mounted behind the PIN modal until the supplier confirms the order.
+    if(isRechargePin){
+      if(btn){btn.disabled=false;btn.textContent=continueText;}
+    }else{
+      closeReview(false);
+    }
   }catch(e){
     if(msg){msg.style.display="block";msg.style.background="#fee2e2";msg.style.color="#991b1b";msg.textContent=e?.message||"Could not verify wallet balance.";}
     if(btn){btn.disabled=false;btn.textContent=continueText;}
