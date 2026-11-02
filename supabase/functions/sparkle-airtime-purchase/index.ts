@@ -86,9 +86,27 @@ Deno.serve(async (req) => {
     if (["refunded", "failed"].includes(String(tx.status).toLowerCase())) return reply({ success: false, status: "refunded", reference, error: "This airtime order has already been refunded." });
     try {
       const form = new FormData(); form.append("api", gsubzKey); form.append("requestID", reference);
-      const response = await fetch("https://api.gsubz.com/api/verify/", { method: "POST", headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" }, body: form, signal: AbortSignal.timeout(20000) });
-      const raw = await response.text(); let providerData: any;
+      let response = await fetch("https://api.gsubz.com/api/verify/", { method: "POST", headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" }, body: form, signal: AbortSignal.timeout(20000) });
+      let raw = await response.text(); let providerData: any;
       try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
+      const firstCode = String(providerData?.code ?? providerData?.data?.code ?? providerData?.content?.code ?? providerData?.data?.content?.code ?? response.status);
+      const firstDescription = String(providerData?.description ?? providerData?.data?.description ?? providerData?.content?.description ?? providerData?.data?.content?.description ?? "").toUpperCase();
+      const firstLookupNotFound = firstCode === "404" || firstDescription.includes("CONTENT_NOT_FOUND");
+      const savedTransactionID = String(tx.metadata?.provider_response?.transactionID ?? tx.metadata?.provider_response?.data?.transactionID ?? tx.metadata?.provider_transaction_id ?? "").trim();
+      // If requestID is not indexed by GSubz, retry with its returned transactionID.
+      if (firstLookupNotFound && savedTransactionID) {
+        const transactionForm = new FormData();
+        transactionForm.append("api", gsubzKey);
+        transactionForm.append("transactionID", savedTransactionID);
+        response = await fetch("https://api.gsubz.com/api/verify/", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${gsubzKey}`, Accept: "application/json" },
+          body: transactionForm,
+          signal: AbortSignal.timeout(20000),
+        });
+        raw = await response.text();
+        try { providerData = JSON.parse(raw); } catch { providerData = { raw: raw.slice(0, 500) }; }
+      }
       const statusValue = String(
         providerData?.status
           ?? providerData?.data?.status
