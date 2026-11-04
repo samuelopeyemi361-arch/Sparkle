@@ -45,6 +45,46 @@ function problem(message: string, status = 503, code = "NUMBER_UNAVAILABLE"): Er
   e.code = code;
   return e;
 }
+
+function publicError(error: any, fallback = "The number service is temporarily unavailable. Please try again shortly.") {
+  const code = String(error?.code || "");
+  const status = Number(error?.status);
+  const safeMessages: Record<string, string> = {
+    INVALID_SERVER: "Choose a valid Sparkle number option.",
+    INVALID_COUNTRY: "Choose a country from the live catalogue.",
+    INVALID_SERVICE: "Choose a valid verification service.",
+    INVALID_REQUEST: "The order reference is invalid. Please try again.",
+    PRICE_UNCHECKED: "Check the current Sparkle price before purchasing.",
+    INVALID_PIN: "Enter your 4-digit transaction PIN.",
+    PRICE_CHANGED: "The Sparkle price changed. No money was deducted; check the current price again.",
+    INSUFFICIENT_FUNDS: "Insufficient Sparkle wallet balance. Please fund your wallet and try again.",
+    AUTH_REQUIRED: "Please sign in again to continue.",
+    WALLET_CHECK_FAILED: "Could not verify your Sparkle wallet balance. No supplier order was sent and no money was deducted.",
+    ORDER_LOOKUP_FAILED: "Could not check this order reference. No money was deducted.",
+    RESERVATION_FAILED: "Sparkle could not reserve your wallet. No supplier order was sent.",
+    SUPPLIER_UNAVAILABLE: "Service unavailable. Please try again later.",
+    PROVIDER_BALANCE_LOW: "Service unavailable. Please try again later.",
+    CONFIG_MISSING: "The number service is temporarily unavailable. Please try again shortly.",
+    UPSTREAM_TIMEOUT: "The number service could not be reached. Please try again shortly.",
+    FX_UNAVAILABLE: "Live pricing is temporarily unavailable. Please try again shortly.",
+    PRICE_UNAVAILABLE: "Current number prices could not be verified. Please try again shortly.",
+    NO_STOCK: "No number is currently available for this service and country. Try again later."
+  };
+  const known = Object.prototype.hasOwnProperty.call(safeMessages, code);
+  const httpStatus = known
+    ? (code === "AUTH_REQUIRED" ? 401
+      : code === "INSUFFICIENT_FUNDS" ? 402
+      : code === "PRICE_CHANGED" || code === "NO_STOCK" ? 409
+      : code.startsWith("INVALID_") || code === "PRICE_UNCHECKED" ? 400
+      : 503)
+    : (status >= 400 && status < 600 ? status : 503);
+  return reply({
+    success: false,
+    code: code || "NUMBER_UNAVAILABLE",
+    message: known ? safeMessages[code] : fallback
+  }, httpStatus);
+}
+
 function money(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
 }
@@ -212,6 +252,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return reply({ success: false, message: "POST required." }, 405);
   let ctx: any;
+  let walletReservationSucceeded = false;
   try { ctx = await userContext(req); } catch (e) { return publicError(e, "Please sign in again to continue."); }
   const body: Obj = await req.json().catch(() => ({}));
   const service = asText(body.service).toLowerCase();
@@ -281,8 +322,26 @@ Deno.serve(async (req: Request) => {
     if (reservation.error || reservation.data?.success !== true) {
       const msg = String(reservation.data?.message || reservation.error?.message || "");
       if (/insufficient|not enough|wallet balance/i.test(msg)) throw problem("Insufficient Sparkle wallet balance. Please fund your wallet and try again.", 402, "INSUFFICIENT_FUNDS");
+
+      // The RPC response can be lost after the atomic reservation committed.
+      // Check the existing request before reporting failure or allowing a retry.
+      const reservationCheck = await ctx.admin.from("sparkle_sms_otp_orders")
+        .select("request_id,status")
+        .eq("user_id", ctx.user.id)
+        .eq("request_id", requestId)
+        .maybeSingle();
+      if (reservationCheck.error || reservationCheck.data) {
+        walletReservationSucceeded = Boolean(reservationCheck.data);
+        return reply({
+          success: false,
+          status: "unknown",
+          request_id: requestId,
+          message: "Sparkle could not confirm the wallet reservation response. Check this order again before retrying; do not submit a second purchase."
+        }, 202);
+      }
       throw problem("Sparkle could not reserve your wallet. No supplier order was sent.", 503, "RESERVATION_FAILED");
     }
+    walletReservationSucceeded = true;
     // 5SIM enforces maxPrice only for operator=any. Named operators use the
     // freshly rechecked operator quote, since 5SIM ignores maxPrice for named operators.
     const encodedCountry=encodeURIComponent(providerCountry(country));
@@ -446,6 +505,18 @@ Deno.serve(async (req: Request) => {
     await finalize(ctx.admin, requestId, "unknown", { status: "unknown" }, "The supplier response was not a confirmed order or rejection.");
     return reply({ success: false, status: "unknown", request_id: requestId, message: "Sparkle could not confirm the number order. Funds remain reserved while the outcome is checked. Do not buy again yet." }, 202);
   } catch (e: any) {
-    return publicError(e, "The number purchase could not be completed. No supplier order was sent unless Sparkle explicitly reports an order is being checked.");
+    if (walletReservationSucceeded) {
+      try {
+        await finalize(ctx.admin, requestId, "unknown", { status: "unknown" },
+          "An unexpected error occurred after wallet reservation; supplier outcome requires reconciliation.");
+      } catch (_) {}
+      return reply({
+        success: false,
+        status: "unknown",
+        request_id: requestId,
+        message: "Sparkle is confirming the supplier result for this order. Your funds remain reserved while it is checked. Do not buy again yet."
+      }, 202);
+    }
+    return publicError(e, "The number purchase could not be completed. No supplier order was sent.");
   }
 });

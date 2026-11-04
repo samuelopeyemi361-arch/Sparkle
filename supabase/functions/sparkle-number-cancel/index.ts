@@ -246,7 +246,13 @@ Deno.serve(async (req: Request) => {
   const found = await ctx.admin.from("sparkle_sms_otp_orders").select("*").eq("user_id", ctx.user.id).eq("request_id", requestId).maybeSingle();
   if (found.error) return reply({ success: false, message: "Could not load this order. No refund was recorded." }, 503);
   const order = found.data;
-  if (!order) return reply({ success: false, message: "Order not found." }, 404);
+  if (!order) return reply({
+    success: false,
+    status: "not_found",
+    code: "ORDER_NOT_FOUND",
+    request_id: requestId,
+    message: "No Sparkle number order matches this reference. Check your wallet balance and transaction history before trying another order."
+  }, 404);
   const saved = order.provider_response || {};
   if (order.status === "success" || saved.sms_code) return reply({ success: false, status: "success", message: "This order already received an SMS code and can no longer be cancelled." }, 409);
   if (order.status === "cancelled") return reply({ success: true, status: "cancelled", refund_status: "processed", message: "This order is already cancelled. Check transaction history for the recorded refund." });

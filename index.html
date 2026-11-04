@@ -6092,7 +6092,7 @@ async function callNumberCatalog(payload){
 async function callNumberOrderFunction(name,payload){
   const {data,error}=await supabaseClient.functions.invoke(name,{body:payload});
   if(!error){
-    if(data&&data.success===false&&!["pending","unknown","failed","cancelled"].includes(String(data.status||"")))
+    if(data&&data.success===false&&!["pending","unknown","failed","cancelled","not_found"].includes(String(data.status||"")))
       throw new Error(String(data.message||data.error||"The number purchase request failed."));
     return data||{};
   }
@@ -6107,7 +6107,7 @@ async function callNumberOrderFunction(name,payload){
   }catch(_){}
   // A non-2xx response can still mean the supplier order is pending/unknown.
   // Preserve it so the page can tell the customer not to submit a duplicate order.
-  if(body&&["pending","unknown","failed","cancelled"].includes(String(body.status||"")))return body;
+  if(body&&["pending","unknown","failed","cancelled","not_found"].includes(String(body.status||"")))return body;
   const reason=String(body?.message||body?.error||body?.details||body?.code||error.message||"Could not reach the number service. Please try again shortly.");
   const err=new Error(/INSUFFICIENT_FUNDS|insufficient.*balance|not enough.*balance/i.test(reason)
     ?"Insufficient Sparkle wallet balance. Please fund your wallet and try again."
@@ -6736,11 +6736,13 @@ function openNumberOrderPage(button){
 }
 function showNumberOrder(order,options={}){
   const normalizedStatus=String(order?.status||"pending").toLowerCase();
-  const terminalStatuses=["success","failed","cancelled","canceled","expired"];
+  const terminalStatuses=["success","failed","cancelled","canceled","expired","not_found"];
   const terminal=terminalStatuses.includes(normalizedStatus);
   const smsCode=String(order?.smsCode||order?.sms_code||"");
   let statusMessage=String(order?.message||"");
-  if(!smsCode && ["cancelled","canceled"].includes(normalizedStatus)){
+  if(!smsCode && normalizedStatus==="not_found"){
+    statusMessage="No Sparkle number order was found for this reference. Check your wallet balance and transaction history before starting another order.";
+  }else if(!smsCode && ["cancelled","canceled"].includes(normalizedStatus)){
     statusMessage="This order is cancelled. No SMS code will arrive for this order. Check transaction history to confirm the refund.";
   }else if(!smsCode && normalizedStatus==="expired"){
     statusMessage="This order has expired. No further SMS is expected. Check transaction history for the final payment/refund status.";
@@ -6755,13 +6757,13 @@ function showNumberOrder(order,options={}){
   void saveNumberOrderSnapshot(order);
   // Automatically reconcile active number orders while Sparkle is open.
   // Terminal orders stop polling; the server-side finalizer prevents duplicate refunds.
-  if(["success","failed","cancelled","canceled","expired"].includes(normalizedStatus)){
+  if(["success","failed","cancelled","canceled","expired","not_found"].includes(normalizedStatus)){
     if(numberAutoCheckTimer){clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;}
   }else if(!numberAutoCheckTimer){
     numberAutoCheckTimer=setInterval(async()=>{
       if(numberAutoCheckBusy || document.hidden || !numberCurrentOrder?.requestId)return;
       const status=String(numberCurrentOrder.status||"pending").toLowerCase();
-      if(["success","failed","cancelled","canceled","expired"].includes(status)){
+      if(["success","failed","cancelled","canceled","expired","not_found"].includes(status)){
         clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;return;
       }
       numberAutoCheckBusy=true;
@@ -6774,7 +6776,7 @@ function showNumberOrder(order,options={}){
   const empty=document.getElementById("numberOrderEmpty");if(empty)empty.style.display="none";
   document.getElementById("numberOrderService").textContent=order.serviceName||"US number";
   document.getElementById("numberOrderPhone").textContent=order.phoneNumber||"No phone number available";
-  document.getElementById("numberOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
+  document.getElementById("numberOrderOtp").textContent=smsCode||(terminal?({cancelled:"Order cancelled — no SMS code",canceled:"Order cancelled — no SMS code",expired:"Order expired — no SMS code",failed:"Order failed — no SMS code",not_found:"Order not found — check wallet and history",success:"Completed"}[normalizedStatus]||"No SMS code received"):"Waiting for SMS…");
   document.getElementById("numberOrderStatus").textContent=normalizedStatus;
   document.getElementById("numberOrderReference").textContent=order.requestId||"—";
   document.getElementById("numberOrderMessage").textContent=statusMessage;
@@ -6948,7 +6950,7 @@ async function executeNumberPurchase(pin){
     document.getElementById("numberCatalogPanel").style.display="block";
     const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
     // Start the first SMS check immediately; subsequent checks run automatically.
-    if(!["success","failed","cancelled","canceled","expired"].includes(pendingStatus)&&!(d.sms_code||d.smsCode)){
+    if(!["success","failed","cancelled","canceled","expired","not_found"].includes(pendingStatus)&&!(d.sms_code||d.smsCode)){
       void checkNumberOrder({silent:true});
     }
     const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
@@ -7018,7 +7020,7 @@ async function checkNumberOrder(options={}){
     const code=String(d.sms_code||d.smsCode||d.code||"");
     const phone=String(d.phone_number||d.phoneNumber||d.phone||numberCurrentOrder.phoneNumber||"");
     showNumberOrder({...numberCurrentOrder,phoneNumber:phone,status,smsCode:code||numberCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Sparkle will keep checking automatically.")});
-    if(["success","failed","cancelled","canceled","expired"].includes(status)){
+    if(["success","failed","cancelled","canceled","expired","not_found"].includes(status)){
       const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       numberCurrentQuote=null;
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;

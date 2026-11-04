@@ -266,13 +266,19 @@ Deno.serve(async (req: Request) => {
   const found = await ctx.admin.from("sparkle_sms_otp_orders").select("*").eq("user_id", ctx.user.id).eq("request_id", requestId).maybeSingle();
   if (found.error) return reply({ success: false, status: "unknown", request_id: requestId, message: "Could not load this order. Please check again shortly." }, 503);
   const order = found.data;
-  if (!order) return reply({ success: false, message: "Order not found." }, 404);
+  if (!order) return reply({
+    success: false,
+    status: "not_found",
+    code: "ORDER_NOT_FOUND",
+    request_id: requestId,
+    message: "No Sparkle number order matches this reference. Check your wallet balance and transaction history before starting another order."
+  }, 404);
   const storedResponse = order.provider_response || {};
   if (order.status === "success") {
     let finalResponse = storedResponse;
     let recovered = extractSms(finalResponse);
     const providerId = String(order.provider_request_id || "");
-    if (!recovered.code && /^\\d{1,20}$/.test(providerId)) {
+    if (!recovered.code && /^\d{1,20}$/.test(providerId)) {
       try {
         const history = await apiGet("/user/orders?category=activation&limit=100&offset=0&order=id&reverse=true");
         const rows = Array.isArray(history.data?.Data) ? history.data.Data : [];
