@@ -6094,6 +6094,10 @@ let numberCurrentQuote = null;
 let numberCurrentServerId = "server1";
 const NUMBER_SERVER_LABELS = {server1:"Live number catalogue"};
 let numberCurrentOrder = null;
+const NUMBER_TERMINAL_ORDER_STATUSES = new Set(["success","failed","cancelled","canceled","expired","not_found"]);
+function isNumberOrderTerminalStatus(value){
+  return NUMBER_TERMINAL_ORDER_STATUSES.has(String(value||"").trim().toLowerCase());
+}
 let numberAutoCheckTimer = null;
 let numberAutoCheckBusy = false;
 let numberCheckRequestInFlight = false;
@@ -6742,7 +6746,7 @@ async function restoreSavedNumberOrder(){
     if(!saved?.requestId)return;
     showNumberOrder({...saved,smsCode:""});
     const status=String(saved.status||"unknown").toLowerCase();
-    if(!["success","failed","cancelled","expired"].includes(status)){
+    if(!isNumberOrderTerminalStatus(status)){
       const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order active — check status";buy.style.opacity=".55";}
     }
   }catch(_){}
@@ -6759,8 +6763,7 @@ function openNumberOrderPage(button){
 }
 function showNumberOrder(order,options={}){
   const normalizedStatus=String(order?.status||"pending").toLowerCase();
-  const terminalStatuses=["success","failed","cancelled","canceled","expired","not_found"];
-  const terminal=terminalStatuses.includes(normalizedStatus);
+  const terminal=isNumberOrderTerminalStatus(normalizedStatus);
   const smsCode=String(order?.smsCode||order?.sms_code||"");
   let statusMessage=String(order?.message||"");
   if(!smsCode && normalizedStatus==="not_found"){
@@ -6780,13 +6783,13 @@ function showNumberOrder(order,options={}){
   void saveNumberOrderSnapshot(order);
   // Automatically reconcile active number orders while Sparkle is open.
   // Terminal orders stop polling; the server-side finalizer prevents duplicate refunds.
-  if(["success","failed","cancelled","canceled","expired","not_found"].includes(normalizedStatus)){
+  if(isNumberOrderTerminalStatus(normalizedStatus)){
     if(numberAutoCheckTimer){clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;}
   }else if(!numberAutoCheckTimer){
     numberAutoCheckTimer=setInterval(async()=>{
       if(numberAutoCheckBusy || document.hidden || !numberCurrentOrder?.requestId)return;
       const status=String(numberCurrentOrder.status||"pending").toLowerCase();
-      if(["success","failed","cancelled","canceled","expired","not_found"].includes(status)){
+      if(isNumberOrderTerminalStatus(status)){
         clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;return;
       }
       numberAutoCheckBusy=true;
@@ -6881,8 +6884,8 @@ function buyNumberNumber(){
   if(!NUMBER_LIVE_PURCHASES_ENABLED){alert("Virtual number purchases are temporarily unavailable.");return;}
   if(!serviceCode){alert("Choose a verification service first.");return;}
   const previousStatus=String(numberCurrentOrder?.status||"").toLowerCase();
-  if(numberCurrentOrder?.requestId&&! ["success","failed","cancelled","expired"].includes(previousStatus)){
-    alert("You already have a number order that may still be active. Check or cancel that order before buying another number.");return;
+  if(numberCurrentOrder?.requestId&&!isNumberOrderTerminalStatus(previousStatus)){
+    alert("You already have an unfinished number order. Check or cancel it before buying another number. You can choose any available operator; the recommendation is optional.");return;
   }
   const operator=document.getElementById("numberOperatorSelect")?.value||"";
   if(!numberCurrentQuote||numberCurrentQuote.serviceCode!==serviceCode||numberCurrentQuote.country!==country||numberCurrentQuote.operator!==operator){alert("Select an operator and check its current price first.");return;}
@@ -7043,7 +7046,7 @@ async function checkNumberOrder(options={}){
     const code=String(d.sms_code||d.smsCode||d.code||"");
     const phone=String(d.phone_number||d.phoneNumber||d.phone||numberCurrentOrder.phoneNumber||"");
     showNumberOrder({...numberCurrentOrder,phoneNumber:phone,status,smsCode:code||numberCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Sparkle will keep checking automatically.")});
-    if(["success","failed","cancelled","canceled","expired","not_found"].includes(status)){
+    if(isNumberOrderTerminalStatus(status)){
       const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Check price first";buy.style.opacity=".55";}
       numberCurrentQuote=null;
       const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
