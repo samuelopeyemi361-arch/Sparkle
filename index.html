@@ -2515,6 +2515,10 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 #authModal #sparkleBackToRegistrationButton{border-color:#dce5f4;background:#fff;color:#244066}
 #authModal #sparkleForgotPasswordPanel .field input{box-sizing:border-box}
 
+.sparkle-inline-field-error{display:block;margin:6px 0 0;color:#b42318;font-size:12px;font-weight:650;line-height:1.45;overflow-wrap:anywhere}
+.sparkle-field-invalid{border-color:#d92d20!important;box-shadow:0 0 0 3px rgba(217,45,32,.10)!important}
+.sparkle-inline-field-error[hidden]{display:none!important}
+
 /* Transaction authorization screen */
 #pinModal.modal,#setPinModal.modal{
   padding:clamp(12px,3vw,24px);
@@ -4964,6 +4968,76 @@ authMode === "login"
 }
 
 
+
+function sparkleInlineFieldWrapper(input){
+  if(!input)return null;
+  return input.closest("#authForm .field, #profileForm .field, #passwordForm .field, .sparkle-digital-fields > div, .referral-withdraw-field") || input.parentElement;
+}
+function sparkleShowInlineFieldError(fieldId,message){
+  const input=document.getElementById(fieldId);
+  if(!input)return false;
+  const wrapper=sparkleInlineFieldWrapper(input);
+  if(!wrapper)return false;
+  let error=wrapper.querySelector('[data-sparkle-field-error="'+fieldId+'"]');
+  if(!error){
+    error=document.createElement("small");
+    error.className="sparkle-inline-field-error";
+    error.dataset.sparkleFieldError=fieldId;
+    error.id="sparkle-inline-error-"+fieldId;
+    error.setAttribute("role","alert");
+    input.insertAdjacentElement("afterend",error);
+  }
+  error.textContent=String(message||"Check this field and try again.");
+  input.classList.add("sparkle-field-invalid");
+  input.setAttribute("aria-invalid","true");
+  input.setAttribute("aria-describedby",error.id);
+  return true;
+}
+function sparkleClearInlineFieldError(inputOrId){
+  const input=typeof inputOrId==="string"?document.getElementById(inputOrId):inputOrId;
+  if(!input)return;
+  const wrapper=sparkleInlineFieldWrapper(input);
+  wrapper?.querySelector('[data-sparkle-field-error="'+input.id+'"]')?.remove();
+  input.classList.remove("sparkle-field-invalid");
+  input.removeAttribute("aria-invalid");
+  input.removeAttribute("aria-describedby");
+}
+function sparkleClearFormInlineErrors(formId){
+  const form=document.getElementById(formId);
+  if(!form)return;
+  form.querySelectorAll(".sparkle-inline-field-error").forEach(node=>node.remove());
+  form.querySelectorAll(".sparkle-field-invalid").forEach(input=>{
+    input.classList.remove("sparkle-field-invalid");
+    input.removeAttribute("aria-invalid");
+    input.removeAttribute("aria-describedby");
+  });
+}
+function sparkleShowInlineBlockError(anchorId,message){
+  const anchor=document.getElementById(anchorId);
+  if(!anchor)return false;
+  let error=document.getElementById("sparkle-inline-error-"+anchorId);
+  if(!error){
+    error=document.createElement("small");
+    error.id="sparkle-inline-error-"+anchorId;
+    error.className="sparkle-inline-field-error";
+    error.setAttribute("role","alert");
+    anchor.insertAdjacentElement("afterend",error);
+  }
+  error.textContent=String(message||"Check this selection and try again.");
+  return true;
+}
+function sparkleClearInlineBlockError(anchorId){
+  document.getElementById("sparkle-inline-error-"+anchorId)?.remove();
+}
+document.addEventListener("input",event=>{
+  const input=event.target;
+  if(input&&input.matches&&input.matches("input,textarea,select"))sparkleClearInlineFieldError(input);
+});
+document.addEventListener("change",event=>{
+  const input=event.target;
+  if(input&&input.matches&&input.matches("input,textarea,select"))sparkleClearInlineFieldError(input);
+});
+
 function showMessage(message,type){
 
 const box =
@@ -5001,6 +5075,7 @@ document
 e.preventDefault();
 
 clearMessage();
+sparkleClearFormInlineErrors("authForm");
 
 
 const email =
@@ -5019,18 +5094,15 @@ document
 // Validate email/password only during ordinary signup or login.
 if (!emailVerificationPending) {
   if (!email) {
-    showMessage("Enter your email address to log in.", "error");
-    document.getElementById("email").focus();
+    sparkleShowInlineFieldError("email","Enter your email address.");
     return;
   }
   if (!password) {
-    showMessage("Enter your password to log in.", "error");
-    document.getElementById("password").focus();
+    sparkleShowInlineFieldError("password","Enter your password.");
     return;
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showMessage("Enter a valid email address.", "error");
-    document.getElementById("email").focus();
+    sparkleShowInlineFieldError("email","Enter a valid email address.");
     return;
   }
 }
@@ -5050,7 +5122,7 @@ try{
 
 if(emailVerificationPending){
   const token = document.getElementById("emailVerificationCode").value.replace(/\D/g,"").trim();
-  if(!/^\d{6}$/.test(token)) throw new Error("Enter the six-digit code sent to your email.");
+  if(!/^\d{6}$/.test(token)){sparkleShowInlineFieldError("emailVerificationCode","Enter the six-digit code sent to your email.");return;}
   const verifyEmail=pendingVerificationEmail || sparkleRestorePendingVerification();
   if(!verifyEmail) throw new Error("Your verification session expired. Open Sign Up and request a new code.");
   const {data,error} = await supabaseClient.auth.verifyOtp({email:verifyEmail, token, type:"signup"});
@@ -5148,66 +5220,30 @@ document
 
 /* VALIDATION */
 
-if(!firstName){
-
-throw new Error(
-"Please enter your first name."
-);
-
-}
+if(!firstName){sparkleShowInlineFieldError("firstName","Please enter your first name.");return;}
 
 
-if(!lastName){
-
-throw new Error(
-"Please enter your last name."
-);
-
-}
+if(!lastName){sparkleShowInlineFieldError("lastName","Please enter your last name.");return;}
 
 
-if(!phone){
-
-throw new Error(
-"Please enter your phone number."
-);
-
-}
+if(!phone){sparkleShowInlineFieldError("signupPhone","Please enter your phone number.");return;}
 
 
-if(!username){
-
-throw new Error(
-"Please choose a username."
-);
-
-}
+if(!username){sparkleShowInlineFieldError("username","Please choose a username.");return;}
 
 
-if(!/^[a-z0-9_]{3,24}$/.test(username)){
-
-throw new Error(
-"Username must be 3–24 characters using only letters, numbers, or underscores."
-);
-
-}
+if(!/^[a-z0-9_]{3,24}$/.test(username)){sparkleShowInlineFieldError("username","Username must be 3–24 characters using only letters, numbers, or underscores.");return;}
 
 const normalizedReferralUsername = referralCode.toLowerCase();
 if(normalizedReferralUsername && !/^[a-z0-9_]{3,24}$/.test(normalizedReferralUsername)){
-  throw new Error("Enter a valid referral username.");
+  sparkleShowInlineFieldError("referralCode","Enter a valid referral username.");return;
 }
 if(normalizedReferralUsername && normalizedReferralUsername === username){
-  throw new Error("You cannot use your own username as a referral.");
+  sparkleShowInlineFieldError("referralCode","You cannot use your own username as a referral.");return;
 }
 
 
-if(password.length < 6){
-
-throw new Error(
-"Password must be at least 6 characters."
-);
-
-}
+if(password.length < 6){sparkleShowInlineFieldError("password","Password must be at least 6 characters.");return;}
 
 
 /* CHECK USERNAME/REFERRAL BEFORE AUTH SIGNUP: prevents generic database 500s. */
@@ -5218,9 +5254,9 @@ const {data:signupCheck,error:signupCheckError}=await supabaseClient.rpc("sparkl
 if(signupCheckError) throw new Error("Sparkle couldn't validate that username right now. Please try again shortly.");
 if(!signupCheck?.available){
   const reason=signupCheck?.reason;
-  if(reason==="username_taken")throw new Error("That username is already taken. Please choose a different username.");
-  if(reason==="referral_not_found")throw new Error("That referral username was not found. Check it or leave the referral field blank.");
-  if(reason==="self_referral")throw new Error("You cannot use your own username as a referral.");
+  if(reason==="username_taken"){sparkleShowInlineFieldError("username","That username is already taken. Please choose a different username.");return;}
+  if(reason==="referral_not_found"){sparkleShowInlineFieldError("referralCode","That referral username was not found. Check it or leave the referral field blank.");return;}
+  if(reason==="self_referral"){sparkleShowInlineFieldError("referralCode","You cannot use your own username as a referral.");return;}
   throw new Error("Enter a valid username using 3–24 letters, numbers, or underscores.");
 }
 
@@ -5351,7 +5387,11 @@ if (/invalid login credentials|invalid password|email or password/i.test(rawMess
   friendlyMessage = "We could not log you in right now. Please try again.";
 }
 
-showMessage(friendlyMessage, "error");
+if(authMode==="signup"&&/email.*already exists|already registered|invalid email/i.test(friendlyMessage)){
+  sparkleShowInlineFieldError("email",friendlyMessage);
+}else{
+  showMessage(friendlyMessage,"error");
+}
 
 }finally{
 
@@ -5768,19 +5808,11 @@ document
 .trim();
 
 
-if(!firstName ||
-!lastName ||
-!username){
-
-message.textContent =
-"First name, last name and username are required.";
-
-message.className =
-"message show error";
-
-return;
-
-}
+if(!firstName){sparkleShowInlineFieldError("editFirstName","Enter your first name.");return;}
+if(!lastName){sparkleShowInlineFieldError("editLastName","Enter your last name.");return;}
+if(!username){sparkleShowInlineFieldError("editUsername","Choose a username.");return;}
+if(!/^[a-z0-9_]{3,24}$/.test(username)){sparkleShowInlineFieldError("editUsername","Username must be 3–24 characters using letters, numbers, or underscores.");return;}
+sparkleClearFormInlineErrors("profileForm");
 
 
 button.disabled=true;
@@ -5954,30 +5986,9 @@ document
 .value;
 
 
-if(newPassword.length < 6){
-
-message.textContent =
-"Password must be at least 6 characters.";
-
-message.className =
-"message show error";
-
-return;
-
-}
-
-
-if(newPassword !== confirmPassword){
-
-message.textContent =
-"Passwords do not match.";
-
-message.className =
-"message show error";
-
-return;
-
-}
+if(newPassword.length < 6){sparkleShowInlineFieldError("newPassword","Password must be at least 6 characters.");return;}
+if(newPassword !== confirmPassword){sparkleShowInlineFieldError("confirmPassword","Passwords do not match.");return;}
+sparkleClearFormInlineErrors("passwordForm");
 
 
 button.disabled=true;
@@ -7316,8 +7327,9 @@ async function submitReferralWithdraw(){
   const button=document.getElementById("confirmReferralWithdrawButton");
   const amount=Number(amountInput.value);
   const pin=pinInput.value.trim();
-  if(!Number.isFinite(amount)||amount<1000||Math.round(amount*100)!==amount*100){msg.textContent="Enter an amount of at least ₦1,000, with up to two decimal places.";return;}
-  if(!/^\d{4,6}$/.test(pin)){msg.textContent="Enter your 4–6 digit transaction PIN.";return;}
+  if(!Number.isFinite(amount)||amount<1000||Math.round(amount*100)!==amount*100){sparkleShowInlineFieldError("referralWithdrawAmount","Enter an amount of at least ₦1,000, with up to two decimal places.");return;}
+  if(!/^\d{4,6}$/.test(pin)){sparkleShowInlineFieldError("referralWithdrawPin","Enter your 4–6 digit transaction PIN.");return;}
+  sparkleClearInlineFieldError("referralWithdrawAmount");sparkleClearInlineFieldError("referralWithdrawPin");
   button.disabled=true;button.textContent="Processing securely…";msg.textContent="";
   try{
     const {data,error}=await supabaseClient.functions.invoke("sparkle-referral-withdraw",{body:{amount,pin}});
@@ -9000,10 +9012,11 @@ async function saveTransactionPIN(){
   const confirm=document.getElementById("confirmTransactionPin").value.trim();
   const msg=document.getElementById("setPinMessage");
   const btn=document.getElementById("saveTransactionPinButton");
-  if(currentPin && !/^\d{4}$/.test(currentPin)){msg.textContent="Your current PIN must contain exactly 4 digits.";return;}
-  if(!/^\d{4}$/.test(pin)){msg.textContent="Choose a PIN with exactly 4 digits.";return;}
-  if(pin!==confirm){msg.textContent="The PINs do not match.";return;}
-  if(currentPin && currentPin===pin){msg.textContent="Choose a new PIN different from your current PIN.";return;}
+  if(currentPin && !/^\d{4}$/.test(currentPin)){sparkleShowInlineFieldError("currentTransactionPin","Your current PIN must contain exactly 4 digits.");return;}
+  if(!/^\d{4}$/.test(pin)){sparkleShowInlineFieldError("newTransactionPin","Choose a PIN with exactly 4 digits.");return;}
+  if(pin!==confirm){sparkleShowInlineFieldError("confirmTransactionPin","The PINs do not match.");return;}
+  if(currentPin && currentPin===pin){sparkleShowInlineFieldError("newTransactionPin","Choose a new PIN different from your current PIN.");return;}
+  sparkleClearInlineFieldError("currentTransactionPin");sparkleClearInlineFieldError("newTransactionPin");sparkleClearInlineFieldError("confirmTransactionPin");
   btn.disabled=true;btn.textContent="Saving securely…";msg.textContent="";
   try{
     const body=currentPin?{action:"change",currentPin,newPin:pin}:{action:"set",pin};
@@ -11084,9 +11097,14 @@ function toggleSparkleMoreServices(){
   }
   async function quoteSparkleSocialOrder(){
     const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);
-    if(!plan){setResult("sparkleSocialResult","error","Choose a service","Select a price-confirmed social-media plan first.");return;}
-    if(plan.priceAvailable!==true||!Number.isFinite(Number(plan.apiPricePerThousand))||Number(plan.apiPricePerThousand)<=0){setResult("sparkleSocialResult","error","Live price unavailable","Sparkle could not verify a live supplier price. No money has been reserved. Choose another priced service or refresh later.");return;}
-    if(!Number.isSafeInteger(quantity)||quantity<Number(plan.min||1)||quantity>Number(plan.max||1000000)){setResult("sparkleSocialResult","error","Check quantity",`Choose a whole number between ${plan.min} and ${plan.max}.`);return;}
+    const linkInput=document.getElementById("sparkleSocialLink");
+    const link=String(linkInput?.value||"").trim();
+    sparkleClearInlineBlockError("sparkleSocialPlanInfo");
+    if(!plan){sparkleShowInlineBlockError("sparkleSocialPlanInfo","Select a live service option before checking the price.");return;}
+    if(plan.priceAvailable!==true||!Number.isFinite(Number(plan.apiPricePerThousand))||Number(plan.apiPricePerThousand)<=0){sparkleShowInlineBlockError("sparkleSocialPlanInfo","A verified live price is not available for this option. Choose another option or refresh the catalogue.");return;}
+    const linkError=validateSocialLink(link,plan);
+    if(linkError){sparkleShowInlineFieldError("sparkleSocialLink",linkError);return;}
+    if(!Number.isSafeInteger(quantity)||quantity<Number(plan.min||1)||quantity>Number(plan.max||1000000)){sparkleShowInlineFieldError("sparkleSocialQuantity",`Choose a whole number between ${plan.min} and ${plan.max}.`);return;}
     socialQuote=null;setLoading("sparkleSocialResult","Checking the current plan price…");
     try{
       const data=await call({action:"social_quote",plan:plan.value,quantity});
@@ -11117,8 +11135,8 @@ function toggleSparkleMoreServices(){
   }
   function prepareSparkleSocialPurchase(){
     const plan=selectedSocialPlan();const quantity=Number(document.getElementById("sparkleSocialQuantity")?.value);const link=document.getElementById("sparkleSocialLink")?.value.trim();
-    if(!socialQuote||socialQuote.plan!==plan?.value||socialQuote.quantity!==quantity){setResult("sparkleSocialResult","error","Review the price again","The plan or quantity changed. Check the current price before continuing.");return;}
-    const linkError=validateSocialLink(link,plan);if(linkError){setResult("sparkleSocialResult","error","Check target link",linkError);return;}
+    if(!socialQuote||socialQuote.plan!==plan?.value||socialQuote.quantity!==quantity){sparkleShowInlineFieldError("sparkleSocialQuantity","The plan or quantity changed. Review the current price again.");return;}
+    const linkError=validateSocialLink(link,plan);if(linkError){sparkleShowInlineFieldError("sparkleSocialLink",linkError);return;}
     socialReviewPending={kind:"social",payload:{action:"buy_social",plan:plan.value,quantity,link,expectedTotal:socialQuote.estimatedRetail,requestID:crypto.randomUUID()},planName:plan.displayName,rate:socialQuote.retailRatePerThousand,estimated:socialQuote.estimatedRetail,maximumReserve:socialQuote.maximumReserve};
     const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Social Media Market</div><div class="sparkle-summary-network-label">Order Review</div></div></div><div class="summary-line"><span>Service</span><strong>${esc(socialReviewPending.planName)}</strong></div><div class="summary-line"><span>Target link</span><strong>${esc(link)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity.toLocaleString("en-NG")}</strong></div><div class="summary-line"><span>Rate per 1,000</span><strong>${fmt(socialReviewPending.rate)}</strong></div><div class="summary-line"><span>Estimated price</span><strong>${fmt(socialReviewPending.estimated)}</strong></div><div class="summary-line"><span>Maximum temporary reserve</span><strong>${fmt(socialReviewPending.maximumReserve)}</strong></div><p class="electricity-note">Check the platform, service, link, quantity and price carefully. A valid Transaction PIN is required before Sparkle sends the order. Final charge depends on the supplier-confirmed cost; unused reserved funds are returned.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="confirmSparkleSocialReview()">Confirm Order · Enter Transaction PIN</button>`;
     if(typeof window.sparkleShowDedicatedReview==="function")window.sparkleShowDedicatedReview("Order Review",reviewHtml,"order-review",{service:"socialMarket",pending:socialReviewPending,plan:socialReviewPending.planName,link,quantity,estimated:socialReviewPending.estimated});
