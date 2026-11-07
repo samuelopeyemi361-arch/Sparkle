@@ -374,7 +374,7 @@ function isDefinitiveDataFailure(status: string): boolean {
     "transaction_failed", "transaction_failure",
   ].includes(status);
 }
-async function saveDataTrackingState(admin: any, tx: any, provider: any, state: string, issue = "", delayMs = 60_000, httpStatus = 0) {
+async function saveDataTrackingState(admin: any, tx: any, provider: any, state: string, issue = "", delayMs = 45_000, httpStatus = 0) {
   const latest = await admin.from("wallet_transactions")
     .select("metadata,status")
     .eq("id", tx.id)
@@ -449,7 +449,7 @@ async function processPendingDataOrder(admin: any, tx: any, gsubzKey: string) {
     await saveDataTrackingState(
       admin, tx, provider, "retrying",
       error instanceof Error ? error.message.slice(0, 180) : "GSubz status request timed out",
-      60_000
+      45_000
     );
     return "retrying";
   }
@@ -465,7 +465,7 @@ async function processPendingDataOrder(admin: any, tx: any, gsubzKey: string) {
     await saveDataTrackingState(
       admin, tx, provider, "needs_review",
       "GSubz returned a failure status but also reported supplier cost or a balance decrease; refund blocked pending reconciliation.",
-      5 * 60_000, response.status
+      (5 * 60_000) - 15_000, response.status
     );
     return "needs_review";
   }
