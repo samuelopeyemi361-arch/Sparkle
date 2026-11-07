@@ -338,6 +338,179 @@ async function processSocialOrder(admin: any, tx: any, gsubzKey: string) {
   return checked.response.ok && providerSuccess ? "processing" : "retrying";
 }
 
+
+function numericProviderValue(...values: unknown[]): number {
+  for (const value of values) {
+    if (value === null || value === undefined || String(value).trim() === "") continue;
+    const number = Number(String(value).replace(/[,₦\s]/g, ""));
+    if (Number.isFinite(number)) return number;
+  }
+  return NaN;
+}
+function providerShowsDataCharge(data: any): boolean {
+  const status = statusOf(data);
+  if (isSuccess(status)) return true;
+  const paid = numericProviderValue(
+    data?.amountPaid, data?.amount_paid, data?.paid_amount,
+    data?.data?.amountPaid, data?.data?.amount_paid,
+    data?.content?.amountPaid, data?.data?.content?.amountPaid
+  );
+  if (Number.isFinite(paid) && paid > 0) return true;
+  const before = numericProviderValue(
+    data?.initialBalance, data?.initial_balance,
+    data?.data?.initialBalance, data?.content?.initialBalance,
+    data?.data?.content?.initialBalance
+  );
+  const after = numericProviderValue(
+    data?.finalBalance, data?.final_balance,
+    data?.data?.finalBalance, data?.content?.finalBalance,
+    data?.data?.content?.finalBalance
+  );
+  return Number.isFinite(before) && Number.isFinite(after) && before > after;
+}
+function isDefinitiveDataFailure(status: string): boolean {
+  return [
+    "failed", "failure", "rejected", "cancelled", "canceled",
+    "transaction_failed", "transaction_failure",
+  ].includes(status);
+}
+async function saveDataTrackingState(admin: any, tx: any, provider: any, state: string, issue = "", delayMs = 60_000, httpStatus = 0) {
+  const latest = await admin.from("wallet_transactions")
+    .select("metadata,status")
+    .eq("id", tx.id)
+    .eq("status", "pending")
+    .maybeSingle();
+  if (latest.error) throw new Error(latest.error.message);
+  if (!latest.data) return false;
+  const base = latest.data.metadata && typeof latest.data.metadata === "object" ? latest.data.metadata : {};
+  const now = new Date();
+  const attempts = Math.max(0, Number(base.dataTrackingAttempts || 0)) + 1;
+  const next = new Date(now.getTime() + Math.max(30_000, delayMs)).toISOString();
+  const metadata = {
+    ...base,
+    ...(provider && typeof provider === "object" ? { provider_check: provider } : {}),
+    dataTrackingState: state,
+    dataTrackingIssue: issue || null,
+    dataTrackingAttempts: attempts,
+    dataTrackingLastCheckedAt: now.toISOString(),
+    dataTrackingLastHttpStatus: httpStatus || null,
+    dataTrackingLeaseUntil: null,
+    dataNextCheckAt: next,
+  };
+  const saved = await admin.from("wallet_transactions")
+    .update({ metadata })
+    .eq("id", tx.id)
+    .eq("status", "pending");
+  if (saved.error) throw new Error(saved.error.message);
+  return true;
+}
+async function processPendingDataOrder(admin: any, tx: any, gsubzKey: string) {
+  const meta: Record<string, any> = tx.metadata || {};
+  const reference = str(tx.reference);
+  if (!/^SPK-DT-[A-Za-z0-9_-]{8,100}$/i.test(reference)
+      || lowerText(meta.provider || "gsubz") !== "gsubz") {
+    await saveDataTrackingState(admin, tx, null, "needs_review", "Missing or invalid GSubz data-order reference", 5 * 60_000);
+    return "needs_review";
+  }
+
+  let response: Response;
+  let provider: any = null;
+  try {
+    const form = new FormData();
+    form.append("api", gsubzKey);
+    form.append("requestID", reference);
+    response = await fetch("https://api.gsubz.com/api/verify/", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + gsubzKey, Accept: "application/json" },
+      body: form,
+      signal: AbortSignal.timeout(15_000),
+    });
+    const raw = await response.text();
+    try { provider = JSON.parse(raw); } catch { provider = { raw: raw.slice(0, 400) }; }
+
+    const savedTransactionId = str(meta.provider_transaction_id
+      ?? meta.providerTransactionID
+      ?? meta.provider_response?.transactionID
+      ?? meta.provider_response?.data?.transactionID);
+    if (gsubzLookupNotFound(provider, response.status) && savedTransactionId) {
+      const byId = new FormData();
+      byId.append("api", gsubzKey);
+      byId.append("transactionID", savedTransactionId);
+      response = await fetch("https://api.gsubz.com/api/verify/", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + gsubzKey, Accept: "application/json" },
+        body: byId,
+        signal: AbortSignal.timeout(15_000),
+      });
+      const retryRaw = await response.text();
+      try { provider = JSON.parse(retryRaw); } catch { provider = { raw: retryRaw.slice(0, 400) }; }
+    }
+  } catch (error) {
+    await saveDataTrackingState(
+      admin, tx, provider, "retrying",
+      error instanceof Error ? error.message.slice(0, 180) : "GSubz status request timed out",
+      60_000
+    );
+    return "retrying";
+  }
+
+  const status = statusOf(provider);
+  const notFound = gsubzLookupNotFound(provider, response.status);
+  const success = response.ok && !notFound && isSuccess(status);
+  const failed = response.ok && !notFound && isDefinitiveDataFailure(status);
+
+  // A failure label is not sufficient if the supplier also reports a charge.
+  // Keep the reservation and flag it for another check instead of double-paying.
+  if (failed && providerShowsDataCharge(provider)) {
+    await saveDataTrackingState(
+      admin, tx, provider, "needs_review",
+      "GSubz returned a failure status but also reported supplier cost or a balance decrease; refund blocked pending reconciliation.",
+      5 * 60_000, response.status
+    );
+    return "needs_review";
+  }
+
+  if (!success && !failed) {
+    const reason = notFound
+      ? "GSubz requestID lookup returned not-found. This is inconclusive and is not a refund instruction."
+      : !response.ok
+        ? "GSubz verification returned HTTP " + response.status + "."
+        : "GSubz has not returned a definitive final status (" + (status || "unknown") + ").";
+    await saveDataTrackingState(admin, tx, provider, "retrying", reason, 60_000, response.status);
+    return "retrying";
+  }
+
+  const settled = await admin.rpc("sparkle_airtime_wallet_action", {
+    p_user_id: tx.user_id,
+    p_action: success ? "success" : "failure",
+    p_reference: reference,
+    p_amount: Number(tx.amount),
+    p_service: "Data",
+    p_phone: str(meta.phone),
+    p_metadata: {
+      ...meta,
+      provider_check: provider,
+      dataTrackingState: success ? "completed" : "refunded",
+      dataTrackingLastCheckedAt: new Date().toISOString(),
+      dataTrackingLastHttpStatus: response.status,
+      reconciliation: true,
+      reconciliationSource: "scheduled_pending_order_worker",
+    },
+  });
+
+  if (settled.error || settled.data?.success !== true) {
+    await saveDataTrackingState(
+      admin, tx, provider, "needs_review",
+      settled.data?.error || settled.error?.message || "Supplier status was final but wallet settlement was not confirmed.",
+      5 * 60_000, response.status
+    );
+    return "needs_review";
+  }
+  return success ? "completed" : "refunded";
+}
+function lowerText(value: unknown) { return str(value).toLowerCase(); }
+
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply({ success: false, error: "POST required." }, 405);
@@ -380,5 +553,31 @@ Deno.serve(async (req: Request) => {
   }));
   const counts: Record<string, number> = {};
   for (const item of results) counts[item.state] = (counts[item.state] || 0) + 1;
-  return reply({ success: true, checked: results.length, counts, checkedAt: now });
+
+  // Reconcile provider-timeout Data reservations every minute as well.
+  const claimedData = await admin.rpc("sparkle_claim_pending_data_orders", {
+    p_limit: 5,
+    p_lease_seconds: 90,
+  });
+  if (claimedData.error) {
+    return reply({ success: false, error: "Could not claim pending Data orders.", socialChecked: results.length, counts }, 500);
+  }
+  const dataResults = await Promise.all((claimedData.data || []).map(async (tx: any) => {
+    try {
+      const state = await processPendingDataOrder(admin, tx, gsubzKey);
+      return { state };
+    } catch (e) {
+      return { state: "error", error: e instanceof Error ? e.message.slice(0, 180) : "Unexpected Data reconciliation error" };
+    }
+  }));
+  const dataCounts: Record<string, number> = {};
+  for (const item of dataResults) dataCounts[item.state] = (dataCounts[item.state] || 0) + 1;
+  return reply({
+    success: true,
+    socialChecked: results.length,
+    socialCounts: counts,
+    dataChecked: dataResults.length,
+    dataCounts,
+    checkedAt: now,
+  });
 });
