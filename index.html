@@ -10846,17 +10846,29 @@ function toggleSparkleMoreServices(){
     {id:"communities",name:"Communities",test:/\bcommunities\b|discord server boosts/}
   ];
   const SOCIAL_SERVICE_DEFS=[
-    {id:"followers",label:"Followers",icon:"♙",hint:"Grow your profile audience"},
-    {id:"likes",label:"Likes",icon:"♥",hint:"Increase post engagement"},
-    {id:"views",label:"Views",icon:"▶",hint:"Boost video and post views"},
-    {id:"shares",label:"Shares",icon:"↗",hint:"Expand post reach"},
-    {id:"saves",label:"Save / Favorite",icon:"▮",hint:"Increase saves and bookmarks"},
-    {id:"downloads",label:"Downloads",icon:"↓",hint:"Increase app or media downloads"},
-    {id:"comments_random",label:"Comment Random",icon:"☷",hint:"Random engagement comments"},
-    {id:"comments_custom",label:"Comment Custom",icon:"✎",hint:"Custom comment options"},
+    {id:"followers",label:"Followers & Subscribers",icon:"♙",hint:"Followers, subscribers and channel members"},
+    {id:"likes",label:"Likes & Favorites",icon:"♥",hint:"Likes, hearts and favorites"},
+    {id:"reactions",label:"Reactions",icon:"⚡",hint:"Emoji and post reactions"},
+    {id:"views",label:"Views, Plays & Streams",icon:"▶",hint:"Video views, music plays and watch time"},
+    {id:"listeners",label:"Listeners",icon:"♫",hint:"Monthly and music listeners"},
+    {id:"live_viewers",label:"Live Viewers & Space Listeners",icon:"◉",hint:"Live broadcasts and audio spaces"},
+    {id:"shares",label:"Shares & Reposts",icon:"↗",hint:"Shares, reposts, duets and quote posts"},
+    {id:"saves",label:"Saves & Bookmarks",icon:"▮",hint:"Saves, favorites and bookmarks"},
+    {id:"downloads",label:"Downloads & Installs",icon:"↓",hint:"App and media downloads"},
+    {id:"comments_random",label:"Comments",icon:"☷",hint:"Comments and replies"},
+    {id:"comments_custom",label:"Custom Comments",icon:"✎",hint:"Choose custom comment text"},
     {id:"comment_likes",label:"Comment Likes",icon:"♥+",hint:"Likes on selected comments"},
-    {id:"live_viewers",label:"Live Stream Viewers",icon:"◉",hint:"Audience for live streams"},
-    {id:"other",label:"Other services",icon:"✦",hint:"More options available on this platform"}
+    {id:"poll_votes",label:"Poll Votes",icon:"☑",hint:"Votes on platform polls and stories"},
+    {id:"boosts",label:"Boosts",icon:"✦",hint:"Channel and community boosts"},
+    {id:"connections",label:"Connections & Requests",icon:"↔",hint:"Professional connections and friend requests"},
+    {id:"impressions",label:"Reach & Impressions",icon:"◎",hint:"Reach, impressions and profile visibility"},
+    {id:"clicks",label:"Link & Profile Clicks",icon:"⌁",hint:"Clicks on links and profiles"},
+    {id:"reviews",label:"Reviews & Endorsements",icon:"☆",hint:"App, business and profile reviews"},
+    {id:"upvotes",label:"Upvotes",icon:"⬆",hint:"Upvotes and community votes"},
+    {id:"signups",label:"Sign-ups & Starts",icon:"＋",hint:"Sign-ups, bot starts and registrations"},
+    {id:"engagement",label:"Engagement & Activities",icon:"✧",hint:"Special engagement and platform activities"},
+    {id:"events",label:"Event Responses",icon:"✓",hint:"Interested and going responses"},
+    {id:"other",label:"Other services",icon:"✧",hint:"More live options available on this platform"}
   ];
   function socialBrandIcon(id){
     const paths={
@@ -10883,15 +10895,27 @@ function toggleSparkleMoreServices(){
   function socialServiceType(plan){
     const name=String((plan?.displayName||"")+" "+(plan?.description||"")+" "+(plan?.category||"")).toLowerCase();
     if(/comment[\s_-]*likes?|likes?[\s_-]*on[\s_-]*comments?|comments?[\s_-]*likes?/.test(name))return "comment_likes";
-    if(/live[\s_-]*(?:stream|video)?[\s_-]*(?:viewers?|views?)|(?:viewers?|views?)[\s_-]*on[\s_-]*live|stream[\s_-]*viewers?/.test(name))return "live_viewers";
+    if(/live[\s_-]*(?:stream|broadcast|video)?[\s_-]*(?:viewers?|views?)|(?:viewers?|views?)[\s_-]*on[\s_-]*live|stream[\s_-]*viewers?|space[\s_-]*listeners?/.test(name))return "live_viewers";
     if(/custom[\s_-]*comments?|comments?[\s_-]*custom/.test(name))return "comments_custom";
-    if(/\bcomments?\b/.test(name))return "comments_random";
+    if(/\breactions?\b/.test(name))return "reactions";
+    if(/\bcomments?\b|\breplies\b/.test(name))return "comments_random";
+    if(/\bmonthly[\s_-]*listeners?\b|\blisteners?\b/.test(name))return "listeners";
     if(/\bfollowers?\b|\bsubscribers?\b|\bmembers?\b/.test(name))return "followers";
-    if(/\blikes?\b|\bhearts?\b|\breactions?\b/.test(name))return "likes";
-    if(/\bviews?\b|\bplays?\b|\bwatch[\s_-]*hours?\b/.test(name))return "views";
-    if(/\bshares?\b|\breposts?\b|\bretweets?\b/.test(name))return "shares";
-    if(/\bsaves?\b|\bfavorites?\b|\bfavourites?\b|\bbookmarks?\b/.test(name))return "saves";
+    if(/\bconnections?\b|\bfriend[\s_-]*requests?\b/.test(name))return "connections";
+    if(/\blikes?\b|\bhearts?\b|\bfavorites?\b|\bfavourites?\b/.test(name))return "likes";
+    if(/\bviews?\b|\bplays?\b|\bstreams?\b|\bwatch[\s_-]*hours?\b|watch[\s_-]*time/.test(name))return "views";
+    if(/\bimpressions?\b|\breach\b/.test(name))return "impressions";
+    if(/\bshares?\b|\breposts?\b|\bretweets?\b|\bduets?\b|quote[\s_-]*posts?/.test(name))return "shares";
+    if(/\bsaves?\b|\bbookmarks?\b/.test(name))return "saves";
     if(/\bdownloads?\b|\binstalls?\b/.test(name))return "downloads";
+    if(/\bboosts?\b/.test(name))return "boosts";
+    if(/\bpoll[\s_-]*votes?\b|\bstory[\s_-]*poll\b/.test(name))return "poll_votes";
+    if(/\bupvotes?\b/.test(name))return "upvotes";
+    if(/\bclicks?\b/.test(name))return "clicks";
+    if(/\breviews?\b|\bendorsements?\b/.test(name))return "reviews";
+    if(/\bsign[\s_-]*ups?\b|\bbot[\s_-]*starts?\b|\bstarts?\b/.test(name))return "signups";
+    if(/\bengagement\b|\bpoints\b|\buse sound\b|\bbattle points\b/.test(name))return "engagement";
+    if(/\bevents?\b|\binterested\b|\bgoing\b/.test(name))return "events";
     return "other";
   }
   function socialFollowerVariant(plan){
@@ -10983,7 +11007,8 @@ function toggleSparkleMoreServices(){
     const plans=socialPlansForService("followers");
     const variants=[
       {id:"guaranteed",name:"Guaranteed",icon:"🛡️",description:"Plans explicitly labelled as guaranteed or refill-protected",count:plans.filter(p=>socialFollowerVariant(p)==="guaranteed").length},
-      {id:"real_nigerian",name:"Real Nigerian",icon:"🇳🇬",description:"Plans explicitly labelled as real Nigerian followers",count:plans.filter(p=>socialFollowerVariant(p)==="real_nigerian").length}
+      {id:"real_nigerian",name:"Real Nigerian",icon:"🇳🇬",description:"Plans explicitly labelled as real Nigerian followers",count:plans.filter(p=>socialFollowerVariant(p)==="real_nigerian").length},
+      {id:"other",name:"Standard & Regional",icon:"✦",description:"Basic, no-refill and country-specific follower options",count:plans.filter(p=>socialFollowerVariant(p)==="other").length}
     ];
     grid.innerHTML=variants.map(v=>'<button type="button" class="sparkle-social-type-card" '+(v.count?'':'disabled')+' onclick="chooseSparkleSocialFollowerType(\''+v.id+'\')"><span class="sparkle-social-type-mark">'+v.icon+'</span><span class="sparkle-social-type-copy"><strong>'+v.name+'</strong><small>'+v.description+'</small></span><span class="sparkle-social-type-count">'+v.count.toLocaleString("en-NG")+' options</span><span class="sparkle-social-arrow">›</span></button>').join("");
     const brand=document.getElementById("sparkleSocialFollowerBrand");if(brand)brand.innerHTML=socialBrandIcon(socialSelectedPlatform);
