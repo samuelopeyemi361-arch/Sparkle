@@ -1988,77 +1988,97 @@ body.dark-mode #dashboard .sparkle-market-promo-note{background:#10233b;border-c
 </style>
 
 <style id="sparkle-social-market-premium">
-/* Sparkle Social Market only — isolated so Bulk SMS and all other services keep their existing design. */
-#dashboard #socialMarketPage{--sm-ink:#102447;--sm-muted:#7485a2;--sm-line:#e3eafa;--sm-blue:#2468f5;--sm-violet:#6a5cf6;--sm-soft:#f4f7ff;color:var(--sm-ink)}
-#dashboard #socialMarketPage>.dashboard-subtitle{max-width:690px;margin:2px 0 15px;color:var(--sm-muted);font-size:12px;line-height:1.6}
-#dashboard #socialMarketPage .sparkle-social-hero{position:relative;isolation:isolate;min-height:190px;margin:4px 0 15px;padding:25px 26px;border:1px solid rgba(130,171,255,.2);border-radius:25px;background:radial-gradient(circle at 75% 10%,rgba(123,156,255,.3),transparent 29%),radial-gradient(circle at 12% 115%,rgba(30,181,255,.22),transparent 43%),linear-gradient(118deg,#071631 0%,#102d68 55%,#3149a4 100%);box-shadow:0 18px 42px rgba(12,33,83,.17);overflow:hidden}
-#dashboard #socialMarketPage .sparkle-social-hero:after{content:"";position:absolute;z-index:-1;width:275px;height:275px;right:-104px;top:-156px;border:1px solid rgba(255,255,255,.18);border-radius:50%;box-shadow:0 0 0 23px rgba(255,255,255,.035),0 0 0 51px rgba(255,255,255,.025),0 0 0 83px rgba(255,255,255,.02)}
-#dashboard #socialMarketPage .sparkle-social-hero>div:first-child{max-width:64%;z-index:2}
-#dashboard #socialMarketPage .sparkle-social-hero .sparkle-digital-eyebrow{font-size:9px;letter-spacing:.19em;color:#9fc7ff;margin-bottom:10px}
-#dashboard #socialMarketPage .sparkle-social-hero h2{font-size:clamp(25px,3.1vw,32px);line-height:1.02;letter-spacing:-.045em;font-weight:850;color:#fff;margin:0 0 9px}
-#dashboard #socialMarketPage .sparkle-social-hero p{max-width:365px;font-size:12px;line-height:1.6;color:rgba(239,245,255,.8);margin:0}
+/* Social Market only — warm ivory, forest green and coral. */
+#dashboard #socialMarketPage{--sm-ink:#21332d;--sm-muted:#78857c;--sm-line:#e8e4d8;color:var(--sm-ink)}
+#dashboard #socialMarketPage>.dashboard-subtitle{margin:2px 0 15px;color:var(--sm-muted);font-size:12px;line-height:1.6}
+#dashboard #socialMarketPage .sparkle-social-hero{position:relative;isolation:isolate;display:flex;align-items:center;justify-content:space-between;gap:18px;min-height:180px;margin:4px 0 15px;padding:24px 26px;border:1px solid #294d3e;border-radius:23px;background:radial-gradient(circle at 85% 4%,rgba(201,233,107,.24),transparent 28%),linear-gradient(115deg,#19392e,#245540 62%,#386a4c);box-shadow:0 16px 34px rgba(31,61,44,.13);overflow:hidden}
+#dashboard #socialMarketPage .sparkle-social-hero:after{content:"";position:absolute;z-index:-1;width:260px;height:260px;right:-90px;top:-160px;border:1px solid rgba(241,239,215,.23);border-radius:50%;box-shadow:0 0 0 24px rgba(255,255,255,.035),0 0 0 53px rgba(255,255,255,.025)}
+#dashboard #socialMarketPage .sparkle-social-hero>div:first-child{max-width:68%;z-index:2}
+#dashboard #socialMarketPage .sparkle-social-hero .sparkle-digital-eyebrow{font-size:9px;letter-spacing:.19em;color:#d7e8b0;margin-bottom:10px}
+#dashboard #socialMarketPage .sparkle-social-hero h2{font-size:clamp(24px,3vw,31px);line-height:1.04;letter-spacing:-.04em;font-weight:850;color:#fff;margin:0 0 9px}
+#dashboard #socialMarketPage .sparkle-social-hero p{max-width:370px;font-size:12px;line-height:1.6;color:rgba(247,248,237,.82);margin:0}
 #dashboard #socialMarketPage .sparkle-social-hero-meta{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:15px}
-#dashboard #socialMarketPage .sparkle-social-hero-meta span{display:inline-flex;align-items:center;gap:6px;padding:6px 9px;border:1px solid rgba(255,255,255,.17);border-radius:999px;background:rgba(255,255,255,.08);color:#e7efff;font-size:9px;font-weight:750;letter-spacing:.02em}
-#dashboard #socialMarketPage .sparkle-social-hero-meta i{width:6px;height:6px;border-radius:50%;background:#66e5bd;box-shadow:0 0 0 3px rgba(102,229,189,.13)}
-#dashboard #socialMarketPage .sparkle-social-hero-art{flex-basis:118px;width:118px;height:118px;border-radius:32px;transform:rotate(4deg);background:linear-gradient(145deg,rgba(255,255,255,.25),rgba(255,255,255,.07));border:1px solid rgba(255,255,255,.34);box-shadow:0 17px 36px rgba(0,0,0,.24);backdrop-filter:blur(9px)}
-#dashboard #socialMarketPage .sparkle-social-hero-art span{font-size:58px;color:#fff}
-#dashboard #socialMarketPage .sparkle-social-hero-art b,#dashboard #socialMarketPage .sparkle-social-hero-art i,#dashboard #socialMarketPage .sparkle-social-hero-art em{box-shadow:0 8px 18px rgba(0,0,0,.2)}
-#dashboard #socialMarketPage .sparkle-digital-card{padding:21px;border-radius:23px;border-color:var(--sm-line);box-shadow:0 13px 35px rgba(22,54,116,.055)}
-#dashboard #socialMarketPage .sparkle-digital-section-title{align-items:center;margin-bottom:15px}
-#dashboard #socialMarketPage .sparkle-digital-section-title h2{font-size:19px;letter-spacing:-.025em;color:var(--sm-ink)}
+#dashboard #socialMarketPage .sparkle-social-hero-meta span{padding:6px 9px;border:1px solid rgba(255,255,255,.19);border-radius:999px;background:rgba(255,255,255,.08);color:#f1f4e8;font-size:9px;font-weight:750}
+#dashboard #socialMarketPage .sparkle-social-hero-meta i{display:inline-block;width:6px;height:6px;margin-right:5px;border-radius:50%;background:#c9e96b}
+#dashboard #socialMarketPage .sparkle-social-hero-art{flex:0 0 108px;width:108px;height:108px;border-radius:27px;transform:rotate(3deg);background:rgba(245,239,215,.13);border:1px solid rgba(245,239,215,.34);box-shadow:0 15px 32px rgba(0,0,0,.16)}
+#dashboard #socialMarketPage .sparkle-social-hero-art span{font-size:54px;color:#f5f0dc}
+#dashboard #socialMarketPage .sparkle-digital-card{padding:20px;border:1px solid var(--sm-line);border-radius:20px;background:#fffefa;box-shadow:0 10px 27px rgba(56,58,36,.045)}
+#dashboard #socialMarketPage .sparkle-digital-section-title{align-items:center;margin-bottom:14px}
+#dashboard #socialMarketPage .sparkle-digital-section-title h2{font-size:18px;color:var(--sm-ink)}
 #dashboard #socialMarketPage .sparkle-digital-section-title p{font-size:11px;color:var(--sm-muted)}
-#dashboard #socialMarketPage .sparkle-refresh-button{border-radius:12px;padding:9px 12px;background:#f6f8ff;border-color:#e0e8fa;color:#315baf}
-#dashboard #socialMarketPage .sparkle-platform-filters{gap:7px;margin:0 0 13px;padding:3px 1px 9px}
-#dashboard #socialMarketPage .sparkle-platform-filters button{border-radius:999px;padding:8px 12px;background:#f7f9fe;border-color:#e7ecf6;color:#5d6f8d;font-size:10px;transition:all .16s ease}
-#dashboard #socialMarketPage .sparkle-platform-filters button.active{background:#172f62;border-color:#172f62;box-shadow:0 5px 14px rgba(23,47,98,.16);color:#fff}
-#dashboard #socialMarketPage .sparkle-digital-label{font-size:11px;color:#263c60;margin:14px 0 7px}
-#dashboard #socialMarketPage .sparkle-digital-input{min-height:47px;border-radius:13px;border-color:#dfe7f4;background:#fbfcff;padding:12px 13px;font-size:13px}
-#dashboard #socialMarketPage .sparkle-digital-input:focus{border-color:#6793fa;box-shadow:0 0 0 3px rgba(36,104,245,.09)}
-#dashboard #socialMarketPage .sparkle-social-selected-plan{margin-top:12px;padding:14px 15px;border-radius:14px;border:1px solid #e1e8fb;background:linear-gradient(120deg,#f3f7ff,#f8f7ff);color:#657696;font-size:11px}
-#dashboard #socialMarketPage .sparkle-social-selected-plan strong{font-size:12px;color:#142d59}
-#dashboard #socialMarketPage .sparkle-digital-fields{gap:13px}
-#dashboard #socialMarketPage .sparkle-digital-help{font-size:10px}
-#dashboard #socialMarketPage .sparkle-digital-primary{min-height:49px;border-radius:13px!important;background:linear-gradient(105deg,#1b54d9,#397dff)!important;box-shadow:0 9px 22px rgba(36,104,245,.18);font-size:12px;letter-spacing:.01em}
-#dashboard #socialMarketPage .sparkle-digital-quote{border-radius:16px;border-color:#e0e8f8;background:#f8faff}
-#dashboard #socialMarketPage .sparkle-quote-topline{color:#5672a3;font-size:10px;letter-spacing:.12em}
-#dashboard #socialMarketPage .sparkle-quote-total strong{color:#215de0;font-size:23px}
-#dashboard #socialMarketPage .sparkle-digital-policy{padding:12px 13px;border:1px solid #e8edf7;border-radius:13px;background:#fafbfe}
-#dashboard #socialMarketPage .sparkle-digital-policy p{font-size:10px;color:#71809b}
-#dashboard #socialMarketPage .sparkle-social-track{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px;margin-top:13px;padding:15px 16px;border:1px solid #e2eaf8;border-radius:17px;background:linear-gradient(120deg,#fff,#f7f9ff)}
+#dashboard #socialMarketPage .sparkle-refresh-button,#dashboard #socialMarketPage .sparkle-social-back{border-radius:10px;padding:9px 12px;background:#f3f0e7;border:1px solid #e6e0d1;color:#285b41}
+#dashboard #socialMarketPage .sparkle-social-progress{display:flex;align-items:center;gap:8px;margin:0 0 14px;padding:11px;border:1px solid var(--sm-line);border-radius:14px;background:#fffdf8}
+#dashboard #socialMarketPage .sparkle-social-progress span{display:flex;align-items:center;gap:6px;color:#879187;font-size:10px;font-weight:750;white-space:nowrap}
+#dashboard #socialMarketPage .sparkle-social-progress span i{display:grid;place-items:center;width:21px;height:21px;border-radius:50%;background:#efeee7;color:#778176;font-size:9px;font-style:normal}
+#dashboard #socialMarketPage .sparkle-social-progress span.is-active{color:#225b43}
+#dashboard #socialMarketPage .sparkle-social-progress span.is-active i,#dashboard #socialMarketPage .sparkle-social-progress span.is-done i{background:#e6f0e2;color:#225b43}
+#dashboard #socialMarketPage .sparkle-social-progress b{height:1px;flex:1;min-width:6px;background:#e8e8df}
+#dashboard #socialMarketPage .sparkle-social-platform-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+#dashboard #socialMarketPage .sparkle-social-platform-card,#dashboard #socialMarketPage .sparkle-social-service-card,#dashboard #socialMarketPage .sparkle-social-type-card{display:flex;align-items:center;gap:9px;min-width:0;padding:12px;border:1px solid #ebe7dc;border-radius:13px;background:#fff;color:#263a30;text-align:left;cursor:pointer;transition:background .12s,border-color .12s}
+#dashboard #socialMarketPage .sparkle-social-platform-card:hover,#dashboard #socialMarketPage .sparkle-social-service-card:hover,#dashboard #socialMarketPage .sparkle-social-type-card:hover{border-color:#9db99c;background:#f8faf3}
+#dashboard #socialMarketPage .sparkle-social-platform-card>svg,#dashboard #socialMarketPage .sparkle-social-selected-brand svg{width:33px;height:33px;flex:0 0 33px;padding:7px;border-radius:10px;background:#2a654a}
+#dashboard #socialMarketPage .sparkle-social-platform-copy,#dashboard #socialMarketPage .sparkle-social-service-card-copy,#dashboard #socialMarketPage .sparkle-social-type-copy{display:flex;flex:1;min-width:0;flex-direction:column;gap:3px}
+#dashboard #socialMarketPage .sparkle-social-platform-copy strong,#dashboard #socialMarketPage .sparkle-social-service-card-copy strong,#dashboard #socialMarketPage .sparkle-social-type-copy strong{font-size:11px;font-weight:850;color:#263a30}
+#dashboard #socialMarketPage .sparkle-social-platform-copy small,#dashboard #socialMarketPage .sparkle-social-service-card-copy small,#dashboard #socialMarketPage .sparkle-social-type-copy small{font-size:9px;line-height:1.4;color:#859087}
+#dashboard #socialMarketPage .sparkle-social-arrow{color:#9ca79a;font-size:19px}
+#dashboard #socialMarketPage .sparkle-social-live-note{display:flex;align-items:center;gap:7px;margin-top:12px;color:#79877c;font-size:10px}
+#dashboard #socialMarketPage .sparkle-social-live-dot{width:7px;height:7px;border-radius:50%;background:#72ac64}
+#dashboard #socialMarketPage .sparkle-social-step-heading{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+#dashboard #socialMarketPage .sparkle-social-step-title{flex:1;min-width:0}
+#dashboard #socialMarketPage .sparkle-social-step-title h2{font-size:17px;margin:2px 0 3px;color:#26372e}
+#dashboard #socialMarketPage .sparkle-social-step-title p{font-size:10px;color:#869087;margin:0}
+#dashboard #socialMarketPage .sparkle-social-service-grid,#dashboard #socialMarketPage .sparkle-social-type-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#dashboard #socialMarketPage .sparkle-social-type-mark{display:grid;place-items:center;flex:0 0 33px;width:33px;height:33px;border-radius:10px;background:#edf2e5;color:#356348;font-size:15px}
+#dashboard #socialMarketPage .sparkle-social-type-count{color:#718170;font-size:9px;font-weight:800;white-space:nowrap}
+#dashboard #socialMarketPage .sparkle-digital-label{font-size:11px;color:#3f5145}
+#dashboard #socialMarketPage .sparkle-digital-input{min-height:45px;border-radius:11px;border:1px solid #e4e0d5;background:#fffefa;color:#293a30;padding:12px;font-size:13px}
+#dashboard #socialMarketPage .sparkle-social-plan-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:10px}
+#dashboard #socialMarketPage .sparkle-social-plan-option{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;padding:12px;border:1px solid #e9e5db;border-radius:12px;background:#fffefa;color:#2b3d32;text-align:left;cursor:pointer}
+#dashboard #socialMarketPage .sparkle-social-plan-option.is-selected{border-color:#67936c;background:#f1f6ec}
+#dashboard #socialMarketPage .sparkle-social-plan-option:disabled{opacity:.5;cursor:not-allowed}
+#dashboard #socialMarketPage .sparkle-social-plan-main{display:flex;align-items:center;gap:8px;min-width:0}
+#dashboard #socialMarketPage .sparkle-social-plan-main svg{width:27px;height:27px;flex:0 0 27px;padding:6px;border-radius:8px;background:#2a654a}
+#dashboard #socialMarketPage .sparkle-social-plan-copy{display:flex;flex-direction:column;gap:4px;min-width:0}
+#dashboard #socialMarketPage .sparkle-social-plan-copy strong{font-size:10px;line-height:1.4;color:#314238}
+#dashboard #socialMarketPage .sparkle-social-plan-copy small{font-size:9px;color:#839084}
+#dashboard #socialMarketPage .sparkle-social-plan-price{display:flex;flex-direction:column;align-items:flex-end;flex:0 0 auto;gap:2px}
+#dashboard #socialMarketPage .sparkle-social-plan-price strong{font-size:10px;color:#276044;white-space:nowrap}
+#dashboard #socialMarketPage .sparkle-social-plan-price small{font-size:8px;color:#89948a}
+#dashboard #socialMarketPage .sparkle-social-selected-plan,#dashboard #socialMarketPage .sparkle-digital-quote{border:1px solid #e4eadb;border-radius:13px;background:#f4f7ee}
+#dashboard #socialMarketPage .sparkle-digital-primary{min-height:47px;border-radius:11px!important;background:#286247!important;box-shadow:0 8px 18px rgba(40,98,71,.15)}
+#dashboard #socialMarketPage .sparkle-quote-total strong{color:#2d6749;font-size:22px}
+#dashboard #socialMarketPage .sparkle-quote-note{font-size:10px;color:#79857a;line-height:1.55}
+#dashboard #socialMarketPage .sparkle-digital-policy{border:1px solid #ebe8dc;border-radius:11px;background:#fbfaf5}
+#dashboard #socialMarketPage .sparkle-digital-policy p{font-size:10px;color:#78847a}
+#dashboard #socialMarketPage .sparkle-social-track{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:13px;padding:14px;border:1px solid #e7e2d7;border-radius:15px;background:#fffdf7}
 #dashboard #socialMarketPage .sparkle-social-track-copy{grid-column:1/-1}
-#dashboard #socialMarketPage .sparkle-social-track-copy strong{display:block;color:#1d345c;font-size:12px;margin-bottom:3px}
-#dashboard #socialMarketPage .sparkle-social-track-copy span{display:block;color:#7a8aa5;font-size:10px;line-height:1.5}
-#dashboard #socialMarketPage .sparkle-social-track input{width:100%;min-width:0;min-height:42px;padding:10px 12px;border:1px solid #dfe7f4;border-radius:11px;background:#fff;color:#183155;font:inherit;font-size:11px;outline:none}
-#dashboard #socialMarketPage .sparkle-social-track button{min-height:42px;padding:10px 13px;border:1px solid #dce6fa;border-radius:11px;background:#edf3ff;color:#2458b4;font-size:10px;font-weight:850;white-space:nowrap;cursor:pointer}
-#dashboard #socialMarketPage .sparkle-digital-result{border-radius:15px}
-#dashboard #socialMarketPage .sparkle-digital-result button{border-radius:10px}
-@media(max-width:700px){
- #dashboard #socialMarketPage .sparkle-social-hero{min-height:174px;padding:19px 18px;border-radius:21px;gap:8px}
- #dashboard #socialMarketPage .sparkle-social-hero>div:first-child{max-width:66%}
- #dashboard #socialMarketPage .sparkle-social-hero h2{font-size:24px}
- #dashboard #socialMarketPage .sparkle-social-hero-art{flex-basis:90px;width:90px;height:90px;border-radius:25px}
- #dashboard #socialMarketPage .sparkle-social-hero-art span{font-size:44px}
- #dashboard #socialMarketPage .sparkle-digital-card{padding:15px;border-radius:19px}
- #dashboard #socialMarketPage .sparkle-digital-section-title h2{font-size:17px}
- #dashboard #socialMarketPage .sparkle-social-track{padding:13px;grid-template-columns:1fr}
+#dashboard #socialMarketPage .sparkle-social-track-copy strong{display:block;color:#304537;font-size:12px}
+#dashboard #socialMarketPage .sparkle-social-track-copy span{display:block;color:#89948a;font-size:10px}
+#dashboard #socialMarketPage .sparkle-social-track input{width:100%;min-width:0;min-height:41px;padding:10px;border:1px solid #e4e0d5;border-radius:10px;background:#fffefa;color:#2b3d32;font-size:11px}
+#dashboard #socialMarketPage .sparkle-social-track button{min-height:41px;padding:10px 13px;border:1px solid #dce7d9;border-radius:10px;background:#edf4e8;color:#2c6347;font-size:10px;font-weight:850}
+#dashboard #socialMarketPage .sparkle-social-empty{grid-column:1/-1;padding:17px;border:1px dashed #ddd9cc;border-radius:12px;background:#faf8f1;color:#7d877d;font-size:11px}
+@media(max-width:760px){#dashboard #socialMarketPage .sparkle-social-platform-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#dashboard #socialMarketPage .sparkle-social-plan-grid{grid-template-columns:1fr}}
+@media(max-width:600px){
+ #dashboard #socialMarketPage .sparkle-social-hero{min-height:160px;padding:17px;border-radius:18px;gap:8px}
+ #dashboard #socialMarketPage .sparkle-social-hero>div:first-child{max-width:68%}
+ #dashboard #socialMarketPage .sparkle-social-hero h2{font-size:22px}
+ #dashboard #socialMarketPage .sparkle-social-hero-art{flex-basis:72px;width:72px;height:72px;border-radius:20px}
+ #dashboard #socialMarketPage .sparkle-digital-card{padding:14px;border-radius:17px}
+ #dashboard #socialMarketPage .sparkle-social-service-grid,#dashboard #socialMarketPage .sparkle-social-type-grid{grid-template-columns:1fr}
+ #dashboard #socialMarketPage .sparkle-social-progress{gap:5px;padding:8px 6px}
+ #dashboard #socialMarketPage .sparkle-social-progress span{font-size:8px;gap:4px}
+ #dashboard #socialMarketPage .sparkle-social-progress span i{width:18px;height:18px}
+ #dashboard #socialMarketPage .sparkle-social-track{grid-template-columns:1fr;padding:11px}
  #dashboard #socialMarketPage .sparkle-social-track-copy{grid-column:auto}
  #dashboard #socialMarketPage .sparkle-social-track button{width:100%}
 }
-@media(max-width:380px){
- #dashboard #socialMarketPage .sparkle-social-hero{padding:15px}
- #dashboard #socialMarketPage .sparkle-social-hero h2{font-size:21px}
- #dashboard #socialMarketPage .sparkle-social-hero-art{flex-basis:76px;width:76px;height:76px}
-}
-body.dark-mode #dashboard #socialMarketPage .sparkle-digital-card{background:#0e1b2d;border-color:#263b5a}
-body.dark-mode #dashboard #socialMarketPage .sparkle-digital-section-title h2,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-label{color:#edf4ff}
-body.dark-mode #dashboard #socialMarketPage .sparkle-digital-section-title p,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-help{color:#a6b8d6}
-body.dark-mode #dashboard #socialMarketPage .sparkle-platform-filters button{background:#13243a;border-color:#293e5a;color:#afc2e1}
-body.dark-mode #dashboard #socialMarketPage .sparkle-platform-filters button.active{background:#315fba;border-color:#5484e9;color:#fff}
-body.dark-mode #dashboard #socialMarketPage .sparkle-digital-input,body.dark-mode #dashboard #socialMarketPage .sparkle-social-track input{background:#0a1423;border-color:#2b405e;color:#eff5ff}
-body.dark-mode #dashboard #socialMarketPage .sparkle-social-selected-plan,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-quote,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-policy,body.dark-mode #dashboard #socialMarketPage .sparkle-social-track{background:#10233b;border-color:#2b4364;color:#b7c8e5}
-body.dark-mode #dashboard #socialMarketPage .sparkle-social-track-copy strong{color:#edf4ff}
-body.dark-mode #dashboard #socialMarketPage .sparkle-social-track-copy span{color:#a6b8d6}
-body.dark-mode #dashboard #socialMarketPage .sparkle-social-track button{background:#1a3152;border-color:#375680;color:#dceaff}
+body.dark-mode #dashboard #socialMarketPage .sparkle-digital-card{background:#17231d;border-color:#31463a}
+body.dark-mode #dashboard #socialMarketPage .sparkle-digital-section-title h2,body.dark-mode #dashboard #socialMarketPage .sparkle-social-step-title h2,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-label{color:#eaf0df}
+body.dark-mode #dashboard #socialMarketPage .sparkle-digital-section-title p,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-help,body.dark-mode #dashboard #socialMarketPage .sparkle-social-step-title p{color:#aab8a7}
+body.dark-mode #dashboard #socialMarketPage .sparkle-social-platform-card,body.dark-mode #dashboard #socialMarketPage .sparkle-social-service-card,body.dark-mode #dashboard #socialMarketPage .sparkle-social-type-card,body.dark-mode #dashboard #socialMarketPage .sparkle-social-plan-option{background:#1c2c23;border-color:#354b3c;color:#eaf0df}
+body.dark-mode #dashboard #socialMarketPage .sparkle-social-platform-copy strong,body.dark-mode #dashboard #socialMarketPage .sparkle-social-service-card-copy strong,body.dark-mode #dashboard #socialMarketPage .sparkle-social-type-copy strong,body.dark-mode #dashboard #socialMarketPage .sparkle-social-plan-copy strong{color:#e8efdf}
+body.dark-mode #dashboard #socialMarketPage .sparkle-digital-input,body.dark-mode #dashboard #socialMarketPage .sparkle-social-track input{background:#121d17;border-color:#3b5242;color:#eff4e8}
+body.dark-mode #dashboard #socialMarketPage .sparkle-social-selected-plan,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-quote,body.dark-mode #dashboard #socialMarketPage .sparkle-digital-policy,body.dark-mode #dashboard #socialMarketPage .sparkle-social-track{background:#1c2c23;border-color:#354b3c;color:#c3cfbd}
 </style>
 
 <style id="sparkle-social-wizard-flow">
@@ -10809,12 +10829,21 @@ function toggleSparkleMoreServices(){
     {id:"facebook",name:"Facebook",test:/facebook|\bfb\b/},
     {id:"youtube",name:"YouTube",test:/youtube|\byt\b|\bytb\b/},
     {id:"telegram",name:"Telegram",test:/telegram|\btg\b/},
-    {id:"x",name:"X",test:/twitter|\bx\b/},
+    {id:"x",name:"X / Twitter",test:/twitter|\bx\b/},
     {id:"whatsapp",name:"WhatsApp",test:/whatsapp|\bwa\b/},
     {id:"snapchat",name:"Snapchat",test:/snapchat|\bsnap\b/},
     {id:"threads",name:"Threads",test:/threads/},
     {id:"pinterest",name:"Pinterest",test:/pinterest/},
-    {id:"linkedin",name:"LinkedIn",test:/linkedin/}
+    {id:"linkedin",name:"LinkedIn",test:/linkedin/},
+    {id:"music",name:"Music Platforms",test:/\bmusic\b|spotify|audiomack|soundcloud|deezer|apple music/},
+    {id:"live_streaming",name:"Live Streaming",test:/live streaming|kick followers|kick live|twitch/},
+    {id:"discord",name:"Discord",test:/discord/},
+    {id:"reddit",name:"Reddit",test:/reddit/},
+    {id:"bluesky",name:"Bluesky",test:/bluesky/},
+    {id:"quora",name:"Quora",test:/quora/},
+    {id:"apps_reviews",name:"Apps & Reviews",test:/apps?\s*&\s*reviews|play store|app store|trustpilot|google business reviews/},
+    {id:"website",name:"Website Services",test:/\bwebsite\b|traffic|sign-ups|blog likes/},
+    {id:"communities",name:"Communities",test:/\bcommunities\b|discord server boosts/}
   ];
   const SOCIAL_SERVICE_DEFS=[
     {id:"followers",label:"Followers",icon:"♙",hint:"Grow your profile audience"},
@@ -10880,26 +10909,18 @@ function toggleSparkleMoreServices(){
     Object.entries(ids).forEach(([key,id])=>{const el=document.getElementById(id);if(el)el.hidden=key!==step;});
     const progressStep=step==="follower"||step==="plans"?"option":step;
     const order=["platform","service","option","details"],index=order.indexOf(progressStep);
-    document.querySelectorAll("#sparkleSocialProgress [data-social-progress]").forEach((el,i)=>{
+    document.querySelectorAll("#sparkleSocialProgress [data-social-progress]").forEach((el)=>{
       const at=order.indexOf(el.dataset.socialProgress);
       el.classList.toggle("is-active",at===index);
       el.classList.toggle("is-done",at>=0&&at<index);
     });
     if(step==="platform")socialSelectedPlatform="";
     const page=document.getElementById("socialMarketPage");
-    if(page)page.scrollIntoView({behavior:"smooth",block:"start"});
+    if(page)page.scrollIntoView({behavior:"auto",block:"start"});
   }
   async function withSocialLogoLoader(title,sub,work){
-    const hasLoader=typeof showSparkleVirtualNumberLoader==="function";
-    if(hasLoader)showSparkleVirtualNumberLoader(title,sub);
-    else window.sparkleShowLogoLoading?.(title||"Loading Social Market…");
-    try{
-      await new Promise(resolve=>setTimeout(resolve,360));
-      return await work();
-    }finally{
-      if(hasLoader&&typeof hideSparkleVirtualNumberLoader==="function")hideSparkleVirtualNumberLoader();
-      else window.sparkleHideLogoLoading?.();
-    }
+    // Selected plans are already in memory. Do not add an artificial spinner delay.
+    return await work();
   }
   function renderSocialPlatformGrid(){
     const grid=document.getElementById("sparkleSocialPlatformGrid");if(!grid)return;
@@ -10923,28 +10944,19 @@ function toggleSparkleMoreServices(){
   async function chooseSparkleSocialPlatform(id){
     if(socialLoading)return;
     if(!SOCIAL_PLATFORM_DEFS.some(x=>x.id===id)&&id!=="other")return;
+    if(!socialPlans.length){
+      await loadSparkleSocialPlans(false);
+      if(!socialPlans.length)return;
+    }
     socialSelectedPlatform=id;socialSelectedType="";socialSelectedFollowerType="";
     socialQuote=null;
     const checkout=document.getElementById("sparkleSocialCheckoutFields");if(checkout)checkout.hidden=true;
-    try{
-      socialLoading=true;
-      await withSocialLogoLoader("Loading "+socialPlatformName(id),"Preparing the available "+socialPlatformName(id)+" services and checking current Sparkle options",async()=>{
-        const data=await call({action:"social_plans"});
-        if(data.success!==true||!Array.isArray(data.plans))throw new Error(data.error||"The live social catalogue could not be refreshed.");
-        socialPlans=data.plans.filter(p=>p&&p.value!=null&&String(p.value).trim()!==""&&p.displayName!=null&&String(p.displayName).trim()!=="");
-        const select=document.getElementById("sparkleSocialPlan");
-        if(select)select.innerHTML='<option value="">Choose a live plan</option>'+socialPlans.map(p=>'<option value="'+esc(p.value)+'">'+esc(p.displayName)+'</option>').join("");
-      });
-      if(!socialPlansForPlatform(id).length){
-        setResult("sparkleSocialResult","error","No live options","There are no current options for this platform. Choose another platform or refresh the catalogue.");
-        showSocialWizardStep("platform");renderSocialPlatformGrid();return;
-      }
-      renderSocialServiceGrid();
-      showSocialWizardStep("service");
-    }catch(e){
-      showSocialWizardStep("platform");
-      setResult("sparkleSocialResult","error","Could not refresh services",e.message||"The live options are temporarily unavailable.");
-    }finally{socialLoading=false;}
+    if(!socialPlansForPlatform(id).length){
+      setResult("sparkleSocialResult","error","No live options","There are no current options for this platform. Refresh the catalogue and try again.");
+      showSocialWizardStep("platform");renderSocialPlatformGrid();return;
+    }
+    renderSocialServiceGrid();
+    showSocialWizardStep("service");
   }
   async function chooseSparkleSocialService(id){
     const def=socialServiceDef(id),plans=socialPlansForService(id);
@@ -11141,7 +11153,7 @@ function toggleSparkleMoreServices(){
     if(!socialQuote||socialQuote.plan!==plan?.value||socialQuote.quantity!==quantity){sparkleShowInlineFieldError("sparkleSocialQuantity","The plan or quantity changed. Review the current price again.");return;}
     const linkError=validateSocialLink(link,plan);if(linkError){sparkleShowInlineFieldError("sparkleSocialLink",linkError);return;}
     socialReviewPending={kind:"social",payload:{action:"buy_social",plan:plan.value,quantity,link,expectedTotal:socialQuote.estimatedRetail,requestID:crypto.randomUUID()},planName:plan.displayName,rate:socialQuote.retailRatePerThousand,estimated:socialQuote.estimatedRetail,maximumReserve:socialQuote.maximumReserve};
-    const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Social Media Market</div><div class="sparkle-summary-network-label">Order Review</div></div></div><div class="summary-line"><span>Service</span><strong>${esc(socialReviewPending.planName)}</strong></div><div class="summary-line"><span>Target link</span><strong>${esc(link)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity.toLocaleString("en-NG")}</strong></div><div class="summary-line"><span>Rate per 1,000</span><strong>${fmt(socialReviewPending.rate)}</strong></div><div class="summary-line"><span>Estimated price</span><strong>${fmt(socialReviewPending.estimated)}</strong></div><div class="summary-line"><span>Maximum temporary reserve</span><strong>${fmt(socialReviewPending.maximumReserve)}</strong></div><p class="electricity-note">Check the platform, service, link, quantity and price carefully. A valid Transaction PIN is required before Sparkle sends the order. Final charge depends on the supplier-confirmed cost; unused reserved funds are returned.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="confirmSparkleSocialReview()">Confirm Order · Enter Transaction PIN</button>`;
+    const reviewHtml=`<div class="sparkle-summary-network"><span class="network-card-logo cable">✦</span><div><div class="sparkle-summary-network-name">Social Media Market</div><div class="sparkle-summary-network-label">Order Review</div></div></div><div class="summary-line"><span>Service</span><strong>${esc(socialReviewPending.planName)}</strong></div><div class="summary-line"><span>Target link</span><strong>${esc(link)}</strong></div><div class="summary-line"><span>Quantity</span><strong>${quantity.toLocaleString("en-NG")}</strong></div><div class="summary-line"><span>Rate per 1,000</span><strong>${fmt(socialReviewPending.rate)}</strong></div><div class="summary-line"><span>Estimated price</span><strong>${fmt(socialReviewPending.estimated)}</strong></div><div class="summary-line"><span>Maximum temporary reserve</span><strong>${fmt(socialReviewPending.maximumReserve)}</strong></div><p class="electricity-note">Check the platform, service, link, quantity and price carefully. A valid Transaction PIN is required before Sparkle sends the order. Sparkle uses the GSubz price without an added markup.</p><button type="button" class="btn primary full sparkle-summary-confirm" onclick="confirmSparkleSocialReview()">Confirm Order · Enter Transaction PIN</button>`;
     if(typeof window.sparkleShowDedicatedReview==="function")window.sparkleShowDedicatedReview("Order Review",reviewHtml,"order-review",{service:"socialMarket",pending:socialReviewPending,plan:socialReviewPending.planName,link,quantity,estimated:socialReviewPending.estimated});
   }
   window.confirmSparkleSocialReview=async function(){
