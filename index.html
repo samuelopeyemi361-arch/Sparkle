@@ -10868,6 +10868,7 @@ function toggleSparkleMoreServices(){
     {id:"signups",label:"Sign-ups & Starts",icon:"＋",hint:"Sign-ups, bot starts and registrations"},
     {id:"engagement",label:"Engagement & Activities",icon:"✧",hint:"Special engagement and platform activities"},
     {id:"events",label:"Event Responses",icon:"✓",hint:"Interested and going responses"},
+    {id:"traffic",label:"Website Traffic",icon:"◉",hint:"Website visits and visitor traffic"},
     {id:"other",label:"Other services",icon:"✧",hint:"More live options available on this platform"}
   ];
   function socialBrandIcon(id){
@@ -10900,7 +10901,7 @@ function toggleSparkleMoreServices(){
     if(/\breactions?\b/.test(name))return "reactions";
     if(/\bcomments?\b|\breplies\b/.test(name))return "comments_random";
     if(/\bmonthly[\s_-]*listeners?\b|\blisteners?\b/.test(name))return "listeners";
-    if(/\bfollowers?\b|\bsubscribers?\b|\bmembers?\b/.test(name))return "followers";
+    if(/\bfollowers?\b|\bsubscribers?\b|\bmembers?\b|\bjoins?\b/.test(name))return "followers";
     if(/\bconnections?\b|\bfriend[\s_-]*requests?\b/.test(name))return "connections";
     if(/\blikes?\b|\bhearts?\b|\bfavorites?\b|\bfavourites?\b/.test(name))return "likes";
     if(/\bviews?\b|\bplays?\b|\bstreams?\b|\bwatch[\s_-]*hours?\b|watch[\s_-]*time/.test(name))return "views";
@@ -10916,6 +10917,7 @@ function toggleSparkleMoreServices(){
     if(/\bsign[\s_-]*ups?\b|\bbot[\s_-]*starts?\b|\bstarts?\b/.test(name))return "signups";
     if(/\bengagement\b|\bpoints\b|\buse sound\b|\bbattle points\b/.test(name))return "engagement";
     if(/\bevents?\b|\binterested\b|\bgoing\b/.test(name))return "events";
+    if(/\btraffic\b|website[\s_-]*visitors?/.test(name))return "traffic";
     return "other";
   }
   function socialFollowerVariant(plan){
