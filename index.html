@@ -4154,7 +4154,7 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 <div class="modal pin-modal" id="pinModal">
   <div class="modal-box">
     <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
-    <p style="color:var(--muted)">Enter your PIN to authorize this transaction.</p>
+    <p style="color:var(--muted)">Payment starts automatically after you enter all 4 PIN digits. You can also tap Make Payment.</p>
     <div class="pin-boxes">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 1">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 2">
@@ -12095,5 +12095,84 @@ window.addEventListener("DOMContentLoaded",function(){
   },450);
 });
 </script>
+
+<script id="sparkle-transaction-pin-auto-submit">
+(function () {
+  "use strict";
+
+  const modal = document.getElementById("pinModal");
+  if (!modal) return;
+
+  let submitting = false;
+  let lastAutoSubmittedPin = "";
+
+  function readPin() {
+    return Array.from(modal.querySelectorAll(".pin-box"))
+      .map((input) => String(input.value || "").replace(/\D/g, "").slice(0, 1))
+      .join("");
+  }
+
+  // A newly opened PIN modal starts a fresh attempt. Closing it also releases
+  // the guard, so the same valid PIN can be used for the next purchase.
+  const modalObserver = new MutationObserver(() => {
+    if (!modal.classList.contains("show")) {
+      submitting = false;
+      lastAutoSubmittedPin = "";
+    } else if (readPin().length < 4) {
+      lastAutoSubmittedPin = "";
+    }
+  });
+  modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
+
+  document.addEventListener("input", (event) => {
+    const target = event.target;
+    if (!target || !target.classList || !target.classList.contains("pin-box")) return;
+    if (!modal.contains(target) || !modal.classList.contains("show")) return;
+
+    // Let the existing PIN input handler sanitize the digit and move focus.
+    Promise.resolve().then(() => {
+      if (!modal.classList.contains("show") || submitting) return;
+
+      const pin = readPin();
+      if (!/^\d{4}$/.test(pin)) {
+        if (pin.length < 4) lastAutoSubmittedPin = "";
+        return;
+      }
+      if (pin === lastAutoSubmittedPin) return;
+
+      const button = modal.querySelector(".modal-box > button.btn.primary.full");
+      const handler = typeof window.sparkleHandlePinPayment === "function"
+        ? window.sparkleHandlePinPayment
+        : (typeof window.confirmTransactionPIN === "function" ? window.confirmTransactionPIN : null);
+      if (!button || button.disabled || typeof handler !== "function") return;
+
+      // Call the exact same handler as Make Payment. It retains PIN verification,
+      // wallet checks, review validation and each service's existing checkout.
+      submitting = true;
+      lastAutoSubmittedPin = pin;
+      button.disabled = true;
+
+      let result;
+      try {
+        result = handler.call(button);
+      } catch (error) {
+        submitting = false;
+        lastAutoSubmittedPin = "";
+        button.disabled = false;
+        console.error("[Sparkle PIN auto-submit]", error);
+        return;
+      }
+
+      Promise.resolve(result)
+        .catch((error) => console.error("[Sparkle PIN auto-submit]", error))
+        .finally(() => {
+          submitting = false;
+          button.disabled = false;
+        });
+    });
+  });
+})();
+</script>
+
 </body>
 </html>
