@@ -3870,10 +3870,10 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
       </select>
 
       <div class="data-beneficiary-card">
-        <div class="phone-field-head"><span>Recipient phone number</span><small>11 digits</small></div>
+        <div class="phone-field-head"><span>Recipient phone number</span><small>10/11 digits · +234 accepted</small></div>
         <div class="data-phone-row data-phone-section">
-          <span class="phone-prefix">+234</span>
-          <input class="data-phone-input" id="dataPhone" type="tel" inputmode="numeric" maxlength="11" placeholder="08012345678" autocomplete="tel">
+          <span class="phone-prefix" aria-hidden="true">NG</span>
+          <input class="data-phone-input" id="dataPhone" type="tel" inputmode="tel" maxlength="18" placeholder="08012345678" autocomplete="tel">
           <button class="contact-btn" onclick="chooseDataBeneficiary()" title="Choose beneficiary" aria-label="Choose beneficiary">♙</button>
         </div>
         <div class="data-divider"></div>
@@ -3947,10 +3947,10 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
       </select>
 
       <div class="data-beneficiary-card">
-        <div class="phone-field-head"><span>Recipient phone number</span><small>11 digits</small></div>
+        <div class="phone-field-head"><span>Recipient phone number</span><small>10/11 digits · +234 accepted</small></div>
         <div class="data-phone-row">
-          <span class="phone-prefix">+234</span>
-          <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="numeric" maxlength="11" placeholder="08012345678" autocomplete="tel">
+          <span class="phone-prefix" aria-hidden="true">NG</span>
+          <input class="data-phone-input" id="airtimePhone" type="tel" inputmode="tel" maxlength="18" placeholder="08012345678" autocomplete="tel">
           <button class="contact-btn" onclick="chooseGenericBeneficiary('airtime')" aria-label="Choose beneficiary">♙</button>
         </div>
         <div class="data-divider"></div>
@@ -4153,16 +4153,18 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 <!-- SERVICE PIN -->
 <div class="modal pin-modal" id="pinModal">
   <div class="modal-box">
-    <div class="modal-head"><h2>Transaction PIN</h2><button class="close" onclick="closePinModal()">×</button></div>
-    <p style="color:var(--muted)">Payment starts automatically after you enter all 4 PIN digits. You can also tap Make Payment.</p>
+    <div class="modal-head sparkle-pin-head"><div class="sparkle-pin-mark" aria-hidden="true">✦</div><div class="sparkle-pin-head-copy"><span>SECURE CHECKOUT</span><h2>Confirm your purchase</h2></div><button class="close" onclick="closePinModal()" aria-label="Close Transaction PIN">×</button></div>
+    <p class="sparkle-pin-instruction">Enter your 4-digit Transaction PIN. Sparkle starts processing automatically as soon as the last digit is entered.</p>
     <div class="pin-boxes">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 1">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 2">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 3">
       <input class="pin-box" maxlength="1" inputmode="numeric" aria-label="PIN digit 4">
     </div>
+    <p id="pinAutoStatus" class="sparkle-pin-status" aria-live="polite">0 of 4 digits entered · payment starts automatically.</p>
     <p id="pinMessage" style="color:#ef4444;font-size:13px"></p>
     <button class="btn primary full" onclick="confirmTransactionPIN()">MAKE PAYMENT</button>
+    <p class="sparkle-pin-manual-note">You can also tap Make Payment after entering all 4 digits.</p>
   </div>
 </div>
 
@@ -8738,7 +8740,7 @@ function getSinglePurchase(service){
     return {
       service:"Airtime",
       network:document.getElementById("airtimeNetwork").value,
-      phone:document.getElementById("airtimePhone").value.trim(),
+      phone:sparkleNormalizeNgPhone(document.getElementById("airtimePhone").value),
       plan:"Airtime recharge",
       amount:Number(document.getElementById("airtimeAmount").value||0)
     };
@@ -8747,7 +8749,7 @@ function getSinglePurchase(service){
     return {
       service:"Data",
       network:document.getElementById("dataNetwork").value,
-      phone:document.getElementById("dataPhone").value.trim(),
+      phone:sparkleNormalizeNgPhone(document.getElementById("dataPhone").value),
       plan:selectedDataPlan?._name || "",
       planValue:selectedDataPlan?._value || "",
       serviceID:selectedDataService || document.getElementById("dataService")?.value || "",
@@ -8778,6 +8780,10 @@ function getSinglePurchase(service){
 
 async function showPurchaseSummary(service){
   const p=getSinglePurchase(service);
+  if((service==="airtime"||service==="data")&&!/^0\d{10}$/.test(p.phone)){
+    alert("Enter a valid Nigerian mobile number. Use 10 digits, 080… or +234….");
+    return;
+  }
   if(!p.phone || !p.amount || p.amount<=0 || (service==="data"&&!p.planValue) || (service==="cable"&&!p.planValue) || (service==="education"&&(!p.serviceID||!p.planValue)) || (service==="electricity"&&(!p.serviceID||!p.customerID))){
     alert(service==="data" ? "Enter a phone number and select a data plan." : service==="cable" ? "Enter the decoder number and select a package." : service==="education" ? "Select an exam pin and enter a valid phone number." : service==="electricity" ? "Complete the electricity details first." : "Enter a phone number and valid amount.");
     return;
@@ -8797,18 +8803,21 @@ async function showPurchaseSummary(service){
   const networkKey=service==="cable"?"cable":service==="education"?"education":networkName.toLowerCase()==="airtel"?"airtel":networkName.toLowerCase()==="mtn"?"mtn":networkName.toLowerCase()==="glo"?"glo":"nine";
   const networkMark={mtn:"mtn",airtel:"at",glo:"glo",nine:"9m",cable:"TV",education:"PIN"}[networkKey];
   const summaryLabel=service==="data"?"Data purchase":service==="airtime"?"Airtime purchase":service==="education"?"Education PIN purchase":"Cable TV subscription";
+  const topupReview=service==="airtime"||service==="data";
   const summaryMarkup=`
+    ${topupReview?'<div class="sparkle-airtime-data-review"><div class="sparkle-review-kicker"><span aria-hidden="true">✓</span> SECURE PURCHASE REVIEW</div>':""}
     <div class="sparkle-summary-network"><span class="network-card-logo ${networkKey}">${networkMark}</span><div><div class="sparkle-summary-network-name">${escapeHtml(p.network||p.service)}</div><div class="sparkle-summary-network-label">${summaryLabel}</div></div></div>
     <div class="summary-line"><span>Service</span><strong>${escapeHtml(p.service)}</strong></div>
     <div class="summary-line"><span>${service==="cable"?"TV provider":service==="education"?"Examination":"Network"}</span><strong>${escapeHtml(p.network)}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Plan type</span><strong>${escapeHtml(p.serviceLabel||p.serviceID||"")}</strong></div>`:""}
-    ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>Recipient Phone</span><strong>${escapeHtml(p.phone)}</strong></div>`}
+    ${service==="cable"?`<div class="summary-line"><span>Decoder / IUC number</span><strong>${escapeHtml(p.phone)}</strong></div>`:`<div class="summary-line"><span>${topupReview?"Recipient number":"Recipient Phone"}</span><strong class="${topupReview?"sparkle-review-phone":""}">${escapeHtml(p.phone)}</strong></div>`}
     <div class="summary-line"><span>${service==="data"?"Data plan":service==="cable"?"Subscription plan":service==="education"?"Exam PIN":"Airtime amount"}</span><strong>${escapeHtml(p.plan||money(p.amount))}</strong></div>
     ${service==="data"?`<div class="summary-line"><span>Validity</span><strong>${escapeHtml(p.validity||"—")}</strong></div>`:""}
     <div class="sparkle-summary-total"><span>Amount to pay</span><strong>${money(p.amount)}</strong></div>
     <div class="summary-line"><span>Your wallet balance</span><strong id="sparkleReviewWalletBalance">Checking balance…</strong></div>
     <div id="sparkleReviewFundsMessage" role="status" aria-live="polite" style="display:none;margin:12px 0;padding:12px;border-radius:10px;font-size:13px;line-height:1.5"></div>
-    <button class="btn primary full sparkle-summary-confirm" id="sparkleReviewContinueButton" onclick="sparkleConfirmPurchase()" disabled>Checking wallet balance…</button>`;
+    <button class="btn primary full sparkle-summary-confirm" id="sparkleReviewContinueButton" onclick="sparkleConfirmPurchase()" disabled>Checking wallet balance…</button>
+    ${topupReview?'</div>':""}`;
   const screen=document.getElementById("sparkle-purchase-summary-screen");
   const content=document.getElementById("sparkle-summary-screen-content");
   if(!screen||!content){alert("Purchase review is temporarily unavailable. Please try again.");return;}
@@ -8836,7 +8845,7 @@ async function showPurchaseSummary(service){
       roll.setAttribute("aria-hidden","true");
       screen.classList.add("is-open");
       screen.setAttribute("aria-hidden","false");
-    },900);
+    },260);
   }else{
     screen.classList.add("is-open");
     screen.setAttribute("aria-hidden","false");
@@ -12096,6 +12105,45 @@ window.addEventListener("DOMContentLoaded",function(){
 });
 </script>
 
+
+<style id="sparkle-fast-airtime-data-pin-ui">
+.sparkle-airtime-data-review{display:block}
+.sparkle-airtime-data-review .sparkle-review-kicker{display:inline-flex;align-items:center;gap:8px;margin:0 0 16px;padding:8px 11px;border-radius:999px;background:#ecfdf5;color:#08765c;font-size:10px;font-weight:900;letter-spacing:.75px}
+.sparkle-airtime-data-review .sparkle-review-kicker span{display:grid;place-items:center;width:17px;height:17px;border-radius:50%;background:#10b981;color:#fff;font-size:11px}
+.sparkle-airtime-data-review .sparkle-summary-network{padding:14px;margin:0 0 8px;border:1px solid #e7eee9;border-radius:17px;background:linear-gradient(120deg,#f7fcf9,#fff)}
+.sparkle-airtime-data-review .summary-line{padding:13px 2px}
+.sparkle-airtime-data-review .sparkle-review-phone{color:#0f766e;font-size:15px;font-weight:950;letter-spacing:.35px;font-variant-numeric:tabular-nums}
+.sparkle-airtime-data-review .sparkle-summary-total{margin:18px 0 8px;padding:15px 16px;border:1px solid #e5eee9;border-radius:15px;background:#f7fbf8}
+.sparkle-airtime-data-review .sparkle-summary-total strong{color:#0f766e}
+.sparkle-airtime-data-review .sparkle-summary-confirm{min-height:52px;margin-top:16px;border:0;border-radius:14px;background:linear-gradient(110deg,#0f766e,#119b70);box-shadow:0 9px 22px rgba(15,118,110,.18);font-weight:900}
+.sparkle-airtime-data-review .sparkle-summary-confirm:disabled{opacity:.68;box-shadow:none}
+#pinModal .modal-box{max-width:420px;padding:26px 24px 21px;border:1px solid rgba(16,185,129,.16);border-radius:26px;background:radial-gradient(circle at 100% 0%,rgba(16,185,129,.10),transparent 39%),#fff;box-shadow:0 30px 85px rgba(9,25,38,.28)}
+#pinModal .sparkle-pin-head{display:flex;align-items:center;justify-content:flex-start;gap:12px;margin-bottom:15px}
+#pinModal .sparkle-pin-mark{display:grid;place-items:center;flex:0 0 46px;width:46px;height:46px;border-radius:15px;background:linear-gradient(145deg,#0f766e,#19a875);color:#fff;font-size:25px;font-weight:950;box-shadow:0 8px 18px rgba(16,185,129,.22)}
+#pinModal .sparkle-pin-head-copy{min-width:0;flex:1;text-align:left}
+#pinModal .sparkle-pin-head-copy>span{display:block;margin-bottom:4px;color:#0f8a68;font-size:9px;font-weight:950;letter-spacing:1.05px}
+#pinModal .sparkle-pin-head-copy h2{margin:0;color:#142b2a;font-size:21px;line-height:1.2;font-weight:950;letter-spacing:-.55px}
+#pinModal .sparkle-pin-head .close{flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#f1f5f4;color:#52615f}
+#pinModal .sparkle-pin-instruction{margin:0!important;color:#667875!important;font-size:12px!important;line-height:1.6!important;text-align:left}
+#pinModal .pin-boxes{gap:10px;margin:22px 0 14px}
+#pinModal .pin-box{width:min(14vw,58px);height:62px;border:1.5px solid #dce9e3;border-radius:15px;background:linear-gradient(180deg,#fbfefc,#f4faf6);color:#0d6651;font-size:25px;font-weight:950;box-shadow:inset 0 1px 2px rgba(15,40,32,.035);transition:border-color .16s ease,box-shadow .16s ease,background .16s ease}
+#pinModal .pin-box:focus{border-color:#13a477;background:#fff;outline:none;box-shadow:0 0 0 4px rgba(16,185,129,.13)}
+#pinModal #pinAutoStatus{min-height:17px;margin:0 0 9px;padding:8px 10px;border-radius:10px;background:#f5f8f6;color:#52645e;font-size:11px;font-weight:750;line-height:1.4}
+#pinModal #pinAutoStatus::before{content:"●";display:inline-block;margin-right:7px;color:#10a875;font-size:8px;vertical-align:1px}
+#pinModal #pinAutoStatus.is-processing{background:#ecfdf5;color:#08664e}
+#pinModal #pinAutoStatus.is-processing::before{color:#0c9b70;animation:sparklePinPulse .8s ease-in-out infinite alternate}
+#pinModal #pinMessage{min-height:18px;margin:7px 0 12px;font-size:12px!important;line-height:1.45}
+#pinModal .btn.primary.full{width:100%;min-height:53px;border:0;border-radius:15px;background:linear-gradient(110deg,#0f766e,#159b70);color:#fff;font-size:13px;font-weight:950;letter-spacing:.35px;box-shadow:0 10px 22px rgba(15,118,110,.19);transition:transform .16s ease,box-shadow .16s ease,opacity .16s ease}
+#pinModal .btn.primary.full:active{transform:translateY(1px)}
+#pinModal .btn.primary.full.is-processing{opacity:.94;cursor:wait}
+#pinModal .btn.primary.full.is-processing::before{content:"";display:inline-block;width:13px;height:13px;margin-right:9px;border:2px solid rgba(255,255,255,.45);border-top-color:#fff;border-radius:50%;vertical-align:-2px;animation:sparklePinSpin .65s linear infinite}
+#pinModal .sparkle-pin-manual-note{margin:11px 0 0!important;color:#89948f!important;font-size:10px!important;line-height:1.4!important;text-align:center}
+@keyframes sparklePinSpin{to{transform:rotate(360deg)}}
+@keyframes sparklePinPulse{to{opacity:.35}}
+@media(max-width:519px){#pinModal .modal-box{padding:23px 19px 19px}#pinModal .pin-boxes{gap:8px;margin:19px 0 13px}#pinModal .pin-box{width:min(17vw,56px);height:58px;border-radius:13px;font-size:23px}}
+@media(prefers-reduced-motion:reduce){#pinModal .pin-box,#pinModal .btn.primary.full{transition:none!important}#pinModal .btn.primary.full.is-processing::before,#pinModal #pinAutoStatus.is-processing::before{animation:none!important}}
+</style>
+
 <script id="sparkle-transaction-pin-auto-submit">
 (function () {
   "use strict";
@@ -12112,14 +12160,23 @@ window.addEventListener("DOMContentLoaded",function(){
       .join("");
   }
 
+  function setPinStatus(message, processing = false) {
+    const status = modal.querySelector("#pinAutoStatus");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("is-processing", processing);
+  }
+
   // A newly opened PIN modal starts a fresh attempt. Closing it also releases
   // the guard, so the same valid PIN can be used for the next purchase.
   const modalObserver = new MutationObserver(() => {
     if (!modal.classList.contains("show")) {
       submitting = false;
       lastAutoSubmittedPin = "";
+      setPinStatus("0 of 4 digits entered · payment starts automatically.");
     } else if (readPin().length < 4) {
       lastAutoSubmittedPin = "";
+      setPinStatus(`${readPin().length} of 4 digits entered · payment starts automatically.`);
     }
   });
   modalObserver.observe(modal, { attributes: true, attributeFilter: ["class"] });
@@ -12135,7 +12192,10 @@ window.addEventListener("DOMContentLoaded",function(){
 
       const pin = readPin();
       if (!/^\d{4}$/.test(pin)) {
-        if (pin.length < 4) lastAutoSubmittedPin = "";
+        if (pin.length < 4) {
+          lastAutoSubmittedPin = "";
+          setPinStatus(`${pin.length} of 4 digits entered · payment starts automatically.`);
+        }
         return;
       }
       if (pin === lastAutoSubmittedPin) return;
@@ -12151,14 +12211,20 @@ window.addEventListener("DOMContentLoaded",function(){
       submitting = true;
       lastAutoSubmittedPin = pin;
       button.disabled = true;
+      button.classList.add("is-processing");
+      setPinStatus("All 4 digits entered · processing your purchase securely…", true);
 
       let result;
       try {
         result = handler.call(button);
+        button.textContent = "PROCESSING SECURELY…";
       } catch (error) {
         submitting = false;
         lastAutoSubmittedPin = "";
         button.disabled = false;
+        button.classList.remove("is-processing");
+        button.textContent = "MAKE PAYMENT";
+        setPinStatus("Automatic processing could not start. Tap Make Payment to retry.");
         console.error("[Sparkle PIN auto-submit]", error);
         return;
       }
@@ -12168,6 +12234,14 @@ window.addEventListener("DOMContentLoaded",function(){
         .finally(() => {
           submitting = false;
           button.disabled = false;
+          button.classList.remove("is-processing");
+          if (modal.classList.contains("show")) {
+            button.textContent = "MAKE PAYMENT";
+            const message = modal.querySelector("#pinMessage");
+            setPinStatus(message && message.textContent.trim()
+              ? "Please check the message above and try again."
+              : "You can also tap Make Payment if needed.");
+          }
         });
     });
   });
