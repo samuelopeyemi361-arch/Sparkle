@@ -12248,5 +12248,277 @@ window.addEventListener("DOMContentLoaded",function(){
 })();
 </script>
 
+
+<style id="sparkle-signup-method-choice-style">
+#authModal .sparkle-signup-method-choice{
+  display:none;
+  margin:0 0 14px;
+  padding:18px;
+  border:1px solid #e2e8f0;
+  border-radius:18px;
+  background:linear-gradient(145deg,#ffffff 0%,#f7f9ff 100%);
+}
+#authModal .sparkle-signup-choice-intro{
+  margin:0 0 15px;
+  color:#64748b;
+  font-size:13px;
+  line-height:1.55;
+  text-align:center;
+}
+#authModal .sparkle-signup-recommended{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  margin:0 0 9px;
+  color:#176b57;
+  font-size:10px;
+  font-weight:900;
+  letter-spacing:1px;
+  text-transform:uppercase;
+}
+#authModal .sparkle-signup-recommended:before{
+  content:"";
+  width:7px;height:7px;border-radius:50%;
+  background:#21a179;
+  box-shadow:0 0 0 4px #21a17918;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthRow{
+  display:block!important;
+  margin:0!important;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthRow>div:first-child{
+  display:none!important;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton{
+  min-height:54px;
+  border-radius:13px;
+  border-color:#cfd9ea;
+  font-size:15px;
+  box-shadow:0 5px 15px rgba(15,35,75,.045);
+}
+#authModal .sparkle-signup-method-divider{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:15px 0;
+  color:#94a3b8;
+  font-size:12px;
+  font-weight:700;
+}
+#authModal .sparkle-signup-method-divider:before,
+#authModal .sparkle-signup-method-divider:after{
+  content:"";
+  height:1px;
+  flex:1;
+  background:#e2e8f0;
+}
+#authModal .sparkle-signup-email-choice{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  width:100%;
+  min-height:60px;
+  padding:11px 13px;
+  border:1px solid #dbe3ef;
+  border-radius:13px;
+  background:#fff;
+  color:#1e293b;
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .15s,background .15s;
+}
+#authModal .sparkle-signup-email-choice:hover{
+  border-color:#aebdd2;
+  background:#fbfcff;
+}
+#authModal .sparkle-signup-email-icon{
+  display:grid;
+  place-items:center;
+  flex:0 0 38px;
+  width:38px;height:38px;
+  border-radius:11px;
+  background:#eef3fb;
+  color:#37547c;
+  font-size:18px;
+}
+#authModal .sparkle-signup-email-copy{
+  display:grid;
+  gap:3px;
+  min-width:0;
+}
+#authModal .sparkle-signup-email-copy strong{
+  font-size:14px;
+  font-weight:850;
+  color:#1e293b;
+}
+#authModal .sparkle-signup-email-copy small{
+  font-size:11px;
+  line-height:1.4;
+  color:#718096;
+}
+#authModal .sparkle-signup-back{
+  display:none;
+  width:100%;
+  margin:0 0 13px;
+  padding:8px 2px;
+  border:0;
+  background:transparent;
+  color:#315ca8;
+  text-align:left;
+  font-size:12px;
+  font-weight:800;
+  cursor:pointer;
+}
+@media(max-width:480px){
+  #authModal .sparkle-signup-method-choice{padding:15px;border-radius:16px}
+  #authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton{min-height:52px}
+}
+</style>
+<script id="sparkle-signup-method-choice-layer">
+(function(){
+  "use strict";
+  function installSparkleSignupChoice(){
+    const modal=document.getElementById("authModal");
+    const form=document.getElementById("authForm");
+    const googleRow=document.getElementById("sparkleGoogleAuthRow");
+    const switchRow=document.getElementById("authSwitchRow");
+    const title=document.getElementById("authTitle");
+    if(!modal||!form||!googleRow||!form.parentElement||document.getElementById("sparkleSignupMethodChoice"))return;
+
+    let signupMethod="login";
+    const parent=form.parentElement;
+
+    const choice=document.createElement("section");
+    choice.id="sparkleSignupMethodChoice";
+    choice.className="sparkle-signup-method-choice";
+    choice.setAttribute("role","group");
+    choice.setAttribute("aria-label","Choose how to create your Sparkle account");
+
+    const intro=document.createElement("p");
+    intro.className="sparkle-signup-choice-intro";
+    intro.textContent="Choose how you’d like to create your Sparkle account.";
+
+    const recommended=document.createElement("div");
+    recommended.className="sparkle-signup-recommended";
+    recommended.textContent="Recommended · Fastest";
+
+    const divider=document.createElement("div");
+    divider.className="sparkle-signup-method-divider";
+    divider.textContent="OR";
+
+    const emailButton=document.createElement("button");
+    emailButton.type="button";
+    emailButton.id="sparkleContinueWithEmailButton";
+    emailButton.className="sparkle-signup-email-choice";
+    emailButton.setAttribute("aria-label","Continue with Email");
+    const emailIcon=document.createElement("span");
+    emailIcon.className="sparkle-signup-email-icon";
+    emailIcon.setAttribute("aria-hidden","true");
+    emailIcon.textContent="✉";
+    const emailCopy=document.createElement("span");
+    emailCopy.className="sparkle-signup-email-copy";
+    const emailHeading=document.createElement("strong");
+    emailHeading.textContent="Continue with Email";
+    const emailCaption=document.createElement("small");
+    emailCaption.textContent="Use your email address and create a password";
+    emailCopy.append(emailHeading,emailCaption);
+    emailButton.append(emailIcon,emailCopy);
+
+    choice.append(intro,recommended,googleRow,divider,emailButton);
+
+    const backButton=document.createElement("button");
+    backButton.type="button";
+    backButton.id="sparkleBackToSignupOptionsButton";
+    backButton.className="sparkle-signup-back";
+    backButton.textContent="← Back to sign-up options";
+
+    parent.insertBefore(choice,form);
+    parent.insertBefore(backButton,form);
+
+    function showChoice(){
+      signupMethod="choice";
+      if(title)title.textContent="Create Sparkle Account";
+      choice.style.display="block";
+      backButton.style.display="none";
+      form.style.display="none";
+      googleRow.style.display="block";
+      if(switchRow)switchRow.style.display="block";
+    }
+    function showEmailForm(){
+      signupMethod="email";
+      if(title)title.textContent="Create Sparkle Account";
+      choice.style.display="none";
+      backButton.style.display="block";
+      form.style.display="block";
+      googleRow.style.display="none";
+      if(switchRow)switchRow.style.display="block";
+    }
+    function showOtpForm(){
+      signupMethod="email";
+      choice.style.display="none";
+      backButton.style.display="none";
+      form.style.display="block";
+      googleRow.style.display="none";
+      if(switchRow)switchRow.style.display="none";
+    }
+    function showLogin(){
+      signupMethod="login";
+      choice.style.display="none";
+      backButton.style.display="none";
+      form.style.display="block";
+      if(googleRow.parentElement!==form.parentElement)form.insertAdjacentElement("afterend",googleRow);
+      googleRow.style.display="block";
+      if(switchRow)switchRow.style.display="block";
+    }
+
+    emailButton.addEventListener("click",function(){
+      if(typeof authMode!=="undefined"&&authMode!=="signup"){
+        if(typeof openAuth==="function")openAuth("signup");
+        else return;
+      }
+      showEmailForm();
+      const email=document.getElementById("email");
+      if(email&&!email.value)setTimeout(()=>email.focus(),0);
+    });
+    backButton.addEventListener("click",function(){showChoice();});
+
+    const baseSetOtp=window.setSparkleEmailOtpStep;
+    if(typeof baseSetOtp==="function"){
+      window.setSparkleEmailOtpStep=function(enabled){
+        const result=baseSetOtp.apply(this,arguments);
+        if(enabled)showOtpForm();
+        else if(typeof authMode!=="undefined"&&authMode==="signup"){
+          if(signupMethod==="email")showEmailForm();
+          else showChoice();
+        }else showLogin();
+        return result;
+      };
+    }
+
+    const baseOpenAuth=window.openAuth;
+    if(typeof baseOpenAuth==="function"){
+      window.openAuth=function(mode){
+        signupMethod=mode==="signup"?"choice":"login";
+        const result=baseOpenAuth.apply(this,arguments);
+        if(mode==="signup"){
+          if(typeof emailVerificationPending!=="undefined"&&emailVerificationPending)showOtpForm();
+          else showChoice();
+        }else showLogin();
+        return result;
+      };
+    }
+
+    // Keep the login form and its original Google/email separator unchanged.
+    if(typeof authMode!=="undefined"&&authMode==="signup")showChoice();
+    else showLogin();
+  }
+
+  if(document.readyState==="loading"){
+    document.addEventListener("DOMContentLoaded",installSparkleSignupChoice,{once:true});
+  }else installSparkleSignupChoice();
+})();
+</script>
+
 </body>
 </html>
