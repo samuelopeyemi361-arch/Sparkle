@@ -12635,5 +12635,325 @@ window.addEventListener("DOMContentLoaded",function(){
 })();
 </script>
 
+
+<style id="sparkle-fund-wallet-modal-redesign">
+/* Wallet funding modal — visual-only refresh.
+   Existing account data, buttons, handlers and wallet/payment logic are untouched. */
+#fundWalletModal{
+  z-index:2400;
+  padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  background:rgba(8,20,34,.68);
+  -webkit-backdrop-filter:blur(8px);
+  backdrop-filter:blur(8px);
+}
+#fundWalletModal .modal-box.fund-modal-box{
+  display:flex;
+  flex-direction:column;
+  width:min(100%,500px);
+  max-width:500px;
+  max-height:min(86vh,760px);
+  max-height:min(86dvh,760px);
+  min-height:0;
+  padding:0;
+  overflow:hidden;
+  border:1px solid rgba(218,230,225,.95);
+  border-radius:26px;
+  background:#fff;
+  box-shadow:0 30px 90px rgba(2,15,26,.32),0 5px 18px rgba(10,35,43,.10);
+  text-align:left;
+}
+#fundWalletModal .fund-modal-hero{
+  flex:0 0 auto;
+  padding:25px 25px 21px;
+  color:#f4fbf7;
+  background:
+    radial-gradient(circle at 92% 8%,rgba(180,225,194,.20),transparent 27%),
+    radial-gradient(circle at 0% 100%,rgba(57,155,131,.24),transparent 38%),
+    linear-gradient(128deg,#132e35 0%,#175c50 65%,#1b7560 100%);
+}
+#fundWalletModal .fund-modal-hero:after{
+  width:190px;
+  height:190px;
+  right:-84px;
+  top:-112px;
+  border:1px solid rgba(229,250,237,.16);
+  background:rgba(229,250,237,.055);
+  box-shadow:0 0 0 24px rgba(229,250,237,.035),0 0 0 48px rgba(229,250,237,.025);
+}
+#fundWalletModal .fund-modal-hero:before{
+  content:"THE SPARKLE WALLET";
+  position:relative;
+  z-index:1;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin:0 0 12px;
+  color:#bce7cf;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:1.8px;
+}
+#fundWalletModal .fund-modal-hero .modal-head{
+  z-index:1;
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin:0 0 9px;
+}
+#fundWalletModal .fund-modal-hero .modal-head h2{
+  max-width:330px;
+  color:#fff;
+  font-size:clamp(21px,5vw,25px);
+  font-weight:900;
+  line-height:1.18;
+  letter-spacing:-.75px;
+}
+#fundWalletModal .fund-modal-hero .close{
+  flex:0 0 38px;
+  width:38px;
+  height:38px;
+  border:1px solid rgba(255,255,255,.19);
+  border-radius:13px;
+  background:rgba(255,255,255,.13);
+  color:#fff;
+  font-size:22px;
+  transition:background .16s ease,transform .16s ease;
+}
+#fundWalletModal .fund-modal-hero .close:hover{
+  transform:rotate(4deg);
+  background:rgba(255,255,255,.22);
+}
+#fundWalletModal .fund-modal-hero p{
+  max-width:400px;
+  color:rgba(241,250,245,.82);
+  font-size:12px;
+  line-height:1.65;
+}
+#fundWalletModal .fund-modal-content{
+  display:flex;
+  flex:1 1 auto;
+  flex-direction:column;
+  gap:11px;
+  min-height:0;
+  padding:20px 23px 22px;
+  overflow-y:auto;
+  overscroll-behavior:contain;
+  -webkit-overflow-scrolling:touch;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(218,240,226,.32),transparent 33%),
+    #fff;
+}
+#fundWalletModal .fund-modal-status{
+  align-self:flex-start;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  margin:0 0 3px;
+  padding:8px 12px;
+  border:1px solid #d5ebdc;
+  border-radius:999px;
+  background:#f0f8f2;
+  color:#246747;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:.2px;
+}
+#fundWalletModal .fund-modal-status:before{
+  width:7px;
+  height:7px;
+  background:#31a66e;
+  box-shadow:0 0 0 4px rgba(49,166,110,.12);
+}
+#fundWalletModal .fund-detail{
+  margin:0;
+  padding:13px 15px;
+  border:1px solid #e7ece9;
+  border-radius:15px;
+  background:#f8faf9;
+  box-shadow:0 3px 11px rgba(17,48,39,.025);
+}
+#fundWalletModal .fund-detail label{
+  margin:0 0 6px;
+  color:#829087;
+  font-size:9px;
+  font-weight:900;
+  letter-spacing:1.35px;
+}
+#fundWalletModal .fund-detail strong{
+  color:#1b2b29;
+  font-size:14px;
+  font-weight:850;
+  line-height:1.4;
+}
+#fundWalletModal .fund-detail.account-number{
+  position:relative;
+  padding:15px 16px;
+  border:1px solid #cfe5d7;
+  background:linear-gradient(115deg,#eff8f1 0%,#f8fbf8 100%);
+}
+#fundWalletModal .fund-detail.account-number:after{
+  content:"";
+  position:absolute;
+  top:14px;
+  right:15px;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#36a875;
+  box-shadow:0 0 0 5px rgba(54,168,117,.10);
+}
+#fundWalletModal .fund-detail.account-number strong{
+  color:#176447;
+  font-size:clamp(22px,6vw,27px);
+  font-weight:950;
+  letter-spacing:1.1px;
+  font-variant-numeric:tabular-nums;
+}
+#fundWalletModal .fund-modal-note{
+  align-items:flex-start;
+  gap:10px;
+  margin:3px 0 4px;
+  padding:2px 1px;
+  color:#728077;
+  font-size:11px;
+  line-height:1.65;
+}
+#fundWalletModal .fund-modal-note span{
+  display:grid;
+  flex:0 0 23px;
+  place-items:center;
+  width:23px;
+  height:23px;
+  border:1px solid #dcebe1;
+  border-radius:8px;
+  background:#f0f7f2;
+  color:#35785b;
+  font-size:14px;
+  line-height:1;
+}
+#fundWalletModal .fund-modal-actions{
+  display:grid;
+  grid-template-columns:minmax(0,1.25fr) minmax(100px,.75fr);
+  gap:10px;
+  margin-top:auto;
+  padding-top:3px;
+}
+#fundWalletModal .fund-modal-actions .btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-width:0;
+  min-height:49px;
+  padding:10px 13px;
+  border:1px solid #dfe8e2;
+  border-radius:13px;
+  background:#fff;
+  color:#456056;
+  font-size:12px;
+  font-weight:850;
+  line-height:1.25;
+  white-space:normal;
+  box-shadow:none;
+  transition:transform .16s ease,box-shadow .16s ease,background .16s ease;
+}
+#fundWalletModal .fund-modal-actions #fundCopyButton{
+  border-color:#176a54;
+  background:linear-gradient(110deg,#17634f,#218366);
+  color:#fff;
+  box-shadow:0 8px 18px rgba(23,99,79,.18);
+}
+#fundWalletModal .fund-modal-actions .btn:hover{
+  transform:translateY(-1px);
+  box-shadow:0 7px 17px rgba(18,52,39,.09);
+}
+#fundWalletModal .fund-modal-actions #fundCopyButton:hover{
+  background:linear-gradient(110deg,#125744,#1c765b);
+}
+#fundWalletModal .fund-modal-actions .btn:focus-visible,
+#fundWalletModal .fund-modal-hero .close:focus-visible{
+  outline:3px solid rgba(52,157,113,.30);
+  outline-offset:3px;
+}
+@media(max-width:520px){
+  #fundWalletModal{
+    align-items:center;
+    padding:12px 11px max(12px,env(safe-area-inset-bottom));
+  }
+  #fundWalletModal .modal-box.fund-modal-box{
+    width:100%;
+    max-width:470px;
+    max-height:min(84vh,720px);
+    max-height:min(84dvh,720px);
+    border-radius:23px;
+  }
+  #fundWalletModal .fund-modal-hero{
+    padding:20px 19px 17px;
+  }
+  #fundWalletModal .fund-modal-hero:after{
+    width:155px;
+    height:155px;
+    right:-76px;
+    top:-96px;
+  }
+  #fundWalletModal .fund-modal-hero:before{
+    margin-bottom:9px;
+    font-size:8px;
+  }
+  #fundWalletModal .fund-modal-hero .modal-head{
+    margin-bottom:8px;
+  }
+  #fundWalletModal .fund-modal-hero .modal-head h2{
+    font-size:21px;
+  }
+  #fundWalletModal .fund-modal-hero p{
+    max-width:360px;
+    font-size:11px;
+    line-height:1.55;
+  }
+  #fundWalletModal .fund-modal-content{
+    gap:9px;
+    padding:15px 17px max(17px,env(safe-area-inset-bottom));
+  }
+  #fundWalletModal .fund-detail{
+    padding:11px 13px;
+    border-radius:13px;
+  }
+  #fundWalletModal .fund-detail.account-number{
+    padding:13px 14px;
+  }
+  #fundWalletModal .fund-detail.account-number strong{
+    font-size:23px;
+  }
+  #fundWalletModal .fund-modal-note{
+    margin:1px 0 2px;
+    font-size:10px;
+    line-height:1.55;
+  }
+  #fundWalletModal .fund-modal-actions{
+    grid-template-columns:minmax(0,1.2fr) minmax(92px,.8fr);
+    gap:8px;
+    padding-top:2px;
+  }
+  #fundWalletModal .fund-modal-actions .btn{
+    min-height:46px;
+    padding:9px 10px;
+    border-radius:12px;
+    font-size:11px;
+  }
+}
+@media(max-height:680px){
+  #fundWalletModal .modal-box.fund-modal-box{
+    max-height:calc(100vh - 24px);
+    max-height:calc(100dvh - 24px);
+  }
+  #fundWalletModal .fund-modal-hero{padding-top:16px;padding-bottom:14px}
+  #fundWalletModal .fund-modal-content{gap:8px;padding-top:13px;padding-bottom:14px}
+  #fundWalletModal .fund-detail{padding:9px 12px}
+  #fundWalletModal .fund-modal-note{margin:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #fundWalletModal .fund-modal-box *{transition:none!important;animation:none!important}
+}
+</style>
 </body>
 </html>
