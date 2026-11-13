@@ -12554,6 +12554,7 @@ window.addEventListener("DOMContentLoaded",function(){
     function showChoice(){
       signupMethod="choice";
       if(title)title.textContent="Create Sparkle Account";
+      if(googleRow.parentElement!==choice)choice.insertBefore(googleRow,divider);
       choice.style.display="block";
       backButton.style.display="none";
       form.style.display="none";
