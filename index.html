@@ -12252,36 +12252,45 @@ window.addEventListener("DOMContentLoaded",function(){
 <style id="sparkle-signup-method-choice-style">
 #authModal .sparkle-signup-method-choice{
   display:none;
-  margin:0 0 14px;
-  padding:18px;
-  border:1px solid #e2e8f0;
-  border-radius:18px;
-  background:linear-gradient(145deg,#ffffff 0%,#f7f9ff 100%);
+  margin:0 0 12px;
+  padding:clamp(15px,4vw,21px);
+  border:1px solid #e5eaf1;
+  border-radius:22px;
+  background:
+    radial-gradient(circle at 100% 0%,rgba(218,237,226,.55),transparent 34%),
+    linear-gradient(145deg,#ffffff 0%,#f8fafc 100%);
+  box-shadow:0 14px 34px rgba(16,35,62,.07);
 }
-#authModal .sparkle-signup-choice-intro{
-  margin:0 0 15px;
-  color:#64748b;
-  font-size:13px;
-  line-height:1.55;
-  text-align:center;
-}
-#authModal .sparkle-signup-recommended{
+#authModal .sparkle-signup-choice-topline{
   display:flex;
   align-items:center;
-  justify-content:center;
   gap:7px;
-  margin:0 0 9px;
-  color:#176b57;
-  font-size:10px;
+  margin:0 0 7px;
+  color:#56766a;
+  font-size:9px;
   font-weight:900;
-  letter-spacing:1px;
-  text-transform:uppercase;
+  letter-spacing:1.7px;
 }
-#authModal .sparkle-signup-recommended:before{
+#authModal .sparkle-signup-choice-topline:before{
   content:"";
-  width:7px;height:7px;border-radius:50%;
-  background:#21a179;
-  box-shadow:0 0 0 4px #21a17918;
+  width:6px;height:6px;
+  border-radius:50%;
+  background:#28a477;
+  box-shadow:0 0 0 4px rgba(40,164,119,.10);
+}
+#authModal .sparkle-signup-choice-heading{
+  margin:0 0 5px;
+  color:#14233e;
+  font-size:clamp(19px,4.8vw,23px);
+  font-weight:900;
+  letter-spacing:-.7px;
+  line-height:1.2;
+}
+#authModal .sparkle-signup-choice-intro{
+  margin:0 0 17px;
+  color:#718096;
+  font-size:12px;
+  line-height:1.55;
 }
 #authModal .sparkle-signup-method-choice #sparkleGoogleAuthRow{
   display:block!important;
@@ -12291,71 +12300,142 @@ window.addEventListener("DOMContentLoaded",function(){
   display:none!important;
 }
 #authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton{
-  min-height:54px;
-  border-radius:13px;
-  border-color:#cfd9ea;
-  font-size:15px;
-  box-shadow:0 5px 15px rgba(15,35,75,.045);
+  position:relative;
+  justify-content:flex-start;
+  gap:12px;
+  width:100%;
+  min-height:68px;
+  padding:0 158px 0 15px;
+  overflow:visible;
+  border:1px solid #cbded2;
+  border-radius:16px;
+  background:linear-gradient(110deg,#ffffff 0%,#f5faf6 100%);
+  color:#17253b;
+  font-size:14px;
+  font-weight:850;
+  text-align:left;
+  box-shadow:0 7px 18px rgba(27,76,56,.07);
+  transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton:hover{
+  transform:translateY(-1px);
+  border-color:#9fc5af;
+  background:linear-gradient(110deg,#ffffff 0%,#f0f8f2 100%);
+  box-shadow:0 11px 23px rgba(27,76,56,.10);
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton .sparkle-google-g{
+  flex:0 0 34px;
+  width:34px;
+  height:34px;
+  border:1px solid #e8edf2;
+  border-radius:11px;
+  background-color:#fff;
+  font-size:21px;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton:after{
+  content:"✓  RECOMMENDED · FASTEST";
+  position:absolute;
+  top:50%;
+  right:12px;
+  transform:translateY(-50%);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:28px;
+  padding:0 9px;
+  border:1px solid #bde3ce;
+  border-radius:999px;
+  background:#eaf7ef;
+  color:#176b4e;
+  font-size:8px;
+  font-weight:950;
+  letter-spacing:.35px;
+  white-space:nowrap;
+}
+#authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton:disabled:after{
+  content:"CONNECTING…";
+  border-color:#dbe6df;
+  background:#f1f5f2;
+  color:#64776b;
 }
 #authModal .sparkle-signup-method-divider{
   display:flex;
   align-items:center;
   gap:12px;
   margin:15px 0;
-  color:#94a3b8;
-  font-size:12px;
-  font-weight:700;
+  color:#9aa5b5;
+  font-size:10px;
+  font-weight:850;
+  letter-spacing:1.6px;
 }
 #authModal .sparkle-signup-method-divider:before,
 #authModal .sparkle-signup-method-divider:after{
   content:"";
   height:1px;
   flex:1;
-  background:#e2e8f0;
+  background:#e5eaf0;
 }
 #authModal .sparkle-signup-email-choice{
   display:flex;
   align-items:center;
   gap:12px;
   width:100%;
-  min-height:60px;
-  padding:11px 13px;
-  border:1px solid #dbe3ef;
-  border-radius:13px;
+  min-height:66px;
+  padding:10px 13px;
+  border:1px solid #e0e6ed;
+  border-radius:16px;
   background:#fff;
   color:#1e293b;
   text-align:left;
   cursor:pointer;
-  transition:border-color .15s,background .15s;
+  box-shadow:0 4px 13px rgba(18,37,62,.035);
+  transition:transform .16s ease,border-color .16s ease,background .16s ease,box-shadow .16s ease;
 }
 #authModal .sparkle-signup-email-choice:hover{
-  border-color:#aebdd2;
-  background:#fbfcff;
+  transform:translateY(-1px);
+  border-color:#c4cfdb;
+  background:#fcfdff;
+  box-shadow:0 8px 18px rgba(18,37,62,.065);
 }
 #authModal .sparkle-signup-email-icon{
   display:grid;
   place-items:center;
   flex:0 0 38px;
   width:38px;height:38px;
-  border-radius:11px;
-  background:#eef3fb;
-  color:#37547c;
-  font-size:18px;
+  border:1px solid #e7ebf1;
+  border-radius:12px;
+  background:#f4f6f9;
+  color:#52647a;
+  font-size:17px;
 }
 #authModal .sparkle-signup-email-copy{
   display:grid;
-  gap:3px;
+  gap:4px;
   min-width:0;
+  flex:1;
 }
 #authModal .sparkle-signup-email-copy strong{
-  font-size:14px;
+  color:#26364d;
+  font-size:13px;
   font-weight:850;
-  color:#1e293b;
 }
 #authModal .sparkle-signup-email-copy small{
-  font-size:11px;
+  color:#8995a6;
+  font-size:10px;
   line-height:1.4;
-  color:#718096;
+}
+#authModal .sparkle-signup-email-arrow{
+  flex:0 0 auto;
+  color:#91a0b2;
+  font-size:18px;
+  font-weight:700;
+}
+#authModal .sparkle-signup-choice-footnote{
+  margin:13px 0 0;
+  color:#9aa5b3;
+  font-size:10px;
+  line-height:1.45;
+  text-align:center;
 }
 #authModal .sparkle-signup-back{
   display:none;
@@ -12370,9 +12450,31 @@ window.addEventListener("DOMContentLoaded",function(){
   font-weight:800;
   cursor:pointer;
 }
-@media(max-width:480px){
-  #authModal .sparkle-signup-method-choice{padding:15px;border-radius:16px}
-  #authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton{min-height:52px}
+@media(max-width:380px){
+  #authModal .sparkle-signup-method-choice{padding:14px;border-radius:19px}
+  #authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton{
+    min-height:64px;
+    padding-left:11px;
+    padding-right:132px;
+    gap:9px;
+    font-size:12px;
+  }
+  #authModal .sparkle-signup-method-choice #sparkleGoogleAuthButton:after{
+    right:8px;
+    min-height:26px;
+    padding:0 7px;
+    font-size:7px;
+    letter-spacing:0;
+  }
+  #authModal .sparkle-signup-choice-intro{margin-bottom:14px}
+}
+@media(prefers-reduced-motion:reduce){
+  #authModal .sparkle-signup-method-choice *,
+  #authModal .sparkle-signup-method-choice *:before,
+  #authModal .sparkle-signup-method-choice *:after{
+    transition:none!important;
+    animation:none!important;
+  }
 }
 </style>
 <script id="sparkle-signup-method-choice-layer">
@@ -12395,13 +12497,17 @@ window.addEventListener("DOMContentLoaded",function(){
     choice.setAttribute("role","group");
     choice.setAttribute("aria-label","Choose how to create your Sparkle account");
 
+    const topline=document.createElement("div");
+    topline.className="sparkle-signup-choice-topline";
+    topline.textContent="THE SPARKLE EXPERIENCE";
+
+    const heading=document.createElement("h3");
+    heading.className="sparkle-signup-choice-heading";
+    heading.textContent="Choose how to join";
+
     const intro=document.createElement("p");
     intro.className="sparkle-signup-choice-intro";
-    intro.textContent="Choose how you’d like to create your Sparkle account.";
-
-    const recommended=document.createElement("div");
-    recommended.className="sparkle-signup-recommended";
-    recommended.textContent="Recommended · Fastest";
+    intro.textContent="Create your account in the way that works best for you.";
 
     const divider=document.createElement("div");
     divider.className="sparkle-signup-method-divider";
@@ -12421,11 +12527,20 @@ window.addEventListener("DOMContentLoaded",function(){
     const emailHeading=document.createElement("strong");
     emailHeading.textContent="Continue with Email";
     const emailCaption=document.createElement("small");
-    emailCaption.textContent="Use your email address and create a password";
+    emailCaption.textContent="Sign up using your email address and password";
     emailCopy.append(emailHeading,emailCaption);
-    emailButton.append(emailIcon,emailCopy);
+    const emailArrow=document.createElement("span");
+    emailArrow.className="sparkle-signup-email-arrow";
+    emailArrow.setAttribute("aria-hidden","true");
+    emailArrow.textContent="›";
+    emailButton.append(emailIcon,emailCopy,emailArrow);
 
-    choice.append(intro,recommended,googleRow,divider,emailButton);
+    const footnote=document.createElement("p");
+    footnote.className="sparkle-signup-choice-footnote";
+    footnote.textContent="Your details are protected with Sparkle’s secure sign-up process.";
+
+    // Google is deliberately first; the recommendation check is attached to its button.
+    choice.append(topline,heading,intro,googleRow,divider,emailButton,footnote);
 
     const backButton=document.createElement("button");
     backButton.type="button";
@@ -12439,6 +12554,7 @@ window.addEventListener("DOMContentLoaded",function(){
     function showChoice(){
       signupMethod="choice";
       if(title)title.textContent="Create Sparkle Account";
+      if(googleRow.parentElement!==choice)choice.insertBefore(googleRow,divider);
       choice.style.display="block";
       backButton.style.display="none";
       form.style.display="none";
@@ -12481,7 +12597,7 @@ window.addEventListener("DOMContentLoaded",function(){
       const email=document.getElementById("email");
       if(email&&!email.value)setTimeout(()=>email.focus(),0);
     });
-    backButton.addEventListener("click",function(){showChoice();});
+    backButton.addEventListener("click",showChoice);
 
     const baseSetOtp=window.setSparkleEmailOtpStep;
     if(typeof baseSetOtp==="function"){
@@ -12509,7 +12625,6 @@ window.addEventListener("DOMContentLoaded",function(){
       };
     }
 
-    // Keep the login form and its original Google/email separator unchanged.
     if(typeof authMode!=="undefined"&&authMode==="signup")showChoice();
     else showLogin();
   }
