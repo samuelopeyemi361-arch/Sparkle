@@ -7086,7 +7086,11 @@ async function checkNumberOrder(options={}){
 }
 async function cancelNumberOrder(){
   if(!numberCurrentOrder?.requestId){alert("No active virtual number order to cancel.");return;}
-  if(!confirm("Cancel this virtual number order? Only cancel if the provider still allows cancellation."))return;
+  // Require a deliberate typed confirmation so a stray tap cannot cancel a paid number.
+  const confirmation=window.prompt(
+    "This will permanently cancel the active virtual number. If the provider confirms cancellation, Sparkle will refund the purchase.\n\nType CANCEL to continue:"
+  );
+  if(String(confirmation||"").trim().toUpperCase()!=="CANCEL")return;
   const msg=document.getElementById("numberOrderMessage");if(msg)msg.textContent="Requesting cancellation…";
   try{
     const response=await callNumberOrderFunction("sparkle-number-cancel",{request_id:numberCurrentOrder.requestId});
