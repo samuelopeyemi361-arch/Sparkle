@@ -2726,9 +2726,9 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 
 
 <style id="sparkle-login-welcome-styles">
-#sparkle-login-welcome-modal{position:fixed;inset:0;z-index:100006;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(9,20,43,.52);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px)}
+#sparkle-login-welcome-modal{position:fixed;inset:0;z-index:100006;display:none;align-items:flex-start;justify-content:center;padding:max(76px,calc(env(safe-area-inset-top) + 64px)) 16px 16px;background:transparent;backdrop-filter:none;-webkit-backdrop-filter:none;pointer-events:none}
 #sparkle-login-welcome-modal.is-open{display:flex}
-#sparkle-login-welcome-modal .sparkle-welcome-card{position:relative;box-sizing:border-box;width:min(100%,390px);max-height:calc(100dvh - 32px);overflow:auto;padding:24px 22px 17px;border:1px solid rgba(255,255,255,.92);border-radius:24px;background:linear-gradient(145deg,#fff 0%,#f6f8fd 100%);box-shadow:0 20px 58px rgba(4,16,43,.24),0 2px 8px rgba(4,16,43,.08);color:#142344;text-align:center}
+#sparkle-login-welcome-modal .sparkle-welcome-card{pointer-events:auto;position:relative;box-sizing:border-box;width:min(100%,390px);max-height:calc(100dvh - 32px);overflow:auto;padding:24px 22px 17px;border:1px solid rgba(255,255,255,.92);border-radius:24px;background:linear-gradient(145deg,#fff 0%,#f6f8fd 100%);box-shadow:0 20px 58px rgba(4,16,43,.24),0 2px 8px rgba(4,16,43,.08);color:#142344;text-align:center}
 #sparkle-login-welcome-modal .sparkle-welcome-mark{display:grid;place-items:center;width:44px;height:44px;margin:0 auto 15px;border:1px solid #dbe6ff;border-radius:50%;background:linear-gradient(145deg,#f4f7ff,#e4ecff);color:#1756ce;font-size:21px;font-weight:950;box-shadow:0 5px 13px rgba(24,70,150,.12)}
 #sparkle-login-welcome-modal .sparkle-welcome-eyebrow{margin:0 0 7px;color:#315fc1;font-size:9px;font-weight:900;letter-spacing:1.35px;text-transform:uppercase}
 #sparkle-login-welcome-modal .sparkle-welcome-title{margin:0 0 10px;color:#101d35;font-size:clamp(20px,4.6vw,23px);line-height:1.23;font-weight:900;letter-spacing:-.55px;overflow-wrap:anywhere}
@@ -12219,14 +12219,14 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
 
 <!-- Compact Sparkle login welcome -->
 <div id="sparkle-login-welcome-modal" aria-hidden="true">
-  <section class="sparkle-welcome-card" role="dialog" aria-modal="true" aria-labelledby="sparkle-login-welcome-title" aria-describedby="sparkle-login-welcome-copy">
+  <section class="sparkle-welcome-card" role="dialog" aria-modal="false" aria-labelledby="sparkle-login-welcome-title" aria-describedby="sparkle-login-welcome-copy">
     <div class="sparkle-welcome-mark" aria-hidden="true">✦</div>
     <p class="sparkle-welcome-eyebrow">A quick note from Sparkle</p>
     <h2 class="sparkle-welcome-title" id="sparkle-login-welcome-title">Welcome to Sparkle, <span id="sparkle-login-welcome-name">there</span>!</h2>
     <p class="sparkle-welcome-copy" id="sparkle-login-welcome-copy">Stay connected with Sparkle. Join our official WhatsApp Channel for updates, offers and important announcements.</p>
     <div class="sparkle-welcome-actions">
       <button type="button" class="sparkle-welcome-action" id="sparkle-login-welcome-channel">Join WhatsApp Channel <span aria-hidden="true">↗</span></button>
-      <button type="button" class="sparkle-welcome-action close-action" id="sparkle-login-welcome-later">Close</button>
+      <button type="button" class="sparkle-welcome-action close-action" id="sparkle-login-welcome-later">OK</button>
     </div>
   </section>
 </div>
