@@ -9877,8 +9877,10 @@ function sparkleIsRecentGoogleSignupAccount(user){
   const created = Date.parse(user?.created_at || "");
   const age = Date.now() - created;
   if(!Number.isFinite(created) || age < -60000 || age > 15 * 60 * 1000) return false;
-  for(const store of [sessionStorage, localStorage]){
+  for(const storageName of ["sessionStorage","localStorage"]){
     try{
+      const store=window[storageName];
+      if(!store)continue;
       const pending = JSON.parse(store.getItem("sparkle_google_oauth_pending_v1") || "null");
       const started = Number(pending?.startedAt);
       if(String(pending?.mode || "").toLowerCase() === "signup" &&
