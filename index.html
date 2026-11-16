@@ -11857,8 +11857,8 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   const PENDING_KEY="sparkle_google_oauth_pending_v1";
   let handledUserId="",profileUser=null,requirePinAfterProfile=false,saving=false,enforceGooglePin=false,finalizing=false;
   let originalShowDashboard=null,originalCloseSetPinModal=null,originalSaveTransactionPIN=null;
-  function pending(){try{const p=JSON.parse(sessionStorage.getItem(PENDING_KEY)||"null");return p&&Number.isFinite(Number(p.startedAt))?p:null;}catch(_){return null;}}
-  function clearPending(){try{sessionStorage.removeItem(PENDING_KEY);}catch(_){}}
+  function pending(){try{const raw=sessionStorage.getItem(PENDING_KEY)||localStorage.getItem(PENDING_KEY)||"null",p=JSON.parse(raw);return p&&Number.isFinite(Number(p.startedAt))?p:null;}catch(_){return null;}}
+  function clearPending(){try{sessionStorage.removeItem(PENDING_KEY);localStorage.removeItem(PENDING_KEY);}catch(_){}}
   function isGoogleUser(user){
     const app=user?.app_metadata||{},providers=Array.isArray(app.providers)?app.providers:[],identities=Array.isArray(user?.identities)?user.identities:[];
     return String(app.provider||"").toLowerCase()==="google"||providers.some(x=>String(x).toLowerCase()==="google")||identities.some(x=>String(x?.provider||"").toLowerCase()==="google");
@@ -11929,7 +11929,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   };
   window.sparkleStartGoogleAuth=async function(){
     const button=document.getElementById("sparkleGoogleAuthButton");if(button){button.disabled=true;button.innerHTML='<span class="sparkle-google-g">G</span><span>Connecting to Google…</span>';}
-    try{clearPending();clearMessage();sessionStorage.setItem(PENDING_KEY,JSON.stringify({mode:authMode,startedAt:Date.now()}));const {error}=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}});if(error)throw error;}
+    try{clearPending();clearMessage();const request={mode:authMode,startedAt:Date.now()};sessionStorage.setItem(PENDING_KEY,JSON.stringify(request));localStorage.setItem(PENDING_KEY,JSON.stringify(request));const {error}=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}});if(error)throw error;}
     catch(e){clearPending();showMessage(e?.message||"Google login could not start. Please try again.","error");if(button){button.disabled=false;button.innerHTML='<span class="sparkle-google-g" aria-hidden="true">G</span><span>Continue with Google</span>';}}
   };
   function openProfile(user,profile,isNew){
