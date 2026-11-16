@@ -9892,6 +9892,18 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       setTimeout(()=>{ supabaseClient.auth.signOut().catch(()=>{}); },0);
       return;
     }
+    const authApp=session.user.app_metadata||{};
+    const authIdentities=Array.isArray(session.user.identities)?session.user.identities:[];
+    const hasGoogleProvider=String(authApp.provider||"").toLowerCase()==="google"||
+      (Array.isArray(authApp.providers)&&authApp.providers.some(provider=>String(provider).toLowerCase()==="google"))||
+      authIdentities.some(identity=>String(identity?.provider||"").toLowerCase()==="google");
+    // Defer early Google session restoration until the onboarding controller is installed.
+    if(hasGoogleProvider&&!window.__sparkleGoogleAuthReady){
+      window.__sparkleDeferredGoogleSession={event,user:session.user};
+      window.currentSparkleUser=null;
+      showHomepage();
+      return;
+    }
     const currentUserId=String(window.currentSparkleUser?.id||"");
     const sessionUserId=String(session.user.id||"");
     // Token refreshes and duplicate auth notifications must not rebuild the dashboard.
@@ -12031,6 +12043,9 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       if(event==="SIGNED_OUT"){handledUserId="";profileUser=null;requirePinAfterProfile=false;enforceGooglePin=false;window.__sparkleOnboardingInProgress=false;window.__sparkleGoogleOnboardingState=null;hideOnboardingLoader();return;}
       if(session?.user&&(pending()||isGoogleUser(session.user)))setTimeout(()=>void handle(session.user),0);
     });
+    window.__sparkleGoogleAuthReady=true;
+    const deferredGoogleSession=window.__sparkleDeferredGoogleSession;
+    if(deferredGoogleSession?.user){delete window.__sparkleDeferredGoogleSession;setTimeout(()=>void handle(deferredGoogleSession.user),0);}
   }
   if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",install,{once:true});else install();
 })();
