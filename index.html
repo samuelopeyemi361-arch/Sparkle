@@ -11883,7 +11883,19 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   const PENDING_KEY="sparkle_google_oauth_pending_v1";
   let handledUserId="",profileUser=null,requirePinAfterProfile=false,saving=false,enforceGooglePin=false,finalizing=false;
   let originalShowDashboard=null,originalCloseSetPinModal=null,originalSaveTransactionPIN=null;
-  function pending(){try{const raw=sessionStorage.getItem(PENDING_KEY)||localStorage.getItem(PENDING_KEY)||"null",p=JSON.parse(raw);return p&&Number.isFinite(Number(p.startedAt))?p:null;}catch(_){return null;}}
+  function pending(){
+    const now=Date.now();
+    for(const store of [sessionStorage,localStorage]){
+      try{
+        const raw=store.getItem(PENDING_KEY);
+        if(!raw)continue;
+        const p=JSON.parse(raw),started=Number(p?.startedAt);
+        if(p&&Number.isFinite(started)&&started>0&&started<=now+60000&&now-started<=15*60*1000)return p;
+      }catch(_){}
+    }
+    clearPending();
+    return null;
+  }
   function clearPending(){try{sessionStorage.removeItem(PENDING_KEY);localStorage.removeItem(PENDING_KEY);}catch(_){}}
   function isGoogleUser(user){
     const app=user?.app_metadata||{},providers=Array.isArray(app.providers)?app.providers:[],identities=Array.isArray(user?.identities)?user.identities:[];
@@ -11917,7 +11929,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     if(needsOnboarding){
       window.__sparkleOnboardingInProgress=true;
       window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};
-      showOnboardingLoader("Saving your Sparkle profile…","Your details are saved. We’re checking your Transaction PIN and preparing your dedicated funding account before the next step.",false);
+      showOnboardingLoader("Saving your Sparkle profile…","Your details are saved. We’re checking your Transaction PIN before opening your Sparkle account.",false);
     }
     let hasPin=false;
     try{hasPin=typeof knownHasPin==="boolean"?knownHasPin:await googleUserHasPin(user);}
@@ -11930,22 +11942,25 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       if(!hasPin)setTimeout(()=>openPinModal(),900);
       clearPending();return true;
     }
-    showOnboardingLoader("Preparing your Sparkle account…","We’re securely checking your profile and creating your dedicated funding account. Your dashboard stays private until setup is complete.",false);
-    let accountReady=false;try{accountReady=await createDedicatedAccount();}catch(error){console.warn("Google onboarding account setup:",error);}
-    if(!accountReady){
-      showOnboardingLoader("Your account is not finished yet","Your profile is saved. A weak connection may have interrupted account-number setup. Tap below to safely retry; Sparkle checks for an existing account before creating anything.",true);return false;
+    if(!hasPin){
+      enforceGooglePin=true;
+      hideOnboardingLoader();
+      openPinModal();
+      return false;
     }
-    if(!hasPin){enforceGooglePin=true;hideOnboardingLoader();openPinModal();return false;}
-    await revealGoogleDashboard(user);return true;
+    // DVA creation is handled by the dashboard's existing funding-account loader.
+    // A Paystack eligibility/identity check must not block an otherwise complete signup.
+    await revealGoogleDashboard(user);
+    return true;
   }
   async function finalizeGoogleOnboarding(user){
     if(finalizing)return false;finalizing=true;window.__sparkleOnboardingInProgress=true;
-    showOnboardingLoader("Securing the final step…","We’re verifying your PIN and confirming your Sparkle account number before opening your dashboard.",false);
+    showOnboardingLoader("Securing the final step…","We’re verifying your PIN before opening your Sparkle dashboard.",false);
     try{
       const hasPin=await googleUserHasPin(user);
       if(!hasPin){hideOnboardingLoader();enforceGooglePin=true;const msg=document.getElementById("setPinMessage");if(msg){msg.style.color="#b45309";msg.textContent="Sparkle has not confirmed your new PIN yet. Check your connection and tap Create PIN again.";}return false;}
-      const accountReady=await createDedicatedAccount();
-      if(!accountReady){showOnboardingLoader("One last connection check","Your PIN is saved securely. We still need to confirm your dedicated account number. Tap retry; Sparkle will recover an account already created.",true);return false;}
+      // The dashboard loads or retries the dedicated funding account independently.
+      // Paystack DVA eligibility is separate from Sparkle login and PIN setup.
       await revealGoogleDashboard(user);return true;
     }catch(error){console.warn("Google onboarding final verification:",error);showOnboardingLoader("Connection interrupted","Your progress is protected. Reconnect and retry the final verification; Sparkle will not create a second account or PIN.",true);return false;}
     finally{finalizing=false;}
@@ -11979,7 +11994,10 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     showHomepage();document.getElementById("authModal")?.classList.remove("show");hideOnboardingLoader();document.getElementById("sparkleGoogleProfileModal").classList.add("show");
   }
   async function handle(user){
-    const p=pending();if(!user?.id||(!p&&!isGoogleUser(user)))return false;if(handledUserId===user.id)return true;
+    const p=pending();
+    if(!user?.id)return false;
+    if(!isGoogleUser(user)){clearPending();return false;}
+    if(handledUserId===user.id)return true;
     handledUserId=user.id;window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};window.__sparkleOnboardingInProgress=true;
     showHomepage();showOnboardingLoader("Connecting your Google account…","We’re checking your saved Sparkle profile. Your dashboard and welcome message stay hidden until required setup is verified.",false);
     try{
@@ -11989,7 +12007,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       if(error)throw new Error("We couldn't load your Sparkle profile. Check your connection and retry.");
       const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
       const missingProfile=!profile?.username||!profile?.phone||!(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||!(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
-      if(missingProfile){openProfile(user,profile,true);return true;}
+      if(missingProfile){openProfile(user,profile,recentlyCreated||temporaryGoogleUsername);return true;}
       const hasPin=await googleUserHasPin(user),needsOnboarding=recentlyCreated||temporaryGoogleUsername||!hasPin;
       if(needsOnboarding){await finishGoogleLogin(user,true,hasPin);return true;}
       window.__sparkleOnboardingInProgress=false;hideOnboardingLoader();await originalShowDashboard(user);clearPending();window.__sparkleGoogleOnboardingState=null;return true;
@@ -12031,7 +12049,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   };
   function install(){
     const form=document.getElementById("authForm"),row=document.getElementById("sparkleGoogleAuthRow");if(form&&row&&row.parentElement!==form.parentElement)form.insertAdjacentElement("afterend",row);
-    if(typeof showDashboard==="function"){originalShowDashboard=showDashboard;showDashboard=async function(user){if(user?.id&&(pending()||isGoogleUser(user))){await handle(user);return;}return await originalShowDashboard.apply(this,arguments);};}
+    if(typeof showDashboard==="function"){originalShowDashboard=showDashboard;showDashboard=async function(user){if(user?.id&&isGoogleUser(user)){await handle(user);return;}if(user?.id)clearPending();return await originalShowDashboard.apply(this,arguments);};}
     if(typeof setSparkleEmailOtpStep==="function"){const original=setSparkleEmailOtpStep;setSparkleEmailOtpStep=function(enabled){const result=original.apply(this,arguments),r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display=enabled?"none":"block";return result;};}
     if(typeof openSparkleForgotPassword==="function"){const original=openSparkleForgotPassword;openSparkleForgotPassword=function(){const result=original.apply(this,arguments),r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="none";return result;};}
     if(typeof returnToSparkleLoginFromForgotPassword==="function"){const original=returnToSparkleLoginFromForgotPassword;returnToSparkleLoginFromForgotPassword=function(){const result=original.apply(this,arguments),r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="block";return result;};}
@@ -12064,7 +12082,10 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     }
     supabaseClient.auth.onAuthStateChange((event,session)=>{
       if(event==="SIGNED_OUT"){handledUserId="";profileUser=null;requirePinAfterProfile=false;enforceGooglePin=false;window.__sparkleOnboardingInProgress=false;window.__sparkleGoogleOnboardingState=null;hideOnboardingLoader();return;}
-      if(session?.user&&(pending()||isGoogleUser(session.user)))setTimeout(()=>void handle(session.user),0);
+      if(session?.user){
+        if(isGoogleUser(session.user))setTimeout(()=>void handle(session.user),0);
+        else clearPending();
+      }
     });
     window.__sparkleGoogleAuthReady=true;
     const deferredGoogleSession=window.__sparkleDeferredGoogleSession;
