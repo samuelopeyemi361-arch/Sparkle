@@ -5491,6 +5491,20 @@ if(!(user.email_confirmed_at || user.confirmed_at)){
   return;
 }
 
+// Hold restored Google sessions until the Google onboarding controller has installed.
+// This covers loadUser() as well as the auth-state listener above, preventing a first-paint
+// dashboard flash when OAuth restoration resolves before the later inline script loads.
+const userApp=user.app_metadata||{};
+const userIdentities=Array.isArray(user.identities)?user.identities:[];
+const userHasGoogleProvider=String(userApp.provider||"").toLowerCase()==="google"||
+  (Array.isArray(userApp.providers)&&userApp.providers.some(provider=>String(provider).toLowerCase()==="google"))||
+  userIdentities.some(identity=>String(identity?.provider||"").toLowerCase()==="google");
+if(userHasGoogleProvider&&!window.__sparkleGoogleAuthReady){
+  window.__sparkleDeferredGoogleSession={event:"LOAD_USER",user:user};
+  window.currentSparkleUser=null;
+  showHomepage();
+  return;
+}
 // The auth-state listener may already have opened the dashboard for this user.
 // Avoid rebuilding it, because rebuilding resets the visible page back to Home.
 const dashboardActive = !!document.getElementById("dashboard")?.classList.contains("active");
