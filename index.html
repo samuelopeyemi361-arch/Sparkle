@@ -5476,11 +5476,19 @@ if(sparklePasswordRecoveryMode){
 const {data,error} = await supabaseClient.auth.getSession();
 const user = data?.session?.user || initialSession?.user || null;
 
-if(error || !user){
+if(error && !initialSession?.user){
+  window.__sparkleAuthRestoreError = true;
+  console.warn("Sparkle could not verify the restored session:", error.message || error);
+  showHomepage();
+  return;
+}
+if(!user){
+  window.__sparkleAuthRestoreError = false;
   showHomepage();
   sparkleFlushQueuedServiceOpen();
   return;
 }
+window.__sparkleAuthRestoreError = false;
 
 // Central access check: an unverified account must never load the dashboard,
 // even if a stale session exists from before email confirmation was enabled.
@@ -5499,10 +5507,9 @@ const userIdentities=Array.isArray(user.identities)?user.identities:[];
 const userHasGoogleProvider=String(userApp.provider||"").toLowerCase()==="google"||
   (Array.isArray(userApp.providers)&&userApp.providers.some(provider=>String(provider).toLowerCase()==="google"))||
   userIdentities.some(identity=>String(identity?.provider||"").toLowerCase()==="google");
-if(userHasGoogleProvider&&!window.__sparkleGoogleAuthReady){
+if(userHasGoogleProvider && sparkleIsRecentGoogleSignupAccount(user) && !window.__sparkleGoogleAuthReady){
   window.__sparkleDeferredGoogleSession={event:"LOAD_USER",user:user};
-  window.currentSparkleUser=null;
-  showHomepage();
+  window.currentSparkleUser=user;
   return;
 }
 // The auth-state listener may already have opened the dashboard for this user.
@@ -5531,6 +5538,7 @@ document
 document
 .getElementById("dashboard")
 .classList.add("active");
+document.getElementById("authModal")?.classList.remove("show");
 window.currentSparkleUser=user;
 const sparkleWelcomeUserId=String(user?.id||"");
 if(sparkleWelcomeUserId&&window.__sparkleLoginWelcomeShownUserId!==sparkleWelcomeUserId){
@@ -9861,16 +9869,46 @@ document.getElementById("homepage").classList.remove("hidden");
 let sparkleInitialAuthResolved = false;
 let sparkleResolveInitialAuth;
 const sparkleInitialAuthPromise = new Promise(resolve => { sparkleResolveInitialAuth = resolve; });
-// Supabase normally emits INITIAL_SESSION immediately after restoring local auth.
-// If storage/network restoration stalls, public auth routes must still remain usable.
-// Resolve the route gate after a short bounded wait; a later auth event is still
-// processed normally by the listener below and can restore an existing session.
-const sparkleInitialAuthFallbackTimer = window.setTimeout(() => {
+window.__sparkleAuthRestoreError = false;
+
+// Only hold the dashboard for an actual, recent Google registration. A normal
+// Google login or refresh must not be mistaken for a new-account onboarding flow.
+function sparkleIsRecentGoogleSignupAccount(user){
+  const created = Date.parse(user?.created_at || "");
+  const age = Date.now() - created;
+  if(!Number.isFinite(created) || age < -60000 || age > 15 * 60 * 1000) return false;
+  for(const store of [sessionStorage, localStorage]){
+    try{
+      const pending = JSON.parse(store.getItem("sparkle_google_oauth_pending_v1") || "null");
+      const started = Number(pending?.startedAt);
+      if(String(pending?.mode || "").toLowerCase() === "signup" &&
+         Number.isFinite(started) && started > 0 && started <= Date.now() + 60000 &&
+         Date.now() - started <= 15 * 60 * 1000 && created >= started - 10 * 60 * 1000) return true;
+    }catch(_){}
+  }
+  return false;
+}
+
+// INITIAL_SESSION is normally immediate. Allow a slower restore to finish and
+// re-check Supabase once before releasing a protected route as signed out.
+const sparkleInitialAuthFallbackTimer = window.setTimeout(async () => {
   if (sparkleInitialAuthResolved) return;
+  let check = null;
+  try{
+    check = await Promise.race([
+      supabaseClient.auth.getSession(),
+      new Promise(resolve => window.setTimeout(() => resolve(null), 2500))
+    ]);
+  }catch(error){
+    window.__sparkleAuthRestoreError = true;
+    console.warn("Sparkle session re-check failed:", error?.message || error);
+  }
+  if (sparkleInitialAuthResolved) return;
+  const restoredSession = check?.data?.session || null;
+  if(!check) window.__sparkleAuthRestoreError = true;
   sparkleInitialAuthResolved = true;
-  console.warn("Sparkle initial session restore timed out; allowing public auth routes to open.");
-  sparkleResolveInitialAuth(null);
-}, 3000);
+  sparkleResolveInitialAuth(restoredSession);
+}, 10000);
 let sparkleQueuedServiceOpen = "";
 function sparkleFlushQueuedServiceOpen(){
   const service = sparkleQueuedServiceOpen;
@@ -9884,9 +9922,13 @@ function sparkleFlushQueuedServiceOpen(){
 }
 
 supabaseClient.auth.onAuthStateChange((event, session)=>{
-  if(event === "INITIAL_SESSION" && !sparkleInitialAuthResolved){
-    sparkleInitialAuthResolved = true;
-    sparkleResolveInitialAuth(session || null);
+  if(event === "INITIAL_SESSION"){
+    window.__sparkleAuthRestoreError = false;
+    if(!sparkleInitialAuthResolved){
+      sparkleInitialAuthResolved = true;
+      window.clearTimeout(sparkleInitialAuthFallbackTimer);
+      sparkleResolveInitialAuth(session || null);
+    }
   }
   if(event === "PASSWORD_RECOVERY"){
     sparklePasswordRecoveryMode = true;
@@ -9912,10 +9954,9 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
       (Array.isArray(authApp.providers)&&authApp.providers.some(provider=>String(provider).toLowerCase()==="google"))||
       authIdentities.some(identity=>String(identity?.provider||"").toLowerCase()==="google");
     // Defer early Google session restoration until the onboarding controller is installed.
-    if(hasGoogleProvider&&!window.__sparkleGoogleAuthReady){
+    if(hasGoogleProvider && sparkleIsRecentGoogleSignupAccount(session.user) && !window.__sparkleGoogleAuthReady){
       window.__sparkleDeferredGoogleSession={event,user:session.user};
-      window.currentSparkleUser=null;
-      showHomepage();
+      window.currentSparkleUser=session.user;
       return;
     }
     const currentUserId=String(window.currentSparkleUser?.id||"");
@@ -10132,10 +10173,14 @@ supabaseClient.auth.onAuthStateChange((event, session)=>{
     const known = !!(transactionMatch || service || pageId || fundWalletRoute || adminRoute);
     if (!known) return;
 
-    if (!user || !dashboardActive) {
+    if (!user) {
+      if(window.__sparkleAuthRestoreError) return;
       if (!document.getElementById("authModal")?.classList.contains("show")) openAuth("login");
       return;
     }
+    // A valid user exists, but the dashboard may still be completing session
+    // restoration or first-paint initialization. Never mislabel this as signed out.
+    if(!dashboardActive) return;
 
     applyDepth++;
     try {
@@ -11897,6 +11942,12 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     return null;
   }
   function clearPending(){try{sessionStorage.removeItem(PENDING_KEY);localStorage.removeItem(PENDING_KEY);}catch(_){}}
+  function withTimeout(task,ms,message){
+    let timer;
+    const work=typeof task==="function"?Promise.resolve().then(task):Promise.resolve(task);
+    const timeout=new Promise((_,reject)=>{timer=window.setTimeout(()=>reject(new Error(message)),ms);});
+    return Promise.race([work,timeout]).finally(()=>window.clearTimeout(timer));
+  }
   function isGoogleUser(user){
     const app=user?.app_metadata||{},providers=Array.isArray(app.providers)?app.providers:[],identities=Array.isArray(user?.identities)?user.identities:[];
     return String(app.provider||"").toLowerCase()==="google"||providers.some(x=>String(x).toLowerCase()==="google")||identities.some(x=>String(x?.provider||"").toLowerCase()==="google");
@@ -11912,12 +11963,14 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   }
   function hideOnboardingLoader(){const overlay=document.getElementById("sparkleGoogleOnboardingLoader");if(overlay){overlay.classList.remove("is-open");overlay.setAttribute("aria-hidden","true");}}
   async function googleUserHasPin(user){
-    const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
-    if(sessionError||!session?.access_token||session.user?.id!==user?.id)throw new Error("Your Sparkle session needs refreshing. Please reconnect and try again.");
-    const response=await fetch(SUPABASE_URL+"/functions/v1/sparkle-transaction-pin",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({action:"status"})});
-    let result={};try{result=await response.json();}catch(_){}
-    if(!response.ok||result.success!==true||typeof result.hasPin!=="boolean")throw new Error("Sparkle couldn't verify your Transaction PIN status. Check your connection and retry.");
-    return result.hasPin;
+    return withTimeout(async()=>{
+      const {data:{session},error:sessionError}=await supabaseClient.auth.getSession();
+      if(sessionError||!session?.access_token||session.user?.id!==user?.id)throw new Error("Your Sparkle session needs refreshing. Please reconnect and try again.");
+      const response=await fetch(SUPABASE_URL+"/functions/v1/sparkle-transaction-pin",{method:"POST",headers:{Authorization:"Bearer "+session.access_token,apikey:SUPABASE_KEY,"Content-Type":"application/json"},body:JSON.stringify({action:"status"})});
+      let result={};try{result=await response.json();}catch(_){}
+      if(!response.ok||result.success!==true||typeof result.hasPin!=="boolean")throw new Error("Sparkle couldn't verify your Transaction PIN status. Check your connection and retry.");
+      return result.hasPin;
+    },8500,"Sparkle's Transaction PIN check is taking too long. Your dashboard can still open; please retry the check when your connection is stable.");
   }
   async function revealGoogleDashboard(user){
     enforceGooglePin=false;window.__sparkleOnboardingInProgress=false;hideOnboardingLoader();
@@ -11935,11 +11988,12 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     try{hasPin=typeof knownHasPin==="boolean"?knownHasPin:await googleUserHasPin(user);}
     catch(error){
       if(needsOnboarding){showOnboardingLoader("Connection interrupted",error?.message||"Sparkle couldn't confirm your PIN status. Reconnect and tap retry to continue.",true);return false;}
-      throw error;
+      console.warn("Sparkle PIN status check was non-blocking for an existing account:",error?.message||error);
+      hasPin=null;
     }
     if(!needsOnboarding){
       window.__sparkleOnboardingInProgress=false;hideOnboardingLoader();await originalShowDashboard(user);
-      if(!hasPin)setTimeout(()=>openPinModal(),900);
+      if(hasPin===false)setTimeout(()=>openPinModal(),900);
       clearPending();return true;
     }
     if(!hasPin){
@@ -11993,25 +12047,85 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     document.getElementById("sparkleGoogleProfileMessage").textContent="";document.getElementById("sparkleGoogleProfileMessage").className="message";
     showHomepage();document.getElementById("authModal")?.classList.remove("show");hideOnboardingLoader();document.getElementById("sparkleGoogleProfileModal").classList.add("show");
   }
+  async function checkExistingGoogleSetup(user){
+    try{
+      const result=await withTimeout(
+        ()=>supabaseClient.from("profiles").select("first_name,last_name,full_name,username,phone,email,referral_code").eq("id",user.id).maybeSingle(),
+        7000,
+        "Sparkle's profile check is taking too long."
+      );
+      if(result.error)return;
+      const profile=result.data||null;
+      const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
+      const missingProfile=temporaryGoogleUsername||!profile?.username||!profile?.phone||
+        !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
+        !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
+      if(missingProfile){openProfile(user,profile,temporaryGoogleUsername);return;}
+      const hasPin=await googleUserHasPin(user);
+      if(hasPin===false&&String(window.currentSparkleUser?.id||"")===String(user.id||"")&&
+         document.getElementById("dashboard")?.classList.contains("active")){
+        window.setTimeout(()=>{
+          if(String(window.currentSparkleUser?.id||"")===String(user.id||"")&&
+             document.getElementById("dashboard")?.classList.contains("active"))openPinModal();
+        },900);
+      }
+    }catch(error){
+      // Existing customers keep their dashboard. PIN enforcement remains server-side
+      // for purchases; a temporary status-check failure must not sign them out.
+      console.warn("Non-blocking Google account check:",error?.message||error);
+    }
+  }
   async function handle(user){
     const p=pending();
     if(!user?.id)return false;
     if(!isGoogleUser(user)){clearPending();return false;}
     if(handledUserId===user.id)return true;
-    handledUserId=user.id;window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};window.__sparkleOnboardingInProgress=true;
-    showHomepage();showOnboardingLoader("Connecting your Google account…","We’re checking your saved Sparkle profile. Your dashboard and welcome message stay hidden until required setup is verified.",false);
+    handledUserId=user.id;
+
+    const created=Date.parse(user.created_at||"");
+    const started=Number(p?.startedAt||0);
+    const age=Date.now()-created;
+    const recentlyCreated=Number.isFinite(created)&&age>=-60000&&age<=15*60*1000&&
+      started>0&&created>=started-10*60*1000;
+    const isNewGoogleSignup=String(p?.mode||"").toLowerCase()==="signup"&&recentlyCreated;
+
+    if(!isNewGoogleSignup){
+      window.__sparkleOnboardingInProgress=false;
+      window.__sparkleGoogleOnboardingState=null;
+      hideOnboardingLoader();
+      clearPending();
+      await originalShowDashboard(user);
+      void checkExistingGoogleSetup(user);
+      return true;
+    }
+
+    window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};
+    window.__sparkleOnboardingInProgress=true;
+    showHomepage();
+    showOnboardingLoader("Connecting your Google account…","We’re checking your new Sparkle profile before opening your dashboard.",false);
     try{
       if(!user.email||!(user.email_confirmed_at||user.confirmed_at))throw new Error("Google must provide a verified email address to use Sparkle.");
-      const created=Date.parse(user.created_at||""),started=Number(p?.startedAt||0),recentlyCreated=Number.isFinite(created)&&started>0&&created>=started-10*60*1000;
-      const {data:profile,error}=await supabaseClient.from("profiles").select("first_name,last_name,full_name,username,phone,email,referral_code").eq("id",user.id).maybeSingle();
+      const profileResult=await withTimeout(
+        ()=>supabaseClient.from("profiles").select("first_name,last_name,full_name,username,phone,email,referral_code").eq("id",user.id).maybeSingle(),
+        8000,
+        "Sparkle's profile check is taking too long. Reconnect and tap retry to continue."
+      );
+      const {data:profile,error}=profileResult;
       if(error)throw new Error("We couldn't load your Sparkle profile. Check your connection and retry.");
       const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
-      const missingProfile=!profile?.username||!profile?.phone||!(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||!(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
-      if(missingProfile){openProfile(user,profile,recentlyCreated||temporaryGoogleUsername);return true;}
-      const hasPin=await googleUserHasPin(user),needsOnboarding=recentlyCreated||temporaryGoogleUsername||!hasPin;
-      if(needsOnboarding){await finishGoogleLogin(user,true,hasPin);return true;}
-      window.__sparkleOnboardingInProgress=false;hideOnboardingLoader();await originalShowDashboard(user);clearPending();window.__sparkleGoogleOnboardingState=null;return true;
-    }catch(e){console.warn("Google sign-in setup did not finish:",e);window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};showOnboardingLoader("Connection interrupted",e?.message||"Your Sparkle setup is safe. Reconnect and tap retry to continue.",true);return true;}
+      const missingProfile=temporaryGoogleUsername||!profile?.username||!profile?.phone||
+        !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
+        !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
+      if(missingProfile){openProfile(user,profile,true);return true;}
+      const hasPin=await googleUserHasPin(user);
+      await finishGoogleLogin(user,true,hasPin);
+      return true;
+    }catch(e){
+      console.warn("Google sign-in setup did not finish:",e);
+      window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};
+      showOnboardingLoader("Connection interrupted",e?.message||"Your Sparkle setup is safe. Reconnect and tap retry to continue.",true);
+      return true;
+    }
   }
   window.sparkleSaveGoogleProfile=async function(){
     if(saving)return;const user=profileUser;if(!user?.id){message("Your Google session expired. Please sign in with Google again.");return;}
