@@ -11900,13 +11900,22 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     window.__sparkleGoogleOnboardingState=null;clearPending();await originalShowDashboard(user);return true;
   }
   async function finishGoogleLogin(user,needsOnboarding,knownHasPin){
-    const hasPin=typeof knownHasPin==="boolean"?knownHasPin:await googleUserHasPin(user);
+    if(needsOnboarding){
+      window.__sparkleOnboardingInProgress=true;
+      window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};
+      showOnboardingLoader("Saving your Sparkle profile…","Your details are saved. We’re checking your Transaction PIN and preparing your dedicated funding account before the next step.",false);
+    }
+    let hasPin=false;
+    try{hasPin=typeof knownHasPin==="boolean"?knownHasPin:await googleUserHasPin(user);}
+    catch(error){
+      if(needsOnboarding){showOnboardingLoader("Connection interrupted",error?.message||"Sparkle couldn't confirm your PIN status. Reconnect and tap retry to continue.",true);return false;}
+      throw error;
+    }
     if(!needsOnboarding){
       window.__sparkleOnboardingInProgress=false;hideOnboardingLoader();await originalShowDashboard(user);
       if(!hasPin)setTimeout(()=>openPinModal(),900);
       clearPending();return true;
     }
-    window.__sparkleOnboardingInProgress=true;window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};
     showOnboardingLoader("Preparing your Sparkle account…","We’re securely checking your profile and creating your dedicated funding account. Your dashboard stays private until setup is complete.",false);
     let accountReady=false;try{accountReady=await createDedicatedAccount();}catch(error){console.warn("Google onboarding account setup:",error);}
     if(!accountReady){
