@@ -11929,7 +11929,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   };
   window.sparkleStartGoogleAuth=async function(){
     const button=document.getElementById("sparkleGoogleAuthButton");if(button){button.disabled=true;button.innerHTML='<span class="sparkle-google-g">G</span><span>Connecting to Google…</span>';}
-    try{clearPending();clearMessage();const request={mode:authMode,startedAt:Date.now()};sessionStorage.setItem(PENDING_KEY,JSON.stringify(request));localStorage.setItem(PENDING_KEY,JSON.stringify(request));const {error}=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}});if(error)throw error;}
+    try{clearPending();clearMessage();const request={mode:authMode,startedAt:Date.now()};sessionStorage.setItem(PENDING_KEY,JSON.stringify(request));try{localStorage.setItem(PENDING_KEY,JSON.stringify(request));}catch(_){}const {error}=await supabaseClient.auth.signInWithOAuth({provider:"google",options:{redirectTo:window.location.origin+"/",queryParams:{prompt:"select_account"}}});if(error)throw error;}
     catch(e){clearPending();showMessage(e?.message||"Google login could not start. Please try again.","error");if(button){button.disabled=false;button.innerHTML='<span class="sparkle-google-g" aria-hidden="true">G</span><span>Continue with Google</span>';}}
   };
   function openProfile(user,profile,isNew){
@@ -12002,11 +12002,10 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     if(typeof returnToSparkleLoginFromForgotPassword==="function"){const original=returnToSparkleLoginFromForgotPassword;returnToSparkleLoginFromForgotPassword=function(){const result=original.apply(this,arguments),r=document.getElementById("sparkleGoogleAuthRow");if(r)r.style.display="block";return result;};}
     if(typeof openPinModal==="function"){
       const original=openPinModal;openPinModal=function(){
-        const result=original.apply(this,arguments),current=document.getElementById("sparkleCurrentPinField"),title=document.getElementById("setPinTitle"),description=document.getElementById("setPinDescription");
-        if(enforceGooglePin){if(current)current.style.display="none";if(title)title.textContent="Create New PIN";if(description)description.textContent="Create your private four-digit PIN to secure your Sparkle transactions.";}
-        else{if(current)current.style.display="block";if(title)title.textContent="Set Transaction PIN";if(description)description.textContent="Create a private 4-digit PIN to authorize purchases, or enter your current PIN when changing it.";}
-        return result;
-      };
+        const result=original.apply(this,arguments),current=document.getElementById("sparkleCurrentPinField"),title=document.getElementById("setPinTitle"),description=document.getElementById("setPinDescription"),saveButton=document.getElementById("saveTransactionPinButton");
+        if(enforceGooglePin){if(current)current.style.display="none";if(title)title.textContent="Create New PIN";if(description)description.textContent="Create your private four-digit PIN to secure your Sparkle transactions.";if(saveButton)saveButton.textContent="Create PIN";}
+        else{if(current)current.style.display="block";if(title)title.textContent="Set Transaction PIN";if(description)description.textContent="Create a private 4-digit PIN to authorize purchases, or enter your current PIN when changing it.";if(saveButton)saveButton.textContent="Save Transaction PIN";}
+        return result;      };
     }
     if(typeof closeSetPinModal==="function"){
       originalCloseSetPinModal=closeSetPinModal;closeSetPinModal=function(){
