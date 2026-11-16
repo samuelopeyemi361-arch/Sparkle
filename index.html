@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="sparkle-auth-pending">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -118,6 +118,9 @@
 }
 
 *{box-sizing:border-box}
+
+/* Keep the public landing page out of the first paint until Supabase resolves the saved session. */
+html.sparkle-auth-pending #homepage{display:none!important}
 
 body{
   margin:0;
@@ -5538,6 +5541,7 @@ document
 document
 .getElementById("dashboard")
 .classList.add("active");
+document.documentElement.classList.remove("sparkle-auth-pending");
 document.getElementById("authModal")?.classList.remove("show");
 window.currentSparkleUser=user;
 const sparkleWelcomeUserId=String(user?.id||"");
@@ -9858,6 +9862,7 @@ window.__sparkleLoginWelcomeShownUserId = null;
 if(typeof sparkleAdminSetVisible === "function") sparkleAdminSetVisible(false);
 document.getElementById("dashboard").classList.remove("active");
 document.getElementById("homepage").classList.remove("hidden");
+document.documentElement.classList.remove("sparkle-auth-pending");
 }
 
 
