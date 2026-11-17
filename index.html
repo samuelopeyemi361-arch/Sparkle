@@ -4468,7 +4468,7 @@ Sign Up
     <div class="field"><label for="sparkleGoogleFirstName">First name</label><input id="sparkleGoogleFirstName" type="text" autocomplete="given-name" required></div>
     <div class="field"><label for="sparkleGoogleLastName">Last name</label><input id="sparkleGoogleLastName" type="text" autocomplete="family-name" required></div>
     <div class="field"><label for="sparkleGooglePhone">Phone number</label><input id="sparkleGooglePhone" type="tel" inputmode="tel" autocomplete="tel" placeholder="08012345678" required></div>
-    <div class="field"><label for="sparkleGoogleUsername">Username</label><input id="sparkleGoogleUsername" type="text" minlength="3" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="3–24 letters, numbers, or underscores" required><small style="color:#64748b">Your username is your Sparkle referral ID.</small></div>
+    <div class="field"><label for="sparkleGoogleUsername">Username (optional)</label><input id="sparkleGoogleUsername" type="text" maxlength="24" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="Choose a username or leave blank"><small style="color:#64748b">Optional. Leave blank to keep your automatic Sparkle username and referral ID.</small></div>
     <p id="sparkleGoogleProfileMessage" class="message" role="status"></p>
     <button type="button" id="sparkleGoogleProfileSaveButton" class="btn primary full" onclick="sparkleSaveGoogleProfile()">Continue</button>
   </div>
@@ -12049,8 +12049,11 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     document.getElementById("sparkleGoogleFirstName").value=String(profile?.first_name||meta.given_name||meta.first_name||parts[0]||"");
     document.getElementById("sparkleGoogleLastName").value=String(profile?.last_name||meta.family_name||meta.last_name||(parts.length>1?parts.slice(1).join(" "):""));
     document.getElementById("sparkleGooglePhone").value=String(profile?.phone||meta.phone||"");
-    document.getElementById("sparkleGoogleUsername").value=String(profile?.username||"").toLowerCase();
-    document.getElementById("sparkleGoogleUsername").dataset.existingUsername=String(profile?.username||"").toLowerCase();
+    const storedUsername=String(profile?.username||"").toLowerCase();
+    const hasAutoUsername=/^g[0-9a-f]{11}$/i.test(storedUsername);
+    document.getElementById("sparkleGoogleUsername").value=hasAutoUsername?"":storedUsername;
+    document.getElementById("sparkleGoogleUsername").placeholder="Choose a username or leave blank";
+    document.getElementById("sparkleGoogleUsername").dataset.existingUsername=storedUsername;
     document.getElementById("sparkleGoogleProfileMessage").textContent="";document.getElementById("sparkleGoogleProfileMessage").className="message";
     showHomepage();document.getElementById("authModal")?.classList.remove("show");hideOnboardingLoader();document.getElementById("sparkleGoogleProfileModal").classList.add("show");
   }
@@ -12064,7 +12067,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       if(result.error)return;
       const profile=result.data||null;
       const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
-      const missingProfile=temporaryGoogleUsername||!profile?.username||!profile?.phone||
+      const missingProfile=!profile?.username||!profile?.phone||
         !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
         !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
       if(missingProfile){openProfile(user,profile,temporaryGoogleUsername);return;}
@@ -12120,7 +12123,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       const {data:profile,error}=profileResult;
       if(error)throw new Error("We couldn't load your Sparkle profile. Check your connection and retry.");
       const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
-      const missingProfile=temporaryGoogleUsername||!profile?.username||!profile?.phone||
+      const missingProfile=!profile?.username||!profile?.phone||
         !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
         !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
       if(missingProfile){openProfile(user,profile,true);return true;}
@@ -12136,23 +12139,29 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
   }
   window.sparkleSaveGoogleProfile=async function(){
     if(saving)return;const user=profileUser;if(!user?.id){message("Your Google session expired. Please sign in with Google again.");return;}
-    const firstName=document.getElementById("sparkleGoogleFirstName").value.trim(),lastName=document.getElementById("sparkleGoogleLastName").value.trim(),phone=document.getElementById("sparkleGooglePhone").value.trim(),username=document.getElementById("sparkleGoogleUsername").value.trim().toLowerCase();
+    const firstName=document.getElementById("sparkleGoogleFirstName").value.trim(),lastName=document.getElementById("sparkleGoogleLastName").value.trim(),phone=document.getElementById("sparkleGooglePhone").value.trim(),requestedUsername=document.getElementById("sparkleGoogleUsername").value.trim().toLowerCase();
     const existing=String(document.getElementById("sparkleGoogleUsername").dataset.existingUsername||"").toLowerCase();
-    if(!firstName||!lastName||!phone||!username){message("Complete your first name, last name, phone number, and username.");return;}
-    if(!/^[a-z0-9_]{3,24}$/.test(username)){message("Username must be 3–24 characters using only letters, numbers, or underscores.");return;}
+    if(!firstName||!lastName||!phone){message("Complete your first name, last name, and phone number. Username is optional.");return;}
+    if(requestedUsername&&!/^[a-z0-9_]{3,24}$/.test(requestedUsername)){message("Your username must be 3–24 characters using only letters, numbers, or underscores, or leave it blank.");return;}
     const button=document.getElementById("sparkleGoogleProfileSaveButton");saving=true;if(button){button.disabled=true;button.textContent="Saving profile…";}
     try{
       const currentResult=await supabaseClient.from("profiles").select("first_name,last_name,phone,username").eq("id",user.id).maybeSingle();
       if(currentResult.error)throw new Error("Sparkle couldn't verify your saved profile. Check your connection and tap Continue again.");
-      const current=currentResult.data,alreadySaved=String(current?.first_name||"").trim()===firstName&&String(current?.last_name||"").trim()===lastName&&String(current?.phone||"").trim()===phone&&String(current?.username||"").trim().toLowerCase()===username;
+      const current=currentResult.data;
+      const currentUsername=String(current?.username||"").trim().toLowerCase();
+      // A blank optional field preserves the existing username created for this Google account.
+      // The same format is the database's fallback if the profile row needs recovery.
+      const fallbackUsername="g"+String(user.id).replace(/-/g,"").slice(0,11).toLowerCase();
+      const username=requestedUsername||currentUsername||existing||fallbackUsername;
+      const alreadySaved=String(current?.first_name||"").trim()===firstName&&String(current?.last_name||"").trim()===lastName&&String(current?.phone||"").trim()===phone&&currentUsername===username;
       if(!alreadySaved){
-        if(username!==existing){
+        if(requestedUsername&&requestedUsername!==currentUsername){
           const {data,error}=await supabaseClient.rpc("sparkle_check_signup",{p_username:username,p_referral_username:null});
           if(error)throw new Error("Sparkle couldn't validate your username right now. Please try again.");
           if(!data?.available){if(data?.reason==="username_taken")throw new Error("That username is already taken. Choose another one.");throw new Error("Please choose a valid available username.");}
         }
         const payload={id:user.id,first_name:firstName,last_name:lastName,full_name:firstName+" "+lastName,phone,username,referral_code:username,email:user.email};
-        const {data:savedProfile,error:profileSaveError}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"}).select("id").single();
+        const {data:savedProfile,error:profileSaveError}=await supabaseClient.from("profiles").upsert(payload,{onConflict:"id"}).select("id,username,referral_code").single();
         if(profileSaveError){
           console.error("Sparkle Google profile save failed:",{code:profileSaveError.code,message:profileSaveError.message,details:profileSaveError.details,hint:profileSaveError.hint,userId:user.id});
           const code=String(profileSaveError.code||"");
@@ -12161,7 +12170,9 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
           if(code==="23503")throw new Error("Some profile information could not be verified. Please check your details and try again.");
           throw new Error("Sparkle profile save could not be confirmed. Your details are safe; tap Continue to verify and resume.");
         }
-        if(!savedProfile?.id)throw new Error("Sparkle could not confirm that your profile was saved. Please try again.");
+        if(!savedProfile?.id||String(savedProfile.username||"").toLowerCase()!==username||String(savedProfile.referral_code||"").toLowerCase()!==username){
+          throw new Error("Sparkle couldn't confirm your saved profile and referral ID. Please tap Continue to verify again.");
+        }
       }
       document.getElementById("sparkleGoogleProfileModal").classList.remove("show");profileUser=null;
       const needsPin=requirePinAfterProfile;window.__sparkleGoogleOnboardingState={user:user,needsOnboarding:true};await finishGoogleLogin(user,needsPin);requirePinAfterProfile=false;
