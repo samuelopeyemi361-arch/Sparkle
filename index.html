@@ -4570,13 +4570,18 @@ required>
 <div class="field">
 
 <label>
-Referral Code
+Referral ID (matches username)
 </label>
 
 <input
 type="text"
 id="editReferralCode"
-placeholder="Optional">
+placeholder="Automatically follows username"
+readonly
+aria-readonly="true"
+style="background:#f8fafc;cursor:not-allowed">
+
+<small style="color:#64748b">Your referral ID always matches your username.</small>
 
 </div>
 
@@ -5833,6 +5838,11 @@ document
    SAVE PROFILE
    ===================================================== */
 
+document.getElementById("editUsername")?.addEventListener("input",function(){
+  const referralId=document.getElementById("editReferralCode");
+  if(referralId)referralId.value=String(this.value||"").trim().toLowerCase();
+});
+
 document
 .getElementById("profileForm")
 .addEventListener("submit",async function(e){
@@ -5877,11 +5887,7 @@ document
 .toLowerCase();
 
 
-const referralCode =
-document
-.getElementById("editReferralCode")
-.value
-.trim();
+const referralCode = username;
 
 
 if(!firstName){sparkleShowInlineFieldError("editFirstName","Enter your first name.");return;}
@@ -5914,6 +5920,22 @@ throw new Error(
 const user =
 userData.user;
 
+// A username change must be free across both username and referral-ID indexes.
+const {data:currentProfile,error:currentProfileError}=await supabaseClient
+  .from("profiles").select("username").eq("id",user.id).maybeSingle();
+if(currentProfileError)throw new Error("Sparkle couldn't verify your current username. Please try again.");
+const currentUsername=String(currentProfile?.username||"").trim().toLowerCase();
+if(username!==currentUsername){
+  const {data:usernameCheck,error:usernameCheckError}=await supabaseClient.rpc("sparkle_check_signup",{
+    p_username:username,
+    p_referral_username:null
+  });
+  if(usernameCheckError)throw new Error("Sparkle couldn't check username availability. Please try again.");
+  if(!usernameCheck?.available){
+    if(usernameCheck?.reason==="username_taken")throw new Error("That username is already taken. Please choose another one.");
+    throw new Error("Please choose a valid username and try again.");
+  }
+}
 
 const {error} =
 await supabaseClient
@@ -5932,7 +5954,7 @@ phone:phone || null,
 username:username,
 
 referral_code:
-referralCode || null
+username
 
 })
 .eq("id",user.id);
@@ -11959,6 +11981,15 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     const app=user?.app_metadata||{},providers=Array.isArray(app.providers)?app.providers:[],identities=Array.isArray(user?.identities)?user.identities:[];
     return String(app.provider||"").toLowerCase()==="google"||providers.some(x=>String(x).toLowerCase()==="google")||identities.some(x=>String(x?.provider||"").toLowerCase()==="google");
   }
+  function generatedGoogleUsernameFor(user){
+    const compactId=String(user?.id||"").replace(/-/g,"").toLowerCase();
+    return compactId.length>=11 ? "g"+compactId.slice(0,11) : "";
+  }
+  function isGeneratedGoogleUsername(username,user){
+    const actual=String(username||"").trim().toLowerCase();
+    const generated=generatedGoogleUsernameFor(user);
+    return Boolean(generated)&&actual===generated;
+  }
   function message(text,type="error"){const el=document.getElementById("sparkleGoogleProfileMessage");if(!el)return;el.textContent=text;el.className="message show "+type;}
   function showOnboardingLoader(title,copy,canRetry){
     const overlay=document.getElementById("sparkleGoogleOnboardingLoader");if(!overlay)return;
@@ -12050,7 +12081,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
     document.getElementById("sparkleGoogleLastName").value=String(profile?.last_name||meta.family_name||meta.last_name||(parts.length>1?parts.slice(1).join(" "):""));
     document.getElementById("sparkleGooglePhone").value=String(profile?.phone||meta.phone||"");
     const storedUsername=String(profile?.username||"").toLowerCase();
-    const hasAutoUsername=/^g[0-9a-f]{11}$/i.test(storedUsername);
+    const hasAutoUsername=isGeneratedGoogleUsername(storedUsername,user);
     document.getElementById("sparkleGoogleUsername").value=hasAutoUsername?"":storedUsername;
     document.getElementById("sparkleGoogleUsername").placeholder="Choose a username or leave blank";
     document.getElementById("sparkleGoogleUsername").dataset.existingUsername=storedUsername;
@@ -12066,7 +12097,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       );
       if(result.error)return;
       const profile=result.data||null;
-      const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
+      const temporaryGoogleUsername=isGeneratedGoogleUsername(profile?.username,user);
       const missingProfile=!profile?.username||!profile?.phone||
         !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
         !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
@@ -12122,7 +12153,7 @@ async function sparkleAdminDeleteNumberRate(id){if(!confirm('Delete this manual 
       );
       const {data:profile,error}=profileResult;
       if(error)throw new Error("We couldn't load your Sparkle profile. Check your connection and retry.");
-      const temporaryGoogleUsername=/^g[0-9a-f]{11}$/i.test(String(profile?.username||""));
+      const temporaryGoogleUsername=isGeneratedGoogleUsername(profile?.username,user);
       const missingProfile=!profile?.username||!profile?.phone||
         !(profile?.first_name||user.user_metadata?.given_name||user.user_metadata?.first_name)||
         !(profile?.last_name||user.user_metadata?.family_name||user.user_metadata?.last_name);
