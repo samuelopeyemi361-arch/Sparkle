@@ -9,7 +9,7 @@ const DATA_SERVICES = [
   "etisalat_data",
   "glo_data",
   "glo_sme",
-  "mtn_fibrex",
+  "mtn_awoof",
   "mtn_gifting",
   "mtn_sme",
 ];
@@ -65,7 +65,7 @@ serve(async (req) => {
           services: [
             { serviceID: "mtn_gifting", network: "MTN", type: "Gifting" },
             { serviceID: "mtn_sme", network: "MTN", type: "SME" },
-            { serviceID: "mtn_fibrex", network: "MTN", type: "Fibre X" },
+            { serviceID: "mtn_awoof", network: "MTN", type: "Awoof" },
             { serviceID: "airtel_gifting", network: "Airtel", type: "Gifting" },
             { serviceID: "airtel_sme", network: "Airtel", type: "SME" },
             { serviceID: "glo_data", network: "Glo", type: "Corporate Gifting" },

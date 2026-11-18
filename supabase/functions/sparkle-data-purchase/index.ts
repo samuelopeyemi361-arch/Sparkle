@@ -15,7 +15,7 @@ const DATA_SERVICES = [
   "etisalat_data",
   "glo_data",
   "glo_sme",
-  "mtn_fibrex",
+  "mtn_awoof",
   "mtn_gifting",
   "mtn_sme",
 ];

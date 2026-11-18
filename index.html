@@ -7483,7 +7483,7 @@ const DATA_SERVICE_OPTIONS = {
   MTN: [
     {id:"mtn_gifting", label:"MTN Gifting"},
     {id:"mtn_sme", label:"MTN SME"},
-    {id:"mtn_fibrex", label:"MTN Fibre X"}
+    {id:"mtn_awoof", label:"MTN Awoof"}
   ],
   Airtel: [
     {id:"airtel_gifting", label:"Airtel Gifting"},
@@ -7531,7 +7531,7 @@ async function gsubzRequest(path, method="GET", data=null){
     if(!response.ok){const detail=result?.error||result?.message||result?.api_response||rawBody||response.statusText;const err=new Error(`GSUBZ Edge Function returned HTTP ${response.status}: ${detail}`);err.status=response.status;err.responseBody=result??rawBody;throw err;}
     if(result&&result.error){const err=new Error(String(result.error));err.status=response.status;err.responseBody=result;throw err;}return result;
   }
-  const directServiceIDs=["mtn","airtel","glo","etisalat","airtel_gifting","airtel_sme","etisalat_data","glo_data","glo_sme","mtn_fibrex","mtn_gifting","mtn_sme"];
+  const directServiceIDs=["mtn","airtel","glo","etisalat","airtel_gifting","airtel_sme","etisalat_data","glo_data","glo_sme","mtn_awoof","mtn_gifting","mtn_sme"];
   const requestBody=path==="/api/pay/"&&directServiceIDs.includes(String(data?.serviceID||""))?data:{path,method:upperMethod,data};
   const {data:result,error}=await supabaseClient.functions.invoke(GSUBZ_FUNCTION_NAME,{body:requestBody});
   
@@ -7805,7 +7805,7 @@ async function loadDataPlans(serviceID){
     // MTN has multiple live services. If one has no plans, automatically try
     // the next MTN service without allowing an old response to replace new plans.
     if(!plans.length && requestNetwork==="MTN"){
-      const mtnFallbacks=["mtn_sme","mtn_gifting","mtn_fibrex"].filter(id=>id!==requestedServiceID);
+      const mtnFallbacks=["mtn_sme","mtn_gifting","mtn_awoof"].filter(id=>id!==requestedServiceID);
       for(const fallback of mtnFallbacks){
         try{
           const fallbackCacheFresh=Array.isArray(dataPlansCache[fallback])
