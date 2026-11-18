@@ -91,11 +91,9 @@ jobs:
           persist-credentials: false
 
       - name: Setup Node
-        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: mobile/package-lock.json
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -111,7 +109,7 @@ jobs:
 
       - name: Build iOS Simulator app (unsigned)
         run: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild -project ios/App/App.xcodeproj \
             -scheme App \
             -sdk iphonesimulator \
             -configuration Debug \
@@ -124,7 +122,7 @@ jobs:
           zip -r "$GITHUB_WORKSPACE/TheSparkle-iOS-Simulator.zip" App.app
 
       - name: Upload iOS simulator build
-        uses: actions/upload-artifact@ea0a1a5d6d2b3f7a5c7a7f0b9b0f0a0b0a0b0a0b
+        uses: actions/upload-artifact@v4
         with:
           name: thesparkle-ios-simulator
           path: TheSparkle-iOS-Simulator.zip
