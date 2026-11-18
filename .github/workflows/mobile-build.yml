@@ -1,4 +1,4 @@
-name: TheSparkle Mobile Build
+name: TheSparkle Android Build
 
 on:
   push:
@@ -23,7 +23,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: thesparkle-mobile-${{ github.ref }}
+  group: thesparkle-android-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -75,56 +75,5 @@ jobs:
           path: |
             mobile/android/app/build/outputs/apk/debug/*.apk
             mobile/android/app/build/outputs/bundle/debug/*.aab
-          if-no-files-found: error
-          retention-days: 14
-
-  ios-simulator:
-    name: iOS simulator build validation
-    runs-on: macos-26
-    defaults:
-      run:
-        working-directory: mobile
-    steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
-        with:
-          persist-credentials: false
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-
-      - name: Install dependencies
-        run: npm install --no-audit --no-fund
-
-      - name: Copy current web app into mobile bundle
-        run: npm run sync:web
-
-      - name: Generate iOS native project
-        run: npx cap add ios
-
-      - name: Sync iOS
-        run: npx cap sync ios
-
-      - name: Build iOS Simulator app (unsigned)
-        run: |
-          xcodebuild -project ios/App/App.xcodeproj \
-            -scheme App \
-            -sdk iphonesimulator \
-            -configuration Debug \
-            -derivedDataPath build/ios-derived \
-            CODE_SIGNING_ALLOWED=NO
-
-      - name: Package simulator app
-        run: |
-          cd build/ios-derived/Build/Products/Debug-iphonesimulator
-          zip -r "$GITHUB_WORKSPACE/TheSparkle-iOS-Simulator.zip" App.app
-
-      - name: Upload iOS simulator build
-        uses: actions/upload-artifact@v4
-        with:
-          name: thesparkle-ios-simulator
-          path: TheSparkle-iOS-Simulator.zip
           if-no-files-found: error
           retention-days: 14
