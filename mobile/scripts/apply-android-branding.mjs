@@ -1,4 +1,4 @@
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
+import { readFile, mkdir, writeFile, unlink } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import sharp from 'sharp';
@@ -56,8 +56,15 @@ const adaptiveDir = path.join(resources, 'mipmap-anydpi-v26');
 await mkdir(valuesDir, { recursive: true });
 await mkdir(adaptiveDir, { recursive: true });
 
+// Replace the Capacitor template resource; do not create a duplicate color name.
+const obsoleteBackground = path.join(valuesDir, 'thesparkle_launcher.xml');
+try {
+  await unlink(obsoleteBackground);
+} catch (error) {
+  if (error.code !== 'ENOENT') throw error;
+}
 await writeFile(
-  path.join(valuesDir, 'thesparkle_launcher.xml'),
+  path.join(valuesDir, 'ic_launcher_background.xml'),
   '<resources><color name="ic_launcher_background">#071B4D</color></resources>\n'
 );
 
@@ -70,5 +77,4 @@ const adaptiveIcon = `<?xml version="1.0" encoding="utf-8"?>
 await writeFile(path.join(adaptiveDir, 'ic_launcher.xml'), adaptiveIcon);
 await writeFile(path.join(adaptiveDir, 'ic_launcher_round.xml'), adaptiveIcon);
 
-// The standard Android 12+ splash screen uses the app icon; this keeps it branded.
 console.log('Applied TheSparkle favicon to Android launcher and adaptive icons.');
