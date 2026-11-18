@@ -2,21 +2,18 @@
   "name": "thesparkle-mobile",
   "version": "0.1.0",
   "private": true,
-  "description": "Isolated Capacitor Android and iOS shell for TheSparkle",
+  "description": "Android-first Capacitor app shell for TheSparkle",
   "scripts": {
     "sync:web": "node scripts/sync-web.mjs",
-    "cap:sync": "npm run sync:web && cap sync",
+    "cap:sync": "npm run sync:web && cap sync android",
     "cap:add:android": "cap add android",
-    "cap:add:ios": "cap add ios",
     "android:debug": "npm run sync:web && cap sync android && cd android && ./gradlew assembleDebug",
-    "android:release": "npm run sync:web && cap sync android && cd android && ./gradlew bundleRelease",
-    "ios:open": "npm run sync:web && cap sync ios && cap open ios"
+    "android:release": "npm run sync:web && cap sync android && cd android && ./gradlew bundleRelease"
   },
   "dependencies": {
     "@capacitor/android": "^8.0.0",
     "@capacitor/app": "^8.0.0",
     "@capacitor/core": "^8.0.0",
-    "@capacitor/ios": "^8.0.0",
     "@capacitor/keyboard": "^8.0.0",
     "@capacitor/splash-screen": "^8.0.0",
     "@capacitor/status-bar": "^8.0.0"
