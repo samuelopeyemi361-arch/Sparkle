@@ -1,0 +1,134 @@
+name: TheSparkle Mobile Build
+
+on:
+  push:
+    branches:
+      - mobile/capacitor-foundation
+    paths:
+      - "mobile/**"
+      - "index.html"
+      - "favicon.svg"
+      - ".github/workflows/mobile-build.yml"
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "mobile/**"
+      - "index.html"
+      - "favicon.svg"
+      - ".github/workflows/mobile-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: thesparkle-mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android debug APK and AAB validation
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Setup Java
+        uses: actions/setup-java@dded0888837ed1f317902acf8a20df0ad188d165
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Copy current web app into mobile bundle
+        run: npm run sync:web
+
+      - name: Generate Android native project
+        run: npx cap add android
+
+      - name: Sync Android
+        run: npx cap sync android
+
+      - name: Build debug APK
+        run: cd android && ./gradlew assembleDebug
+
+      - name: Build debug AAB validation artifact
+        run: cd android && ./gradlew bundleDebug
+
+      - name: Upload Android test builds
+        uses: actions/upload-artifact@ea0a1a5d6d2b3f7a5c7a7f0b9b0f0a0b0a0b0a0b
+        with:
+          name: thesparkle-android-debug
+          path: |
+            mobile/android/app/build/outputs/apk/debug/*.apk
+            mobile/android/app/build/outputs/bundle/debug/*.aab
+          if-no-files-found: error
+          retention-days: 14
+
+  ios-simulator:
+    name: iOS simulator build validation
+    runs-on: macos-26
+    defaults:
+      run:
+        working-directory: mobile
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Copy current web app into mobile bundle
+        run: npm run sync:web
+
+      - name: Generate iOS native project
+        run: npx cap add ios
+
+      - name: Sync iOS
+        run: npx cap sync ios
+
+      - name: Build iOS Simulator app (unsigned)
+        run: |
+          xcodebuild -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath build/ios-derived \
+            CODE_SIGNING_ALLOWED=NO
+
+      - name: Package simulator app
+        run: |
+          cd build/ios-derived/Build/Products/Debug-iphonesimulator
+          zip -r "$GITHUB_WORKSPACE/TheSparkle-iOS-Simulator.zip" App.app
+
+      - name: Upload iOS simulator build
+        uses: actions/upload-artifact@ea0a1a5d6d2b3f7a5c7a7f0b9b0f0a0b0a0b0a0b
+        with:
+          name: thesparkle-ios-simulator
+          path: TheSparkle-iOS-Simulator.zip
+          if-no-files-found: error
+          retention-days: 14
