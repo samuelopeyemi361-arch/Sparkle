@@ -4,7 +4,6 @@ const config: CapacitorConfig = {
   appId: 'com.thesparkle.mobile',
   appName: 'TheSparkle',
   webDir: 'www',
-  bundledWebRuntime: false,
   backgroundColor: '#071b4d',
   plugins: {
     SplashScreen: {
