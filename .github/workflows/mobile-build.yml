@@ -59,6 +59,9 @@ jobs:
       - name: Generate Android native project
         run: npx cap add android
 
+      - name: Apply TheSparkle Android launcher branding
+        run: npm run brand:android
+
       - name: Sync Android
         run: npx cap sync android
 
