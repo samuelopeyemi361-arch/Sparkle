@@ -1,28 +1,27 @@
-# TheSparkle Mobile (Capacitor)
+# TheSparkle Android app (Capacitor)
 
-This directory is an isolated native-app wrapper for the existing TheSparkle web application. It is intentionally kept separate from the production website and Supabase functions.
+This is an isolated Android app wrapper for the existing TheSparkle web application. It is maintained on the `mobile/capacitor-foundation` branch and does not replace the live website.
 
 ## Safety boundary
 
-- The live website remains the source of truth for the existing product and service flows.
-- This mobile project does not change wallet balances, Paystack, Supabase schemas, authentication rules, suppliers, purchases, PIN checks, or refunds.
-- Do not add production secrets, signing keys, service-role keys, or Apple certificates to this repository.
-- The native project must be tested against a staging/test account before any store submission.
+- The live website remains the source of truth for existing customer and service flows.
+- This mobile foundation does not change wallet balances, Paystack, Supabase schemas, authentication rules, suppliers, purchases, transaction PIN checks, or refunds.
+- Do not commit production secrets, service-role keys, signing keys, or keystore files.
+- Test with a dedicated test account and low-risk/read-only checks before attempting any live transaction.
 
 ## Current architecture
 
-The app packages the existing root `index.html` and `favicon.svg` into a Capacitor WebView. `scripts/sync-web.mjs` copies those files into the generated `www/` directory immediately before Capacitor sync/build. The website's existing remote Supabase and supplier integrations remain the backend.
+The Android app packages the current root `index.html` and `favicon.svg` into a Capacitor WebView. The `scripts/sync-web.mjs` script copies those files into the generated `www/` directory before each native sync/build. Existing Supabase and supplier integrations remain remote; the mobile wrapper does not introduce a second wallet or backend.
 
-The Capacitor settings are stored in `capacitor.config.json`, so no TypeScript compiler is required. This first foundation deliberately avoids changing the main web app to add native-only behavior. OAuth/deep-link behavior, file downloads, external payment redirects, push notifications, and app-store compliance need a separate device test pass before release.
+Authentication redirects, Google sign-in, file/PDF downloads, external links, keyboard resizing, Android back navigation, and app-store compliance still require real-device validation. A successful CI build proves that the Android project compiles; it does not prove every app flow works correctly on every phone.
 
 ## Requirements
 
 - Node.js 22+
-- Android builds: Android Studio and Android SDK
-- iOS builds: macOS, Xcode 26+, and Xcode Command Line Tools
-- Store distribution: Google Play Console for Play Store release; Apple Developer Program and App Store Connect for iOS distribution
+- Android Studio with a compatible Android SDK
+- Java 21 for the current CI build
 
-## Setup
+## Local setup
 
 From this directory:
 
@@ -30,15 +29,15 @@ From this directory:
 npm install
 npm run sync:web
 npx cap add android
-npx cap add ios
-npx cap sync
+npx cap sync android
+npx cap open android
 ```
 
-The `cap add` commands are one-time operations. Commit the generated `android/` and `ios/` projects after reviewing them; do not commit credentials or signing assets.
+The `cap add android` command is a one-time setup for a fresh checkout. Do not commit signing credentials or private keys.
 
-## Android
+## Build output
 
-Debug APK (CI validation build; not a production-signed release):
+Debug APK (for internal installation/testing only; not a public release):
 
 ```sh
 npm run android:debug
@@ -46,31 +45,19 @@ npm run android:debug
 
 Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-Google Play bundle (the CI debug AAB is only a validation artifact; a production AAB requires a release signing key configured securely outside Git):
+The CI also creates a debug AAB as a build-validation artifact. It is not the signed production AAB required for Google Play.
 
-```sh
-npm run android:release
-```
-
-Output: `android/app/build/outputs/bundle/release/app-release.aab`
-
-For direct website downloads, produce a signed release APK after configuring a private signing key outside Git. Never publish a debug APK as the production app.
-
-## iOS
-
-On a Mac with Xcode:
-
-```sh
-npm run ios:open
-```
-
-Select the correct Apple Developer Team and bundle signing settings in Xcode. Archive and validate in Xcode before uploading to App Store Connect/TestFlight.
+For public distribution, create a private release-signing key, store it securely outside Git, configure the build secrets, and produce a signed release APK and AAB. Never publish a debug APK as the production app.
 
 ## App identity
 
 - Display name: TheSparkle
-- Bundle identifier: com.thesparkle.mobile
+- Android application ID: `com.thesparkle.mobile`
 - Web source: repository-root `index.html`
-- Web assets output: `mobile/www/` (generated; not committed)
+- Generated web assets: `mobile/www/` (not committed)
 
-Before production release, confirm the bundle identifier is available and reserved for this app in the relevant developer accounts.
+Confirm the application ID is the intended one in the Play Console before the first public release. Once published, changing the application ID creates a different Android app.
+
+## iOS — postponed
+
+iOS work is intentionally out of the current scope. No iOS build is run by the Android workflow. iOS dependencies and signing will be brought back when that phase is resumed.
