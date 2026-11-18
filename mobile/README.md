@@ -13,7 +13,7 @@ This directory is an isolated native-app wrapper for the existing TheSparkle web
 
 The app packages the existing root `index.html` and `favicon.svg` into a Capacitor WebView. `scripts/sync-web.mjs` copies those files into the generated `www/` directory immediately before Capacitor sync/build. The website's existing remote Supabase and supplier integrations remain the backend.
 
-This first foundation deliberately avoids changing the main web app to add native-only behavior. OAuth/deep-link behavior, file downloads, external payment redirects, push notifications, and app-store compliance need a separate device test pass before release.
+The Capacitor settings are stored in `capacitor.config.json`, so no TypeScript compiler is required. This first foundation deliberately avoids changing the main web app to add native-only behavior. OAuth/deep-link behavior, file downloads, external payment redirects, push notifications, and app-store compliance need a separate device test pass before release.
 
 ## Requirements
 
@@ -38,7 +38,7 @@ The `cap add` commands are one-time operations. Commit the generated `android/` 
 
 ## Android
 
-Debug APK:
+Debug APK (CI validation build; not a production-signed release):
 
 ```sh
 npm run android:debug
@@ -46,7 +46,7 @@ npm run android:debug
 
 Output: `android/app/build/outputs/apk/debug/app-debug.apk`
 
-Google Play bundle (requires signing configuration before store upload):
+Google Play bundle (the CI debug AAB is only a validation artifact; a production AAB requires a release signing key configured securely outside Git):
 
 ```sh
 npm run android:release
