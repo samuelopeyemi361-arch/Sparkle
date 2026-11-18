@@ -46,7 +46,7 @@ jobs:
           echo "5SIM secret is configured (value was not displayed)."
 
       - name: Deploy active Edge Functions
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID"
+        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --yes
 
       - name: Remove retired provider registrations and secret
         run: |
