@@ -10371,6 +10371,7 @@ document.addEventListener("DOMContentLoaded",()=>{
 
 <div id="sparkle-support-widget">
   <section id="sparkle-support-panel" role="dialog" aria-label="Sparkle customer support" aria-modal="false" aria-hidden="true">
+    <div id="sparkle-support-home-view">
     <div class="sparkle-support-head">
       <div class="sparkle-support-head-icon" aria-hidden="true">
         <svg viewBox="0 0 48 48" fill="none"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="currentColor" stroke-width="3.4"/><path d="M35 35c-2 5-7 6-13 6" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="currentColor"/></svg>
@@ -10378,6 +10379,10 @@ document.addEventListener("DOMContentLoaded",()=>{
       <div><h2 class="sparkle-support-title">Need Help?</h2><p class="sparkle-support-subtitle">Our support team is here for you.<br>Choose how you’d like to reach us.</p></div>
       <button type="button" id="sparkle-support-close" aria-label="Close customer support">×</button>
     </div>
+    <button type="button" class="sparkle-support-option sparkle-support-ai-option" id="sparkle-support-ai">
+      <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 24.4 15.6 36.5 20l-12.1 4.4L20 36.5l-4.4-12.1L3.5 20l12.1-4.4L20 3.5Z" fill="white"/><path d="m31.5 4 .9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9.9-2.6Z" fill="white"/></svg></span>
+      <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">Sparkle AI</span><span class="sparkle-support-option-desc">Ask about services, prices and features</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
+    </button>
     <button type="button" class="sparkle-support-option whatsapp-chat" id="sparkle-support-chat">
       <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 5.5A14 14 0 0 0 8 26.7L6.3 34l7.5-1.9A14 14 0 1 0 20 5.5Z" stroke="white" stroke-width="2.8" stroke-linejoin="round"/><path d="M15.2 13.1c-.6-1.1-1.2-1.1-1.8-1.1-.5 0-1.1.1-1.5.7-.5.5-1.9 1.8-1.9 4.4s1.9 5.1 2.2 5.5c.3.4 3.7 5.9 9 8 4.5 1.8 5.4 1.4 6.4 1.3 1-.1 3.2-1.3 3.7-2.6.4-1.3.4-2.4.3-2.6-.2-.2-.6-.4-1.3-.7-.7-.4-3.2-1.6-3.7-1.8-.5-.2-.9-.3-1.3.4-.4.7-1.4 1.8-1.7 2.2-.3.4-.6.5-1.2.2-.7-.4-2.7-1-5.1-3.2-1.9-1.7-3.2-3.8-3.6-4.5-.4-.7 0-1 .3-1.3.3-.3.7-.8 1-1.1.3-.4.4-.7.7-1.1.2-.4.1-.8 0-1.1-.2-.3-1.4-3.4-1.9-4.6Z" fill="white" transform="translate(1 0) scale(.85)"/></svg></span>
       <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">WhatsApp Chat</span><span class="sparkle-support-option-desc">Chat with us directly</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
@@ -10390,6 +10395,29 @@ document.addEventListener("DOMContentLoaded",()=>{
       <span class="sparkle-support-option-icon" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><rect x="5.5" y="9" width="29" height="22" rx="3" stroke="white" stroke-width="2.8"/><path d="m7 12 13 10 13-10" stroke="white" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
       <span class="sparkle-support-option-copy"><span class="sparkle-support-option-title">Email Us</span><span class="sparkle-support-option-desc">Send us a message</span></span><span class="sparkle-support-arrow" aria-hidden="true">→</span>
     </button>
+    </div>
+    <div id="sparkle-ai-chat-view" hidden>
+      <div class="sparkle-ai-chat-head">
+        <button type="button" id="sparkle-ai-back" aria-label="Back to support options">‹</button>
+        <span class="sparkle-ai-mark" aria-hidden="true"><svg viewBox="0 0 40 40" fill="none"><path d="M20 3.5 24.4 15.6 36.5 20l-12.1 4.4L20 3.5Z" fill="currentColor"/></svg></span>
+        <span class="sparkle-ai-chat-heading"><strong>Sparkle AI</strong><small>Free help for everything Sparkle</small></span>
+        <button type="button" id="sparkle-ai-close" aria-label="Close Sparkle AI">×</button>
+      </div>
+      <div id="sparkle-ai-messages" role="log" aria-live="polite" aria-relevant="additions">
+        <div class="sparkle-ai-message is-assistant">Hi! I’m Sparkle AI. Ask me about services, wallet funding, transactions, virtual numbers, referrals and more. I’ll never ask for your password, OTP or transaction PIN.</div>
+      </div>
+      <div class="sparkle-ai-quick-questions" aria-label="Suggested questions">
+        <button type="button" data-sparkle-prompt="What services does Sparkle offer?">Our services</button>
+        <button type="button" data-sparkle-prompt="How do I check current data prices?">Data prices</button>
+        <button type="button" data-sparkle-prompt="How do I fund my wallet?">Fund wallet</button>
+        <button type="button" data-sparkle-prompt="How do I buy a virtual number?">Virtual numbers</button>
+      </div>
+      <form id="sparkle-ai-form" autocomplete="off">
+        <input id="sparkle-ai-input" type="text" maxlength="500" placeholder="Ask Sparkle anything…" aria-label="Ask Sparkle AI" />
+        <button type="submit" aria-label="Send question"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12 20 4l-5.7 16-3.1-6.9L4 12Z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/><path d="m11.2 13.1 4.2-4.2" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg></button>
+      </form>
+      <p class="sparkle-ai-free-note">Free instant answers · Prices can change, so always confirm the amount shown in Sparkle before paying.</p>
+    </div>
   </section>
   <button type="button" id="sparkle-support-toggle" aria-label="Open customer support" aria-expanded="false" aria-controls="sparkle-support-panel">
     <svg viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M8 25v-4a16 16 0 0 1 32 0v4" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="5.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><rect x="34.5" y="22" width="8" height="14" rx="3.5" stroke="white" stroke-width="3.2"/><path d="M35 35c-2 5-7 6-13 6" stroke="white" stroke-width="3.2" stroke-linecap="round"/><rect x="18" y="37.5" width="7" height="4" rx="2" fill="white"/></svg>
@@ -10505,23 +10533,56 @@ document.addEventListener("DOMContentLoaded",()=>{
 </script>
 <script id="sparkle-support-widget-script">
 (function(){
-  // Sparkle customer support WhatsApp links.
-  const SPARKLE_SUPPORT_WHATSAPP_CHAT = "https://wa.me/2348089206869?text=Hi%20Sparkle%20Support%2C%20I%20have%20a%20question";
-  const SPARKLE_SUPPORT_WHATSAPP_CHANNEL = "https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V";
-  const SPARKLE_SUPPORT_EMAIL = "support@sparkle.com";
-  const toggle=document.getElementById('sparkle-support-toggle');
-  const panel=document.getElementById('sparkle-support-panel');
-  const close=document.getElementById('sparkle-support-close');
-  if(!toggle||!panel||!close)return;
-  function setOpen(open){panel.classList.toggle('is-open',open);panel.setAttribute('aria-hidden',String(!open));toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Close customer support':'Open customer support');}
-  toggle.addEventListener('click',()=>setOpen(!panel.classList.contains('is-open')));
-  close.addEventListener('click',()=>setOpen(false));
-  document.addEventListener('keydown',e=>{if(e.key==='Escape')setOpen(false)});
-  document.addEventListener('click',e=>{if(panel.classList.contains('is-open')&&!document.getElementById('sparkle-support-widget').contains(e.target))setOpen(false)});
-  function openSupportLink(url,label){if(!url){alert(label+' link has not been configured yet. Sparkle can connect this option once the official link is added.');return;}window.open(url,'_blank','noopener,noreferrer');}
-  document.getElementById('sparkle-support-chat')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHAT,'WhatsApp Chat'));
-  document.getElementById('sparkle-support-channel')?.addEventListener('click',()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHANNEL,'WhatsApp Channel'));
-  document.getElementById('sparkle-support-email')?.addEventListener('click',()=>{if(!SPARKLE_SUPPORT_EMAIL){alert('Sparkle support email has not been configured yet.');return;}window.location.href='mailto:'+SPARKLE_SUPPORT_EMAIL;});
+"use strict";
+const SPARKLE_SUPPORT_WHATSAPP_CHAT="https://wa.me/2348089206869?text=Hi%20Sparkle%20Support%2C%20I%20have%20a%20question";
+const SPARKLE_SUPPORT_WHATSAPP_CHANNEL="https://whatsapp.com/channel/0029Vb91d9lFSAt5b5Uq1l1V";
+const SPARKLE_SUPPORT_EMAIL="support@sparkle.com";
+const widget=document.getElementById("sparkle-support-widget"),toggle=document.getElementById("sparkle-support-toggle"),panel=document.getElementById("sparkle-support-panel"),close=document.getElementById("sparkle-support-close"),home=document.getElementById("sparkle-support-home-view"),chat=document.getElementById("sparkle-ai-chat-view"),messages=document.getElementById("sparkle-ai-messages"),input=document.getElementById("sparkle-ai-input"),form=document.getElementById("sparkle-ai-form");
+if(!widget||!toggle||!panel||!close||!home||!chat)return;
+function showHome(){home.hidden=false;chat.hidden=true}
+function setOpen(open){if(!open)showHome();panel.classList.toggle("is-open",open);panel.setAttribute("aria-hidden",String(!open));toggle.setAttribute("aria-expanded",String(open));toggle.setAttribute("aria-label",open?"Close customer support":"Open customer support")}
+function showAi(){home.hidden=true;chat.hidden=false;if(input)input.focus()}
+toggle.addEventListener("click",()=>setOpen(!panel.classList.contains("is-open")));
+close.addEventListener("click",()=>setOpen(false));
+document.getElementById("sparkle-support-ai")?.addEventListener("click",showAi);
+document.getElementById("sparkle-ai-back")?.addEventListener("click",showHome);
+document.getElementById("sparkle-ai-close")?.addEventListener("click",()=>setOpen(false));
+document.addEventListener("keydown",e=>{if(e.key==="Escape")setOpen(false)});
+document.addEventListener("click",e=>{if(panel.classList.contains("is-open")&&!widget.contains(e.target))setOpen(false)});
+function openSupportLink(url,label){if(!url){alert(label+" link has not been configured yet.");return}window.open(url,"_blank","noopener,noreferrer")}
+document.getElementById("sparkle-support-chat")?.addEventListener("click",()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHAT,"WhatsApp Chat"));
+document.getElementById("sparkle-support-channel")?.addEventListener("click",()=>openSupportLink(SPARKLE_SUPPORT_WHATSAPP_CHANNEL,"WhatsApp Channel"));
+document.getElementById("sparkle-support-email")?.addEventListener("click",()=>{if(!SPARKLE_SUPPORT_EMAIL){alert("Sparkle support email has not been configured yet.");return}window.location.href="mailto:"+SPARKLE_SUPPORT_EMAIL});
+
+function answerQuestion(question){
+const q=String(question||"").toLowerCase().replace(/[^a-z0-9₦+#. ]/g," ").replace(/ +/g," ").trim();
+const has=(...terms)=>terms.some(term=>q.includes(term));
+const price=has("price","cost","how much","cheapest","cheap","rate","₦","naira");
+if(/^(hello|hi|hey|good morning|good afternoon|good evening)\\b/.test(q)&&q.length<35)return "Hello! 👋 Welcome to TheSparkle. Ask me about services, displayed prices, wallet funding, transactions, virtual numbers, Social Media Market or referrals.";
+if(has("otp","one time password","login password","my password","transaction pin","share my pin","send pin"))return "Keep your login password, bank OTP and 4-digit transaction PIN private. Sparkle support and this assistant will never ask you to send them. Only enter your transaction PIN inside Sparkle’s official payment confirmation screen.";
+if(has("refund","reversal","money back","debited and failed","failed but debited"))return "Open Transaction History and check the order’s latest status first. Refunds should follow a verified failed transaction; pending orders may still be processing. If the status or balance does not resolve, contact human support with the transaction reference. Do not repeat the same order while it is pending.";
+if(has("pending","failed","transaction status","order status","not received","not delivered","where is my order"))return "Open the Transaction section and find the order to check its status and reference. For a pending order, allow the status to update and avoid placing the same order again. If it remains unresolved, use WhatsApp Chat or Email Us and share the transaction reference—not your PIN or OTP.";
+if(has("airtime","recharge credit","top up","top-up"))return price?"Airtime is amount-based. Open Airtime, choose the network and enter the amount you want. Sparkle will show the amount to review before you confirm with your transaction PIN.":"Open Airtime, choose the network, enter the recipient’s phone number and amount, then review the details carefully before confirming with your transaction PIN.";
+if(has("data","mtn","airtel","glo","9mobile","gifting","sme","fibrex"))return price?"To see the latest data price, open Data, choose the network and plan type, then select the required validity. Sparkle displays available plans and current selling prices there. Prices can change, so I won’t guess an amount; check the final amount on the review screen before confirming.":"To buy data, open Data, choose MTN, Airtel, Glo or 9mobile, select the plan type and validity, then choose a plan. Check the recipient number and total on the review screen before entering your transaction PIN.";
+if(has("fund","deposit","add money","bank transfer","paystack","wema"))return "To fund your wallet, open Fund Wallet and follow the Paystack instructions shown in Sparkle. Use the dedicated account details displayed in your own account and wait for the deposit confirmation. Check any fee and the amount you will receive before transferring. Never share your bank OTP or Sparkle PIN.";
+if(has("wallet balance","balance","wallet"))return "Your available wallet balance is shown on your Sparkle dashboard. To add money, choose Fund Wallet and follow the Paystack instructions displayed there. For a balance or deposit issue, check Transaction History and contact human support with the transaction reference.";
+if(has("virtual number","us number","usa number","international number","sms otp","receive sms","5sim","snapchat number","tinder number","facebook number"))return price?"Virtual Number prices depend on the selected country, service and operator. Open Buy US Number / Virtual Number, choose the service and country, then compare the operator and price shown before confirming. I won’t invent a price or delivery-rate figure.":"Open Buy US Number / Virtual Number, then choose the service, country and available operator. Review the number and total price before purchase. Check the order screen for incoming SMS and status; availability and delivery rates can vary by country, service and operator.";
+if(has("social media","instagram","tiktok","followers","likes","views","boost","engagement"))return price?"Social Media Market prices depend on the platform, service and quantity. Open Social Media Market, choose the exact service and review the displayed price and requirements before payment. I won’t guess a live supplier price.":"Open Social Media Market, choose the platform and service, read the requirements, enter the correct public profile or post link and quantity, then review the order and amount before confirming.";
+if(has("electricity","meter","disco","token","prepaid","postpaid"))return price?"Electricity totals depend on the amount and details entered. Open Electricity, select your provider and meter type, then check the displayed total before confirming. Verify the meter number and customer details carefully.":"Open Electricity, select your provider and meter type, enter the meter number and amount, then verify the customer details on the review screen before confirming.";
+if(has("cable","dstv","gotv","startimes","decoder","smartcard","smart card","iuc"))return price?"Cable TV package prices can change. Open Cable TV, select your provider and package, and check the displayed amount before confirming. Verify the smart-card or IUC number and customer name first.":"Open Cable TV, select the provider and package, enter the smart-card or IUC number, and verify the customer name and package before confirming payment.";
+if(has("recharge pin","pin printing","print pin","airtime pin","voucher"))return "Open Recharge PIN Printing, select the network and PIN details you need, then review the quantity and total before confirming. You can return to the Recharge PIN area to check its history and use the available print or download option after successful generation.";
+if(has("education","waec","neco","jamb","exam pin","result checker"))return price?"Education PIN prices depend on the selected exam or product. Open Education PIN, choose the required product and check the current displayed price before confirming.":"Open Education PIN, choose the exam or product you need, enter the required details and review the product and amount before confirming.";
+if(has("bulk sms","sms campaign","send sms","text message"))return "Open Bulk SMS and follow the instructions shown for the recipient list and message. Review the recipients, message content and displayed total carefully before submitting.";
+if(has("referral","refer","invite","earn","commission","withdraw"))return "Open the Earn section to see your referral information, reward details and any available withdrawal options. Follow the rules and eligibility displayed in your Sparkle account.";
+if(has("service","services","what can","what do you offer","features","about sparkle"))return "TheSparkle brings services together in one account, including Airtime, Data, Electricity, Cable TV, Recharge PIN Printing, Buy US Number / Virtual Numbers, Education PIN, Bulk SMS and Social Media Market. Availability and prices are shown in each service before you confirm.";
+if(has("buy","purchase","pay","how do i order","make an order"))return "Choose the service you need, enter the required details, select a plan or amount, and review the order carefully. Sparkle shows a purchase summary before payment; confirm only when the recipient, service and total are correct, then enter your PIN in the official confirmation screen.";
+if(has("human","person","agent","support","complaint","contact","whatsapp","email"))return "You can still reach a person through the Customer Service options. Go back to the support choices and select WhatsApp Chat or Email Us. Include the relevant transaction reference if your question is about an order. Never send your PIN or OTP.";
+return "I can help with Sparkle services, data and airtime, displayed prices, wallet funding, transactions, refunds, virtual numbers, Social Media Market, Recharge PIN Printing, Education PIN, Bulk SMS and referrals. Try asking: “How do I fund my wallet?” or “How do I check MTN data prices?”";
+}
+function addMessage(text,kind){if(!messages)return;const bubble=document.createElement("div");bubble.className="sparkle-ai-message "+(kind==="user"?"is-user":"is-assistant");bubble.textContent=String(text);messages.appendChild(bubble);messages.scrollTop=messages.scrollHeight}
+function ask(question){const value=String(question||"").trim();if(!value||!messages)return;addMessage(value,"user");addMessage(answerQuestion(value),"assistant")}
+form?.addEventListener("submit",event=>{event.preventDefault();const value=input?.value||"";if(!value.trim())return;ask(value);input.value="";input.focus()});
+chat.querySelectorAll("[data-sparkle-prompt]").forEach(button=>button.addEventListener("click",()=>ask(button.getAttribute("data-sparkle-prompt")||"")));
 })();
 </script>
 
@@ -13229,6 +13290,69 @@ window.addEventListener("DOMContentLoaded",function(){
 @media(prefers-reduced-motion:reduce){
   #fundWalletModal .fund-modal-box *{transition:none!important;animation:none!important}
 }
+</style>
+<style id="sparkle-ai-support-final-overrides">
+/* Presentation-only overrides for the customer service widget. */
+#sparkle-support-widget{right:14px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:1100}
+#sparkle-support-toggle{width:52px;height:52px;box-shadow:0 9px 22px rgba(10,66,165,.22)}
+#sparkle-support-toggle svg{width:28px;height:28px}
+#sparkle-support-panel{box-sizing:border-box;right:0;bottom:62px;width:min(440px,calc(100vw - 28px));max-height:calc(100dvh - 116px);overflow-y:auto;padding:16px;background:rgba(255,255,255,.985);border-radius:19px}
+#sparkle-support-home-view[hidden],#sparkle-ai-chat-view[hidden]{display:none!important}
+.sparkle-support-head{gap:11px;padding:3px 28px 11px 0}
+.sparkle-support-head-icon{width:48px;height:48px;flex:0 0 48px}
+.sparkle-support-head-icon svg{width:27px;height:27px}
+.sparkle-support-title{font-size:19px;letter-spacing:-.25px;margin:2px 0 4px}
+.sparkle-support-subtitle{font-size:12px;line-height:1.45}
+#sparkle-support-close{font-size:26px;line-height:1}
+.sparkle-support-option{min-height:64px;gap:11px;padding:10px 12px;margin-top:8px;border-radius:14px}
+.sparkle-support-option-icon{width:40px;height:40px;flex:0 0 40px}
+.sparkle-support-option-icon svg{width:24px;height:24px}
+.sparkle-support-option-title{font-size:14px;font-weight:800;margin-bottom:3px}
+.sparkle-support-option-desc{font-size:11px;line-height:1.35}
+.sparkle-support-arrow{font-size:20px;margin-left:0}
+.sparkle-support-ai-option{background:linear-gradient(105deg,#eef4ff,#f5f2ff);border-color:#e2eaff}
+.sparkle-support-ai-option .sparkle-support-option-icon{background:linear-gradient(145deg,#2868e8,#7048d8)}
+.sparkle-ai-chat-head{display:flex;align-items:center;gap:9px;padding:1px 0 11px;border-bottom:1px solid #e8edf6}
+#sparkle-ai-back,#sparkle-ai-close{width:30px;height:30px;flex:0 0 30px;border:0;border-radius:9px;background:#f1f5fb;color:#294c83;font-size:23px;line-height:1;cursor:pointer}
+.sparkle-ai-mark{width:34px;height:34px;flex:0 0 34px;border-radius:11px;display:grid;place-items:center;background:#edf3ff;color:#2861d8}
+.sparkle-ai-mark svg{width:21px;height:21px}
+.sparkle-ai-chat-heading{min-width:0;flex:1;display:flex;flex-direction:column;gap:2px;color:#102955}
+.sparkle-ai-chat-heading strong{font-size:15px;font-weight:850}
+.sparkle-ai-chat-heading small{font-size:10px;color:#71819b}
+#sparkle-ai-close{font-size:21px;background:transparent;color:#73829a}
+#sparkle-ai-messages{display:flex;flex-direction:column;gap:8px;max-height:235px;min-height:142px;overflow-y:auto;padding:11px 2px;overscroll-behavior:contain}
+.sparkle-ai-message{max-width:90%;padding:10px 12px;border-radius:13px;font-size:12px;line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
+.sparkle-ai-message.is-assistant{align-self:flex-start;background:#f1f5fb;color:#223957;border-bottom-left-radius:4px}
+.sparkle-ai-message.is-user{align-self:flex-end;background:#215bd0;color:#fff;border-bottom-right-radius:4px}
+.sparkle-ai-quick-questions{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}
+.sparkle-ai-quick-questions button{border:1px solid #dfe8f7;border-radius:999px;padding:6px 9px;background:#f8faff;color:#31558e;font-size:10px;font-weight:700;cursor:pointer}
+#sparkle-ai-form{display:flex;align-items:center;gap:7px;padding:5px 6px 5px 11px;border:1px solid #dce5f3;border-radius:13px;background:#fff}
+#sparkle-ai-input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:#172b4d;font:400 16px/1.35 Inter,system-ui,sans-serif;padding:7px 0}
+#sparkle-ai-form button{width:34px;height:34px;flex:0 0 34px;border:0;border-radius:10px;background:#215bd0;color:#fff;display:grid;place-items:center;cursor:pointer}
+#sparkle-ai-form button svg{width:20px;height:20px}
+.sparkle-ai-free-note{margin:7px 2px 0;color:#7a879b;font-size:9px;line-height:1.4}
+@media(max-width:600px){
+#sparkle-support-widget{right:13px;bottom:calc(78px + env(safe-area-inset-bottom))}
+#sparkle-support-toggle{width:46px;height:46px}
+#sparkle-support-toggle svg{width:25px;height:25px}
+#sparkle-support-panel{right:0;bottom:54px;width:min(390px,calc(100vw - 24px));max-height:calc(100dvh - 112px);padding:14px;border-radius:18px}
+.sparkle-support-head{gap:10px;padding:2px 25px 10px 0}
+.sparkle-support-head-icon{width:44px;height:44px;flex-basis:44px}
+.sparkle-support-head-icon svg{width:25px;height:25px}
+.sparkle-support-title{font-size:18px;margin:1px 0 3px}
+.sparkle-support-subtitle{font-size:11px;line-height:1.4}
+#sparkle-support-close{font-size:25px}
+.sparkle-support-option{min-height:62px;gap:10px;padding:9px 10px;margin-top:7px;border-radius:13px}
+.sparkle-support-option-icon{width:38px;height:38px;flex-basis:38px}
+.sparkle-support-option-icon svg{width:23px;height:23px}
+.sparkle-support-option-title{font-size:13px;margin-bottom:2px}
+.sparkle-support-option-desc{font-size:10px}
+.sparkle-support-arrow{font-size:19px}
+#sparkle-ai-messages{max-height:205px;min-height:125px}
+.sparkle-ai-message{font-size:11px;padding:9px 10px}
+.sparkle-ai-quick-questions button{font-size:9px;padding:6px 8px}
+}
+@media(prefers-reduced-motion:reduce){#sparkle-support-toggle,.sparkle-support-option{transition:none!important}}
 </style>
 </body>
 </html>
