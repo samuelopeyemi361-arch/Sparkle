@@ -202,6 +202,27 @@ async function apiGet(path: string): Promise<{ ok: boolean; status: number; data
   return { ok: response.ok, status: response.status, data };
 }
 
+/* Read the authenticated 5SIM user profile before reserving the customer's wallet.
+   5SIM documents GET /v1/user/profile as the source of the account balance. */
+async function providerProfile(): Promise<{ balance: number }> {
+  const response = await apiGet("/user/profile");
+  if (!response.ok || !response.data || typeof response.data !== "object") {
+    console.error("[sparkle-5sim-profile] profile request failed", { status: response.status });
+    throw problem("Could not verify the 5SIM supplier balance. Please try again shortly.", 503, "SUPPLIER_UNAVAILABLE");
+  }
+  const profile = response.data?.data && typeof response.data.data === "object"
+    ? response.data.data
+    : response.data;
+  const rawBalance = profile?.balance ?? profile?.Balance;
+  const balance = Number(rawBalance);
+  if (rawBalance === undefined || rawBalance === null || rawBalance === "" ||
+      !Number.isFinite(balance) || balance < 0) {
+    console.error("[sparkle-5sim-profile] profile balance missing or invalid", { status: response.status });
+    throw problem("Could not verify the 5SIM supplier balance. Please try again shortly.", 503, "SUPPLIER_UNAVAILABLE");
+  }
+  return { balance };
+}
+
 
 function supplierBalanceInsufficient(data: any): boolean {
   const code = String(data?.code ?? data?.statusCode ?? data?.data?.code ?? data?.data?.statusCode
@@ -302,7 +323,7 @@ Deno.serve(async (req: Request) => {
     // price, passed the PIN check, and had their wallet balance confirmed.
     // This keeps 5SIM balance shortages from hiding catalogue options.
     let supplierProfile: { balance: number };
-    try { supplierProfile = await providerProfile(true); }
+    try { supplierProfile = await providerProfile(); }
     catch { throw problem("Service unavailable. Please try again later.", 503, "SUPPLIER_UNAVAILABLE"); }
     if (supplierProfile.balance + 0.000001 < quote.provider_cost_usd) {
       await notifySupplierBalanceLow("5SIM", serviceDisplayName(service), requestId,
