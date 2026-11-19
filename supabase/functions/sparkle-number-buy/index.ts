@@ -269,6 +269,104 @@ function supplierBalanceReason(data: any): string {
     .replace(/[\r\n\t]+/g, " ").trim().slice(0, 450);
 }
 
+
+/* Verify a Virtual Number PIN against the authenticated user's stored hash.
+   This deliberately uses the existing PIN hash format and lockout policy locally,
+   avoiding a fragile Edge-Function-to-Edge-Function HTTP call during checkout. */
+async function verifyStoredTransactionPin(pin: string, stored: string): Promise<boolean> {
+  const [saltHex, expected] = String(stored || "").split(":");
+  if (!saltHex || !expected || !/^[0-9a-f]{32}$/i.test(saltHex)) return false;
+  const saltBytes = saltHex.match(/.{2}/g);
+  if (!saltBytes || saltBytes.length !== 16) return false;
+  const salt = new Uint8Array(saltBytes.map((byte) => parseInt(byte, 16)));
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(pin),
+    "PBKDF2",
+    false,
+    ["deriveBits"],
+  );
+  const bits = await crypto.subtle.deriveBits(
+    { name: "PBKDF2", salt, iterations: 310000, hash: "SHA-256" },
+    key,
+    256,
+  );
+  const actual = Array.from(new Uint8Array(bits))
+    .map((byte) => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return /^[0-9a-f]{64}$/i.test(expected) && actual === expected;
+}
+
+async function verifyNumberPurchasePin(admin: any, userId: string, pin: string): Promise<{ body: Obj; status: number }> {
+  if (!/^\\d{4,6}$/.test(pin)) {
+    return { status: 400, body: { success: false, code: "INVALID_PIN", message: "Enter a valid 4-digit transaction PIN." } };
+  }
+
+  const { data: record, error: readError } = await admin
+    .from("sparkle_transaction_pins")
+    .select("pin_hash, failed_attempts, locked_until")
+    .eq("user_id", userId)
+    .maybeSingle();
+
+  if (readError) {
+    console.error("[sparkle-number-pin] security record lookup failed", { code: readError.code || "unknown" });
+    return { status: 503, body: { success: false, code: "PIN_RECORD_UNAVAILABLE", message: "We couldn't access your PIN security record. Please try again." } };
+  }
+  if (!record) {
+    return { status: 404, body: { success: false, code: "PIN_NOT_SET", message: "You haven't created a transaction PIN yet. Create one in your Profile." } };
+  }
+
+  if (record.locked_until && new Date(record.locked_until).getTime() > Date.now()) {
+    const remainingMinutes = Math.max(1, Math.ceil((new Date(record.locked_until).getTime() - Date.now()) / 60000));
+    const message = `Your transaction PIN is locked. Try again in about ${remainingMinutes} minute(s).`;
+    return { status: 429, body: { success: false, code: "PIN_LOCKED", message } };
+  }
+
+  let valid = false;
+  try {
+    valid = await verifyStoredTransactionPin(pin, record.pin_hash);
+  } catch (error) {
+    console.error("[sparkle-number-pin] hash verification failed", { message: String((error as Error)?.message || "unknown") });
+    return { status: 503, body: { success: false, code: "PIN_VERIFY_FAILED", message: "A system error occurred while checking your PIN." } };
+  }
+
+  if (!valid) {
+    const attempts = Number(record.failed_attempts ?? 0) + 1;
+    const locked = attempts >= 5;
+    const { error: updateError } = await admin
+      .from("sparkle_transaction_pins")
+      .update({
+        failed_attempts: locked ? 0 : attempts,
+        locked_until: locked ? new Date(Date.now() + 15 * 60 * 1000).toISOString() : null,
+      })
+      .eq("user_id", userId);
+
+    if (updateError) {
+      console.error("[sparkle-number-pin] failed-attempt update failed", { code: updateError.code || "unknown" });
+      return { status: 503, body: { success: false, code: "PIN_UPDATE_FAILED", message: "Incorrect PIN, but we couldn't update the security record. Please try again." } };
+    }
+
+    const message = locked
+      ? "Incorrect transaction PIN. You have reached the maximum attempts. Your PIN is locked for 15 minutes."
+      : `Incorrect transaction PIN. Please try again. ${5 - attempts} attempt(s) remaining.`;
+    // Match the existing PIN endpoint: an incorrect PIN is a normal 200 response
+    // so the customer sees the message and can re-enter it without creating an order.
+    return { status: 200, body: { success: false, verified: false, message } };
+  }
+
+  const { error: resetError } = await admin
+    .from("sparkle_transaction_pins")
+    .update({ failed_attempts: 0, locked_until: null, updated_at: new Date().toISOString() })
+    .eq("user_id", userId);
+
+  if (resetError) {
+    console.error("[sparkle-number-pin] successful-verification reset failed", { code: resetError.code || "unknown" });
+    return { status: 503, body: { success: false, code: "PIN_UPDATE_FAILED", message: "We couldn't complete PIN verification. Please try again." } };
+  }
+
+  return { status: 200, body: { success: true, verified: true, message: "Transaction PIN verified successfully." } };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   if (req.method !== "POST") return reply({ success: false, message: "POST required." }, 405);
@@ -297,15 +395,9 @@ Deno.serve(async (req: Request) => {
     const quotePromise = getQuote(country, service, serverId, operator, ctx.admin)
       .then((quote:any)=>({quote,error:null as any}))
       .catch((error:any)=>({quote:null,error}));
-    const pinResponse = await fetch(ctx.url + "/functions/v1/sparkle-transaction-pin", {
-      method: "POST",
-      headers: { Authorization: ctx.auth, apikey: ctx.anon, "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "verify", pin }),
-      signal: AbortSignal.timeout(15000),
-    }).catch(() => null);
-    const pinData = pinResponse ? await pinResponse.json().catch(() => null) : null;
-    if (!pinResponse || !pinResponse.ok || pinData?.success !== true) {
-      return reply({ success: false, message: String(pinData?.message || "Transaction PIN verification failed. No money was deducted.") }, pinResponse && pinResponse.status >= 400 && pinResponse.status < 500 ? pinResponse.status : 503);
+    const pinVerification = await verifyNumberPurchasePin(ctx.admin, ctx.user.id, pin);
+    if (pinVerification.body?.success !== true) {
+      return reply(pinVerification.body, pinVerification.status);
     }
     const quoteResult = await quotePromise;
     if (quoteResult.error) throw quoteResult.error;
