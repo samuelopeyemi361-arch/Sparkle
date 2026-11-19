@@ -6913,6 +6913,48 @@ function showNumberOrder(order,options={}){
     if(normalizedStatus!=="success")numberCurrentQuote=null;
   }
 }
+async function recoverMissingNumberOrder(requestId){
+  const reference=String(requestId||"").trim();
+  if(!reference)return false;
+  if(numberCurrentOrder?.requestId && String(numberCurrentOrder.requestId)!==reference)return false;
+
+  if(numberAutoCheckTimer){clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;}
+  numberCurrentOrder=null;
+
+  let userId="";
+  try{
+    const auth=await supabaseClient.auth.getUser();
+    userId=auth?.data?.user?.id||"";
+    if(userId){
+      const key=numberOrderStorageKey(userId);
+      const saved=JSON.parse(localStorage.getItem(key)||"null");
+      if(saved?.requestId===reference)localStorage.removeItem(key);
+    }
+  }catch(_){}
+
+  const orderCard=document.getElementById("numberOrderCard");
+  if(orderCard)orderCard.style.display="none";
+  const empty=document.getElementById("numberOrderEmpty");
+  if(empty)empty.style.display="block";
+
+  if(document.getElementById("numberReviewPage")){
+    showDashPage("numberReviewPage",null);
+    const reviewPanel=document.getElementById("numberReviewPanel");
+    if(reviewPanel)reviewPanel.style.display="block";
+    const catalogPanel=document.getElementById("numberCatalogPanel");
+    if(catalogPanel)catalogPanel.style.display="block";
+    if(numberCurrentQuote)renderNumberReviewPage();
+  }
+
+  const message="No number order was saved for this reference. The 5SIM request was not sent and no matching Sparkle wallet debit was recorded. Your balance and transaction history have been refreshed; you can retry after checking them.";
+  const reviewMessage=document.getElementById("numberReviewMessage");
+  if(reviewMessage)reviewMessage.textContent=message;
+
+  if(userId){
+    try{await loadWallet(userId);await loadTransactions(userId);}catch(_){}
+  }
+  return true;
+}
 function currentNumberReviewLink(){
  const quote=numberCurrentQuote;
  const params=new URLSearchParams();
@@ -7091,7 +7133,7 @@ async function executeNumberPurchase(pin){
       return;
     }
     closePinModal();numberAwaitingPin=false;
-    const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED","PROVIDER_BALANCE_LOW","NO_STOCK","OPERATOR_UNAVAILABLE","NUMBER_UNAVAILABLE","PROVIDER_AUTH_FAILED"];
+    const safeNoOrderCodes=["INSUFFICIENT_FUNDS","PRICE_CHANGED","WALLET_CHECK_FAILED","RESERVATION_FAILED","PURCHASE_NOT_RESERVED","PROVIDER_BALANCE_LOW","NO_STOCK","OPERATOR_UNAVAILABLE","NUMBER_UNAVAILABLE","PROVIDER_AUTH_FAILED","PIN_RECORD_UNAVAILABLE","PIN_NOT_SET","PIN_LOCKED","PIN_VERIFY_FAILED","PIN_UPDATE_FAILED"];
     const definitelyNotStarted=safeNoOrderCodes.includes(String(error?.code||""))||/wallet unchanged|no supplier order was sent|price changed|service is unavailable for this country|choose a valid country|please sign in|session expired|could not verify.*wallet/i.test(text);
     if(definitelyNotStarted){
       if(/PRICE_CHANGED|price changed/i.test(String(error?.code||"")+" "+text)){
@@ -7105,8 +7147,41 @@ async function executeNumberPurchase(pin){
       alert(customerText);
       return;
     }
-    // A network failure can hide a response after the supplier has accepted an order.
-    // Treat it as unknown and block another purchase until the reference is checked.
+    // A gateway failure can happen before reservation. Reconcile the reference
+    // before presenting an active inbox or blocking the customer from retrying.
+    let reconciledOrder=null;
+    try{
+      reconciledOrder=await callNumberOrderFunction("sparkle-number-check",{request_id:requestId});
+    }catch(_){}
+    const reconciledStatus=String(reconciledOrder?.status||"").toLowerCase();
+    if(reconciledStatus==="not_found"){
+      const recovered=await recoverMissingNumberOrder(requestId);
+      if(recovered){
+        const safeMessage="No number order was saved for this reference. The 5SIM request was not sent and no matching Sparkle wallet debit was recorded. Your balance and transaction history have been refreshed; you can retry after checking them.";
+        if(message)message.textContent=safeMessage;
+        alert(safeMessage);
+        return;
+      }
+    }
+    if(reconciledOrder && reconciledStatus && reconciledStatus!=="not_found"){
+      showNumberOrder({
+        requestId:String(reconciledOrder.request_id||requestId),
+        serviceName:quote.serviceName,
+        phoneNumber:reconciledOrder.phone_number||reconciledOrder.phoneNumber||"",
+        status:reconciledStatus,
+        smsCode:reconciledOrder.sms_code||reconciledOrder.smsCode||"",
+        message:reconciledOrder.message||"Sparkle found this order. Check its status here and do not submit another purchase."
+      },{navigate:true});
+      finishNumberPurchaseLoader();
+      document.getElementById("numberReviewPanel").style.display="none";
+      document.getElementById("numberCatalogPanel").style.display="block";
+      const buy=document.getElementById("numberBuyButton");if(buy){buy.disabled=true;buy.textContent="Order started — check status";buy.style.opacity=".55";}
+      const userResult=await supabaseClient.auth.getUser();const userId=userResult?.data?.user?.id;
+      if(userId){await loadWallet(userId);await loadTransactions(userId);}
+      return;
+    }
+    // If order lookup is also unavailable, retain the conservative unknown state.
+    // A later successful check can now safely return NOT_FOUND to the review page.
     showNumberOrder({requestId,serviceName:quote.serviceName,phoneNumber:"",status:"unknown",message:"Sparkle could not confirm the supplier response. Check this order and your transaction history before trying again. Do not purchase another number yet."},{navigate:true});
     document.getElementById("numberReviewPanel").style.display="none";
     document.getElementById("numberCatalogPanel").style.display="block";
@@ -7141,6 +7216,10 @@ async function checkNumberOrder(options={}){
     const response=await callNumberOrderFunction("sparkle-number-check",{request_id:numberCurrentOrder.requestId});
     const d=response?.data||response;
     const status=String(d.status||numberCurrentOrder.status||"pending").toLowerCase();
+    if(status==="not_found"){
+      await recoverMissingNumberOrder(String(d.request_id||numberCurrentOrder.requestId||""));
+      return;
+    }
     const code=String(d.sms_code||d.smsCode||d.code||"");
     const phone=String(d.phone_number||d.phoneNumber||d.phone||numberCurrentOrder.phoneNumber||"");
     showNumberOrder({...numberCurrentOrder,phoneNumber:phone,status,smsCode:code||numberCurrentOrder.smsCode,message:d.message||(code?"SMS code received. Copy it into the service you are verifying.":"No SMS code yet. Sparkle will keep checking automatically.")});
