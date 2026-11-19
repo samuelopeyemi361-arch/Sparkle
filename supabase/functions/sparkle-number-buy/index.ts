@@ -298,7 +298,7 @@ async function verifyStoredTransactionPin(pin: string, stored: string): Promise<
 }
 
 async function verifyNumberPurchasePin(admin: any, userId: string, pin: string): Promise<{ body: Obj; status: number }> {
-  if (!/^\\d{4,6}$/.test(pin)) {
+  if (!/^\d{4,6}$/.test(pin)) {
     return { status: 400, body: { success: false, code: "INVALID_PIN", message: "Enter a valid 4-digit transaction PIN." } };
   }
 
