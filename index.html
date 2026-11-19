@@ -6916,7 +6916,7 @@ function showNumberOrder(order,options={}){
 async function recoverMissingNumberOrder(requestId){
   const reference=String(requestId||"").trim();
   if(!reference)return false;
-  if(numberCurrentOrder?.requestId && String(numberCurrentOrder.requestId)!==reference)return false;
+  if(numberCurrentOrder?.requestId && String(numberCurrentOrder.requestId)!==reference && !isNumberOrderTerminalStatus(String(numberCurrentOrder.status||"")))return false;
 
   if(numberAutoCheckTimer){clearInterval(numberAutoCheckTimer);numberAutoCheckTimer=null;}
   numberCurrentOrder=null;
