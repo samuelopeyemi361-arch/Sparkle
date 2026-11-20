@@ -9161,7 +9161,7 @@ function updateBulkTotal(service){
 function sparkleBulkParsePhoneCell(value){
   const cell=String(value||"").trim();if(!cell||/^(phone|phone number|mobile|number|recipient)$/i.test(cell))return "";
   const digits=cell.replace(/\D/g,"");let normalized="";
-  if(digits.startsWith("234")&&digits.length===13)normalized="0"+digits.slice(3);else if(digits.length===11&&digits.startsWith("0"))normalized=digits;else if(digits.length===10)normalized="0"+digits;
+  if(digits.startsWith("234")&&digits.length===13)normalized="0"+digits.slice(3);else if(digits.length===11&&digits.startsWith("0"))normalized=digits;else if(digits.length===10&&!digits.startsWith("0"))normalized="0"+digits;
   return /^0\d{10}$/.test(normalized)?normalized:"";
 }
 function importBulkNumbers(service){
