@@ -2965,6 +2965,64 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
 #numberCountryPickerButton:focus-visible{outline:3px solid rgba(35,102,230,.18);outline-offset:2px}
 @media(max-width:380px){#numberCountryPickerButton{font-size:11px!important}#numberCountryPickerPanel{padding:6px!important}}
 </style>
+<style id="sparkle-advanced-bulk-recharge-style">
+/* TheSparkle premium bulk recharge workspace */
+#dashboard .sparkle-bulk-intro{display:none}
+#dashboard #airtimeBulk,#dashboard #dataBulk{padding-top:2px}
+#dashboard .sparkle-bulk-hero{position:relative;overflow:hidden;padding:20px 18px 18px;margin:8px 0 16px;border-radius:19px;color:#fff;background:linear-gradient(125deg,#102c61 0%,#174b9b 52%,#5145a8 100%);box-shadow:0 12px 28px rgba(24,56,112,.18)}
+#dashboard .sparkle-bulk-hero:after{content:"";position:absolute;width:180px;height:180px;right:-65px;top:-95px;border:1px solid rgba(255,255,255,.16);border-radius:50%;box-shadow:0 0 0 22px rgba(255,255,255,.035),0 0 0 46px rgba(255,255,255,.025)}
+#dashboard .sparkle-bulk-kicker{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border:1px solid rgba(255,255,255,.23);border-radius:30px;background:rgba(255,255,255,.1);font-size:9px;font-weight:850;letter-spacing:1.1px;text-transform:uppercase}
+#dashboard .sparkle-bulk-hero h2{position:relative;z-index:1;margin:12px 0 5px;color:#fff;font-size:20px;font-weight:850;letter-spacing:-.45px}
+#dashboard .sparkle-bulk-hero p{position:relative;z-index:1;max-width:340px;margin:0;color:rgba(255,255,255,.78);font-size:12px;line-height:1.55}
+#dashboard .sparkle-bulk-hero-stats{position:relative;z-index:1;display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+#dashboard .sparkle-bulk-hero-stats span{padding:6px 9px;border-radius:8px;background:rgba(255,255,255,.12);font-size:10px;font-weight:700;color:#fff}
+#dashboard .sparkle-bulk-import{position:relative;padding:15px;margin:0 0 14px;border:1px solid #dce6f5;border-radius:17px;background:#fff;box-shadow:0 6px 22px rgba(18,45,91,.055)}
+#dashboard .sparkle-bulk-import-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+#dashboard .sparkle-bulk-import-icon{display:grid;place-items:center;flex:0 0 38px;width:38px;height:38px;border-radius:12px;background:linear-gradient(145deg,#e8f0ff,#e9e8ff);color:#2656a4;font-size:18px;font-weight:900}
+#dashboard .sparkle-bulk-import-title{display:block;color:#142c50;font-size:13px;font-weight:850}
+#dashboard .sparkle-bulk-import-subtitle{display:block;margin-top:3px;color:#8090a8;font-size:10px;line-height:1.4}
+#dashboard .sparkle-bulk-import label{display:block;margin:0 0 8px;color:#355174;font-size:10px;font-weight:850;letter-spacing:.7px}
+#dashboard .sparkle-bulk-import textarea{display:block;width:100%;min-height:82px;resize:vertical;padding:12px 13px;border:1px solid #dce5f2;border-radius:12px;background:#f8faff;color:#162944;font:inherit;font-size:12px;line-height:1.5;outline:none;transition:border-color .18s,box-shadow .18s}
+#dashboard .sparkle-bulk-import textarea:focus{border-color:#5989dc;box-shadow:0 0 0 3px rgba(67,133,255,.1);background:#fff}
+#dashboard .sparkle-bulk-import-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+#dashboard .sparkle-bulk-import-actions .btn{display:flex;align-items:center;justify-content:center;min-height:42px;padding:8px 10px;border:1px solid #dce6f6;border-radius:11px;background:#f4f7ff;color:#214d91;font-size:11px;font-weight:800}
+#dashboard .sparkle-bulk-import-actions .sparkle-bulk-file{width:100%;min-width:0;padding:9px 7px;border:1px dashed #aebfda;border-radius:11px;background:#fbfcff;color:#61728c;font-size:10px}
+#dashboard .sparkle-bulk-help{display:flex;align-items:flex-start;gap:6px;margin-top:10px;color:#7a8ba4;font-size:10px;line-height:1.5}
+#dashboard .sparkle-bulk-help:before{content:"ⓘ";color:#4775bd;font-weight:900}
+#dashboard .sparkle-bulk-list-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:18px 2px 10px}
+#dashboard .sparkle-bulk-list-head strong{color:#18365f;font-size:13px;font-weight:850}
+#dashboard .sparkle-bulk-list-head span{color:#7b8ba2;font-size:10px}
+#dashboard .sparkle-bulk-row{display:block;padding:13px;margin:0 0 10px;border:1px solid #e1e9f4;border-radius:15px;background:#fff;box-shadow:0 5px 16px rgba(20,52,100,.045);transition:border-color .18s,box-shadow .18s}
+#dashboard .sparkle-bulk-row:focus-within{border-color:#a9c2eb;box-shadow:0 7px 20px rgba(33,84,153,.09)}
+#dashboard .sparkle-bulk-row-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:11px}
+#dashboard .sparkle-bulk-row-head strong{display:flex;align-items:center;gap:8px;color:#1a3966;font-size:11px;font-weight:850}
+#dashboard .sparkle-bulk-row-head strong:before{content:"";width:7px;height:7px;border-radius:50%;background:#4e7fd0;box-shadow:0 0 0 4px #edf3ff}
+#dashboard .sparkle-bulk-row .bulk-remove{display:grid;place-items:center;width:30px;height:30px;border:1px solid #f1dede;border-radius:9px;background:#fff8f8;color:#c24f5b;font-size:18px;line-height:1}
+#dashboard .sparkle-bulk-row-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+#dashboard .sparkle-bulk-row-fields .form-select,#dashboard .sparkle-bulk-row-fields .form-input{width:100%;min-width:0;min-height:43px;padding:9px 10px;border:1px solid #dfe7f2;border-radius:10px;background:#fbfcff;color:#233a5c;font-size:12px}
+#dashboard .sparkle-bulk-row-fields .form-select:focus,#dashboard .sparkle-bulk-row-fields .form-input:focus{border-color:#5b89d6;outline:0;box-shadow:0 0 0 3px rgba(67,133,255,.09)}
+#dashboard .sparkle-bulk-row-fields .sparkle-bulk-plan{grid-column:1/-1}
+#dashboard .sparkle-bulk-row-fields .sparkle-bulk-price{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border:1px solid #e1eafa;border-radius:11px;background:linear-gradient(100deg,#f2f6ff,#f7f7ff);color:#637995;font-size:11px}
+#dashboard .sparkle-bulk-row-fields .sparkle-bulk-price strong{color:#1b4f9b;font-size:15px;font-weight:900}
+#dashboard .sparkle-bulk-row-fields .sparkle-bulk-loading{grid-column:1/-1;padding:8px 10px;border-radius:9px;background:#f5f8ff;color:#56719a;font-size:10px}
+#dashboard .sparkle-bulk-add{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:44px;margin:4px 0 14px;border:1px dashed #9fb8de;border-radius:12px;background:#f8faff;color:#28579a;font-size:12px;font-weight:850}
+#dashboard .sparkle-bulk-total-panel{padding:15px 15px;background:linear-gradient(130deg,#f4f7fd,#f4f5ff);border:1px solid #e1e8f4;border-radius:15px;margin:14px 0 12px}
+#dashboard .sparkle-bulk-total{margin:0;display:flex;justify-content:space-between;gap:12px;align-items:center}
+#dashboard .sparkle-bulk-total span{color:#60748f;font-size:11px;font-weight:750}
+#dashboard .sparkle-bulk-total strong{font-size:20px;letter-spacing:-.4px;color:#173f7c;font-weight:900}
+#dashboard .sparkle-bulk-primary{width:100%;min-height:49px;border-radius:13px;font-size:13px;font-weight:850;box-shadow:0 7px 17px rgba(37,83,153,.15)}
+#dashboard .sparkle-bulk-result-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid #e8edf5;font-size:12px}
+#dashboard .sparkle-bulk-result-row:last-child{border-bottom:0}
+#dashboard .sparkle-bulk-result-meta{display:block;margin-top:4px;color:#74829a;font-size:10px;overflow-wrap:anywhere}
+@media(max-width:600px){#dashboard .sparkle-bulk-hero{padding:17px 15px;border-radius:16px}#dashboard .sparkle-bulk-hero h2{font-size:18px}#dashboard .sparkle-bulk-import{padding:13px;border-radius:15px}#dashboard .sparkle-bulk-import-actions{grid-template-columns:1fr}#dashboard .sparkle-bulk-row-fields{grid-template-columns:1fr 1fr}#dashboard .sparkle-bulk-total strong{font-size:18px}}
+body.dark-mode #dashboard .sparkle-bulk-import,body.dark-mode #dashboard .sparkle-bulk-row{background:#0c1a2d;border-color:#263e5f}
+body.dark-mode #dashboard .sparkle-bulk-import-title,body.dark-mode #dashboard .sparkle-bulk-list-head strong,body.dark-mode #dashboard .sparkle-bulk-row-head strong{color:#e0eaff}
+body.dark-mode #dashboard .sparkle-bulk-import-subtitle,body.dark-mode #dashboard .sparkle-bulk-help{color:#9aabc4}
+body.dark-mode #dashboard .sparkle-bulk-import textarea,body.dark-mode #dashboard .sparkle-bulk-row-fields .form-select,body.dark-mode #dashboard .sparkle-bulk-row-fields .form-input{background:#0b1727;color:#eef4ff;border-color:#2a405d}
+body.dark-mode #dashboard .sparkle-bulk-total-panel,body.dark-mode #dashboard .sparkle-bulk-row-fields .sparkle-bulk-price{background:#10233e;border-color:#263e5f}
+body.dark-mode #dashboard .sparkle-bulk-total strong{color:#9fc2ff}
+body.dark-mode #dashboard .sparkle-bulk-add{background:#10233e;border-color:#385b88;color:#b9d2ff}
+</style>
 </head>
 
 <body>
@@ -3929,10 +3987,19 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
     </div>
 
     <div id="dataBulk" style="display:none">
+      <div class="sparkle-bulk-hero"><span class="sparkle-bulk-kicker">✦ SMART RECHARGE</span><h2>Bulk Data Recharge</h2><p>Send data to several people in one simple, secure batch. Choose the plan for each number and review everything before payment.</p><div class="sparkle-bulk-hero-stats"><span>Up to 25 recipients</span><span>Live GSubz plans</span><span>One review before PIN</span></div></div>
+      <div class="sparkle-bulk-import">
+        <div class="sparkle-bulk-import-top"><span class="sparkle-bulk-import-icon">↥</span><div><span class="sparkle-bulk-import-title">Import your recipients</span><span class="sparkle-bulk-import-subtitle">Paste numbers or upload a simple recipient list</span></div></div>
+        <label for="dataBulkPaste">PHONE NUMBERS · ONE PER LINE</label>
+        <textarea id="dataBulkPaste" rows="3" placeholder="08012345678&#10;08123456789&#10;+234 803 456 7890"></textarea>
+        <div class="sparkle-bulk-import-actions"><button type="button" class="btn" onclick="importBulkNumbers('data')">＋ Add pasted numbers</button><input class="sparkle-bulk-file" type="file" accept=".csv,.txt,text/csv,text/plain" onchange="importBulkFile('data',this)" aria-label="Upload a CSV or TXT recipient list"></div>
+        <small class="sparkle-bulk-help">Maximum 25 numbers per batch. Each recipient gets an individually selected live network plan.</small>
+      </div>
+      <div class="sparkle-bulk-list-head"><strong>Recipient list</strong><span>Set a network, service and plan for each person</span></div>
       <div class="bulk-list" id="dataBulkList"></div>
-      <button class="btn bulk-add" onclick="addBulkRow('data')">+ Add another</button>
-      <div class="bulk-total" id="dataBulkTotal">Total: ₦0.00</div>
-      <button class="btn primary" onclick="showBulkSummary('data')">Continue to Payment</button>
+      <button type="button" class="btn bulk-add sparkle-bulk-add" onclick="addBulkRow('data')">＋ Add another recipient</button>
+      <div class="sparkle-bulk-total-panel"><div class="sparkle-bulk-total" id="dataBulkTotal"><span>Batch total</span><strong>₦0.00</strong></div></div>
+      <button type="button" class="btn primary sparkle-bulk-primary" onclick="showBulkSummary('data')">Review bulk data recharge</button>
     </div>
   </div>
 </section>
@@ -3986,8 +4053,19 @@ a.tx.sparkle-tx-row:focus-visible{outline:2px solid #0b5cff;outline-offset:2px}
       <button class="btn primary" onclick="showPurchaseSummary('airtime')">Continue</button>
     </div>
     <div id="airtimeBulk" style="display:none">
-      <div class="bulk-list" id="airtimeBulkList"></div><button class="btn bulk-add" onclick="addBulkRow('airtime')">+ Add another</button>
-      <div class="bulk-total" id="airtimeBulkTotal">Total: ₦0.00</div><button class="btn primary" onclick="showBulkSummary('airtime')">Continue to Payment</button>
+      <div class="sparkle-bulk-hero"><span class="sparkle-bulk-kicker">✦ SMART RECHARGE</span><h2>Bulk Airtime Recharge</h2><p>Top up several Nigerian phone numbers together. Confirm each network and amount, then review the full batch before payment.</p><div class="sparkle-bulk-hero-stats"><span>Up to 25 recipients</span><span>Network detection</span><span>One review before PIN</span></div></div>
+      <div class="sparkle-bulk-import">
+        <div class="sparkle-bulk-import-top"><span class="sparkle-bulk-import-icon">↥</span><div><span class="sparkle-bulk-import-title">Import your recipients</span><span class="sparkle-bulk-import-subtitle">Paste numbers or upload a simple recipient list</span></div></div>
+        <label for="airtimeBulkPaste">PHONE NUMBERS · ONE PER LINE</label>
+        <textarea id="airtimeBulkPaste" rows="3" placeholder="08012345678&#10;08123456789&#10;+234 803 456 7890"></textarea>
+        <div class="sparkle-bulk-import-actions"><button type="button" class="btn" onclick="importBulkNumbers('airtime')">＋ Add pasted numbers</button><input class="sparkle-bulk-file" type="file" accept=".csv,.txt,text/csv,text/plain" onchange="importBulkFile('airtime',this)" aria-label="Upload a CSV or TXT recipient list"></div>
+        <small class="sparkle-bulk-help">Maximum 25 numbers per batch. Network is suggested from the phone prefix and can be changed for each recipient.</small>
+      </div>
+      <div class="sparkle-bulk-list-head"><strong>Recipient list</strong><span>Enter an amount for every person · min ₦100</span></div>
+      <div class="bulk-list" id="airtimeBulkList"></div>
+      <button type="button" class="btn bulk-add sparkle-bulk-add" onclick="addBulkRow('airtime')">＋ Add another recipient</button>
+      <div class="sparkle-bulk-total-panel"><div class="sparkle-bulk-total" id="airtimeBulkTotal"><span>Batch total</span><strong>₦0.00</strong></div></div>
+      <button type="button" class="btn primary sparkle-bulk-primary" onclick="showBulkSummary('airtime')">Review bulk airtime recharge</button>
     </div>
   </div>
 </section>
@@ -9011,103 +9089,171 @@ async function showPurchaseSummary(service){
   }
 }
 
+let sparkleBulkRowSequence=0;
+const sparkleBulkNetworkNames=["MTN","Airtel","Glo","9mobile"];
+const sparkleBulkDataPlanCache=new Map();
+function sparkleBulkFindRow(service,index){return (bulkRows[service]||[]).find(row=>String(row.index)===String(index))||null;}
+function sparkleBulkCreateRow(service,phone=""){
+  const row={index:++sparkleBulkRowSequence,network:"",phone:sparkleNormalizeNgPhone(phone)||String(phone||""),amount:"",networkManual:false,serviceID:"",serviceLabel:"",plans:[],planValue:"",plan:"",validity:"",planLoading:false,planLoadToken:0,planError:""};
+  bulkRows[service].push(row);if(phone){const detected=sparkleDetectNgNetwork(phone);if(detected.network)row.network=detected.network;}return row;
+}
 function addBulkRow(service){
-  const index=bulkRows[service].length;
-  bulkRows[service].push({index});
-  renderBulkRows(service);
-  sparkleInitBulkNetworkAutodetect(service);
+  if(service==="airtime"||service==="data"){if(bulkRows[service].length>=25){alert("A bulk recharge is limited to 25 recipients per batch.");return;}sparkleBulkCreateRow(service);renderBulkRows(service);return;}
+  const index=bulkRows[service].length;bulkRows[service].push({index});renderBulkRows(service);sparkleInitBulkNetworkAutodetect(service);
 }
-function sparkleInitBulkNetworkAutodetect(service){
-  if(service!=="airtime" && service!=="data")return;
-  document.querySelectorAll("#"+service+"BulkList .bulk-row").forEach(row=>{
-    const phone=row.querySelector('[data-field="phone"]');
-    const network=row.querySelector('[data-field="network"]');
-    if(!phone || !network || phone.dataset.sparkleAutoNetworkBound==="1")return;
-    phone.dataset.sparkleAutoNetworkBound="1";
-    let manual=false,lastPrefix="";
-    network.addEventListener("change",()=>{manual=true;});
-    const detect=()=>{
-      const result=sparkleDetectNgNetwork(phone.value);
-      if(result.prefix!==lastPrefix){if(lastPrefix)manual=false;lastPrefix=result.prefix;}
-      if(!sparkleNormalizeNgPhone(phone.value)){manual=false;lastPrefix="";return;}
-      if(result.network && !manual) network.value=result.network;
-    };
-    phone.addEventListener("input",detect);
-    phone.addEventListener("change",detect);
-    phone.addEventListener("blur",detect);
-  });
-}
-
-function removeBulkRow(service,index){
-  bulkRows[service]=bulkRows[service].filter(x=>x.index!==index);
-  renderBulkRows(service);
-}
-
+function sparkleInitBulkNetworkAutodetect(service){if(service!=="airtime"&&service!=="data")return;}
+function removeBulkRow(service,index){bulkRows[service]=bulkRows[service].filter(x=>String(x.index)!==String(index));renderBulkRows(service);}
+function sparkleBulkNetworkOptions(selected){return '<option value="">Select network</option>'+sparkleBulkNetworkNames.map(n=>'<option value="'+n+'" '+(selected===n?'selected':'')+'>'+n+'</option>').join("");}
+function sparkleBulkRenderServiceOptions(row){const options=DATA_SERVICE_OPTIONS[row.network]||[];return '<option value="">Select data service</option>'+options.map(o=>'<option value="'+escapeHtml(o.id)+'" '+(row.serviceID===o.id?'selected':'')+'>'+escapeHtml(o.label)+'</option>').join("");}
 function renderBulkRows(service){
-  const box=document.getElementById(service+"BulkList");
-  box.innerHTML=bulkRows[service].map((r,i)=>{
-    if(service==="data") return `<div class="bulk-row">
-      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
-      <select class="form-select" data-field="plan"><option>100MB</option><option>500MB</option><option>1GB</option><option>2GB</option></select>
-      <input class="form-input" data-field="phone" placeholder="Phone number">
-      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
-      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
-    </div>`;
-    if(service==="airtime") return `<div class="bulk-row">
-      <select class="form-select" data-field="network"><option>MTN</option><option>Airtel</option><option>Glo</option><option>9mobile</option></select>
-      <input class="form-input" data-field="phone" placeholder="Phone number">
-      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
-      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
-    </div>`;
-    return `<div class="bulk-row">
-      <select class="form-select" data-field="network"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select>
-      <input class="form-input" data-field="phone" placeholder="Smartcard/IUC">
-      <select class="form-select" data-field="plan"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select>
-      <input class="form-input" data-field="amount" type="number" placeholder="Amount">
-      <button class="bulk-remove" onclick="removeBulkRow('${service}',${r.index})">×</button>
-    </div>`;
-  }).join("");
+  const box=document.getElementById(service+"BulkList");if(!box)return;
+  if(service==="airtime"||service==="data"){
+    box.innerHTML=(bulkRows[service]||[]).map((r,i)=>{
+      const head='<div class="sparkle-bulk-row-head"><strong>Recipient '+(i+1)+'</strong><button type="button" class="bulk-remove" aria-label="Remove recipient '+(i+1)+'" onclick="removeBulkRow(\''+service+'\','+r.index+')">×</button></div>';
+      if(service==="airtime")return '<div class="sparkle-bulk-row sparkle-bulk-airtime-row" data-bulk-index="'+r.index+'">'+head+'<div class="sparkle-bulk-row-fields"><select class="form-select" data-field="network" aria-label="Network">'+sparkleBulkNetworkOptions(r.network)+'</select><input class="form-input" data-field="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" placeholder="08012345678" aria-label="Recipient phone number" value="'+escapeHtml(r.phone)+'"><input class="form-input" data-field="amount" type="number" min="100" step="1" inputmode="numeric" placeholder="Amount (₦)" aria-label="Airtime amount" value="'+(r.amount===""?"":escapeHtml(r.amount))+'"></div></div>';
+      const plans=Array.isArray(r.plans)?r.plans:[];
+      const planOptions='<option value="">'+(r.planLoading?'Loading live plans…':r.planError?'Plans unavailable — retry service':'Select a live data plan')+'</option>'+plans.map(p=>'<option value="'+escapeHtml(p._value)+'" '+(String(r.planValue)===String(p._value)?'selected':'')+'>'+escapeHtml(p._name)+' · '+escapeHtml(p._duration||"Validity varies")+' · '+money(Number(p._price))+'</option>').join("");
+      const loading=r.planLoading?'<div class="sparkle-bulk-loading">Loading current '+escapeHtml(r.serviceLabel||r.serviceID||'data')+' plans…</div>':r.planError?'<div class="sparkle-bulk-loading">'+escapeHtml(r.planError)+'</div>':'';
+      return '<div class="sparkle-bulk-row sparkle-bulk-data-row" data-bulk-index="'+r.index+'">'+head+'<div class="sparkle-bulk-row-fields"><select class="form-select" data-field="network" aria-label="Network">'+sparkleBulkNetworkOptions(r.network)+'</select><input class="form-input" data-field="phone" type="tel" inputmode="tel" autocomplete="tel" maxlength="18" placeholder="08012345678" aria-label="Recipient phone number" value="'+escapeHtml(r.phone)+'"><select class="form-select" data-field="serviceID" aria-label="Data service" '+(!r.network?'disabled':'')+'>'+sparkleBulkRenderServiceOptions(r)+'</select><select class="form-select sparkle-bulk-plan" data-field="planValue" aria-label="Live data plan" '+(!r.serviceID||r.planLoading?'disabled':'')+'>'+planOptions+'</select><div class="sparkle-bulk-price"><span>Live customer price</span><strong>'+(r.planValue&&Number(r.amount)>0?money(Number(r.amount)):"—")+'</strong></div>'+loading+'</div></div>';
+    }).join("");
+    updateBulkTotal(service);return;
+  }
+  box.innerHTML=bulkRows[service].map((r,i)=>'<div class="bulk-row"><select class="form-select" data-field="network"><option>DSTV</option><option>GOtv</option><option>Startimes</option></select><input class="form-input" data-field="phone" placeholder="Smartcard/IUC"><select class="form-select" data-field="plan"><option>Compact</option><option>Confam</option><option>Premium</option><option>Jolli</option></select><input class="form-input" data-field="amount" type="number" placeholder="Amount"><button class="bulk-remove" onclick="removeBulkRow(\''+service+'\','+r.index+')">×</button></div>').join("");
   updateBulkTotal(service);
 }
-
-function collectBulk(service){
-  const rows=[...document.querySelectorAll("#"+service+"BulkList .bulk-row")];
-  return rows.map(row=>{
-    const get=f=>row.querySelector(`[data-field="${f}"]`)?.value.trim();
-    return {
-      service:service==="data"?"Data":service==="airtime"?"Airtime":"Cable TV",
-      network:get("network"),phone:get("phone"),plan:get("plan")||"Recharge",amount:Number(get("amount")||0)
-    };
-  }).filter(x=>x.phone || x.amount);
-}
-
-function updateBulkTotal(service){
-  const items=collectBulk(service);
-  const total=items.reduce((s,x)=>s+Number(x.amount||0),0);
-  document.getElementById(service+"BulkTotal").textContent="Total: "+money(total)+" · "+items.length+" transaction(s)";
-}
-
-function showBulkSummary(service){
-  const items=collectBulk(service);
-  if(!items.length || items.some(x=>!x.phone || !Number.isFinite(Number(x.amount)) || Number(x.amount)<=0)){
-    alert("Please complete every bulk row with a valid number and amount.");
-    return;
+async function sparkleBulkLoadDataPlans(index,serviceID){
+  const row=sparkleBulkFindRow("data",index);if(!row||!serviceID)return;
+  const token=++row.planLoadToken;row.planLoading=true;row.planError="";row.plans=[];row.planValue="";row.plan="";row.validity="";row.amount="";renderBulkRows("data");
+  try{
+    let promise=sparkleBulkDataPlanCache.get(serviceID);
+    if(!promise){promise=gsubzRequest("/api/plans/?service="+encodeURIComponent(serviceID),"GET").then(normalizePlans);sparkleBulkDataPlanCache.set(serviceID,promise);}
+    const plans=await promise;const current=sparkleBulkFindRow("data",index);
+    if(!current||current.planLoadToken!==token||current.serviceID!==serviceID)return;
+    current.plans=Array.isArray(plans)?plans:[];current.planLoading=false;
+    if(!current.plans.length)current.planError="No live plans returned. Choose another service or retry.";
+  }catch(error){
+    sparkleBulkDataPlanCache.delete(serviceID);const current=sparkleBulkFindRow("data",index);
+    if(!current||current.planLoadToken!==token)return;current.planLoading=false;current.planError="Could not load live plans. Select the service again to retry.";
   }
-  currentService=service;
-  pendingPurchase={type:"bulk",items,total:Number(items.reduce((s,x)=>s+Number(x.amount||0),0).toFixed(2))};
-  const screen=document.getElementById("sparkle-purchase-summary-screen");
-  const content=document.getElementById("sparkle-summary-screen-content");
+  renderBulkRows("data");
+}
+function sparkleBulkFieldChanged(element){
+  const root=element.closest(".sparkle-bulk-row");if(!root)return;
+  const service=root.classList.contains("sparkle-bulk-data-row")?"data":"airtime";
+  const row=sparkleBulkFindRow(service,root.dataset.bulkIndex);if(!row)return;
+  const field=element.dataset.field;
+  if(field==="network"){
+    row.network=element.value;row.networkManual=true;
+    if(service==="data"){row.serviceID="";row.serviceLabel="";row.plans=[];row.planValue="";row.plan="";row.validity="";row.amount="";row.planError="";row.planLoadToken++;renderBulkRows(service);}
+  }else if(field==="serviceID"&&service==="data"){
+    row.serviceID=element.value;row.serviceLabel=(DATA_SERVICE_OPTIONS[row.network]||[]).find(o=>o.id===row.serviceID)?.label||"";
+    if(row.serviceID)sparkleBulkLoadDataPlans(row.index,row.serviceID);
+    else{row.plans=[];row.planValue="";row.plan="";row.validity="";row.amount="";renderBulkRows(service);}
+  }else if(field==="planValue"&&service==="data"){
+    const plan=row.plans.find(p=>String(p._value)===String(element.value));
+    row.planValue=plan?String(plan._value):"";row.plan=plan?String(plan._name):"";row.validity=plan?String(plan._duration||""):"";row.amount=plan?Number(plan._price):"";renderBulkRows(service);
+  }else{row[field]=element.value;updateBulkTotal(service);}
+}
+function sparkleBulkPhoneInput(element,commit=false){
+  const root=element.closest(".sparkle-bulk-row");if(!root)return;
+  const service=root.classList.contains("sparkle-bulk-data-row")?"data":"airtime";
+  const row=sparkleBulkFindRow(service,root.dataset.bulkIndex);if(!row)return;
+  row.phone=commit?sparkleNormalizeNgPhone(element.value):element.value.trim();
+  if(commit&&/^0\d{10}$/.test(row.phone))element.value=row.phone;
+  if(!row.networkManual){
+    const detected=sparkleDetectNgNetwork(row.phone);
+    if(detected.network&&detected.network!==row.network){
+      row.network=detected.network;
+      const networkSelect=root.querySelector('[data-field="network"]');if(networkSelect)networkSelect.value=detected.network;
+      if(service==="data"){
+        const serviceSelect=root.querySelector('[data-field="serviceID"]');
+        const compatible=(DATA_SERVICE_OPTIONS[row.network]||[]).some(o=>o.id===row.serviceID);
+        if(!compatible){row.serviceID="";row.serviceLabel="";row.plans=[];row.planValue="";row.plan="";row.validity="";row.amount="";row.planLoadToken++;}
+        if(serviceSelect){serviceSelect.innerHTML=sparkleBulkRenderServiceOptions(row);serviceSelect.disabled=false;}
+        const planSelect=root.querySelector('[data-field="planValue"]');
+        if(planSelect){planSelect.innerHTML='<option value="">Select a live data plan</option>';planSelect.disabled=true;}
+        const price=root.querySelector(".sparkle-bulk-price strong");if(price)price.textContent="—";
+      }
+    }
+  }
+  updateBulkTotal(service);
+}
+function collectBulk(service){
+  if(service==="airtime"||service==="data")return (bulkRows[service]||[]).map(row=>({service:service==="data"?"Data":"Airtime",network:String(row.network||""),phone:sparkleNormalizeNgPhone(row.phone||""),plan:String(row.plan||""),planValue:String(row.planValue||""),serviceID:String(row.serviceID||""),serviceLabel:String(row.serviceLabel||""),validity:String(row.validity||""),amount:Number(row.amount||0)})).filter(x=>x.phone||x.amount||x.planValue||x.serviceID);
+  const rows=[...document.querySelectorAll("#"+service+"BulkList .bulk-row")];
+  return rows.map(row=>{const get=f=>row.querySelector('[data-field="'+f+'"]')?.value.trim();return {service:"Cable TV",network:get("network"),phone:get("phone"),plan:get("plan")||"Recharge",amount:Number(get("amount")||0)};}).filter(x=>x.phone||x.amount);
+}
+function updateBulkTotal(service){
+  const items=collectBulk(service),total=items.reduce((s,x)=>s+Number(x.amount||0),0),el=document.getElementById(service+"BulkTotal");if(!el)return;
+  if(service==="airtime"||service==="data")el.innerHTML='<span>Batch total · '+items.length+' recipient(s)</span><strong>'+money(total)+'</strong>';
+  else el.textContent="Total: "+money(total)+" · "+items.length+" transaction(s)";
+}
+function sparkleBulkParsePhoneCell(value){
+  const cell=String(value||"").trim();if(!cell||/^(phone|phone number|mobile|number|recipient)$/i.test(cell))return "";
+  const digits=cell.replace(/\D/g,"");let normalized="";
+  if(digits.startsWith("234")&&digits.length===13)normalized="0"+digits.slice(3);else if(digits.length===11&&digits.startsWith("0"))normalized=digits;else if(digits.length===10&&!digits.startsWith("0"))normalized="0"+digits;
+  return /^0\d{10}$/.test(normalized)?normalized:"";
+}
+function importBulkNumbers(service){
+  const field=document.getElementById(service+"BulkPaste"),raw=String(field?.value||"");if(!raw.trim()){alert("Paste one phone number per line first.");return;}
+  const phones=raw.split(/\r?\n/).map(line=>sparkleBulkParsePhoneCell(line.split(/[,\t;]/)[0])).filter(Boolean);
+  if(!phones.length){alert("No valid Nigerian phone numbers were found. Use 080…, 10 digits or +234 format.");return;}
+  const existing=bulkRows[service]||[];if(existing.length===1&&!existing[0].phone&&!existing[0].amount&&!existing[0].serviceID)bulkRows[service]=[];
+  const available=25-bulkRows[service].length;if(available<=0){alert("This bulk batch already has 25 recipients.");return;}
+  const added=phones.slice(0,available);added.forEach(phone=>sparkleBulkCreateRow(service,phone));renderBulkRows(service);if(field)field.value="";
+  if(phones.length>added.length)alert("Only "+added.length+" recipients were added. A batch can contain up to 25 recipients.");
+}
+async function importBulkFile(service,input){
+  const file=input?.files?.[0];if(!file)return;
+  if(file.size>1024*1024){alert("Please upload a CSV or TXT list smaller than 1 MB.");input.value="";return;}
+  try{const text=await file.text();const field=document.getElementById(service+"BulkPaste");if(field)field.value=text;importBulkNumbers(service);}
+  catch(_){alert("The recipient file could not be read. Try pasting the numbers instead.");}finally{input.value="";}
+}
+function sparkleBulkValidatedItems(service){
+  const rows=bulkRows[service]||[],items=[],errors=[];
+  if(!rows.length)return {items,errors:["Add at least one recipient."]};
+  if(rows.length>25)return {items,errors:["A bulk batch can contain no more than 25 recipients."]};
+  rows.forEach((row,index)=>{
+    const number=index+1,phone=sparkleNormalizeNgPhone(row.phone||"");
+    if(!/^0\d{10}$/.test(phone))errors.push("Recipient "+number+": enter a valid 11-digit Nigerian phone number.");
+    if(!sparkleBulkNetworkNames.includes(row.network))errors.push("Recipient "+number+": select a network.");
+    if(service==="airtime"){
+      const amount=Number(row.amount);
+      if(!Number.isSafeInteger(amount)||amount<100||amount>1000000)errors.push("Recipient "+number+": airtime must be a whole amount from ₦100 to ₦1,000,000.");
+      if(/^0\d{10}$/.test(phone)&&sparkleBulkNetworkNames.includes(row.network)&&Number.isSafeInteger(amount)&&amount>=100&&amount<=1000000)items.push({service:"Airtime",network:row.network,phone,amount,requestID:crypto.randomUUID().toLowerCase()});
+    }else{
+      const validService=(DATA_SERVICE_OPTIONS[row.network]||[]).find(o=>o.id===row.serviceID),plan=(row.plans||[]).find(p=>String(p._value)===String(row.planValue));
+      if(!validService)errors.push("Recipient "+number+": select a data service for the chosen network.");
+      if(!plan)errors.push("Recipient "+number+": select a currently available live data plan.");
+      if(plan&&validService&&/^0\d{10}$/.test(phone)){
+        const amount=Math.ceil(Number(plan._price)-1e-8);
+        if(!Number.isSafeInteger(amount)||amount<=0)errors.push("Recipient "+number+": live plan price is invalid. Reload the plans.");
+        else items.push({service:"Data",network:row.network,phone,serviceID:row.serviceID,serviceLabel:validService.label,plan:plan._name,planValue:plan._value,validity:plan._duration||"",amount,requestID:crypto.randomUUID().toLowerCase()});
+      }
+    }
+  });
+  return {items,errors};
+}
+function showBulkSummary(service){
+  if(service!=="airtime"&&service!=="data"){alert("Bulk processing is available for Airtime and Data only.");return;}
+  const validation=sparkleBulkValidatedItems(service);
+  if(validation.errors.length){alert(validation.errors.slice(0,8).join("\n")+(validation.errors.length>8?"\nAnd "+(validation.errors.length-8)+" more issue(s).":""));return;}
+  const items=validation.items;if(items.length!==bulkRows[service].length){alert("Please complete every recipient row before continuing.");return;}
+  currentService=service;pendingPurchase={type:"bulk",service,items,total:Number(items.reduce((s,x)=>s+Number(x.amount||0),0).toFixed(2)),batchReference:crypto.randomUUID().toLowerCase()};
+  const screen=document.getElementById("sparkle-purchase-summary-screen"),content=document.getElementById("sparkle-summary-screen-content");
   if(!screen||!content){sparkleShowWalletGuardMessage("Purchase review is temporarily unavailable. No purchase was made.");return;}
-  window.sparkleSummaryReturnScroll=window.scrollY||0;
-  window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
-  const rows=items.map((item,i)=>'<div class="summary-line"><span>'+String(i+1)+'. '+escapeHtml(item.service||service)+' · '+escapeHtml(item.phone)+'</span><strong>'+money(Number(item.amount))+'</strong></div>').join("");
-  content.innerHTML='<div class="sparkle-summary-network"><span class="network-card-logo cable">Σ</span><div><div class="sparkle-summary-network-name">Bulk purchase review</div><div class="sparkle-summary-network-label">'+items.length+' transaction(s)</div></div></div>'+rows+'<div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total wallet charge</span><strong>'+money(pendingPurchase.total)+'</strong></div><div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><p class="electricity-note">Review every recipient and amount. Sparkle will check your wallet before requesting your Transaction PIN.</p><button id="sparkleReviewContinueButton" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button>';
-  screen.scrollTop=0;
-  screen.classList.add("is-open");
-  screen.setAttribute("aria-hidden","false");
+  window.sparkleSummaryReturnScroll=window.scrollY||0;window.sparkleSummaryBaseUrl=window.location.pathname+window.location.hash;
+  const rows=items.map((item,i)=>{
+    const detail=item.service==="Data"?(item.serviceLabel+" · "+item.plan+(item.validity?" · "+item.validity:"")):"Airtime";
+    return '<div class="summary-line"><span>'+String(i+1)+'. '+escapeHtml(item.network)+' · '+escapeHtml(item.phone)+'<small style="display:block;color:#77859b;font-size:11px;margin-top:3px">'+escapeHtml(detail)+'</small></span><strong>'+money(item.amount)+'</strong></div>';
+  }).join("");
+  content.innerHTML='<div class="sparkle-summary-network"><span class="network-card-logo cable">Σ</span><div><div class="sparkle-summary-network-name">Bulk '+(service==="data"?"Data":"Airtime")+' review</div><div class="sparkle-summary-network-label">'+items.length+' separate recipient orders · maximum 25 per batch</div></div></div>'+rows+'<div class="summary-line"><span>Available wallet balance</span><strong id="sparkleReviewWalletBalance">Checking…</strong></div><div class="sparkle-summary-total"><span>Total wallet charge</span><strong>'+money(pendingPurchase.total)+'</strong></div><div id="sparkleReviewFundsMessage" role="status" style="display:none;margin:10px 0;padding:10px 12px;border-radius:10px;font-size:13px"></div><p class="electricity-note">Each recipient is submitted separately through Sparkle’s secure purchase and refund checks. Processing stops at the first order whose final status cannot be confirmed. Some earlier recipients may already be completed.</p><button id="sparkleReviewContinueButton" class="btn primary full sparkle-summary-confirm" disabled onclick="window.sparkleConfirmPurchase()">Checking wallet balance…</button>';
+  screen.scrollTop=0;screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");
   try{if(new URLSearchParams(window.location.search).get("page")!=="confirm")window.history.pushState({sparklePurchaseReview:true},"",window.location.pathname+"?page=confirm"+window.location.hash);}catch(e){}
   sparkleCheckWalletReview(pendingPurchase.total);
 }
+document.addEventListener("input",e=>{const field=e.target;if(field.closest(".sparkle-bulk-row")){if(field.dataset.field==="phone")sparkleBulkPhoneInput(field,false);else if(field.dataset.field==="amount")sparkleBulkFieldChanged(field);}});
+document.addEventListener("change",e=>{const field=e.target;if(!field.closest(".sparkle-bulk-row"))return;if(field.dataset.field==="phone")sparkleBulkPhoneInput(field,true);else if(field.dataset.field!=="amount")sparkleBulkFieldChanged(field);});
 
 let sparklePinRequiredForPendingPurchase=false;
 
@@ -9394,6 +9540,60 @@ async function processPendingPurchase(transactionPin){
       throw new Error(await sparkleFunctionErrorMessage({message:data?.error||data?.message},"Electricity purchase was not completed. Your wallet has not been charged."));
     }catch(error){console.error("Secure Sparkle electricity purchase:",error);alert((error.message||"Electricity was not confirmed.")+"\n\nCheck transaction history before trying again. Do not retry if the status is pending.");}
     finally{if(overlay)overlay.classList.remove("show");}
+    return;
+  }
+async function processBulkRecharge(transactionPin){
+  const batch=pendingPurchase;if(!batch||batch.type!=="bulk"||!Array.isArray(batch.items)||!batch.items.length)return;
+  const queue=batch.items.slice(),results=[],overlay=document.getElementById("processingOverlay"),progress=document.getElementById("processingProgress");
+  const setProgress=value=>{if(progress)progress.textContent=value;};if(overlay)overlay.classList.add("show");
+  let stopMessage="";
+  const refreshWallet=async()=>{try{const auth=await supabaseClient.auth.getUser(),uid=auth?.data?.user?.id;if(uid){await loadWallet(uid);await loadTransactions(uid);}}catch(error){console.warn("Bulk recharge wallet refresh:",error);}};
+  const resolveResult=async(endpoint,response,reference)=>{
+    if(response?.data)return response.data;
+    try{const checked=await supabaseClient.functions.invoke(endpoint,{body:{action:"check",reference}});if(checked?.data)return checked.data;}catch(_){}
+    return {success:false,status:"unconfirmed",reference,error:"Sparkle could not confirm this order. Do not retry this recipient yet."};
+  };
+  try{
+    for(let i=0;i<queue.length;i++){
+      const item=queue[i],endpoint=item.service==="Data"?"sparkle-data-purchase":"sparkle-airtime-purchase";
+      const reference=(item.service==="Data"?"SPK-DT-":"SPK-AT-")+item.requestID;
+      setProgress("Processing recipient "+(i+1)+" of "+queue.length+" · "+item.phone);
+      let response;
+      try{
+        response=await supabaseClient.functions.invoke(endpoint,{body:item.service==="Data"
+          ? {serviceID:item.serviceID,phone:item.phone,plan:item.planValue,planName:item.plan,network:item.network,serviceLabel:item.serviceLabel,validity:item.validity,amount:Number(item.amount),pin:transactionPin,requestID:item.requestID}
+          : {network:item.network,phone:item.phone,amount:Number(item.amount),pin:transactionPin,requestID:item.requestID}});
+      }catch(error){response={data:null,error};}
+      const data=await resolveResult(endpoint,response,reference),status=String(data?.status||"").toLowerCase(),ref=String(data?.reference||reference);
+      if(data?.success===true&&status==="successful"){results.push({item,status:"successful",reference:ref});continue;}
+      if(status==="refunded"||status==="service_unavailable"){results.push({item,status:"refunded",reference:ref});continue;}
+      if(status==="not_started"){results.push({item,status:"not_started",reference:ref});continue;}
+      results.push({item,status:status||"unconfirmed",reference:ref});
+      stopMessage="Processing stopped at recipient "+(i+1)+" because its final status could not be confirmed. Remaining recipients were not submitted.";
+      for(let j=i+1;j<queue.length;j++)results.push({item:queue[j],status:"not_processed",reference:"—"});break;
+    }
+  }catch(error){
+    console.error("Sparkle bulk recharge queue:",error);stopMessage="The batch was interrupted. Check the results below before trying again.";
+    for(let j=results.length;j<queue.length;j++)results.push({item:queue[j],status:"not_processed",reference:"—"});
+  }finally{
+    if(overlay)overlay.classList.remove("show");pendingPurchase=null;try{sessionStorage.removeItem("sparklePendingPurchase");}catch(_){}await refreshWallet();
+  }
+  const successful=results.filter(r=>r.status==="successful").length,refunded=results.filter(r=>r.status==="refunded").length,noCharge=results.filter(r=>r.status==="not_started").length;
+  const pending=results.filter(r=>!["successful","refunded","not_started","not_processed"].includes(r.status)).length;
+  const label=s=>s==="successful"?"Successful":s==="refunded"?"Refunded":s==="not_started"?"Not charged":s==="not_processed"?"Not submitted":s==="pending"?"Pending":"Needs checking";
+  const color=s=>s==="successful"?"#0b8a62":s==="refunded"?"#a16207":s==="not_started"||s==="not_processed"?"#64748b":"#b45309";
+  const rows=results.map((r,i)=>{
+    const item=r.item,desc=item.service==="Data"?(item.serviceLabel+" · "+item.plan):"Airtime";
+    return '<div class="sparkle-bulk-result-row"><div><strong>'+String(i+1)+'. '+escapeHtml(item.network)+' · '+escapeHtml(item.phone)+'</strong><span class="sparkle-bulk-result-meta">'+escapeHtml(desc)+' · '+money(item.amount)+'<br>Reference: '+escapeHtml(r.reference||"—")+'</span></div><strong style="color:'+color(r.status)+'">'+label(r.status)+'</strong></div>';
+  }).join("");
+  const screen=document.getElementById("sparkle-purchase-summary-screen"),content=document.getElementById("sparkle-summary-screen-content"),title=document.querySelector(".sparkle-summary-top h2");
+  if(title)title.textContent="Bulk Recharge Results";
+  if(content)content.innerHTML='<div class="sparkle-summary-network"><span class="network-card-logo cable">Σ</span><div><div class="sparkle-summary-network-name">Batch processing results</div><div class="sparkle-summary-network-label">'+queue.length+' separate recipient order(s)</div></div></div><div class="summary-line"><span>Successful</span><strong>'+successful+'</strong></div><div class="summary-line"><span>Refunded</span><strong>'+refunded+'</strong></div><div class="summary-line"><span>Not charged</span><strong>'+noCharge+'</strong></div><div class="summary-line"><span>Pending / needs checking</span><strong>'+pending+'</strong></div>'+(stopMessage?'<p class="electricity-note" style="color:#9a5b00">'+escapeHtml(stopMessage)+'</p>':'<p class="electricity-note">Every recipient has a confirmed final result. Check your transaction history for each order reference.</p>')+rows+'<button type="button" class="btn primary full" onclick="window.sparkleCloseDedicatedReview(true)">Done</button>';
+  if(screen&&content){screen.classList.add("is-open");screen.setAttribute("aria-hidden","false");screen.scrollTop=0;}
+}
+  // Run Airtime and Data Bulk Recharge as separate, sequential wallet-reserved orders.
+  if(pendingPurchase.type==="bulk" && pendingPurchase.items.every(item=>["Airtime","Data"].includes(item?.service))){
+    await processBulkRecharge(transactionPin);
     return;
   }
   // Cable TV and Education PINs use the secure server-side bill purchase flow.

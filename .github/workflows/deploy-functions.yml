@@ -9,6 +9,17 @@ on:
       - "supabase/config.toml"
       - ".github/workflows/deploy-functions.yml"
   workflow_dispatch:
+    inputs:
+      deploy_all:
+        description: "Deploy every Supabase Edge Function (normally only changed functions are deployed)"
+        required: false
+        default: false
+        type: boolean
+      remove_retired:
+        description: "Also remove the explicitly listed retired provider functions and old secret"
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -20,7 +31,6 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     env:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
@@ -29,6 +39,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
         with:
+          fetch-depth: 0
           persist-credentials: false
 
       - name: Setup Supabase CLI
@@ -45,13 +56,76 @@ jobs:
           fi
           echo "5SIM secret is configured (value was not displayed)."
 
-      - name: Deploy active Edge Functions
-        run: supabase functions deploy --project-ref "$SUPABASE_PROJECT_ID" --yes
-
-      - name: Remove retired provider registrations and secret
+      - name: Identify functions affected by this release
+        id: targets
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.sha }}
+          DEPLOY_ALL: ${{ inputs.deploy_all }}
         run: |
           set -euo pipefail
-          # Read the current names once so this cleanup is safe to re-run.
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ "$DEPLOY_ALL" != "true" ]]; then
+              echo "Manual run did not request a full deployment; no functions will be changed."
+              echo "has_targets=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            changed="$(find supabase/functions -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -u)"
+          elif [[ ! "$BASE_SHA" =~ ^0+$ ]] && git cat-file -e "$BASE_SHA^{commit}" 2>/dev/null; then
+            if git diff --quiet "$BASE_SHA" "$HEAD_SHA" -- supabase/config.toml; then
+              changed="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA" -- supabase/functions/ | awk -F/ 'NF >= 3 {print $3}' | sort -u)"
+            else
+              echo "Supabase config changed; deploying all functions to apply config consistently."
+              changed="$(find supabase/functions -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -u)"
+            fi
+          else
+            echo "No usable previous commit was provided; using a full function deployment for this initial push."
+            changed="$(find supabase/functions -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort -u)"
+          fi
+
+          # A deleted function directory is not deployable. Retired-function deletion
+          # is intentionally reserved for an explicit manual cleanup request.
+          deployable=""
+          while IFS= read -r fn; do
+            [[ -n "$fn" ]] || continue
+            if [[ -d "supabase/functions/$fn" ]]; then
+              deployable+="$fn"$'\n'
+            fi
+          done <<< "$changed"
+
+          if [[ -z "$deployable" ]]; then
+            echo "No Edge Function source changed in this release; skipping Supabase deployment."
+            echo "has_targets=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Functions selected for this release:"
+          printf '%s' "$deployable"
+          {
+            echo "functions<<EOF"
+            printf '%s' "$deployable"
+            echo "EOF"
+            echo "has_targets=true"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Deploy changed Edge Functions only
+        if: steps.targets.outputs.has_targets == 'true'
+        env:
+          FUNCTIONS: ${{ steps.targets.outputs.functions }}
+        run: |
+          set -euo pipefail
+          while IFS= read -r fn; do
+            [[ -n "$fn" ]] || continue
+            echo "Deploying changed Edge Function: $fn"
+            supabase functions deploy "$fn" --project-ref "$SUPABASE_PROJECT_ID" --yes
+          done <<< "$FUNCTIONS"
+
+      - name: Remove retired provider registrations and secret
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deploy_all && inputs.remove_retired }}
+        run: |
+          set -euo pipefail
           registered_functions="$(supabase functions list --project-ref "$SUPABASE_PROJECT_ID")"
           for fn in \
             sparkle-fleexa-buy \
