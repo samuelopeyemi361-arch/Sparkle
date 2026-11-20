@@ -307,8 +307,10 @@ Deno.serve(async (req) => {
     }, 400);
   }
 
-  // Reserve wallet funds only after successful PIN verification.
-  const reference = "SPK-AT-" + crypto.randomUUID();
+  // Reserve funds after PIN verification. Bulk rows supply a stable UUID for safe status checks.
+  const suppliedRequestID = String(body.requestID ?? body.requestId ?? "").trim().toLowerCase();
+  const stableRequestID = /^[a-f0-9-]{20,80}$/.test(suppliedRequestID) ? suppliedRequestID : crypto.randomUUID();
+  const reference = "SPK-AT-" + stableRequestID;
 
   const reserve = await admin.rpc(
     "sparkle_airtime_wallet_action",
