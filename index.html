@@ -6744,7 +6744,7 @@ function normalizeNumberOperatorOffers(response){
   const stock=Number(item?.stock??item?.count??item?.quantity??item?.qty??0);
   const sellingPrice=Number(item?.selling_price_ngn??item?.sellingPriceNgn??item?.price_ngn??item?.price??0);
   const rate=item?.delivery_rate??item?.rate??item?.deliveryRate??item?.rate3??null;
-  return {...item,operator,operator_label:String(item?.operator_label??item?.label??item?.name??operator||"Operator"),
+  return {...item,operator,operator_label:String((item?.operator_label??item?.label??item?.name??operator)||"Operator"),
    stock,selling_price_ngn:sellingPrice,rate,
    in_stock:item?.in_stock===false?false:stock>0,
    available:item?.available===false?false:stock>0&&Number.isFinite(sellingPrice)&&sellingPrice>0};
