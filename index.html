@@ -6756,13 +6756,43 @@ async function loadNumberOperators(preferred){
  if(!serviceCode){numberOperatorsCache=[];select.innerHTML='<option value="">Choose a service first</option>';if(status)status.textContent="Choose a service before loading operators.";if(cards)cards.innerHTML="";updateNumberSelectionStep("service");return;}
  select.innerHTML='<option value="">Loading operator prices…</option>';if(status)status.textContent="Checking operator availability and current naira prices…";if(cards)cards.innerHTML='<div class="data-empty">Loading live operator prices…</div>';if(result)result.innerHTML="";
  try{
-  const response=await callNumberCatalog({action:"operators",country,serviceName:serviceCode,serverId:"server1"});
+  let response:any=null,lastLoadError:any=null;
+  // Operator catalogue calls are read-only. Retry once on a transient 5SIM/FX/network failure.
+  for(let attempt=0;attempt<2;attempt++){
+   try{
+    response=await callNumberCatalog({action:"operators",country,serviceName:serviceCode,serverId:"server1"});
+    lastLoadError=null;
+    break;
+   }catch(error){
+    lastLoadError=error;
+    if(attempt===0){
+     await new Promise(resolve=>setTimeout(resolve,450));
+     if(seq!==numberOperatorsLoadSequence)return;
+    }
+   }
+  }
+  if(lastLoadError)throw lastLoadError;
   if(seq!==numberOperatorsLoadSequence||serviceCode!==(document.getElementById("numberAppSelect")?.value||"")||country!==(document.getElementById("numberCountrySelect")?.value||"us"))return;
   numberOperatorsCache=normalizeNumberOperatorOffers(response);
   renderNumberOperators(numberOperatorsCache,preferred||"");if(!numberOperatorsCache.length)throw new Error("5SIM returned no in-stock operator offers for this service and country.");
   if(status)status.textContent=numberOperatorsCache.length+" operator option"+(numberOperatorsCache.length===1?"":"s")+" · Each operator has its own price. Select one to review.";
   updateNumberSelectionStep("operator");if(preferred&&select.value)await checkNumberPrice();else{if(result)result.textContent="";numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
- }catch(error){if(seq!==numberOperatorsLoadSequence)return;numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(cards)cards.innerHTML='<div class="data-empty">No operator offers are available right now.</div>';if(status)status.textContent="Could not load operator prices. "+String(error?.message||error);if(result)result.textContent="";if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
+ }catch(error){
+  if(seq!==numberOperatorsLoadSequence)return;
+  const reason=String(error?.message||error||"Temporary catalogue error");
+  if(numberOperatorsCache.length){
+   // A periodic refresh must never erase previously verified live choices.
+   renderNumberOperators(numberOperatorsCache,preferred||"");
+   if(status)status.textContent="The latest refresh failed. Your previously loaded operator options are still shown. Tap Retry to refresh.";
+   if(cards&&!cards.querySelector("[data-number-operator-retry]"))cards.insertAdjacentHTML("beforeend",'<button type="button" data-number-operator-retry class="sparkle-number-retry-button" onclick="loadNumberOperators(\'\')">Retry operator prices</button>');
+  }else{
+   select.innerHTML='<option value="">Retry operator loading</option>';
+   if(cards)cards.innerHTML='<div class="data-empty">Operator prices could not be loaded just now.<br><button type="button" class="sparkle-number-retry-button" onclick="loadNumberOperators(\'\')">Retry now</button></div>';
+   if(status)status.textContent="The live catalogue did not respond. Retry to check this service again.";
+  }
+  if(result)result.textContent=reason;
+  if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}
+ }
 }
 
 
