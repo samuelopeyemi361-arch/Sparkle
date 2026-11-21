@@ -6,15 +6,9 @@
 <script id="sparkle-auth-visual-failsafe">
 (function(){
   "use strict";
-  // Never leave the public site blank if the auth SDK or session restore fails.
-  // Normal INITIAL_SESSION handling still wins and preserves the signed-in dashboard.
-  window.setTimeout(function(){
-    var root=document.documentElement;
-    if(root && root.classList.contains("sparkle-auth-pending")){
-      root.classList.remove("sparkle-auth-pending");
-      console.warn("Sparkle auth visual failsafe: showing the public homepage after delayed session restoration.");
-    }
-  },4500);
+  // Reveal the public page immediately; Supabase session restoration continues normally.
+  var root=document.documentElement;
+  if(root) root.classList.remove("sparkle-auth-pending");
 })();
 </script>
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
