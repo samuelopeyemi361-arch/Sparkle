@@ -353,6 +353,8 @@ async function bestOffer(country:string,service:string,requestedOperator="smart"
  if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
   const recommended=recommendedOffer(offers,service,country);
   if(recommended)return recommended;
+  const automatic=automaticFallbackOffer(offers);
+  if(automatic)return automatic;
   throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
  }
  const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
@@ -490,6 +492,13 @@ function recommendedOffer(offers:ProviderOffer[],_service:string,_country:string
  return winner;
  }
 
+function automaticFallbackOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
+ // Use 5SIM's capped automatic route only when no named operator has stock.
+ // Never replace a stock-backed named operator or a verified 3-hour recommendation.
+ const hasNamedStock=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
+ if(hasNamedStock)return undefined;
+ return offers.find(x=>x.operator.toLowerCase()==="any"&&x.count>0);
+}
 async function getDisplayQuote(country:string,service:string,serverId:string,requestedOperator="any",admin:any){
  const profile=validateRoute(serverId,country,service);
  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
@@ -497,7 +506,7 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  const offers=await getProductOffers(country,service,admin);
  const smartRequest=requestedOperator==="smart"||requestedOperator==="any";
  const offer=smartRequest
-   ?recommendedOffer(offers,service,country)
+   ?(recommendedOffer(offers,service,country)||automaticFallbackOffer(offers))
    :offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
  if(!offer&&smartRequest)throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
  if(!offer||offer.count<=0)throw problem("That operator is no longer available. Choose another operator and check the price again.",409,"OPERATOR_UNAVAILABLE");
@@ -625,7 +634,11 @@ Deno.serve(async (req:Request)=>{
    const offers=await getProductOffers(country,service,ctx.admin);
    const recommended=recommendedOffer(offers,service,country);
    const recommendationWindow=selectRecommendationWindow(offers);
-   const specific=offers.filter(x=>x.operator.toLowerCase()!=="any").map(x=>{
+   const namedInStock=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
+   const visibleOffers=namedInStock
+     ?offers.filter(x=>x.operator.toLowerCase()!=="any")
+     :offers.filter(x=>x.operator.toLowerCase()==="any"&&x.count>0);
+   const specific=visibleOffers.map(x=>{
      const available=x.count>0;
      const isRecommended=!!recommended&&x.operator===recommended.operator;
      // Display all operators using the same live comparison window.
@@ -633,7 +646,7 @@ Deno.serve(async (req:Request)=>{
       const displayWindow=recommendationWindow;
      return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?(x.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,unavailable_reason:available?null:(x.count<=0?"No stock":null)};
    });
-   return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
+   return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||visibleOffers[0]?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
   }
   if(action==="price"){
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service.",400,"INVALID_SERVICE");
