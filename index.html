@@ -6823,11 +6823,21 @@ async function refreshNumberOffersAutomatically(){
  const status=document.getElementById("numberOperatorStatus");
  if(changed&&status)status.textContent="Live update received: prices, delivery chances and available stock have been refreshed.";
 }
+let numberOffersLastAutoRefreshAt=0;
+function maybeRefreshNumberOffersAutomatically(){
+ const service=(document.getElementById("numberAppSelect")?.value||"").toLowerCase();
+ const country=(document.getElementById("numberCountrySelect")?.value||"").toLowerCase();
+ const refreshEvery=service==="whatsapp"&&(country==="ca"||country==="canada")?5000:30000;
+ const now=Date.now();
+ if(now-numberOffersLastAutoRefreshAt<refreshEvery)return;
+ numberOffersLastAutoRefreshAt=now;
+ void refreshNumberOffersAutomatically();
+}
 if(!window.__sparkleNumberAutoRefreshStarted){
  window.__sparkleNumberAutoRefreshStarted=true;
- window.setInterval(()=>{void refreshNumberOffersAutomatically();},30000);
+ window.setInterval(()=>{maybeRefreshNumberOffersAutomatically();},5000);
  document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="visible")void refreshNumberOffersAutomatically();
+  if(document.visibilityState==="visible")maybeRefreshNumberOffersAutomatically();
  });
 }
 
