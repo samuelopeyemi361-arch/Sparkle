@@ -258,6 +258,7 @@ async function usdToNgn(): Promise<number> {
 
   const fallbackRate = usableCachedRate();
   if (fallbackRate !== null) return fallbackRate;
+  console.error("[sparkle-number-buy-fx] no verified exchange rate available");
   throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
 }
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;displayRate:number|null;rateWindow?:string|null;rateWindows:Record<string,number|null>;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
@@ -288,39 +289,16 @@ function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
   :{rate:Number(value.toFixed(2)),window:"rate3"};
 }
 
-function unwrapOfferContainer(node:any):any{
- for(let depth=0;depth<5;depth++){
-  if(!node||typeof node!=="object"||Array.isArray(node))break;
-  const hasOfferFields=node.cost!==undefined||node.price_usd!==undefined||node.count!==undefined||node.qty!==undefined||node.stock!==undefined;
-  if(hasOfferFields)break;
-  const wrapper=["data","operators","items","rows","prices"].find(key=>node[key]&&typeof node[key]==="object");
-  if(!wrapper)break;
-  node=node[wrapper];
- }
- return node;
-}
-function findCaseInsensitive(node:any,key:string):any{
- if(!node||typeof node!=="object"||Array.isArray(node))return undefined;
- if(node[key]!==undefined)return node[key];
- const match=Object.keys(node).find(k=>k.toLowerCase()===key.toLowerCase());
- return match===undefined?undefined:node[match];
-}
-function parseOfferRows(input:any):ParsedOffer[]{
- const node=unwrapOfferContainer(input);
- if(!node||typeof node!=="object")return [];
- const entries:Array<[string,any]>=Array.isArray(node)
-  ?node.map((raw:any,index:number)=>[asText(raw?.operator??raw?.operator_code??raw?.code??raw?.name??("operator-"+index)),raw])
-  :Object.entries(node);
- return entries.map(([rawOperator,source]:[string,any])=>{
-  const operator=asText(rawOperator);
-  const raw=unwrapOfferContainer(source);
-  const usd=Number(raw?.cost??raw?.price_usd??raw?.price);
-  const count=Number(raw?.count??raw?.qty??raw?.quantity??raw?.stock??raw?.Qty);
+function parseOfferRows(node:any):ParsedOffer[]{
+ if(!node||typeof node!=="object"||Array.isArray(node))return [];
+ return Object.entries(node).map(([operator,raw]:[string,any])=>{
+  const usd=Number(raw?.cost),count=Number(raw?.count);
   const rateWindows=getRateWindows(raw);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
   const selectedRate=parseDeliveryRate(raw);
   const rate=selectedRate.rate;
-  return {operator,usd,count,rate,displayRate:rate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
+  const displayRate=rate;
+  return {operator,usd,count,rate,displayRate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
 // Share the latest 5SIM prices payload for five seconds per Edge Function instance.
@@ -346,6 +324,7 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
     response=await apiGet(path);
    }
    if(!response.ok||!response.data||typeof response.data!=="object")
+    console.error("[sparkle-number-buy-price] 5SIM prices unavailable after retry",JSON.stringify({country,service,status:response?.status||0}));
     throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
    pricesResponseCache.set(key,{data:response.data,expiresAt:Date.now()+5000});
    return response.data;
@@ -362,10 +341,8 @@ async function applyManualRateOverrides(offers:ProviderOffer[],service:string,co
   .eq("service",service.toLowerCase()).eq("country",canonicalCountry)
   .gt("expires_at",now).in("operator",offers.map(x=>x.operator));
  if(error){
-  // Manual overrides are optional. A table/query issue must not hide real 5SIM operators.
-  // Continue with the provider's current verified delivery-rate data.
-  console.warn("[sparkle-5sim-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
-  return offers;
+  console.error("[sparkle-5sim-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
+  throw problem("Sparkle could not verify its manual delivery-rate settings. Please refresh and try again.",503,"RATE_OVERRIDE_UNAVAILABLE");
  }
  const overrides=new Map<string,{rate:number;expiresAt:string}>(
   (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
@@ -409,33 +386,9 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
    if(productNode)break;
   }
  }
- // Some 5SIM responses wrap country/product maps inside result, payload or products.
- // Search those known wrappers as a compatibility fallback before reporting no stock.
- if(!productNode||!parseOfferRows(productNode).length){
-  const queue:any[]=[root],seen=new Set<any>();
-  while(queue.length&&!productNode){
-   const node=queue.shift();
-   if(!node||typeof node!=="object"||seen.has(node))continue;
-   seen.add(node);
-   for(const countryKey of countryAliases){
-    const countryNode=findKey(node,countryKey);
-    const candidate=findKey(countryNode,service);
-    if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
-   }
-   if(productNode)break;
-   const serviceNode=findKey(node,service);
-   if(serviceNode){
-    for(const countryKey of countryAliases){
-     const candidate=findKey(serviceNode,countryKey);
-     if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
-    }
-   }
-   if(productNode)break;
-   for(const wrapper of ["data","result","response","payload","products","prices","items","rows"]){
-    const child=node[wrapper];
-    if(child&&typeof child==="object"&&!seen.has(child))queue.push(child);
-   }
-  }
+ if(productNode&&typeof productNode==="object"&&!Array.isArray(productNode)&&Object.keys(productNode).length===1){
+  const nested=findKey(productNode,pc);
+  if(nested&&typeof nested==="object")productNode=nested;
  }
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
  const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
@@ -466,150 +419,13 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
  });
  return ratedOffers;
 }
-async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
- const offers=await getProductOffers(country,service,admin);
- if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
-  const recommended=recommendedOffer(offers,service,country);
-  if(recommended)return recommended;
-  const automatic=automaticFallbackOffer(offers);
-  if(automatic)return automatic;
-  throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
- }
- const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
- if(!chosen)throw problem("That operator is no longer available. Choose another operator and check the price again.",409,"OPERATOR_UNAVAILABLE");
- if(chosen.count<=0)throw problem("That operator is out of stock.",409,"NO_STOCK");
- if(chosen.usd>chosen.providerBalanceUsd)throw problem("This operator is temporarily unavailable. No Sparkle wallet funds were used.",503,"PROVIDER_BALANCE_LOW");
- return chosen;
+function automaticFallbackOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
+ // Use 5SIM's capped automatic route only when no named operator has stock.
+ // Never replace a stock-backed named operator or a verified 3-hour recommendation.
+ const hasNamedStock=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
+ if(hasNamedStock)return undefined;
+ return offers.find(x=>x.operator.toLowerCase()==="any"&&x.count>0);
 }
-
-async function getCatalogServicesForCountry(country:string):Promise<any[]>{
- const pc=providerCountry(country);
- const response=await apiGet("/guest/products/"+encodeURIComponent(pc)+"/any");
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The live service catalogue could not be loaded. Please try again shortly.",503,"CATALOG_UNAVAILABLE");
- let root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- if(!Array.isArray(root)&&root&&typeof root==="object"){
-  const wrapped=root.products??root.Products??root.items??root.Items;
-  if(wrapped&&(Array.isArray(wrapped)||typeof wrapped==="object"))root=wrapped;
- }
- const entries:Array<[string,any]>=Array.isArray(root)
-  ?root.map((item:any,index:number)=>[asText(item?.product??item?.Product??item?.code??item?.Code??item?.slug??item?.name??item?.Name??("service-"+index)),item])
-  :Object.entries(root||{});
- const items:any[]=[];
- for(const [rawCode,raw] of entries){
-  const code=asText(rawCode).toLowerCase();
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(code)||!raw||typeof raw!=="object")continue;
-  const product:any=raw;
-  const categoryRaw=product.Category??product.category??product.type??product.Type;
-  const category=typeof categoryRaw==="string"?categoryRaw.trim().toLowerCase():"";
-  if(category&&category!=="activation")continue;
-  const stockRaw=product.Qty??product.qty??product.quantity??product.count??product.Count;
-  const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
-  const stock=hasStock?Number(stockRaw):null;
-  if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
-  items.push({code,name:serviceDisplayName(code),country,network:"Live availability",stock:Number.isFinite(stock)?stock:null,available_countries:[country],country_availability_loaded:true});
- }
- const unique=new Map<string,any>();
- for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
- return [...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
-}
-async function getGlobalCatalogServices():Promise<any[]>{
- const response=await apiGet("/guest/products/any/any");
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("The global service list is temporarily unavailable.",503,"CATALOG_UNAVAILABLE");
- let root:any=response.data?.data&&typeof response.data.data==="object"?response.data.data:response.data;
- if(!Array.isArray(root)&&root&&typeof root==="object"){
-  const wrapped=root.products??root.Products??root.items??root.Items;
-  if(wrapped&&(Array.isArray(wrapped)||typeof wrapped==="object"))root=wrapped;
- }
- const entries:Array<[string,any]>=Array.isArray(root)
-  ?root.map((item:any,index:number)=>[asText(item?.product??item?.Product??item?.code??item?.Code??item?.slug??item?.name??item?.Name??("service-"+index)),item])
-  :Object.entries(root||{});
- const items:any[]=[];
- for(const [rawCode,raw] of entries){
-  const code=asText(rawCode).toLowerCase();
-  if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(code)||!raw||typeof raw!=="object")continue;
-  const product:any=raw;
-  const categoryRaw=product.Category??product.category??product.type??product.Type;
-  const category=typeof categoryRaw==="string"?categoryRaw.trim().toLowerCase():"";
-  if(category!=="activation")continue;
-  const stockRaw=product.Qty??product.qty??product.quantity??product.count??product.Count;
-  const hasStock=stockRaw!==undefined&&stockRaw!==null&&stockRaw!=="";
-  const stock=hasStock?Number(stockRaw):null;
-  if(hasStock&&(!Number.isFinite(stock)||stock<=0))continue;
-  items.push({code,name:serviceDisplayName(code),network:"Live availability",stock:Number.isFinite(stock)?stock:null,available_countries:[],country_availability_loaded:false});
- }
- const unique=new Map<string,any>();
- for(const item of items)if(!unique.has(item.code))unique.set(item.code,item);
- const result=[...unique.values()].sort((a,b)=>a.name.localeCompare(b.name));
- if(!result.length)throw problem("No activation services are currently listed.",503,"CATALOG_UNAVAILABLE");
- return result;
-}
-
-async function getCountriesForService(service:string):Promise<string[]>{
- if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid verification service.",400,"INVALID_SERVICE");
- const response=await apiGet("/guest/prices?product="+encodeURIComponent(service));
- if(!response.ok||!response.data||typeof response.data!=="object")throw problem("Current country availability could not be verified. Please try again.",503,"COUNTRIES_UNAVAILABLE");
- let root:any=response.data;
- for(let depth=0;depth<3;depth++){
-  if(root&&typeof root==="object"&&!Array.isArray(root)&&root.data&&typeof root.data==="object")root=root.data;
-  else break;
- }
- const result=new Set<string>();
- const addCountry=(rawCode:string,node:any)=>{
-  const key=asText(rawCode).toLowerCase();
-  if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(key)||!node||typeof node!=="object"||Array.isArray(node))return;
-  const serviceNode=findCaseInsensitive(unwrapOfferContainer(node),service);
-  if(serviceNode&&parseOfferRows(serviceNode).some(offer=>offer.count>0)){
-   result.add(key==="usa"?"us":key==="canada"?"ca":key);
-  }
- };
- // 5SIM commonly returns country -> product -> operator. Some responses are product -> country -> operator.
- for(const [key,node] of Object.entries(root||{})){
-  if(!node||typeof node!=="object"||Array.isArray(node))continue;
-  addCountry(key,node);
-  const nested=node as any;
-  if(key.toLowerCase()===service){
-   const serviceOffers=unwrapOfferContainer(nested);
-   for(const [countryCode,offers] of Object.entries(serviceOffers||{})){
-    if(parseOfferRows(offers).some(offer=>offer.count>0)){
-     const c=countryCode.toLowerCase();
-     if(/^[a-z0-9][a-z0-9-]{1,39}$/.test(c))result.add(c==="usa"?"us":c==="canada"?"ca":c);
-    }
-   }
-  }
- }
- // Also accept country entries wrapped one level deeper by the upstream API.
- for(const [key,node] of Object.entries(root||{})){
-  if(!node||typeof node!=="object"||Array.isArray(node))continue;
-  const nested=(node as any).data;
-  if(nested&&typeof nested==="object")addCountry(key,nested);
- }
- return [...result].sort((a,b)=>a==="us"?-1:b==="us"?1:a==="ca"?-1:b==="ca"?1:a.localeCompare(b));
-}
-
-function selectRecommendationWindow(offers:ProviderOffer[]):string|null{
- // RATE_WINDOW_PRIORITY is fixed to rate3 (3 hours) so each operator and
- // every admin override is compared using the same 5SIM Statistics period.
- const positive=(window:string)=>offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
-   x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&x.rateWindows[window]!>0&&x.rateWindows[window]!<=100).length;
- return RATE_WINDOW_PRIORITY.find(w=>positive(w)>0)??null;
-}
-function recommendedOffer(offers:ProviderOffer[],_service:string,_country:string):ProviderOffer|undefined{
- // Recalculate from the latest 5SIM feed after its short cache expires.
- // Every in-stock operator is compared in the same selected time window.
- const window=selectRecommendationWindow(offers);
- if(!window)return undefined;
- const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
-  x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&
-  x.rateWindows[window]!>0&&x.rateWindows[window]!<=100);
- if(!rated.length)return undefined;
- // Highest verified 5SIM 3-hour rate wins; equal rates prefer lower supplier cost.
- const winner=[...rated].sort((a,b)=>b.rateWindows[window]!-a.rateWindows[window]!||
-  a.usd-b.usd||a.operator.localeCompare(b.operator))[0];
- winner.rate=Number(winner.rateWindows[window]!.toFixed(2));
- winner.displayRate=winner.rate;
- winner.rateWindow=window;
- return winner;
- }
 async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service,admin);
  if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
