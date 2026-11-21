@@ -389,11 +389,20 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
  });
  return ratedOffers;
 }
+function automaticFallbackOffer(offers:ProviderOffer[]):ProviderOffer|undefined{
+ // Use 5SIM's capped automatic route only when no named operator has stock.
+ // Never replace a stock-backed named operator or a verified 3-hour recommendation.
+ const hasNamedStock=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
+ if(hasNamedStock)return undefined;
+ return offers.find(x=>x.operator.toLowerCase()==="any"&&x.count>0);
+}
 async function bestOffer(country:string,service:string,requestedOperator="smart",admin:any):Promise<ProviderOffer>{
  const offers=await getProductOffers(country,service,admin);
  if(!requestedOperator||requestedOperator==="any"||requestedOperator==="smart"){
   const recommended=recommendedOffer(offers,service,country);
   if(recommended)return recommended;
+  const automatic=automaticFallbackOffer(offers);
+  if(automatic)return automatic;
   throw problem("5SIM has not supplied a verified delivery rate for this service and country. Sparkle will not recommend an operator by price.",503,"RATE_UNAVAILABLE");
  }
  const chosen=offers.find(x=>x.operator.toLowerCase()===requestedOperator.toLowerCase());
