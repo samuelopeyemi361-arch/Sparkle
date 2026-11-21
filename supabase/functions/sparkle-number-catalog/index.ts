@@ -229,22 +229,32 @@ function parseRateField(value:any):number|null{
  return Number.isFinite(n)&&n>=0&&n<=100?n:null;
 }
 /**
- * Compare every in-stock operator using 5SIM Statistics' 3-hour rate.
- * The 1-hour "rate" and longer statistics periods can be materially different;
- * do not mix windows in a single recommendation. A missing rate3 remains
- * unverified unless an active administrator override exists for that exact pair.
+ * Delivery-rate policy:
+ * - Canada + WhatsApp uses the longest useful 5SIM history first (7 days, then 30 days,
+ *   3 days, 24 hours, 3 hours and 1 hour) to reduce noise from a short sample.
+ * - Every other country/service keeps the existing 3-hour comparison unchanged.
  */
 const RATE_WINDOW_PRIORITY=["rate3"] as const;
-function getRateWindows(operatorData:any):Record<string,number|null>{
+const CANADA_WHATSAPP_RATE_WINDOWS=["rate168","rate720","rate72","rate24","rate3","rate1"] as const;
+function rateWindowPriorityFor(service:string="",country:string=""):readonly string[]{
+ const serviceKey=asText(service).toLowerCase();
+ const countryKey=manualRateCountry(country);
+ return serviceKey==="whatsapp"&&countryKey==="ca" ? CANADA_WHATSAPP_RATE_WINDOWS : RATE_WINDOW_PRIORITY;
+}
+function rateWindowLabel(window:string|null|undefined):string{
+ const labels:Record<string,string>={rate1:"1-hour",rate3:"3-hour",rate24:"24-hour",rate72:"3-day",rate168:"7-day",rate720:"30-day"};
+ return labels[String(window||"")]||"3-hour";
+}
+function getRateWindows(operatorData:any,service:string="",country:string=""):Record<string,number|null>{
  const windows:Record<string,number|null>={};
- for(const key of RATE_WINDOW_PRIORITY)windows[key]=parseRateField(operatorData?.[key]);
+ for(const key of rateWindowPriorityFor(service,country))windows[key]=parseRateField(operatorData?.[key]);
  return windows;
 }
-function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
- const value=parseRateField(raw?.rate3);
- return value===null
-  ?{rate:null,window:null}
-  :{rate:Number(value.toFixed(2)),window:"rate3"};
+function parseDeliveryRate(raw:any,service:string="",country:string=""):{rate:number|null;window:string|null}{
+ const windows=getRateWindows(raw,service,country);
+ const window=rateWindowPriorityFor(service,country).find(key=>windows[key]!==null)??null;
+ const value=window?windows[window]:null;
+ return value===null||!window ? {rate:null,window:null} : {rate:Number(value.toFixed(2)),window};
 }
 
 function unwrapOfferContainer(node:any):any{
@@ -264,7 +274,7 @@ function findCaseInsensitive(node:any,key:string):any{
  const match=Object.keys(node).find(k=>k.toLowerCase()===key.toLowerCase());
  return match===undefined?undefined:node[match];
 }
-function parseOfferRows(input:any):ParsedOffer[]{
+function parseOfferRows(input:any,service:string="",country:string=""):ParsedOffer[]{
  const node=unwrapOfferContainer(input);
  if(!node||typeof node!=="object")return [];
  const entries:Array<[string,any]>=Array.isArray(node)
@@ -275,9 +285,9 @@ function parseOfferRows(input:any):ParsedOffer[]{
   const raw=unwrapOfferContainer(source);
   const usd=Number(raw?.cost??raw?.price_usd??raw?.price);
   const count=Number(raw?.count??raw?.qty??raw?.quantity??raw?.stock??raw?.Qty);
-  const rateWindows=getRateWindows(raw);
+  const rateWindows=getRateWindows(raw,service,country);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
-  const selectedRate=parseDeliveryRate(raw);
+  const selectedRate=parseDeliveryRate(raw,service,country);
   const rate=selectedRate.rate;
   return {operator,usd,count,rate,displayRate:rate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
  }).filter((x):x is ParsedOffer=>x!==null);
@@ -330,11 +340,12 @@ async function applyManualRateOverrides(offers:ProviderOffer[],service:string,co
  const overrides=new Map<string,{rate:number;expiresAt:string}>(
   (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
  );
+ const overrideWindow=rateWindowPriorityFor(service,country)[0]||"rate3";
  return offers.map(offer=>{
   const override=overrides.get(offer.operator.toLowerCase());
   if(!override||!Number.isFinite(override.rate)||override.rate<0||override.rate>100)return offer;
   const rate=Number(override.rate.toFixed(2));
-  return {...offer,rate,displayRate:rate,rateWindow:"rate3",rateWindows:{...offer.rateWindows,rate3:rate},
+  return {...offer,rate,displayRate:rate,rateWindow:overrideWindow,rateWindows:{...offer.rateWindows,[overrideWindow]:rate},
    rateSource:"manual_override",manualRateExpiresAt:override.expiresAt};
  });
 }
@@ -371,7 +382,7 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
  }
  // Some 5SIM responses wrap country/product maps inside result, payload or products.
  // Search those known wrappers as a compatibility fallback before reporting no stock.
- if(!productNode||!parseOfferRows(productNode).length){
+ if(!productNode||!parseOfferRows(productNode,service,pc).length){
   const queue:any[]=[root],seen=new Set<any>();
   while(queue.length&&!productNode){
    const node=queue.shift();
@@ -380,14 +391,14 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
    for(const countryKey of countryAliases){
     const countryNode=findKey(node,countryKey);
     const candidate=findKey(countryNode,service);
-    if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
+    if(candidate&&parseOfferRows(candidate,service,pc).length){productNode=candidate;break;}
    }
    if(productNode)break;
    const serviceNode=findKey(node,service);
    if(serviceNode){
     for(const countryKey of countryAliases){
      const candidate=findKey(serviceNode,countryKey);
-     if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
+     if(candidate&&parseOfferRows(candidate,service,pc).length){productNode=candidate;break;}
     }
    }
    if(productNode)break;
@@ -398,24 +409,24 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
   }
  }
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
- const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
+ const parsed=parseOfferRows(productNode,service,pc),rows=parsed.filter(x=>x.count>0);
  if(!rows.length)throw problem("No operator currently has this service in stock for the selected country.",409,"NO_STOCK");
  const fx=await usdToNgn();
  // Keep all in-stock offers visible; unavailable supplier balance disables purchase, not catalogue visibility.
  const rawOffers:ProviderOffer[]=rows.map(x=>({...x,fx,providerCostNgn:money(x.usd*fx*1.02),providerBalanceUsd:providerBalance}));
  const offers=await applyManualRateOverrides(rawOffers,service,country,admin);
- // Every offer in this cohort is ranked against the same 3-hour period.
- const recommendationWindow=selectRecommendationWindow(offers);
+ // Every offer in this cohort is ranked against the same selected statistics period.
+ const recommendationWindow=selectRecommendationWindow(offers,service,pc);
  const ratedOffers:ProviderOffer[]=offers.map(x=>{
   const value=recommendationWindow?x.rateWindows[recommendationWindow]:null;
   const rate=value===null?null:Number(value.toFixed(2));
   return {...x,rate,displayRate:rate,rateWindow:recommendationWindow};
  });
  console.info("[sparkle-5sim-rate-audit]",JSON.stringify({
-  country:pc,service,rate_source:"5sim_guest_prices_rate3_with_admin_override",
-  rate_policy:"fixed_3_hour_comparison_window",
+  country:pc,service,rate_source:"5sim_multi_window_with_admin_override",
+  rate_policy:service.toLowerCase()==="whatsapp"&&manualRateCountry(pc)==="ca"?"longest_available_history_7d_first":"existing_3_hour_comparison",
   recommendation_window:recommendationWindow,
-  recommendation_metric:"5SIM Statistics · 3 hours",
+  recommendation_metric:"5SIM Statistics · "+rateWindowLabel(recommendationWindow),
   fetched_at:new Date().toISOString(),
   offers:ratedOffers.map(x=>({operator:x.operator,delivery_rate:x.rate,display_rate:x.displayRate,rate_window:x.rateWindow??null,rate_source:x.rateSource??"5sim",reported_windows:x.rateWindows,count:x.count}))
  }));
@@ -546,17 +557,16 @@ async function getCountriesForService(service:string):Promise<string[]>{
  return [...result].sort((a,b)=>a==="us"?-1:b==="us"?1:a==="ca"?-1:b==="ca"?1:a.localeCompare(b));
 }
 
-function selectRecommendationWindow(offers:ProviderOffer[]):string|null{
- // RATE_WINDOW_PRIORITY is fixed to rate3 (3 hours) so each operator and
- // every admin override is compared using the same 5SIM Statistics period.
+function selectRecommendationWindow(offers:ProviderOffer[],service:string="",country:string=""):string|null{
+ // Select one common comparison period for every operator in this country/service.
  const positive=(window:string)=>offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
    x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&x.rateWindows[window]!>0&&x.rateWindows[window]!<=100).length;
- return RATE_WINDOW_PRIORITY.find(w=>positive(w)>0)??null;
+ return rateWindowPriorityFor(service,country).find(w=>positive(w)>0)??null;
 }
 function recommendedOffer(offers:ProviderOffer[],_service:string,_country:string):ProviderOffer|undefined{
  // Recalculate from the latest 5SIM feed after its short cache expires.
  // Every in-stock operator is compared in the same selected time window.
- const window=selectRecommendationWindow(offers);
+ const window=selectRecommendationWindow(offers,_service,_country);
  if(!window)return undefined;
  const rated=offers.filter(x=>x.operator.toLowerCase()!=="any"&&x.count>0&&
   x.rateWindows[window]!==null&&Number.isFinite(x.rateWindows[window])&&
@@ -595,7 +605,7 @@ async function getDisplayQuote(country:string,service:string,serverId:string,req
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),recommendation_label:requestedOperator==="smart"&&offer.rate!==null&&offer.rate>0?(offer.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
+  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:rateWindowLabel(offer.rateWindow),rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
@@ -610,7 +620,7 @@ async function getQuote(country:string,service:string,serverId:string,requestedO
  return {code:service,name:serviceDisplayName(service),country,network:"Available network",
   operator:chosen,operator_label:operatorDisplayName(chosen==="any"?"any":offer.operator),
   selling_price_ngn:sellingPrice,server_id:"server1",server_label:"Live number catalogue",
-  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:"3-hour",rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
+  stock:offer.count,rate:offer.rate,delivery_rate:offer.rate,rate_available:offer.rate!==null,rate_window:offer.rateWindow??null,rate_window_label:rateWindowLabel(offer.rateWindow),rate_source:offer.rateSource??"5sim",markup_percent:profile.markup,
   provider_cost_ngn:offer.providerCostNgn,provider_cost_usd:offer.usd,
   provider_operator:offer.operator,fx_rate:offer.fx};
 }
@@ -618,7 +628,7 @@ function safeServiceQuote(q:any){
  return {code:q.code,name:q.name,country:q.country,network:q.network||"Available network",
   operator:q.operator,operator_label:q.operator_label,selling_price_ngn:q.selling_price_ngn,
   rate:q.rate??null,delivery_rate:q.rate??null,rate_available:q.rate!==null,
-  rate_window:q.rate_window??null,rate_window_label:q.rate_window_label??"3-hour",rate_source:q.rate_source??"5sim",
+  rate_window:q.rate_window??null,rate_window_label:q.rate_window_label??rateWindowLabel(q.rate_window),rate_source:q.rate_source??"5sim",
   server_id:"server1",stock:q.stock};
 }
 
@@ -712,7 +722,7 @@ Deno.serve(async (req:Request)=>{
    if(!/^[a-z0-9][a-z0-9._-]{0,79}$/.test(service))throw problem("Choose a valid service first.",400,"INVALID_SERVICE");
    const offers=await getProductOffers(country,service,ctx.admin);
    const recommended=recommendedOffer(offers,service,country);
-   const recommendationWindow=selectRecommendationWindow(offers);
+   const recommendationWindow=selectRecommendationWindow(offers,service,country);
    const namedInStock=offers.some(x=>x.operator.toLowerCase()!=="any"&&x.count>0);
    const visibleOffers=namedInStock
      ?offers.filter(x=>x.operator.toLowerCase()!=="any")
@@ -723,7 +733,7 @@ Deno.serve(async (req:Request)=>{
      // Display all operators using the same live comparison window.
       const displayRate=recommendationWindow?x.rateWindows[recommendationWindow]:null;
       const displayWindow=recommendationWindow;
-     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:"3-hour",rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?(x.rateSource==="manual_override"?"Recommended · Admin 3-hour override":"Recommended · Highest 5SIM 3-hour rate"):null,unavailable_reason:available?null:(x.count<=0?"No stock":null)};
+     return {operator:x.operator,operator_label:operatorDisplayName(x.operator),selling_price_ngn:money(x.providerCostNgn*(1+profileByServer.server1.markup/100)),stock:x.count,in_stock:x.count>0,available,rate:displayRate,delivery_rate:displayRate,rate_available:displayRate!==null,rate_window:displayWindow??null,rate_window_label:rateWindowLabel(displayWindow),rate_source:x.rateSource??"5sim",rate_windows:x.rateWindows,recommended:isRecommended,recommendation_label:isRecommended?"Recommended":null,unavailable_reason:available?null:(x.count<=0?"No stock":null)};
    });
    return reply({success:true,data:{country,service,currency:"NGN",recommended_operator:recommended?.operator||null,default_operator:recommended?.operator||visibleOffers[0]?.operator||null,operators:[...specific.filter(x=>x.recommended),...specific.filter(x=>!x.recommended)]}});
   }
