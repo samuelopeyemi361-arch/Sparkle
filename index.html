@@ -6764,7 +6764,7 @@ async function loadNumberOperators(preferred){
  if(!serviceCode){numberOperatorsCache=[];select.innerHTML='<option value="">Choose a service first</option>';if(status)status.textContent="Choose a service before loading operators.";if(cards)cards.innerHTML="";updateNumberSelectionStep("service");return;}
  select.innerHTML='<option value="">Loading operator prices…</option>';if(status)status.textContent="Checking operator availability and current naira prices…";if(cards)cards.innerHTML='<div class="data-empty">Loading live operator prices…</div>';if(result)result.innerHTML="";
  try{
-  let response:any=null,lastLoadError:any=null;
+  let response=null,lastLoadError=null;
   // Operator catalogue calls are read-only. Retry once on a transient 5SIM/FX/network failure.
   for(let attempt=0;attempt<2;attempt++){
    try{
