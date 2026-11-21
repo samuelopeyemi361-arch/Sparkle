@@ -165,40 +165,59 @@ async function providerProfile(): Promise<{ balance: number }> {
 }
 
 async function usdToNgn(): Promise<number> {
-  const now = Date.now();
   const maxSourceAgeMs = 36 * 60 * 60 * 1000;
   const usableCachedRate = () => {
     if (!fxCache) return null;
-    const sourceAge = now - fxCache.sourceUpdatedAt;
+    const sourceAge = Date.now() - fxCache.sourceUpdatedAt;
     return sourceAge >= 0 && sourceAge <= maxSourceAgeMs ? fxCache.rate : null;
   };
-  if (fxCache && now - fxCache.updatedAt < 60 * 60 * 1000 && usableCachedRate() !== null) {
+  if (fxCache && Date.now() - fxCache.updatedAt < 60 * 60 * 1000 && usableCachedRate() !== null) {
     return fxCache.rate;
   }
-  let response: Response;
+
+  // Primary live exchange-rate source.
   try {
-    response = await fetch("https://open.er-api.com/v6/latest/USD", {
+    const response = await fetch("https://open.er-api.com/v6/latest/USD", {
       headers: { Accept: "application/json" },
-      signal: AbortSignal.timeout(12000),
+      signal: AbortSignal.timeout(9000),
     });
+    const data: any = await response.json().catch(() => null);
+    const last = Number(data?.time_last_update_unix);
+    const rate = Number(data?.rates?.NGN);
+    const age = Math.floor(Date.now() / 1000) - last;
+    if (response.ok && data?.result === "success" && Number.isFinite(rate) && rate >= 100 && rate <= 10000 &&
+        Number.isFinite(last) && age >= 0 && age <= 36 * 60 * 60) {
+      fxCache = { rate, updatedAt: Date.now(), sourceUpdatedAt: last * 1000 };
+      return rate;
+    }
   } catch {
-    // Reuse only a previously verified exchange rate, and never one older than 36 hours.
-    const fallbackRate = usableCachedRate();
-    if (fallbackRate !== null) return fallbackRate;
-    throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
+    // Try the independent daily-updated public currency feed below.
   }
-  const data: any = await response.json().catch(() => null);
-  const last = Number(data?.time_last_update_unix);
-  const rate = Number(data?.rates?.NGN);
-  const age = Math.floor(Date.now() / 1000) - last;
-  if (!response.ok || data?.result !== "success" || !Number.isFinite(rate) || rate < 100 || rate > 10000 ||
-      !Number.isFinite(last) || age < 0 || age > 36 * 60 * 60) {
-    const fallbackRate = usableCachedRate();
-    if (fallbackRate !== null) return fallbackRate;
-    throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
+
+  // Independent fallback: daily USD rates; accept only a recent, plausible NGN quote.
+  try {
+    const response = await fetch("https://latest.currency-api.pages.dev/v1/currencies/usd.json", {
+      headers: { Accept: "application/json" },
+      signal: AbortSignal.timeout(7000),
+    });
+    const data: any = await response.json().catch(() => null);
+    const rate = Number(data?.usd?.ngn);
+    const date = String(data?.date || "");
+    const last = Date.parse(date + "T00:00:00Z");
+    const age = Date.now() - last;
+    if (response.ok && Number.isFinite(rate) && rate >= 100 && rate <= 10000 &&
+        Number.isFinite(last) && age >= -24 * 60 * 60 * 1000 && age <= 36 * 60 * 60 * 1000) {
+      fxCache = { rate, updatedAt: Date.now(), sourceUpdatedAt: last };
+      console.warn("[sparkle-number-fx-fallback]", JSON.stringify({ source: "currency-api-daily", date }));
+      return rate;
+    }
+  } catch {
+    // A previously verified cached rate remains the final safe fallback.
   }
-  fxCache = { rate, updatedAt: now, sourceUpdatedAt: last * 1000 };
-  return rate;
+
+  const fallbackRate = usableCachedRate();
+  if (fallbackRate !== null) return fallbackRate;
+  throw problem("Live Naira pricing is temporarily unavailable. Please try again shortly.", 503, "FX_UNAVAILABLE");
 }
 type ParsedOffer={operator:string;usd:number;count:number;rate:number|null;displayRate:number|null;rateWindow?:string|null;rateWindows:Record<string,number|null>;rateSource?:"5sim"|"manual_override";manualRateExpiresAt?:string|null};
 type ProviderOffer=ParsedOffer&{fx:number;providerCostNgn:number;providerBalanceUsd:number};
@@ -274,7 +293,17 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
  let pending=pricesResponseInflight.get(key);
  if(!pending){
   pending=(async()=>{
-   const response=await apiGet("/guest/prices?country="+encodeURIComponent(country)+"&product="+encodeURIComponent(service));
+   const path="/guest/prices?country="+encodeURIComponent(country)+"&product="+encodeURIComponent(service);
+   let response:any;
+   try{response=await apiGet(path);}
+   catch{
+    await new Promise(resolve=>setTimeout(resolve,350));
+    response=await apiGet(path);
+   }
+   if(!response.ok&&(response.status===429||response.status>=500)){
+    await new Promise(resolve=>setTimeout(resolve,350));
+    response=await apiGet(path);
+   }
    if(!response.ok||!response.data||typeof response.data!=="object")
     throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
    pricesResponseCache.set(key,{data:response.data,expiresAt:Date.now()+5000});
@@ -293,8 +322,10 @@ async function applyManualRateOverrides(offers:ProviderOffer[],service:string,co
   .eq("service",service.toLowerCase()).eq("country",canonicalCountry)
   .gt("expires_at",now).in("operator",offers.map(x=>x.operator));
  if(error){
-  console.error("[sparkle-5sim-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
-  throw problem("Sparkle could not verify its manual delivery-rate settings. Please refresh and try again.",503,"RATE_OVERRIDE_UNAVAILABLE");
+  // Manual overrides are optional. A table/query issue must not hide real 5SIM operators.
+  // Continue with the provider's current verified delivery-rate data.
+  console.warn("[sparkle-5sim-manual-rate-lookup]",JSON.stringify({service,country:canonicalCountry,message:error.message}));
+  return offers;
  }
  const overrides=new Map<string,{rate:number;expiresAt:string}>(
   (data||[]).map((row:any)=>[String(row.operator).toLowerCase(),{rate:Number(row.rate_percent),expiresAt:String(row.expires_at)}])
@@ -338,9 +369,33 @@ async function getProductOffers(country:string,service:string,admin:any):Promise
    if(productNode)break;
   }
  }
- if(productNode&&typeof productNode==="object"&&!Array.isArray(productNode)&&Object.keys(productNode).length===1){
-  const nested=findKey(productNode,pc);
-  if(nested&&typeof nested==="object")productNode=nested;
+ // Some 5SIM responses wrap country/product maps inside result, payload or products.
+ // Search those known wrappers as a compatibility fallback before reporting no stock.
+ if(!productNode||!parseOfferRows(productNode).length){
+  const queue:any[]=[root],seen=new Set<any>();
+  while(queue.length&&!productNode){
+   const node=queue.shift();
+   if(!node||typeof node!=="object"||seen.has(node))continue;
+   seen.add(node);
+   for(const countryKey of countryAliases){
+    const countryNode=findKey(node,countryKey);
+    const candidate=findKey(countryNode,service);
+    if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
+   }
+   if(productNode)break;
+   const serviceNode=findKey(node,service);
+   if(serviceNode){
+    for(const countryKey of countryAliases){
+     const candidate=findKey(serviceNode,countryKey);
+     if(candidate&&parseOfferRows(candidate).length){productNode=candidate;break;}
+    }
+   }
+   if(productNode)break;
+   for(const wrapper of ["data","result","response","payload","products","prices","items","rows"]){
+    const child=node[wrapper];
+    if(child&&typeof child==="object"&&!seen.has(child))queue.push(child);
+   }
+  }
  }
  if(!productNode||typeof productNode!=="object")throw problem("This service is not currently available for the selected country.",409,"NO_STOCK");
  const parsed=parseOfferRows(productNode),rows=parsed.filter(x=>x.count>0);
@@ -678,5 +733,11 @@ Deno.serve(async (req:Request)=>{
    return reply({success:true,data:safeServiceQuote(quote)});
   }
   throw problem("Unsupported catalogue action.",400,"INVALID_ACTION");
- }catch(e){return publicError(e);}
+ }catch(e){
+  console.error("[sparkle-number-catalog-error]",JSON.stringify({
+   action,country,service,code:String((e as any)?.code||""),
+   status:Number((e as any)?.status||0),message:String((e as any)?.message||e||"")
+  }));
+  return publicError(e);
+ }
 });
