@@ -228,16 +228,39 @@ function parseDeliveryRate(raw:any):{rate:number|null;window:string|null}{
   :{rate:Number(value.toFixed(2)),window:"rate3"};
 }
 
-function parseOfferRows(node:any):ParsedOffer[]{
- if(!node||typeof node!=="object"||Array.isArray(node))return [];
- return Object.entries(node).map(([operator,raw]:[string,any])=>{
-  const usd=Number(raw?.cost),count=Number(raw?.count);
+function unwrapOfferContainer(node:any):any{
+ for(let depth=0;depth<5;depth++){
+  if(!node||typeof node!=="object"||Array.isArray(node))break;
+  const hasOfferFields=node.cost!==undefined||node.price_usd!==undefined||node.count!==undefined||node.qty!==undefined||node.stock!==undefined;
+  if(hasOfferFields)break;
+  const wrapper=["data","operators","items","rows","prices"].find(key=>node[key]&&typeof node[key]==="object");
+  if(!wrapper)break;
+  node=node[wrapper];
+ }
+ return node;
+}
+function findCaseInsensitive(node:any,key:string):any{
+ if(!node||typeof node!=="object"||Array.isArray(node))return undefined;
+ if(node[key]!==undefined)return node[key];
+ const match=Object.keys(node).find(k=>k.toLowerCase()===key.toLowerCase());
+ return match===undefined?undefined:node[match];
+}
+function parseOfferRows(input:any):ParsedOffer[]{
+ const node=unwrapOfferContainer(input);
+ if(!node||typeof node!=="object")return [];
+ const entries:Array<[string,any]>=Array.isArray(node)
+  ?node.map((raw:any,index:number)=>[asText(raw?.operator??raw?.operator_code??raw?.code??raw?.name??("operator-"+index)),raw])
+  :Object.entries(node);
+ return entries.map(([rawOperator,source]:[string,any])=>{
+  const operator=asText(rawOperator);
+  const raw=unwrapOfferContainer(source);
+  const usd=Number(raw?.cost??raw?.price_usd??raw?.price);
+  const count=Number(raw?.count??raw?.qty??raw?.quantity??raw?.stock??raw?.Qty);
   const rateWindows=getRateWindows(raw);
   if(!/^[a-zA-Z0-9._-]{1,80}$/.test(operator)||!Number.isFinite(usd)||usd<=0||!Number.isFinite(count)||count<0)return null;
   const selectedRate=parseDeliveryRate(raw);
   const rate=selectedRate.rate;
-  const displayRate=rate;
-  return {operator,usd,count,rate,displayRate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
+  return {operator,usd,count,rate,displayRate:rate,rateWindow:selectedRate.window,rateWindows,rateSource:"5sim"};
  }).filter((x):x is ParsedOffer=>x!==null);
 }
 // Share the latest 5SIM prices payload for five seconds per Edge Function instance.
@@ -439,8 +462,8 @@ async function getCountriesForService(service:string):Promise<string[]>{
  const addCountry=(rawCode:string,node:any)=>{
   const key=asText(rawCode).toLowerCase();
   if(!/^[a-z0-9][a-z0-9-]{1,39}$/.test(key)||!node||typeof node!=="object"||Array.isArray(node))return;
-  const serviceNode=node[service]??node[service.toUpperCase()]??node[service.toLowerCase()];
-  if(serviceNode&&typeof serviceNode==="object"&&!Array.isArray(serviceNode)&&parseOfferRows(serviceNode).some(offer=>offer.count>0)){
+  const serviceNode=findCaseInsensitive(unwrapOfferContainer(node),service);
+  if(serviceNode&&parseOfferRows(serviceNode).some(offer=>offer.count>0)){
    result.add(key==="usa"?"us":key==="canada"?"ca":key);
   }
  };
@@ -449,8 +472,9 @@ async function getCountriesForService(service:string):Promise<string[]>{
   if(!node||typeof node!=="object"||Array.isArray(node))continue;
   addCountry(key,node);
   const nested=node as any;
-  if(key.toLowerCase()===service||key.toLowerCase()===service.toLowerCase()){
-   for(const [countryCode,offers] of Object.entries(nested)){
+  if(key.toLowerCase()===service){
+   const serviceOffers=unwrapOfferContainer(nested);
+   for(const [countryCode,offers] of Object.entries(serviceOffers||{})){
     if(parseOfferRows(offers).some(offer=>offer.count>0)){
      const c=countryCode.toLowerCase();
      if(/^[a-z0-9][a-z0-9-]{1,39}$/.test(c))result.add(c==="usa"?"us":c==="canada"?"ca":c);
