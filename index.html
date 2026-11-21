@@ -6715,6 +6715,41 @@ function renderNumberOperators(items,preferred=""){
 }
 async function chooseNumberOperator(operator){if(numberPurchaseInProgress)return;numberOperatorManuallySelected=true;const row=numberOperatorsCache.find(x=>String(x.operator)===String(operator));if(!row)return;const select=document.getElementById("numberOperatorSelect");if(select)select.value=String(operator);renderNumberOperators(numberOperatorsCache,String(operator));await checkNumberPrice();}
 
+function extractNumberOperatorRows(response){
+ const queue=[response],seen=new Set();let emptyRows=null;
+ while(queue.length){
+  const current=queue.shift();
+  if(!current||typeof current!=="object"||seen.has(current))continue;
+  seen.add(current);
+  if(Array.isArray(current)){
+   if(current.length&&current.some(x=>x&&typeof x==="object"&&(x.operator||x.operator_code||x.code||x.name)))return current;
+   if(!emptyRows)emptyRows=current;
+   continue;
+  }
+  const rows=current.operators;
+  if(Array.isArray(rows)){if(rows.length)return rows;if(!emptyRows)emptyRows=rows;}
+  else if(rows&&typeof rows==="object"){
+   const mapped=Object.entries(rows).map(([operator,value])=>({operator,...(value&&typeof value==="object"?value:{})}));
+   if(mapped.length)return mapped;if(!emptyRows)emptyRows=mapped;
+  }
+  ["data","result","payload","response"].forEach(key=>{
+   const nested=current[key];if(nested&&typeof nested==="object")queue.push(nested);
+  });
+ }
+ return emptyRows||[];
+}
+function normalizeNumberOperatorOffers(response){
+ return extractNumberOperatorRows(response).map(item=>{
+  const operator=String(item?.operator??item?.operator_code??item?.code??item?.name??"").trim();
+  const stock=Number(item?.stock??item?.count??item?.quantity??item?.qty??0);
+  const sellingPrice=Number(item?.selling_price_ngn??item?.sellingPriceNgn??item?.price_ngn??item?.price??0);
+  const rate=item?.delivery_rate??item?.rate??item?.deliveryRate??item?.rate3??null;
+  return {...item,operator,operator_label:String(item?.operator_label??item?.label??item?.name??operator||"Operator"),
+   stock,selling_price_ngn:sellingPrice,rate,
+   in_stock:item?.in_stock===false?false:stock>0,
+   available:item?.available===false?false:stock>0&&Number.isFinite(sellingPrice)&&sellingPrice>0};
+ }).filter(item=>item.operator);
+}
 async function loadNumberOperators(preferred){
  const serviceCode=document.getElementById("numberAppSelect")?.value||"",country=document.getElementById("numberCountrySelect")?.value||"us",select=document.getElementById("numberOperatorSelect"),status=document.getElementById("numberOperatorStatus"),cards=document.getElementById("numberOperatorCards"),result=document.getElementById("numberPriceResult"),buy=document.getElementById("numberBuyButton"),seq=++numberOperatorsLoadSequence;
  numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}if(!select)return;
@@ -6723,8 +6758,8 @@ async function loadNumberOperators(preferred){
  try{
   const response=await callNumberCatalog({action:"operators",country,serviceName:serviceCode,serverId:"server1"});
   if(seq!==numberOperatorsLoadSequence||serviceCode!==(document.getElementById("numberAppSelect")?.value||"")||country!==(document.getElementById("numberCountrySelect")?.value||"us"))return;
-  const data=response?.data||response;numberOperatorsCache=Array.isArray(data.operators)?data.operators:[];
-  renderNumberOperators(numberOperatorsCache,preferred||"");if(!numberOperatorsCache.length)throw new Error("No operators are currently available for this service and country.");
+  numberOperatorsCache=normalizeNumberOperatorOffers(response);
+  renderNumberOperators(numberOperatorsCache,preferred||"");if(!numberOperatorsCache.length)throw new Error("5SIM returned no in-stock operator offers for this service and country.");
   if(status)status.textContent=numberOperatorsCache.length+" operator option"+(numberOperatorsCache.length===1?"":"s")+" · Each operator has its own price. Select one to review.";
   updateNumberSelectionStep("operator");if(preferred&&select.value)await checkNumberPrice();else{if(result)result.textContent="";numberCurrentQuote=null;if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
  }catch(error){if(seq!==numberOperatorsLoadSequence)return;numberOperatorsCache=[];select.innerHTML='<option value="">No operators available</option>';if(cards)cards.innerHTML='<div class="data-empty">No operator offers are available right now.</div>';if(status)status.textContent="Could not load operator prices. "+String(error?.message||error);if(result)result.textContent="";if(buy){buy.disabled=true;buy.textContent="Choose an operator first";buy.style.opacity=".5";}}
