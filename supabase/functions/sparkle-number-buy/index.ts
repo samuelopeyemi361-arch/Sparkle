@@ -323,9 +323,10 @@ async function getCachedPricesResponse(country:string,service:string):Promise<an
     await new Promise(resolve=>setTimeout(resolve,350));
     response=await apiGet(path);
    }
-   if(!response.ok||!response.data||typeof response.data!=="object")
+   if(!response.ok||!response.data||typeof response.data!=="object"){
     console.error("[sparkle-number-buy-price] 5SIM prices unavailable after retry",JSON.stringify({country,service,status:response?.status||0}));
     throw problem("Current number prices could not be verified. Please try again shortly.",503,"PRICE_UNAVAILABLE");
+   }
    pricesResponseCache.set(key,{data:response.data,expiresAt:Date.now()+5000});
    return response.data;
   })().finally(()=>{pricesResponseInflight.delete(key);});
