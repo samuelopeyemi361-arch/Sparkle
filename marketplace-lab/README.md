@@ -1,31 +1,32 @@
 # TheSparkle Marketplace — isolated 1688 importer build
 
-This folder and API route are on the isolated branch `feature/marketplace-1688-importer`. They are not merged into `main` and do not change the live Sparkle application.
+This feature is developed only on `feature/marketplace-1688-importer`. It is not merged into the production branch and does not change the live Sparkle customer app.
 
-## Current scope
-- Private, no-index importer workbench at `/marketplace-lab/`.
-- Free public 1688 keyword search links across eight starter categories.
-- Opens supplier search results directly on 1688; no paid API credits are consumed in this mode.
-- API credentials stay server-side.
-- Public supplier results are browsed directly on 1688. The current free mode does not scrape or save supplier listings automatically.
-- Nothing is saved to the live catalogue or shown to customers.
+## Current preview features
+- Private, no-index workbench at `/marketplace-lab/`.
+- Free public 1688 keyword search links and starter categories.
+- Product draft editor for supplier URL, title, photo URL, description, category, supplier, variants, RMB price, manual RMB/NGN rate, MOQ, verified weight/dimensions and admin notes.
+- Naira conversion preview uses RMB price × manually entered exchange rate. It is a product-only estimate; freight, customs and local delivery are excluded.
+- Drafts can be edited, deleted, exported to JSON and imported from JSON.
 
-## Provider
-Initial adapter: Nexscope 1688 Product Search, POST `https://api.nexscope.ai/dl/productSearch`, Bearer API key. The provider docs specify a Simplified Chinese `keyWord` (up to 50 chars). Current published pricing shows 12 credits per product-search call and at least 10 credits per product-detail call. The provider advertises 1,000 trial credits for new accounts for 3 days; verify the current offer and balance in the provider dashboard before bulk discovery. The eight-category discovery action can use about 96 search credits, before any detail lookups.
+## Important limitations
+- Free discovery opens 1688 in a separate browser tab. It does not scrape, auto-import, or automatically display 1688 listings in this workbench.
+- Drafts currently save in browser local storage on the current device only. They are not yet shared, server-backed, or protected by the existing Sparkle admin session. Export JSON backups before clearing browser data or changing devices.
+- Do not enter confidential customer information here.
+- Supplier price, stock, MOQ, variants, weight and dimensions must be checked against the supplier. Never guess packed weight or dimensions.
+- The Naira rate is manually entered for this draft preview. A central admin-managed rate and immutable order snapshot are not implemented yet.
+- No customer catalogue, checkout, payment, Sparkle wallet, Paystack, authentication, refunds, or live transaction logic is connected.
 
-## Required preview environment variables
-- `NEXSCOPE_API_KEY`: provider key, server-only.
-- `MARKETPLACE_IMPORT_ADMIN_TOKEN`: strong random secret used to protect the isolated importer endpoint.
+## Next stages
+1. Inspect the existing Sparkle admin authorization model and reuse it for marketplace access; do not invent new roles or weaken auth.
+2. Move drafts and the manual exchange rate into isolated marketplace database tables with strict admin-only access and row-level security.
+3. Add product review/approval, customer catalogue, order records and sea-freight cost calculation only after verified Best Africa rates and packed measurements.
+4. Test the complete module on preview. Do not merge, connect to live customer flows, or deploy to production until explicitly approved.
 
-The private preview UI asks for `MARKETPLACE_IMPORT_ADMIN_TOKEN` and sends it only to the same-origin server endpoint in an Authorization header. It is not the user's existing Sparkle admin login. Before integration, replace this temporary token gate with verified admin-session authorization from Sparkle. Never put `NEXSCOPE_API_KEY` in browser code.
-
-## Next implementation stages
-1. Add authenticated admin-session verification using the existing Sparkle admin authorization model (inspect and reuse it; do not invent roles).
-2. Add a no-cost product draft editor for supplier URL, title, photos, variants, RMB price and verified packed measurements.
-3. Persist supplier snapshots and editable product drafts in isolated marketplace tables with strict RLS.
-4. Store supplier RMB price and applied manual RMB/NGN rate on every draft/order; customer prices display only in NGN.
-5. Admin review/approval, product catalogue, and only later controlled integration into the existing Sparkle navigation.
-6. Test on a preview deployment. Do not merge or deploy to production until explicitly approved.
-
-## Important
-Supplier data can be incomplete or change. Never infer weight/dimensions or a final landed cost. Shipping remains an estimate until Best Africa confirms its chargeable CBM rules and final packed measurements.
+## Business rules
+- 1688 is the sole initial supplier marketplace.
+- Customer preorder model; user places the supplier order after customer payment.
+- Sea freight only for the initial plan.
+- Customer-facing amounts are in NGN. Original RMB supplier price and applied rate must be retained internally.
+- Do not connect marketplace payments to the existing Sparkle wallet without explicit approval.
+- Keep all marketplace data and logic isolated from existing VTU services.
