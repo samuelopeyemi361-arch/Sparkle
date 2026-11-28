@@ -6,16 +6,14 @@ function safeEqual(a, b) {
 }
 function slugify(value) {
   return String(value || "").normalize("NFKD").toLowerCase()
-    .replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")
+    .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "").slice(0, 70);
 }
 function config() {
   const url = process.env.MARKETPLACE_SUPABASE_URL || process.env.SUPABASE_URL;
-  // Prefer a service-role key when configured. Preview can also use its anon key:
-  // product writes are protected by the database's separate admin-token RLS check.
   const key = process.env.MARKETPLACE_SUPABASE_SERVICE_ROLE_KEY || process.env.MARKETPLACE_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Marketplace database is not configured on this preview.");
-  return { url: url.replace(/\\/$/, ""), key };
+  return { url: url.replace(/\/$/, ""), key };
 }
 async function db(path, method, body, adminToken) {
   const c = config();
@@ -57,7 +55,7 @@ module.exports = async function handler(req, res) {
   }
   if (req.method === "POST") {
     const expected = process.env.MARKETPLACE_CATALOG_ADMIN_TOKEN;
-    const supplied = String(req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
+    const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
     if (!expected || !safeEqual(supplied, expected)) return res.status(401).json({ error: "Admin access required." });
     const p = req.body || {};
     const title = String(p.title || "").trim();
