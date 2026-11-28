@@ -13,7 +13,7 @@ This folder and API route are on the isolated branch `feature/marketplace-1688-i
 - Nothing is saved to the live catalogue or shown to customers.
 
 ## Provider
-Initial adapter: Nexscope 1688 Product Search, POST `https://api.nexscope.ai/dl/productSearch`, Bearer API key. The provider docs specify a Simplified Chinese `keyWord` (up to 50 chars). API usage consumes provider credits.
+Initial adapter: Nexscope 1688 Product Search, POST `https://api.nexscope.ai/dl/productSearch`, Bearer API key. The provider docs specify a Simplified Chinese `keyWord` (up to 50 chars). Current published pricing shows 12 credits per product-search call and at least 10 credits per product-detail call. The provider advertises 1,000 trial credits for new accounts for 3 days; verify the current offer and balance in the provider dashboard before bulk discovery. The eight-category discovery action can use about 96 search credits, before any detail lookups.
 
 ## Required preview environment variables
 - `NEXSCOPE_API_KEY`: provider key, server-only.
