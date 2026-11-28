@@ -101,13 +101,22 @@ button{font:inherit;cursor:pointer;border:0}
    body.append(title,price,meta,btn);card.append(img,body);results.append(card);
   });
  }
- function prepare(p){
-  const id=idOf(p), title=titleOf(p), price=priceOf(p);
-  const draft=$("draft");draft.style.display="block";draft.innerHTML="";
-  const heading=document.createElement("strong");heading.textContent="Draft selected — review required";
+ async function prepare(p){
+  const id=idOf(p), title=titleOf(p), price=priceOf(p), draft=$("draft");draft.style.display="block";draft.innerHTML="";
+  const heading=document.createElement("strong");heading.textContent="Loading supplier product details…";
   const line=document.createElement("p");line.className="hint";line.textContent=title+" · "+price+" · Offer "+(id||"ID unavailable");
-  const note=document.createElement("p");note.className="hint";note.textContent="This is not saved or published yet. Product detail lookup, variant selection, package weight/dimensions, RMB→NGN conversion and admin approval must be completed before a customer can order.";
-  draft.append(heading,line,note);
+  draft.append(heading,line);
+  if(!id){heading.textContent="Product draft needs manual detail";return}
+  try{
+   const response=await fetch("/api/marketplace/1688-detail",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessHeader()},body:JSON.stringify({offerId:id})});
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(payload.error||("Detail lookup failed ("+response.status+")"));
+   heading.textContent="Supplier details retrieved — review required";
+   const raw=document.createElement("pre");raw.style.cssText="white-space:pre-wrap;overflow-wrap:anywhere;max-height:260px;overflow:auto;background:#fff;border:1px solid #dcebe1;border-radius:9px;padding:10px;font-size:10px;color:#34465e";
+   raw.textContent=JSON.stringify(payload.data||payload,null,2);draft.append(raw);
+   const note=document.createElement("p");note.className="hint";note.textContent="This is still a draft only. Confirm SKU/variant, stock, supplier RMB price, package weight and dimensions. The manual RMB→NGN admin rate and approval workflow are not connected yet. Nothing is saved or published.";
+   draft.append(note);
+  }catch(error){heading.textContent="Supplier detail lookup unavailable";const note=document.createElement("p");note.className="hint";note.textContent=error.message||"Try again later.";draft.append(note)}
  }
  async function search(term){
   $("keyword").value=term;$("searchBtn").disabled=true;$("searchBtn").textContent="Searching…";
