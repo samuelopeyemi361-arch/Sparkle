@@ -2,47 +2,46 @@
 
 This work remains on `feature/marketplace-1688-importer`. It is not merged into production and does not change the live Sparkle VTU app.
 
-## Product sourcing decision
-- Automatic 1688 catalogue discovery/import is the primary product source.
-- Manual product upload is optional and is intended only for exceptions or products not present in the automatic feed.
-- Customers should eventually browse one unified marketplace catalogue; automatic and manually added products must not appear as separate stores.
-- 1688 is the sole initial supplier marketplace.
+## Database and backup
+- Marketplace data now lives in its own PostgreSQL schema, `marketplace`, inside **Project Hub** (`qndwsxfvjyolfpkrgvul`).
+- Internal admin credentials live in the separate, non-exposed `marketplace_private` schema.
+- Before adding the marketplace, a private snapshot was created in `project_hub_backup_20261128`.
+- The snapshot captured all 20 existing `public` and `app_private` application tables, their column definitions, RLS-enabled flags and row data.
+- The backup is inside the same Supabase project, not an off-site dump. Supabase Free does not provide downloadable daily database backups; periodically export an off-site copy.
+- No Project Hub wallet, ledger, Luna, Alpha, auth or transaction rules were modified.
 
-## Current preview
-- Private, no-index preview at `/marketplace-lab/`.
-- The interface now presents automatic 1688 catalogue ingestion as the primary path and manual product drafts as an optional admin workflow.
-- The automatic feed is explicitly marked **not connected**. No product listings are fabricated, scraped or shown as live 1688 data.
-- Optional manual drafts are still stored in this browser's local storage only. They are not shared, server-backed, protected by the Sparkle admin session or published to customers.
-- Naira conversion preview uses the manually entered RMB/NGN rate. Freight, customs and local delivery are excluded.
+## Catalogue
+- Primary supplier source: 1688. Manual product publishing remains optional.
+- Live tables: `marketplace.products`, `marketplace.categories`, `marketplace.store_settings`.
+- Product prices are shown in NGN; each product stores its supplier RMB cost and applied exchange-rate snapshot.
+- The admin-controlled RMB/NGN rate is not prefilled with a made-up value.
+- Product images can be served from the public `marketplace-products` Storage bucket (5 MB per image; JPEG, PNG or WebP). Anonymous upload is disabled.
+- Public product reads are restricted to published catalogue rows. Drafts, admin settings and writes require the independent marketplace admin token.
+- The public preview/catalogue does not require customer login.
 
-## What is still required for real automatic importing
-1. Obtain permitted 1688 Open Platform access for the appropriate cross-border product search/detail APIs, or approve a third-party provider and its cost.
-2. Keep API credentials server-side; never put secrets in browser JavaScript.
-3. Build a server-side scheduled importer with category discovery, pagination, product-detail/SKU retrieval, deduplication, stock/price refresh and unavailable-product handling.
-4. Store imported catalogue data in isolated marketplace tables. Reuse the existing admin authorization only after inspecting its implementation; do not weaken or alter Sparkle auth.
-5. Use the admin-controlled RMB→NGN rate for customer-facing prices. Store original RMB price and the applied exchange-rate snapshot with each order; rate changes apply only to new orders.
-6. Add product review/approval and customer catalogue only after the ingestion source has been verified.
+## Preview and product links
+- Branch: `feature/marketplace-1688-importer`
+- Preview lab: `/marketplace-lab/`
+- Each published product receives a stable slug-based share link: `/marketplace-lab/product.html?slug=<slug>`.
+- The API reads/writes the dedicated `marketplace` schema. Preview-only Vercel variables are used; production environment and branch are unchanged.
 
-## Business rules
-- Customer preorder model: customer submits/pays for an order, then the owner purchases the item on 1688. This is not automatic supplier procurement.
-- Sea freight only for the initial plan.
-- Customer-facing amounts are in NGN. Supplier RMB prices and applied rate are retained internally.
-- Checkout is limited to 5 distinct products, with quantities per product.
-- Freight, customs/clearance and Nigerian local delivery must be itemised separately. Freight remains an estimate until packed measurements and a current Best Africa Logistics quote are available.
-- Do not connect marketplace checkout to the existing Sparkle wallet or Paystack flows without explicit approval.
-- Preserve all existing VTU wallet, funding, authentication, PIN, supplier purchase, refund and transaction-history functionality.
+## 1688 importer limitation
+- No real product listings are fabricated or scraped.
+- Automatic import still requires authorised 1688 Open Platform product-search/detail access, or a free/approved compliant feed.
+- No paid API/provider has been enabled. The importer must handle paging, variants, source IDs, image URLs, supplier price/stock refresh and unavailable listings.
+- Once a permitted source is available, imported rows enter the same catalogue as optional manually added products.
 
-## Safety and deployment
-- Do not merge this branch or deploy marketplace features to production without explicit approval.
+## Business rules retained
+- Customer preorder model: the owner places the 1688 order after the customer submits and pays.
+- Sea freight only; freight is estimated until packed dimensions and a current Best Africa Logistics quote are available.
+- Product cost, sea freight, customs/clearance and local delivery remain separate line items.
+- Up to 5 distinct products per checkout, with per-product quantities.
+- Product payments and shipping balances must remain separate stages.
+- No marketplace checkout integration with the Project Hub central wallet, Sparkle VTU wallet or Paystack has been added.
+- Keep Project Hub and Sparkle production deployments separate from this marketplace preview.
+
+## Security and deployment
+- Marketplace writes are protected by a separate token checked both by the API route and database RLS.
+- The Project Hub service-role key is not exposed to the browser or committed to the repository. Preview currently uses the scoped anon key plus the independent admin-token check.
+- Do not merge this branch or deploy it to production without explicit approval.
 - Do not pay for an API, subscription, credits or scraping service without explicit approval.
-- Do not scrape around 1688 access controls or represent public search links as a product API.
-
-
-## Shareable product links and catalogue groundwork
-- Added an isolated \`marketplace_products\` schema script in \`marketplace-lab/schema.sql\`; it does not touch VTU tables.
-- Added \`api/marketplace/product.js\`: public read-only catalogue/product lookup and token-protected admin publishing/upsert. Public reads return published products only.
-- Added \`marketplace-lab/product.html\`: a dedicated product page with a native share action and stable unique slug URL.
-- Added a published catalogue panel to the private lab. Each published product can be opened and shared with another customer.
-- Required server-only environment variables: \`MARKETPLACE_SUPABASE_URL\`, \`MARKETPLACE_SUPABASE_SERVICE_ROLE_KEY\`, and \`MARKETPLACE_CATALOG_ADMIN_TOKEN\`. Never expose the service-role key or admin token in browser code.
-- The schema script must be reviewed and applied to a separate marketplace database or isolated development branch before the catalogue API can work. It has not been applied to the live VTU database.
-- This does not solve the 1688 source-access blocker. No real products will appear until an authorised free/approved feed is available and imported. No paid provider has been enabled.
