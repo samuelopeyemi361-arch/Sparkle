@@ -90,6 +90,12 @@ button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;
    <div class="notice">This is a private preview only. The automatic 1688 data connection is not configured yet. Optional manual drafts remain local to this browser and are not published. No customer checkout, Sparkle wallet, Paystack, authentication, refunds or live transaction logic is connected. Product drafts are not published automatically.</div>
   </div>
  </div>
+
+  <section class="panel" id="liveCatalogue" style="margin-top:18px">
+   <div class="topline"><h2>Published product catalogue</h2><span class="count" id="catalogueCount">Loading…</span></div>
+   <div id="catalogueGrid" class="draftlist"><div class="empty">Checking published marketplace products…</div></div>
+   <p class="notice">Every published product has its own shareable product page. The catalogue stays empty until real products are imported and approved.</p>
+  </section>
 </main>
 <script>
 (function(){
@@ -112,7 +118,9 @@ button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;
  $("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify({format:"thesparkle-marketplace-drafts-v1",exportedAt:new Date().toISOString(),drafts},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="thesparkle-marketplace-drafts.json";a.click();URL.revokeObjectURL(a.href)};
  $("importBtn").onclick=()=>$("importFile").click();
  $("importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());const incoming=Array.isArray(data)?data:data.drafts;if(!Array.isArray(incoming))throw new Error("Invalid draft file");const clean=incoming.filter(x=>x&&typeof x==="object"&&x.title&&x.rmb).map(x=>({...x,id:x.id||"draft_"+Date.now()+"_"+Math.random().toString(36).slice(2,7)}));drafts=[...clean,...drafts];persist();alert("Imported "+clean.length+" draft(s).")}catch(err){alert("Could not import this JSON file: "+err.message)}e.target.value=""};
- render();price();
+
+ async function loadCatalogue(){const root=$("catalogueGrid"),count=$("catalogueCount");try{const response=await fetch("/api/marketplace/product");const data=await response.json();if(!response.ok)throw new Error(data.error||"Catalogue unavailable");const products=Array.isArray(data.products)?data.products:[];count.textContent=products.length+" products";if(!products.length){root.innerHTML='<div class="empty">No published products yet. Automatic importing is waiting for an authorised 1688 data source.</div>';return}root.innerHTML=products.map(p=>{const link="/marketplace-lab/product.html?slug="+encodeURIComponent(p.slug);return '<div class="draftrow"><div><b>'+esc(p.title)+'</b><small>'+esc(p.category||"Product")+' · '+money(Number(p.product_price_ngn)||0)+'</small></div><div class="actions"><a class="secondary" href="'+link+'" target="_blank" rel="noopener">Open product</a><button class="secondary" data-share="'+esc(link)+'">Share link</button></div></div>'}).join("");root.querySelectorAll("[data-share]").forEach(b=>b.onclick=async()=>{const url=new URL(b.dataset.share,location.origin).href;try{if(navigator.share)await navigator.share({title:"TheSparkle Marketplace product",url});else{await navigator.clipboard.writeText(url);alert("Product link copied.")}}catch(e){if(e.name!=="AbortError")alert(url)}})}catch(error){count.textContent="Not connected";root.innerHTML='<div class="empty">'+esc(error.message)+"</div>"}}
+ render();price();loadCatalogue();
 })();
 </script>
 </body>
