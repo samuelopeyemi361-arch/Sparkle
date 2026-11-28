@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow">
-<title>1688 Product Importer | TheSparkle Marketplace Lab</title>
+<title>TheSparkle Marketplace | 1688 Catalogue Preview</title>
 <style>
 :root{--navy:#071b4d;--blue:#1762e8;--ink:#17243c;--muted:#71809a;--line:#e5ebf4;--bg:#f4f7fc;--green:#16845b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
@@ -32,33 +32,37 @@ button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;
 <body>
 <header><div class="brand">TheSparkle <small>MARKETPLACE · PRIVATE BUILD LAB</small></div></header>
 <main>
- <section class="intro"><h1>1688 Product Importer</h1><p>Discover supplier products and prepare reviewed product drafts for TheSparkle Marketplace.</p></section>
+ <section class="intro"><h1>TheSparkle Marketplace</h1><p>Automatic 1688 catalogue is the primary product source. Manual product upload is optional.</p></section>
  <div class="layout">
   <div>
    <section class="panel">
-    <h2>Find products on 1688</h2>
-    <p class="hint">Search public 1688 listings for free. Supplier results open on 1688; this page does not scrape or copy listings automatically.</p>
-    <label for="keyword">Product keyword</label><input id="keyword" placeholder="e.g. wireless earbuds" autocomplete="off">
-    <div class="hint" style="margin-top:7px">Quick categories:</div>
+    <div class="topline"><h2>Automatic 1688 catalogue</h2><span class="count">Primary source</span></div>
+    <div class="status">Not connected yet · Waiting for authorised 1688 API access</div>
+    <p class="hint">This is the main catalogue path. Once an approved API connection is available, the importer will discover products by category, fetch listing photos, titles, RMB prices, variants and product details, then sync them into the marketplace catalogue.</p>
     <div class="categories">
-     <button class="cat" data-term="手机配件">Phone accessories</button><button class="cat" data-term="蓝牙耳机">Earbuds</button>
-     <button class="cat" data-term="家用小电器">Home appliances</button><button class="cat" data-term="太阳能灯">Solar lights</button>
-     <button class="cat" data-term="女装服饰">Fashion</button><button class="cat" data-term="电脑配件">Computer accessories</button>
-     <button class="cat" data-term="婴儿用品">Baby products</button><button class="cat" data-term="汽车用品">Car accessories</button>
+     <div class="cat">Electronics</div><div class="cat">Phone accessories</div>
+     <div class="cat">Home & kitchen</div><div class="cat">Fashion</div>
+     <div class="cat">Beauty & personal care</div><div class="cat">Baby & kids</div>
+     <div class="cat">Automotive</div><div class="cat">Sports & outdoors</div>
+     <div class="cat">Tools & hardware</div><div class="cat">More categories</div>
     </div>
-    <button class="primary" id="searchBtn">Open free 1688 search</button>
-    <p class="hint">No paid API credits. Review a listing on 1688, then enter its verified details in the draft editor.</p>
+    <div class="notice">No supplier data is being fabricated or scraped. Automatic listings will appear here only after a permitted data connection is configured and tested.</div>
    </section>
    <section class="panel">
-    <div class="topline"><h2>Saved drafts on this device</h2><span class="count" id="draftCount">0 drafts</span></div>
+    <h2>Optional manual product upload</h2>
+    <p class="hint">Use this only when you want to add a product yourself or the automatic feed does not contain a particular item.</p>
+    <button class="secondary" id="toggleManual" type="button">Open optional manual uploader</button>
+   </section>
+   <section class="panel" id="manualUploader" hidden>
+    <div class="topline"><h2>Optional manual product drafts</h2><span class="count" id="draftCount">0 drafts</span></div>
     <div id="draftList" class="draftlist"><div class="empty">No product drafts saved yet.</div></div>
     <div class="actions" style="margin-top:12px"><button class="secondary" id="exportBtn">Export drafts (JSON)</button><button class="secondary" id="importBtn">Import drafts</button><input id="importFile" type="file" accept="application/json" hidden></div>
     <p class="notice">Drafts currently stay in this browser on this device. Export a backup before clearing browser data. This is a temporary private preview workflow, not shared database storage.</p>
    </section>
   </div>
   <div>
-   <section class="panel">
-    <h2 id="editorTitle">Product draft editor</h2>
+   <section class="panel" id="manualEditor" hidden>
+    <h2 id="editorTitle">Optional product draft editor</h2>
     <p class="hint">Copy details from the supplier listing. Leave unknown fields blank; never guess weight, dimensions or supplier price.</p>
     <form id="draftForm">
      <div class="formgrid">
@@ -83,7 +87,7 @@ button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;
      <div class="actions" style="margin-top:14px"><button class="primary" type="submit" id="saveBtn" style="width:auto;flex:1">Save product draft</button><button class="secondary" type="button" id="resetBtn">Clear form</button></div>
     </form>
    </section>
-   <div class="notice">No customer catalogue, checkout, Sparkle wallet, Paystack, authentication, refunds or live transaction logic is connected to this workbench. Product drafts are not published automatically.</div>
+   <div class="notice">This is a private preview only. The automatic 1688 data connection is not configured yet. Optional manual drafts remain local to this browser and are not published. No customer checkout, Sparkle wallet, Paystack, authentication, refunds or live transaction logic is connected. Product drafts are not published automatically.</div>
   </div>
  </div>
 </main>
@@ -101,8 +105,7 @@ button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;
  function price(){const r=Number($("rmb").value),rate=Number($("rate").value);$("nairaPrice").textContent=r>0&&rate>0?money(r*rate):"₦ —";$("rateNote").textContent=r>0&&rate>0?"Calculation: ¥"+r.toFixed(2)+" × ₦"+rate+" per RMB. No freight or other fees included.":"Enter RMB price and the manually approved exchange rate."}
  function render(){ $("draftCount").textContent=drafts.length+" draft"+(drafts.length===1?"":"s");const root=$("draftList");if(!drafts.length){root.innerHTML='<div class="empty">No product drafts saved yet.</div>';return}root.innerHTML=drafts.map(d=>'<div class="draftrow"><div><b>'+esc(d.title||"Untitled product")+'</b><small>¥'+esc(d.rmb||"—")+' · '+(d.verified?"Source checked":"Not verified")+' · '+new Date(d.updatedAt||d.createdAt).toLocaleDateString()+'</small></div><div class="actions"><button class="secondary" data-edit="'+esc(d.id)+'">Edit</button><button class="secondary danger" data-delete="'+esc(d.id)+'">Delete</button></div></div>').join("");root.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const d=drafts.find(x=>x.id===b.dataset.edit);if(d)fill(d)});root.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{if(confirm("Delete this local product draft?")){drafts=drafts.filter(x=>x.id!==b.dataset.delete);persist();if(editingId===b.dataset.delete)clear()}})}
  function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
- $("searchBtn").onclick=()=>{const term=$("keyword").value.trim();if(!term){alert("Enter a product keyword first.");return}window.open("https://s.1688.com/selloffer/offer_search.htm?keywords="+encodeURIComponent(term),"_blank","noopener,noreferrer")};
- document.querySelectorAll(".cat").forEach(b=>b.onclick=()=>{$("keyword").value=b.dataset.term;$("searchBtn").click()});
+ $("toggleManual").onclick=()=>{const a=$("manualUploader"),b=$("manualEditor"),show=a.hidden;a.hidden=!show;b.hidden=!show;$("toggleManual").textContent=show?"Close optional manual uploader":"Open optional manual uploader";};
  ["rmb","rate"].forEach(k=>$(k).addEventListener("input",price));
  $("draftForm").onsubmit=e=>{e.preventDefault();const d=values();if(!d.title||!(Number(d.rmb)>0)){alert("Enter a product title and a valid supplier RMB price.");return}if(d.rate&&Number(d.rate)<=0){alert("Exchange rate must be greater than zero.");return}const now=new Date().toISOString();if(editingId){const i=drafts.findIndex(x=>x.id===editingId);if(i>=0)drafts[i]={...drafts[i],...d,updatedAt:now}}else drafts.unshift({...d,id:"draft_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),createdAt:now,updatedAt:now});persist();clear();alert("Draft saved in this browser. Export a backup if you need to move it to another device.")};
  $("resetBtn").onclick=clear;
