@@ -4,12 +4,10 @@ This folder and API route are on the isolated branch `feature/marketplace-1688-i
 
 ## Current scope
 - Private, no-index importer workbench at `/marketplace-lab/`.
-- Search endpoint proxy at `/api/marketplace/1688-search`.
-- Product detail endpoint proxy at `/api/marketplace/1688-detail`.
-- Automatic multi-category discovery across eight starter product categories.
+- Free public 1688 keyword search links across eight starter categories.
+- Opens supplier search results directly on 1688; no paid API credits are consumed in this mode.
 - API credentials stay server-side.
-- Search results can be inspected and selected as draft candidates in the browser.
-- Selecting a result calls the detail endpoint for its offer ID and shows the returned supplier payload.
+- Public supplier results are browsed directly on 1688. The current free mode does not scrape or save supplier listings automatically.
 - Nothing is saved to the live catalogue or shown to customers.
 
 ## Provider
@@ -23,7 +21,7 @@ The private preview UI asks for `MARKETPLACE_IMPORT_ADMIN_TOKEN` and sends it on
 
 ## Next implementation stages
 1. Add authenticated admin-session verification using the existing Sparkle admin authorization model (inspect and reuse it; do not invent roles).
-2. Expand and verify the detail parser for SKU/variant, stock, logistics, package weight and dimensions where the provider returns them.
+2. Add a no-cost product draft editor for supplier URL, title, photos, variants, RMB price and verified packed measurements.
 3. Persist supplier snapshots and editable product drafts in isolated marketplace tables with strict RLS.
 4. Store supplier RMB price and applied manual RMB/NGN rate on every draft/order; customer prices display only in NGN.
 5. Admin review/approval, product catalogue, and only later controlled integration into the existing Sparkle navigation.
