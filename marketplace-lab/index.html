@@ -47,7 +47,7 @@ button{font:inherit;cursor:pointer;border:0}
   <section class="panel">
    <h2>Find products on 1688</h2>
    <p class="hint">Search using a product phrase. The importer sends the request securely through the server; API credentials are never placed in this page.</p>
-   <label for="keyword">Product keyword</label>
+   <label for="accessToken">Private importer access token</label>\n   <input id="accessToken" type="password" placeholder="Admin preview token" autocomplete="off">\n   <p class="hint">Temporary private-build access only. Do not enter your 1688/Nexscope API key here.</p>\n   <label for="keyword">Product keyword</label>
    <input id="keyword" placeholder="e.g. wireless earbuds" autocomplete="off">
    <div class="hint" style="margin-top:6px">Quick categories (Chinese search terms are prefilled for the 1688 search API):</div>
    <div class="categories">
@@ -73,7 +73,7 @@ button{font:inherit;cursor:pointer;border:0}
 </main>
 <script>
 (function(){
- const $=id=>document.getElementById(id), status=$("status"), results=$("results");
+ const $=id=>document.getElementById(id), status=$("status"), results=$("results");\n let latest=[];\n function accessHeader(){return $("accessToken").value.trim()}
  let latest=[];
  function setStatus(message,type){status.textContent=message;status.className="status"+(type?" "+type:"")}
  function getItems(payload){
@@ -112,7 +112,7 @@ button{font:inherit;cursor:pointer;border:0}
   $("keyword").value=term;$("searchBtn").disabled=true;$("searchBtn").textContent="Searching…";
   setStatus("Contacting the 1688 product search provider…");$("count").textContent="Searching";
   try{
-   const response=await fetch("/api/marketplace/1688-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword:term})});
+   const response=await fetch("/api/marketplace/1688-search",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessHeader()},body:JSON.stringify({keyword:term})});
    const payload=await response.json().catch(()=>({}));
    if(!response.ok)throw new Error(payload.error||("Search failed ("+response.status+")"));
    const items=getItems(payload.data||payload);
@@ -120,7 +120,7 @@ button{font:inherit;cursor:pointer;border:0}
   }catch(error){setStatus(error.message||"Unable to search 1688 right now.", "error");$("count").textContent="Search unavailable";results.innerHTML='<div class="empty" style="grid-column:1/-1">No results loaded. Configure the API credentials on the server, then retry.</div>'}
   finally{$("searchBtn").disabled=false;$("searchBtn").textContent="Search 1688 products"}
  }
- $("searchBtn").addEventListener("click",()=>{const term=$("keyword").value.trim();if(!term){setStatus("Enter a product keyword or choose a category.","error");return}search(term)});
+ $("searchBtn").addEventListener("click",()=>{const term=$("keyword").value.trim();if(!accessHeader()){setStatus("Enter the private importer access token first.","error");return}if(!term){setStatus("Enter a product keyword or choose a category.","error");return}search(term)});
  $("keyword").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchBtn").click()});
  document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>search(b.dataset.term)));
 })();
