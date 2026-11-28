@@ -60,7 +60,7 @@ button{font:inherit;cursor:pointer;border:0}
     <button class="cat" data-term="婴儿用品">Baby products</button>
     <button class="cat" data-term="汽车用品">Car accessories</button>
    </div>
-   <button class="primary" id="searchBtn">Search 1688 products</button>
+   <button class="primary" id="searchBtn">Search 1688 products</button>\n   <button class="cat" id="discoverBtn" style="width:100%;margin-top:8px;padding:12px">Auto-discover products across categories</button>
    <div class="notice">Search results are supplier discovery only. Products are not published to customers until reviewed and approved by an administrator.</div>
   </section>
   <section class="panel">
@@ -121,7 +121,26 @@ button{font:inherit;cursor:pointer;border:0}
   }catch(error){setStatus(error.message||"Unable to search 1688 right now.", "error");$("count").textContent="Search unavailable";results.innerHTML='<div class="empty" style="grid-column:1/-1">No results loaded. Configure the API credentials on the server, then retry.</div>'}
   finally{$("searchBtn").disabled=false;$("searchBtn").textContent="Search 1688 products"}
  }
- $("searchBtn").addEventListener("click",()=>{const term=$("keyword").value.trim();if(!accessHeader()){setStatus("Enter the private importer access token first.","error");return}if(!term){setStatus("Enter a product keyword or choose a category.","error");return}search(term)});
+ $("searchBtn").addEventListener("click",()=>{const term=$("keyword").value.trim();if(!accessHeader()){setStatus("Enter the private importer access token first.","error");return}if(!term){setStatus("Enter a product keyword or choose a category.","error");return}search(term)});\n $("discoverBtn").addEventListener("click",discoverAll);
+ async function discoverAll(){
+  if(!accessHeader()){setStatus("Enter the private importer access token first.","error");return}
+  const terms=["手机配件","蓝牙耳机","家用小电器","太阳能灯","女装服饰","电脑配件","婴儿用品","汽车用品"];
+  const button=$("discoverBtn");button.disabled=true;button.textContent="Discovering category products…";
+  const found=new Map();let completed=0;
+  try{
+   for(const keyword of terms){
+    setStatus("Discovering: "+keyword+" ("+(completed+1)+"/"+terms.length+")");
+    const response=await fetch("/api/marketplace/1688-search",{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+accessHeader()},body:JSON.stringify({keyword})});
+    const payload=await response.json().catch(()=>({}));
+    if(!response.ok)throw new Error(payload.error||("Category search failed ("+response.status+")"));
+    getItems(payload.data||payload).forEach(p=>{const key=idOf(p)||titleOf(p);if(!found.has(key))found.set(key,p)});
+    completed++;
+    render(Array.from(found.values()));
+   }
+   setStatus("Category discovery finished. "+found.size+" unique supplier listings found; none are published.","ok");
+  }catch(error){setStatus("Discovery stopped after "+completed+" categories: "+(error.message||"provider error"),"error")}
+  finally{button.disabled=false;button.textContent="Auto-discover products across categories"}
+ }
  $("keyword").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchBtn").click()});
  document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>search(b.dataset.term)));
 })();
