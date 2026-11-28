@@ -23,6 +23,8 @@ This work remains on `feature/marketplace-1688-importer`. It is not merged into 
 - Branch: `feature/marketplace-1688-importer`
 - Preview lab: `/marketplace-lab/`
 - Each published product receives a stable slug-based share link: `/marketplace-lab/product.html?slug=<slug>`.
+- The connected catalogue API was smoke-tested successfully (HTTP 200; currently no published products).
+- Database policy smoke test: a valid marketplace admin token passed the draft-write check; a request without the token was denied. The temporary draft test was rolled back.
 - The API reads/writes the dedicated `marketplace` schema. Preview-only Vercel variables are used; production environment and branch are unchanged.
 
 ## 1688 importer limitation
