@@ -84,7 +84,7 @@ button{font:inherit;cursor:pointer;border:0}
  }
  function imageOf(p){return p.offerPicUrl||p.odPicUrl||p.image||p.imageUrl||p.picUrl||p.mainImage||""}
  function titleOf(p){return p.title||p.subjectTrans||p.subject||p.name||("1688 product "+(p.offerId||p.itemId||""))}
- function priceOf(p){const info=p.priceInfo||p.price||{};return typeof info==="string"?info:(info.price||info.priceText||p.priceText||"Price on supplier page")}
+ function priceOf(p){const info=p.priceInfo||p.price||{};if(typeof info==="string")return info;if(typeof info==="number")return String(info)+" "+(p.currency||"CNY");return (info.price||info.priceText||p.priceText||"Price on supplier page")+" "+(p.currency||"") }
  function idOf(p){return String(p.offerId||p.itemId||p.productId||p.id||"")}
  function render(items){
   latest=items;$("count").textContent=items.length+" products found";
