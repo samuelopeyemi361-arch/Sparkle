@@ -102,6 +102,13 @@ drop policy if exists "Active marketplace categories are public" on marketplace.
 create policy "Active marketplace categories are public"
   on marketplace.categories for select to anon, authenticated
   using (is_active or marketplace_private.is_admin_request());
+create policy "Marketplace admin inserts categories"
+  on marketplace.categories for insert to anon, authenticated
+  with check (marketplace_private.is_admin_request());
+create policy "Marketplace admin updates categories"
+  on marketplace.categories for update to anon, authenticated
+  using (marketplace_private.is_admin_request())
+  with check (marketplace_private.is_admin_request());
 
 create table if not exists marketplace.store_settings (
   id smallint primary key default 1 check (id = 1),
@@ -114,6 +121,13 @@ drop policy if exists "Marketplace admin reads settings" on marketplace.store_se
 create policy "Marketplace admin reads settings"
   on marketplace.store_settings for select to anon, authenticated
   using (marketplace_private.is_admin_request());
+create policy "Marketplace admin inserts settings"
+  on marketplace.store_settings for insert to anon, authenticated
+  with check (marketplace_private.is_admin_request());
+create policy "Marketplace admin updates settings"
+  on marketplace.store_settings for update to anon, authenticated
+  using (marketplace_private.is_admin_request())
+  with check (marketplace_private.is_admin_request());
 
 -- Public image delivery only. No anonymous uploads are allowed.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
