@@ -6,24 +6,31 @@ function safeEqual(a, b) {
 }
 function slugify(value) {
   return String(value || "").normalize("NFKD").toLowerCase()
-    .replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")
+    .replace(/[\\u0300-\\u036f]/g, "").replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "").slice(0, 70);
 }
 function config() {
   const url = process.env.MARKETPLACE_SUPABASE_URL || process.env.SUPABASE_URL;
-  const key = process.env.MARKETPLACE_SUPABASE_SERVICE_ROLE_KEY;
+  // Prefer a service-role key when configured. Preview can also use its anon key:
+  // product writes are protected by the database's separate admin-token RLS check.
+  const key = process.env.MARKETPLACE_SUPABASE_SERVICE_ROLE_KEY || process.env.MARKETPLACE_SUPABASE_ANON_KEY;
   if (!url || !key) throw new Error("Marketplace database is not configured on this preview.");
-  return { url: url.replace(/\/$/, ""), key };
+  return { url: url.replace(/\\/$/, ""), key };
 }
-async function db(path, method, body) {
+async function db(path, method, body, adminToken) {
   const c = config();
+  const headers = {
+    apikey: c.key,
+    Authorization: "Bearer " + c.key,
+    "Content-Type": "application/json",
+    "Accept-Profile": "marketplace",
+    "Content-Profile": "marketplace",
+    Prefer: method === "POST" ? "resolution=merge-duplicates,return=representation" : "return=representation"
+  };
+  if (adminToken) headers["x-marketplace-admin-token"] = adminToken;
   const response = await fetch(c.url + "/rest/v1/" + path, {
     method,
-    headers: {
-      apikey: c.key, Authorization: "Bearer " + c.key,
-      "Content-Type": "application/json",
-      Prefer: method === "POST" ? "resolution=merge-duplicates,return=representation" : "return=representation"
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
   const text = await response.text();
@@ -39,18 +46,18 @@ module.exports = async function handler(req, res) {
     try {
       const fields = "select=slug,title,image_url,gallery_urls,description,category,variants,product_price_ngn,currency,updated_at&status=eq.published";
       if (!slug) {
-        const rows = await db("marketplace_products?" + fields + "&order=updated_at.desc&limit=60", "GET");
+        const rows = await db("products?" + fields + "&order=updated_at.desc&limit=60", "GET");
         return res.status(200).json({ products: rows || [] });
       }
       if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug)) return res.status(400).json({ error: "A valid product link is required." });
-      const rows = await db("marketplace_products?" + fields + "&slug=eq." + encodeURIComponent(slug) + "&limit=1", "GET");
+      const rows = await db("products?" + fields + "&slug=eq." + encodeURIComponent(slug) + "&limit=1", "GET");
       if (!rows || !rows.length) return res.status(404).json({ error: "This product is unavailable or its link has changed." });
       return res.status(200).json({ product: rows[0] });
     } catch (error) { return res.status(503).json({ error: error.message }); }
   }
   if (req.method === "POST") {
     const expected = process.env.MARKETPLACE_CATALOG_ADMIN_TOKEN;
-    const supplied = String(req.headers.authorization || "").replace(/^Bearer\s+/i, "");
+    const supplied = String(req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
     if (!expected || !safeEqual(supplied, expected)) return res.status(401).json({ error: "Admin access required." });
     const p = req.body || {};
     const title = String(p.title || "").trim();
@@ -72,7 +79,7 @@ module.exports = async function handler(req, res) {
       last_supplier_sync_at: p.last_supplier_sync_at || null
     };
     try {
-      const rows = await db("marketplace_products?on_conflict=slug", "POST", row);
+      const rows = await db("products?on_conflict=slug", "POST", row, expected);
       return res.status(201).json({ product: rows && rows[0], share_path: "/marketplace-lab/product.html?slug=" + encodeURIComponent(slug) });
     } catch (error) { return res.status(503).json({ error: error.message }); }
   }
