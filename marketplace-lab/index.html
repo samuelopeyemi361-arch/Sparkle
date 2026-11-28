@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>1688 Product Importer | TheSparkle Marketplace Lab</title>
+<style>
+:root{--navy:#071b4d;--blue:#1762e8;--ink:#17243c;--muted:#71809a;--line:#e5ebf4;--bg:#f4f7fc;--green:#16845b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+header{background:linear-gradient(115deg,#071b4d,#1357c8);color:white;padding:22px max(18px,calc((100% - 1120px)/2))}
+.brand{font-weight:900;letter-spacing:.2px;font-size:17px}.brand small{display:block;color:#c7d8ff;font-size:10px;letter-spacing:1.5px;margin-top:3px}
+main{max-width:1120px;margin:26px auto;padding:0 18px}.intro h1{font-size:27px;margin:0 0 5px;letter-spacing:-.6px}.intro p{color:var(--muted);margin:0 0 20px}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:18px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 8px 26px #102b5510}
+.panel h2{font-size:15px;margin:0 0 14px}.hint{font-size:12px;color:var(--muted);line-height:1.55}
+label{display:block;font-size:12px;font-weight:800;margin:15px 0 6px}
+input,select{width:100%;border:1px solid #dce4f0;border-radius:10px;padding:12px;background:#fff;color:var(--ink);font:inherit;outline:none}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1762e81a}
+button{font:inherit;cursor:pointer;border:0}
+.primary{width:100%;margin-top:13px;background:var(--blue);color:white;border-radius:10px;padding:12px;font-weight:850}
+.primary:disabled{opacity:.55;cursor:wait}
+.categories{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
+.cat{border:1px solid var(--line);background:#f9fbff;color:#314361;border-radius:9px;padding:9px 7px;font-size:11px;font-weight:750}
+.cat:hover{border-color:#9db9f5;color:var(--blue)}
+.topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.topline h2{margin:0}.count{color:var(--muted);font-size:12px}
+.status{padding:11px 12px;border-radius:10px;background:#f3f6fb;color:#61718b;font-size:12px;margin:10px 0}
+.status.error{background:#fff0ef;color:#a12d27}.status.ok{background:#eaf8f0;color:#176c48}
+.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.product{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:white;min-width:0}
+.product img{display:block;width:100%;height:155px;object-fit:contain;background:#f8faff}
+.product-body{padding:11px}.product h3{font-size:12px;line-height:1.45;margin:0 0 7px;min-height:35px}
+.price{font-size:15px;font-weight:900;color:var(--navy)}.meta{font-size:10px;color:var(--muted);margin:4px 0 9px}
+.product button{width:100%;padding:9px;border-radius:8px;background:#edf3ff;color:#1555c5;font-size:11px;font-weight:850}
+.empty{padding:38px 12px;text-align:center;color:var(--muted);border:1px dashed #d6dfed;border-radius:12px;font-size:13px}
+.notice{margin-top:18px;font-size:11px;color:#71809a;line-height:1.6}
+.draft{margin-top:15px;border:1px solid #cfe6d9;background:#f4fbf6;border-radius:12px;padding:13px;display:none}
+.draft strong{color:#176c48}
+@media(max-width:760px){.layout{grid-template-columns:1fr}.results{grid-template-columns:repeat(2,minmax(0,1fr))}main{margin:19px auto}.intro h1{font-size:23px}}
+@media(max-width:390px){.results{grid-template-columns:1fr 1fr}.product img{height:125px}}
+</style>
+</head>
+<body>
+<header><div class="brand">TheSparkle <small>MARKETPLACE · PRIVATE BUILD LAB</small></div></header>
+<main>
+ <section class="intro"><h1>1688 Product Importer</h1><p>Discover supplier products, inspect listing details and prepare drafts for TheSparkle Marketplace.</p></section>
+ <div class="layout">
+  <section class="panel">
+   <h2>Find products on 1688</h2>
+   <p class="hint">Search using a product phrase. The importer sends the request securely through the server; API credentials are never placed in this page.</p>
+   <label for="keyword">Product keyword</label>
+   <input id="keyword" placeholder="e.g. wireless earbuds" autocomplete="off">
+   <div class="hint" style="margin-top:6px">Quick categories (Chinese search terms are prefilled for the 1688 search API):</div>
+   <div class="categories">
+    <button class="cat" data-term="手机配件">Phone accessories</button>
+    <button class="cat" data-term="蓝牙耳机">Earbuds</button>
+    <button class="cat" data-term="家用小电器">Home appliances</button>
+    <button class="cat" data-term="太阳能灯">Solar lights</button>
+    <button class="cat" data-term="女装服饰">Fashion</button>
+    <button class="cat" data-term="电脑配件">Computer accessories</button>
+    <button class="cat" data-term="婴儿用品">Baby products</button>
+    <button class="cat" data-term="汽车用品">Car accessories</button>
+   </div>
+   <button class="primary" id="searchBtn">Search 1688 products</button>
+   <div class="notice">Search results are supplier discovery only. Products are not published to customers until reviewed and approved by an administrator.</div>
+  </section>
+  <section class="panel">
+   <div class="topline"><h2>Supplier results</h2><span class="count" id="count">No search yet</span></div>
+   <div id="status" class="status">Choose a category or enter a product keyword to begin.</div>
+   <div id="results" class="results"><div class="empty" style="grid-column:1/-1">Your 1688 search results will appear here.</div></div>
+   <div id="draft" class="draft"></div>
+  </section>
+ </div>
+</main>
+<script>
+(function(){
+ const $=id=>document.getElementById(id), status=$("status"), results=$("results");
+ let latest=[];
+ function setStatus(message,type){status.textContent=message;status.className="status"+(type?" "+type:"")}
+ function getItems(payload){
+  const roots=[payload,payload&&payload.data,payload&&payload.data&&payload.data.data];
+  for(const root of roots){if(!root)continue;const offers=root.OFFER||root.offer||root;const items=offers.items||offers.list||offers.products;if(Array.isArray(items))return items.map(x=>x.data||x);}
+  return [];
+ }
+ function imageOf(p){return p.offerPicUrl||p.odPicUrl||p.image||p.imageUrl||p.picUrl||p.mainImage||""}
+ function titleOf(p){return p.title||p.subjectTrans||p.subject||p.name||("1688 product "+(p.offerId||p.itemId||""))}
+ function priceOf(p){const info=p.priceInfo||p.price||{};return typeof info==="string"?info:(info.price||info.priceText||p.priceText||"Price on supplier page")}
+ function idOf(p){return String(p.offerId||p.itemId||p.productId||p.id||"")}
+ function render(items){
+  latest=items;$("count").textContent=items.length+" products found";
+  if(!items.length){results.innerHTML='<div class="empty" style="grid-column:1/-1">No product cards were returned for this search. Try another keyword.</div>';return}
+  results.innerHTML="";
+  items.forEach((p,i)=>{
+   const card=document.createElement("article");card.className="product";
+   const img=document.createElement("img");img.loading="lazy";img.alt=titleOf(p);img.src=imageOf(p);img.onerror=()=>{img.style.display="none"};
+   const body=document.createElement("div");body.className="product-body";
+   const title=document.createElement("h3");title.textContent=titleOf(p);
+   const price=document.createElement("div");price.className="price";price.textContent=priceOf(p);
+   const meta=document.createElement("div");meta.className="meta";meta.textContent="Offer ID: "+(idOf(p)||"not provided");
+   const btn=document.createElement("button");btn.textContent="Prepare product draft";btn.addEventListener("click",()=>prepare(p));
+   body.append(title,price,meta,btn);card.append(img,body);results.append(card);
+  });
+ }
+ function prepare(p){
+  const id=idOf(p), title=titleOf(p), price=priceOf(p);
+  const draft=$("draft");draft.style.display="block";draft.innerHTML="";
+  const heading=document.createElement("strong");heading.textContent="Draft selected — review required";
+  const line=document.createElement("p");line.className="hint";line.textContent=title+" · "+price+" · Offer "+(id||"ID unavailable");
+  const note=document.createElement("p");note.className="hint";note.textContent="This is not saved or published yet. Product detail lookup, variant selection, package weight/dimensions, RMB→NGN conversion and admin approval must be completed before a customer can order.";
+  draft.append(heading,line,note);
+ }
+ async function search(term){
+  $("keyword").value=term;$("searchBtn").disabled=true;$("searchBtn").textContent="Searching…";
+  setStatus("Contacting the 1688 product search provider…");$("count").textContent="Searching";
+  try{
+   const response=await fetch("/api/marketplace/1688-search",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({keyword:term})});
+   const payload=await response.json().catch(()=>({}));
+   if(!response.ok)throw new Error(payload.error||("Search failed ("+response.status+")"));
+   const items=getItems(payload.data||payload);
+   render(items);setStatus(items.length?"Supplier results loaded. Nothing has been published.":"The provider responded, but no product cards were included. Check provider response or search another phrase.",items.length?"ok":"");
+  }catch(error){setStatus(error.message||"Unable to search 1688 right now.", "error");$("count").textContent="Search unavailable";results.innerHTML='<div class="empty" style="grid-column:1/-1">No results loaded. Configure the API credentials on the server, then retry.</div>'}
+  finally{$("searchBtn").disabled=false;$("searchBtn").textContent="Search 1688 products"}
+ }
+ $("searchBtn").addEventListener("click",()=>{const term=$("keyword").value.trim();if(!term){setStatus("Enter a product keyword or choose a category.","error");return}search(term)});
+ $("keyword").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchBtn").click()});
+ document.querySelectorAll(".cat").forEach(b=>b.addEventListener("click",()=>search(b.dataset.term)));
+})();
+</script>
+</body>
+</html>
