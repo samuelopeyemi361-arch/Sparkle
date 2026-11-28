@@ -11,86 +11,105 @@
 header{background:linear-gradient(115deg,#071b4d,#1357c8);color:white;padding:22px max(18px,calc((100% - 1120px)/2))}
 .brand{font-weight:900;letter-spacing:.2px;font-size:17px}.brand small{display:block;color:#c7d8ff;font-size:10px;letter-spacing:1.5px;margin-top:3px}
 main{max-width:1120px;margin:26px auto;padding:0 18px}.intro h1{font-size:27px;margin:0 0 5px;letter-spacing:-.6px}.intro p{color:var(--muted);margin:0 0 20px}
-.layout{display:grid;grid-template-columns:310px 1fr;gap:18px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 8px 26px #102b5510}
+.layout{display:grid;grid-template-columns:310px 1fr;gap:18px;align-items:start}.panel{background:white;border:1px solid var(--line);border-radius:17px;padding:18px;box-shadow:0 8px 26px #102b5510;margin-bottom:16px}
 .panel h2{font-size:15px;margin:0 0 14px}.hint{font-size:12px;color:var(--muted);line-height:1.55}
-label{display:block;font-size:12px;font-weight:800;margin:15px 0 6px}
-input,select{width:100%;border:1px solid #dce4f0;border-radius:10px;padding:12px;background:#fff;color:var(--ink);font:inherit;outline:none}
-input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1762e81a}
-button{font:inherit;cursor:pointer;border:0}
-.primary{width:100%;margin-top:13px;background:var(--blue);color:white;border-radius:10px;padding:12px;font-weight:850}
-.primary:disabled{opacity:.55;cursor:wait}
-.categories{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}
-.cat{border:1px solid var(--line);background:#f9fbff;color:#314361;border-radius:9px;padding:9px 7px;font-size:11px;font-weight:750}
-.cat:hover{border-color:#9db9f5;color:var(--blue)}
+label{display:block;font-size:12px;font-weight:800;margin:13px 0 6px}
+input,select,textarea{width:100%;border:1px solid #dce4f0;border-radius:10px;padding:11px;background:#fff;color:var(--ink);font:inherit;outline:none;min-width:0}
+textarea{min-height:76px;resize:vertical}input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px #1762e81a}
+button{font:inherit;cursor:pointer;border:0}.primary{width:100%;margin-top:13px;background:var(--blue);color:white;border-radius:10px;padding:12px;font-weight:850}
+.secondary{background:#edf3ff;color:#1555c5;border-radius:9px;padding:9px 12px;font-size:12px;font-weight:800}.danger{background:#fff0ef;color:#a12d27}
+.categories{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.cat{border:1px solid var(--line);background:#f9fbff;color:#314361;border-radius:9px;padding:9px 7px;font-size:11px;font-weight:750}
 .topline{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.topline h2{margin:0}.count{color:var(--muted);font-size:12px}
-.status{padding:11px 12px;border-radius:10px;background:#f3f6fb;color:#61718b;font-size:12px;margin:10px 0}
-.status.error{background:#fff0ef;color:#a12d27}.status.ok{background:#eaf8f0;color:#176c48}
-.results{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.product{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:white;min-width:0}
-.product img{display:block;width:100%;height:155px;object-fit:contain;background:#f8faff}
-.product-body{padding:11px}.product h3{font-size:12px;line-height:1.45;margin:0 0 7px;min-height:35px}
-.price{font-size:15px;font-weight:900;color:var(--navy)}.meta{font-size:10px;color:var(--muted);margin:4px 0 9px}
-.product button{width:100%;padding:9px;border-radius:8px;background:#edf3ff;color:#1555c5;font-size:11px;font-weight:850}
-.empty{padding:38px 12px;text-align:center;color:var(--muted);border:1px dashed #d6dfed;border-radius:12px;font-size:13px}
-.notice{margin-top:18px;font-size:11px;color:#71809a;line-height:1.6}
-.draft{margin-top:15px;border:1px solid #cfe6d9;background:#f4fbf6;border-radius:12px;padding:13px;display:none}
-.draft strong{color:#176c48}
-@media(max-width:760px){.layout{grid-template-columns:1fr}.results{grid-template-columns:repeat(2,minmax(0,1fr))}main{margin:19px auto}.intro h1{font-size:23px}}
-@media(max-width:390px){.results{grid-template-columns:1fr 1fr}.product img{height:125px}}
+.status{padding:11px 12px;border-radius:10px;background:#f3f6fb;color:#61718b;font-size:12px;margin:10px 0}.status.error{background:#fff0ef;color:#a12d27}.status.ok{background:#eaf8f0;color:#176c48}
+.empty{padding:24px 12px;text-align:center;color:var(--muted);border:1px dashed #d6dfed;border-radius:12px;font-size:13px}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}.full{grid-column:1/-1}.pricebox{background:#f4f8ff;border:1px solid #dce8ff;border-radius:12px;padding:12px;margin-top:14px}.pricebox strong{font-size:20px;color:var(--navy)}
+.draftlist{display:grid;gap:9px}.draftrow{border:1px solid var(--line);border-radius:11px;padding:11px;display:flex;align-items:center;justify-content:space-between;gap:10px}.draftrow b{font-size:12px}.draftrow small{display:block;color:var(--muted);font-size:11px}.actions{display:flex;gap:7px;flex-wrap:wrap}
+.notice{margin-top:18px;font-size:11px;color:#71809a;line-height:1.6}.checkline{display:flex;align-items:flex-start;gap:8px;font-size:11px;color:#52627c;margin-top:10px}.checkline input{width:auto;margin-top:2px}
+@media(max-width:760px){.layout{grid-template-columns:1fr}main{margin:19px auto}.intro h1{font-size:23px}}
+@media(max-width:430px){.formgrid{grid-template-columns:1fr}.full{grid-column:auto}.draftrow{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
 <header><div class="brand">TheSparkle <small>MARKETPLACE · PRIVATE BUILD LAB</small></div></header>
 <main>
- <section class="intro"><h1>1688 Product Importer</h1><p>Discover supplier products, inspect listing details and prepare drafts for TheSparkle Marketplace.</p></section>
+ <section class="intro"><h1>1688 Product Importer</h1><p>Discover supplier products and prepare reviewed product drafts for TheSparkle Marketplace.</p></section>
  <div class="layout">
-  <section class="panel">
-   <h2>Find products on 1688</h2>
-   <p class="hint">Search by product phrase and open the public 1688 supplier search. This free discovery step does not require an API key.</p>
-   <label for="keyword">Product keyword</label>
-   <input id="keyword" placeholder="e.g. wireless earbuds" autocomplete="off">
-   <div class="hint" style="margin-top:6px">Quick categories (Chinese keywords give more relevant 1688 results):</div>
-   <div class="categories">
-    <button class="cat" data-term="手机配件">Phone accessories</button>
-    <button class="cat" data-term="蓝牙耳机">Earbuds</button>
-    <button class="cat" data-term="家用小电器">Home appliances</button>
-    <button class="cat" data-term="太阳能灯">Solar lights</button>
-    <button class="cat" data-term="女装服饰">Fashion</button>
-    <button class="cat" data-term="电脑配件">Computer accessories</button>
-    <button class="cat" data-term="婴儿用品">Baby products</button>
-    <button class="cat" data-term="汽车用品">Car accessories</button>
-   </div>
-   <button class="primary" id="searchBtn">Open free 1688 search</button>\n   <p class="hint" style="margin-top:10px">Opens public 1688 search in a new tab. No paid API credits are used. Nothing is copied into the customer catalogue automatically.</p>
-   <div class="notice">Search results are supplier discovery only. Products are not published to customers until reviewed and approved by an administrator.</div>
-  </section>
-  <section class="panel">
-   <div class="topline"><h2>Supplier results</h2><span class="count" id="count">No search yet</span></div>
-   <div id="status" class="status">Choose a category or enter a product keyword to open 1688 public search.</div>
-   <div id="results" class="results"><div class="empty" style="grid-column:1/-1">Free product discovery opens the supplier marketplace in a new tab.</div></div>
-   <div id="draft" class="draft"></div>
-  </section>
+  <div>
+   <section class="panel">
+    <h2>Find products on 1688</h2>
+    <p class="hint">Search public 1688 listings for free. Supplier results open on 1688; this page does not scrape or copy listings automatically.</p>
+    <label for="keyword">Product keyword</label><input id="keyword" placeholder="e.g. wireless earbuds" autocomplete="off">
+    <div class="hint" style="margin-top:7px">Quick categories:</div>
+    <div class="categories">
+     <button class="cat" data-term="手机配件">Phone accessories</button><button class="cat" data-term="蓝牙耳机">Earbuds</button>
+     <button class="cat" data-term="家用小电器">Home appliances</button><button class="cat" data-term="太阳能灯">Solar lights</button>
+     <button class="cat" data-term="女装服饰">Fashion</button><button class="cat" data-term="电脑配件">Computer accessories</button>
+     <button class="cat" data-term="婴儿用品">Baby products</button><button class="cat" data-term="汽车用品">Car accessories</button>
+    </div>
+    <button class="primary" id="searchBtn">Open free 1688 search</button>
+    <p class="hint">No paid API credits. Review a listing on 1688, then enter its verified details in the draft editor.</p>
+   </section>
+   <section class="panel">
+    <div class="topline"><h2>Saved drafts on this device</h2><span class="count" id="draftCount">0 drafts</span></div>
+    <div id="draftList" class="draftlist"><div class="empty">No product drafts saved yet.</div></div>
+    <div class="actions" style="margin-top:12px"><button class="secondary" id="exportBtn">Export drafts (JSON)</button><button class="secondary" id="importBtn">Import drafts</button><input id="importFile" type="file" accept="application/json" hidden></div>
+    <p class="notice">Drafts currently stay in this browser on this device. Export a backup before clearing browser data. This is a temporary private preview workflow, not shared database storage.</p>
+   </section>
+  </div>
+  <div>
+   <section class="panel">
+    <h2 id="editorTitle">Product draft editor</h2>
+    <p class="hint">Copy details from the supplier listing. Leave unknown fields blank; never guess weight, dimensions or supplier price.</p>
+    <form id="draftForm">
+     <div class="formgrid">
+      <div class="full"><label for="supplierUrl">1688 product URL / offer link</label><input id="supplierUrl" type="url" placeholder="https://detail.1688.com/offer/..."></div>
+      <div class="full"><label for="title">Product title *</label><input id="title" required placeholder="Supplier product name"></div>
+      <div class="full"><label for="photo">Main product photo URL</label><input id="photo" type="url" placeholder="https://..."></div>
+      <div class="full"><label for="description">Description / specifications</label><textarea id="description" placeholder="Material, size, functions and other verified details"></textarea></div>
+      <div><label for="category">Category</label><select id="category"><option value="">Choose category</option><option>Phone accessories</option><option>Electronics</option><option>Home appliances</option><option>Solar / rechargeable</option><option>Fashion</option><option>Computer accessories</option><option>Baby products</option><option>Watches / jewellery</option><option>Beauty</option><option>Car accessories</option><option>Other</option></select></div>
+      <div><label for="supplier">Supplier / shop name</label><input id="supplier" placeholder="1688 shop name"></div>
+      <div class="full"><label for="variants">Variants (colour / size / model)</label><textarea id="variants" placeholder="e.g. Black, White; 64GB / 128GB"></textarea></div>
+      <div><label for="rmb">Supplier price (RMB ¥) *</label><input id="rmb" type="number" min="0" step="0.01" required placeholder="0.00"></div>
+      <div><label for="rate">Admin RMB → NGN rate</label><input id="rate" type="number" min="0" step="0.0001" placeholder="Enter current approved rate"></div>
+      <div><label for="moq">Minimum order quantity</label><input id="moq" type="number" min="1" step="1" placeholder="Not confirmed"></div>
+      <div><label for="weight">Verified packed weight (kg)</label><input id="weight" type="number" min="0" step="0.001" placeholder="Leave blank if unknown"></div>
+      <div><label for="length">Length (cm)</label><input id="length" type="number" min="0" step="0.1"></div>
+      <div><label for="width">Width (cm)</label><input id="width" type="number" min="0" step="0.1"></div>
+      <div><label for="height">Height (cm)</label><input id="height" type="number" min="0" step="0.1"></div>
+      <div class="full"><label for="notes">Admin notes / source checks</label><textarea id="notes" placeholder="Supplier conversation, stock check, restrictions, quote date..."></textarea></div>
+     </div>
+     <div class="pricebox"><div class="hint">Indicative product price only · excludes freight, customs and local delivery</div><strong id="nairaPrice">₦ —</strong><div class="hint" id="rateNote">Enter RMB price and the manually approved exchange rate.</div></div>
+     <label class="checkline"><input id="verified" type="checkbox"> I checked this listing and entered supplier price and product information from the source. Weight/dimensions are only marked verified if measured or confirmed by supplier.</label>
+     <div class="actions" style="margin-top:14px"><button class="primary" type="submit" id="saveBtn" style="width:auto;flex:1">Save product draft</button><button class="secondary" type="button" id="resetBtn">Clear form</button></div>
+    </form>
+   </section>
+   <div class="notice">No customer catalogue, checkout, Sparkle wallet, Paystack, authentication, refunds or live transaction logic is connected to this workbench. Product drafts are not published automatically.</div>
+  </div>
  </div>
 </main>
 <script>
 (function(){
- const $=id=>document.getElementById(id);
- const status=$("status"),results=$("results");
- function search(term){
-  $("keyword").value=term;
-  const url="https://s.1688.com/selloffer/offer_search.htm?keywords="+encodeURIComponent(term);
-  window.open(url,"_blank","noopener,noreferrer");
-  status.textContent="Opened free 1688 public search for: "+term+". Review the listings in the new tab.";
-  status.className="status ok";
-  $("count").textContent="Public 1688 search";
-  results.innerHTML='<div class="empty" style="grid-column:1/-1">1688 is open in another tab. Browse supplier products there. Paid scraping is disabled in this free-first build.</div>';
- }
- $("searchBtn").addEventListener("click",()=>{
-  const term=$("keyword").value.trim();
-  if(!term){status.textContent="Enter a product keyword or choose a category.";status.className="status error";return}
-  search(term);
- });
- $("keyword").addEventListener("keydown",e=>{if(e.key==="Enter")$("searchBtn").click()});
- document.querySelectorAll(".cat").forEach(button=>button.addEventListener("click",()=>search(button.dataset.term)));
+ const $=id=>document.getElementById(id),KEY="thesparkle_marketplace_drafts_v1";
+ let drafts=[],editingId=null;
+ try{drafts=JSON.parse(localStorage.getItem(KEY)||"[]");if(!Array.isArray(drafts))drafts=[]}catch(_){drafts=[]}
+ const fields=["supplierUrl","title","photo","description","category","supplier","variants","rmb","rate","moq","weight","length","width","height","notes"];
+ const money=n=>new Intl.NumberFormat("en-NG",{style:"currency",currency:"NGN",maximumFractionDigits:2}).format(n);
+ function persist(){localStorage.setItem(KEY,JSON.stringify(drafts));render()}
+ function values(){const o={};fields.forEach(k=>o[k]=$(k).value.trim());o.verified=$("verified").checked;return o}
+ function fill(d){fields.forEach(k=>$(k).value=d[k]??"");$("verified").checked=!!d.verified;editingId=d.id||null;$("editorTitle").textContent=editingId?"Edit product draft":"Product draft editor";$("saveBtn").textContent=editingId?"Update draft":"Save product draft";price()}
+ function clear(){ $("draftForm").reset();editingId=null;$("editorTitle").textContent="Product draft editor";$("saveBtn").textContent="Save product draft";price()}
+ function price(){const r=Number($("rmb").value),rate=Number($("rate").value);$("nairaPrice").textContent=r>0&&rate>0?money(r*rate):"₦ —";$("rateNote").textContent=r>0&&rate>0?"Calculation: ¥"+r.toFixed(2)+" × ₦"+rate+" per RMB. No freight or other fees included.":"Enter RMB price and the manually approved exchange rate."}
+ function render(){ $("draftCount").textContent=drafts.length+" draft"+(drafts.length===1?"":"s");const root=$("draftList");if(!drafts.length){root.innerHTML='<div class="empty">No product drafts saved yet.</div>';return}root.innerHTML=drafts.map(d=>'<div class="draftrow"><div><b>'+esc(d.title||"Untitled product")+'</b><small>¥'+esc(d.rmb||"—")+' · '+(d.verified?"Source checked":"Not verified")+' · '+new Date(d.updatedAt||d.createdAt).toLocaleDateString()+'</small></div><div class="actions"><button class="secondary" data-edit="'+esc(d.id)+'">Edit</button><button class="secondary danger" data-delete="'+esc(d.id)+'">Delete</button></div></div>').join("");root.querySelectorAll("[data-edit]").forEach(b=>b.onclick=()=>{const d=drafts.find(x=>x.id===b.dataset.edit);if(d)fill(d)});root.querySelectorAll("[data-delete]").forEach(b=>b.onclick=()=>{if(confirm("Delete this local product draft?")){drafts=drafts.filter(x=>x.id!==b.dataset.delete);persist();if(editingId===b.dataset.delete)clear()}})}
+ function esc(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+ $("searchBtn").onclick=()=>{const term=$("keyword").value.trim();if(!term){alert("Enter a product keyword first.");return}window.open("https://s.1688.com/selloffer/offer_search.htm?keywords="+encodeURIComponent(term),"_blank","noopener,noreferrer")};
+ document.querySelectorAll(".cat").forEach(b=>b.onclick=()=>{$("keyword").value=b.dataset.term;$("searchBtn").click()});
+ ["rmb","rate"].forEach(k=>$(k).addEventListener("input",price));
+ $("draftForm").onsubmit=e=>{e.preventDefault();const d=values();if(!d.title||!(Number(d.rmb)>0)){alert("Enter a product title and a valid supplier RMB price.");return}if(d.rate&&Number(d.rate)<=0){alert("Exchange rate must be greater than zero.");return}const now=new Date().toISOString();if(editingId){const i=drafts.findIndex(x=>x.id===editingId);if(i>=0)drafts[i]={...drafts[i],...d,updatedAt:now}}else drafts.unshift({...d,id:"draft_"+Date.now()+"_"+Math.random().toString(36).slice(2,7),createdAt:now,updatedAt:now});persist();clear();alert("Draft saved in this browser. Export a backup if you need to move it to another device.")};
+ $("resetBtn").onclick=clear;
+ $("exportBtn").onclick=()=>{const blob=new Blob([JSON.stringify({format:"thesparkle-marketplace-drafts-v1",exportedAt:new Date().toISOString(),drafts},null,2)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="thesparkle-marketplace-drafts.json";a.click();URL.revokeObjectURL(a.href)};
+ $("importBtn").onclick=()=>$("importFile").click();
+ $("importFile").onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const data=JSON.parse(await f.text());const incoming=Array.isArray(data)?data:data.drafts;if(!Array.isArray(incoming))throw new Error("Invalid draft file");const clean=incoming.filter(x=>x&&typeof x==="object"&&x.title&&x.rmb).map(x=>({...x,id:x.id||"draft_"+Date.now()+"_"+Math.random().toString(36).slice(2,7)}));drafts=[...clean,...drafts];persist();alert("Imported "+clean.length+" draft(s).")}catch(err){alert("Could not import this JSON file: "+err.message)}e.target.value=""};
+ render();price();
 })();
 </script>
 </body>
