@@ -36,3 +36,13 @@ This work remains on `feature/marketplace-1688-importer`. It is not merged into 
 - Do not merge this branch or deploy marketplace features to production without explicit approval.
 - Do not pay for an API, subscription, credits or scraping service without explicit approval.
 - Do not scrape around 1688 access controls or represent public search links as a product API.
+
+
+## Shareable product links and catalogue groundwork
+- Added an isolated \`marketplace_products\` schema script in \`marketplace-lab/schema.sql\`; it does not touch VTU tables.
+- Added \`api/marketplace/product.js\`: public read-only catalogue/product lookup and token-protected admin publishing/upsert. Public reads return published products only.
+- Added \`marketplace-lab/product.html\`: a dedicated product page with a native share action and stable unique slug URL.
+- Added a published catalogue panel to the private lab. Each published product can be opened and shared with another customer.
+- Required server-only environment variables: \`MARKETPLACE_SUPABASE_URL\`, \`MARKETPLACE_SUPABASE_SERVICE_ROLE_KEY\`, and \`MARKETPLACE_CATALOG_ADMIN_TOKEN\`. Never expose the service-role key or admin token in browser code.
+- The schema script must be reviewed and applied to a separate marketplace database or isolated development branch before the catalogue API can work. It has not been applied to the live VTU database.
+- This does not solve the 1688 source-access blocker. No real products will appear until an authorised free/approved feed is available and imported. No paid provider has been enabled.
