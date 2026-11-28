@@ -73,8 +73,9 @@ button{font:inherit;cursor:pointer;border:0}
 </main>
 <script>
 (function(){
- const $=id=>document.getElementById(id), status=$("status"), results=$("results");\n let latest=[];\n function accessHeader(){return $("accessToken").value.trim()}
+ const $=id=>document.getElementById(id), status=$("status"), results=$("results");
  let latest=[];
+ function accessHeader(){return $("accessToken").value.trim()}
  function setStatus(message,type){status.textContent=message;status.className="status"+(type?" "+type:"")}
  function getItems(payload){
   const roots=[payload,payload&&payload.data,payload&&payload.data&&payload.data.data];
