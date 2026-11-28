@@ -27,12 +27,12 @@ module.exports = async function handler(req, res) {
   res.setHeader("X-Content-Type-Options", "nosniff");
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
   const expected = process.env.MARKETPLACE_IMPORT_ADMIN_TOKEN;
-  const supplied = (req.headers.authorization || "").replace(/^Bearer\\s+/i, "");
+  const supplied = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
   if (!expected || !supplied || supplied !== expected) return res.status(401).json({ error: "Marketplace importer is not configured for admin access yet." });
   const apiKey = process.env.NEXSCOPE_API_KEY;
   if (!apiKey) return res.status(503).json({ error: "1688 provider API key is not configured on the server yet." });
   const offerId = String((req.body && req.body.offerId) || "").trim();
-  if (!/^\\d{5,20}$/.test(offerId)) return res.status(400).json({ error: "A valid 1688 offer ID is required." });
+  if (!/^\d{5,20}$/.test(offerId)) return res.status(400).json({ error: "A valid 1688 offer ID is required." });
   try {
     const data = await postJson("https://api.nexscope.ai/alibaba1688/productDetail", apiKey, { offerId, country: "NG", currency: "CNY" });
     return res.status(200).json({ data });
